@@ -1,0 +1,5 @@
+node_modules
+.next
+build
+dist
+src/lib/supabase/server.ts 

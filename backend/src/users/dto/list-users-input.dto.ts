@@ -1,0 +1,63 @@
+import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
+import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
+import {
+  UserOrderByFields,
+  UserOrderByFieldsType,
+  UserStatusList,
+  UserStatusType,
+} from '@/common/constants/status';
+import {
+  eachNumberTransformer,
+  eachUserStatusTransformer,
+  toBoolean,
+} from '@/common/helpers/class-transform-helpers';
+
+export class ListUsersInputDto extends PaginatedInputDto {
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Role IDs', type: [Number] })
+  @Transform(eachNumberTransformer)
+  roleId?: number[];
+
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  @Type(() => Number)
+  @ApiPropertyOptional({ description: 'Customer IDs', type: [Number] })
+  @Transform(eachNumberTransformer)
+  customerId?: number[];
+
+  @IsOptional()
+  // @IsArray()
+  @Type(() => String) // First transform to string array
+  @Transform(eachUserStatusTransformer) // Finally transform to StatusType[]
+  @IsEnum(UserStatusList, { each: true }) // Then validate each value against StatusList
+  @ApiPropertyOptional({
+    description: 'Statuses',
+    enum: UserStatusList,
+    isArray: true,
+  })
+  status?: UserStatusType[];
+
+  @ApiPropertyOptional({
+    description: 'Order by column',
+    isArray: false,
+    example: 'id',
+    enum: Object.values(UserOrderByFields),
+  })
+  @IsString()
+  @IsOptional()
+  declare orderBy?: UserOrderByFieldsType;
+
+  @ApiPropertyOptional({
+    description: 'Filter by users who have customers',
+  })
+  @Type(() => String)
+  @IsOptional()
+  @Transform(toBoolean)
+  hasCustomer?: boolean;
+}

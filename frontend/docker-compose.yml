@@ -1,0 +1,26 @@
+version: "3.7"
+services:
+  stock-app-web:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: stock-app-web
+    container_name: stock-app-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      VIRTUAL_HOST: ${DOMAIN_NAME}
+      LETSENCRYPT_HOST: ${DOMAIN_NAME}
+      LETSENCRYPT_EMAIL: ${NOTIFICATION_EMAIL}
+      VIRTUAL_PORT: ${VIRTUAL_PORT}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "15m"
+        max-file: "3"
+
+networks:
+  default:
+    external:
+      name: ${NETWORK}

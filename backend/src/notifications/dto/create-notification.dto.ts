@@ -1,0 +1,56 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  NotificationType,
+  NotificationTypeList,
+  NotificationTypes,
+} from '@/notifications/constants/notification-types';
+
+export class CreateNotificationDto {
+  @IsInt()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'User ID associated with the notification',
+  })
+  userId?: number;
+
+  @IsInt()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Customer ID associated with the notification',
+  })
+  customerId?: number;
+
+  @IsEnum(NotificationTypeList, { each: true })
+  @ApiProperty({
+    description: 'Type of the notification',
+    enum: NotificationTypes,
+    isArray: false,
+    required: true,
+  })
+  type: NotificationType;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ description: 'Title of the notification', required: false })
+  title?: string;
+
+  @IsString()
+  @ApiProperty({ description: 'Message content of the notification' })
+  message: string;
+
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Metadata in JSON format',
+    required: false,
+  })
+  metadata?: Record<string, any>;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Notification channel',
+    required: false,
+  })
+  channel?: string;
+}
