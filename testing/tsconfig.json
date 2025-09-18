@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2015", "DOM", "ESNext"],
+    "target": "ESNext",
+    "module": "CommonJS",
+    "rootDir": ".",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@configData": ["src/basics/config/data.config.ts"],
+      "@pages/*": ["src/pages/*"],
+      "@constants/*": ["src/basics/constants/*"],
+      "@apiPage/*": ["src/pages/api/*"],
+      "@utils/*": ["src/basics/utils/*"]
+    }
+  },
+  "include": ["src", "playwright.config.ts"]
+}
