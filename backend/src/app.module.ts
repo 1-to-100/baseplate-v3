@@ -3,6 +3,7 @@ import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { UsersModule } from '@/users/users.module';
 import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseModule } from '@/common/database/database.module';
 import { AuthModule } from '@/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { SystemModulesModule } from '@/system-modules/system-modules.module';
@@ -29,6 +30,7 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
       validate,
     }),
     SupabaseModule,
+    DatabaseModule, // New database service layer
     SystemModulesModule,
     RolesModule,
     ManagersModule,
@@ -42,6 +44,6 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, FrontendPathsService],
+  providers: [AppService, PrismaService, FrontendPathsService], // Keep PrismaService for now during migration
 })
 export class AppModule {}
