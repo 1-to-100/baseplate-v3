@@ -1,6 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '@/common/supabase/supabase.service';
+import type {
+  TableNames,
+  PaginatedResult,
+  PaginationOptions,
+} from '@/common/types';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit {
@@ -168,7 +173,7 @@ export class DatabaseService implements OnModuleInit {
   /**
    * Helper method for counting records
    */
-  async count(tableName: string, whereClause?: any): Promise<number> {
+  async count(tableName: TableNames, whereClause?: any): Promise<number> {
     let query = this.client
       .from(tableName)
       .select('*', { count: 'exact', head: true });
@@ -186,5 +191,51 @@ export class DatabaseService implements OnModuleInit {
     }
 
     return count || 0;
+  }
+
+  /**
+   * Helper method for paginated queries with proper typing
+   */
+  async paginate<T>(
+    tableName: TableNames,
+    options: PaginationOptions,
+    queryBuilder?: (query: any) => any,
+  ): Promise<PaginatedResult<T>> {
+    const { page, per_page } = options;
+    const offset = (page - 1) * per_page;
+
+    // Build base query
+    let query = this.client.from(tableName).select('*');
+
+    // Apply custom query modifications if provided
+    if (queryBuilder) {
+      query = queryBuilder(query);
+    }
+
+    // Get total count
+    const countQuery = this.client
+      .from(tableName)
+      .select('*', { count: 'exact', head: true });
+    const finalCountQuery = queryBuilder
+      ? queryBuilder(countQuery)
+      : countQuery;
+    const { count } = await finalCountQuery;
+
+    // Get paginated data
+    const { data, error } = await query.range(offset, offset + per_page - 1);
+
+    if (error) {
+      throw new Error(`Pagination query failed: ${error.message}`);
+    }
+
+    return {
+      data: data || [],
+      meta: {
+        total: count || 0,
+        page,
+        per_page,
+        total_pages: Math.ceil((count || 0) / per_page),
+      },
+    };
   }
 }
