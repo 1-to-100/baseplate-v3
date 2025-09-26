@@ -61,4 +61,28 @@ export class OutputUserDto {
   @ApiPropertyOptional({ description: 'List of permissions' })
   @IsOptional()
   permissions?: string[];
+
+  @ApiPropertyOptional({ description: 'Date when user was deleted' })
+  @IsOptional()
+  deletedAt?: string | null;
+
+  @ApiPropertyOptional({ description: 'User avatar URL' })
+  @IsOptional()
+  avatar?: string | null;
+
+  @ApiPropertyOptional({ description: 'User unique identifier from auth system' })
+  @IsOptional()
+  uid?: string | null;
+
+  @ApiPropertyOptional({ description: 'Email verification status' })
+  @IsOptional()
+  emailVerified?: boolean | null;
+
+  @ApiPropertyOptional({ description: 'Creation date' })
+  @IsOptional()
+  createdAt?: string | null;
+
+  @ApiPropertyOptional({ description: 'Last update date' })
+  @IsOptional()
+  updatedAt?: string | null;
 }

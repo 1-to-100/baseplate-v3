@@ -125,6 +125,7 @@ export class SupabaseCRUD {
 
   /**
    * Find many records - equivalent to Prisma's findMany
+   * Supports relations via select parameter with Supabase foreign table syntax
    */
   async findMany<T extends TableNames>(
     tableName: T,
@@ -134,9 +135,19 @@ export class SupabaseCRUD {
       orderBy?: { field: string; direction: OrderDirection }[];
       take?: number;
       skip?: number;
+      include?: Record<
+        string,
+        boolean | { select?: string; where?: WhereClause }
+      >;
     },
   ): Promise<TableType<T>[]> {
-    let query: any = this.client.from(tableName).select(options?.select || '*');
+    // Build select string with relations if include is provided
+    const selectString = this.buildSelectStringWithMappings(
+      tableName,
+      options?.select,
+      options?.include,
+    );
+    let query: any = this.client.from(tableName).select(selectString);
 
     // Apply where conditions
     if (options?.where) {
@@ -167,15 +178,26 @@ export class SupabaseCRUD {
 
   /**
    * Find unique record - equivalent to Prisma's findUnique
+   * Supports relations via select parameter or include option
    */
   async findUnique<T extends TableNames>(
     tableName: T,
     options: {
       where: WhereClause;
       select?: string;
+      include?: Record<
+        string,
+        boolean | { select?: string; where?: WhereClause }
+      >;
     },
   ): Promise<TableType<T> | null> {
-    let query: any = this.client.from(tableName).select(options.select || '*');
+    // Build select string with relations if include is provided
+    const selectString = this.buildSelectStringWithMappings(
+      tableName,
+      options.select,
+      options.include,
+    );
+    let query: any = this.client.from(tableName).select(selectString);
 
     // Apply where conditions
     query = this.applyWhereConditions(query, options.where);
@@ -599,5 +621,105 @@ export class SupabaseCRUD {
       }
     }
     return `${field}.eq.unknown`;
+  }
+
+
+  /**
+   * Helper method to build common relation patterns
+   * Maps Prisma relation names to Supabase foreign key patterns
+   */
+  private getRelationMapping(tableName: string): Record<string, string> {
+    // Common relation mappings based on your schema
+    const relationMappings: Record<string, Record<string, string>> = {
+      users: {
+        customer: 'customers!customer_id',
+        role: 'roles!role_id',
+        manager: 'managers!manager_id',
+        ownedCustomer: 'customers!owner_id',
+        articles: 'articles!created_by',
+        notifications: 'notifications!user_id',
+        sentNotifications: 'notifications!sender_id',
+      },
+      customers: {
+        subscription: 'subscriptions!subscription_id',
+        manager: 'managers!manager_id',
+        owner: 'users!owner_id',
+        customerSuccess: 'users!customer_success_id',
+        users: 'users!customer_id',
+        articles: 'articles!customer_id',
+        notifications: 'notifications!customer_id',
+        notificationTemplates: 'notification_templates!customer_id',
+      },
+      articles: {
+        category: 'article_categories!category_id',
+        creator: 'users!created_by',
+        customer: 'customers!customer_id',
+      },
+      notifications: {
+        user: 'users!user_id',
+        sender: 'users!sender_id',
+        customer: 'customers!customer_id',
+        template: 'notification_templates!template_id',
+      },
+      // Add more mappings as needed
+    };
+
+    return relationMappings[tableName] || {};
+  }
+
+  /**
+   * Enhanced buildSelectString that uses relation mappings
+   */
+  private buildSelectStringWithMappings(
+    tableName: string,
+    select?: string,
+    include?: Record<
+      string,
+      boolean | { select?: string; where?: WhereClause }
+    >,
+  ): string {
+    // If explicit select is provided, use it as-is
+    if (select) {
+      return select;
+    }
+
+    // If no include, return all fields
+    if (!include) {
+      return '*';
+    }
+
+    // Get relation mappings for this table
+    const relationMappings = this.getRelationMapping(tableName);
+    const fields = ['*']; // Start with all base fields
+
+    for (const [relationName, relationConfig] of Object.entries(include)) {
+      const mappedRelation = relationMappings[relationName];
+
+      if (!mappedRelation) {
+        console.warn(
+          `Unknown relation '${relationName}' for table '${tableName}'. Using direct mapping.`,
+        );
+        // Fallback to direct mapping
+        fields.push(`${relationName}(*)`);
+        continue;
+      }
+
+      if (relationConfig === true) {
+        // Simple include: customers!customer_id(*)
+        fields.push(`${mappedRelation}(*)`);
+      } else if (typeof relationConfig === 'object') {
+        // Complex include with select
+        const relationSelect = relationConfig.select || '*';
+        fields.push(`${mappedRelation}(${relationSelect})`);
+
+        if (relationConfig.where) {
+          console.warn(
+            `Where clauses in relations are not supported by Supabase. Relation: ${relationName}`,
+          );
+        }
+      }
+    }
+
+    return fields.join(', ');
   }
 }

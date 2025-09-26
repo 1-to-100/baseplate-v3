@@ -93,6 +93,10 @@ export class DatabaseService implements OnModuleInit {
       orderBy?: { field: string; direction: OrderDirection }[];
       take?: number;
       skip?: number;
+      include?: Record<
+        string,
+        boolean | { select?: string; where?: WhereClause }
+      >;
     }
   ): Promise<TableType<T>[]> {
     return this.crud.findMany(tableName, options);
@@ -106,6 +110,10 @@ export class DatabaseService implements OnModuleInit {
     options: {
       where: WhereClause;
       select?: string;
+      include?: Record<
+        string,
+        boolean | { select?: string; where?: WhereClause }
+      >;
     }
   ): Promise<TableType<T> | null> {
     return this.crud.findUnique(tableName, options);

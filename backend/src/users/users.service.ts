@@ -4,10 +4,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
-import { createPaginator } from 'prisma-pagination';
-import { CustomerStatus, Prisma } from '@prisma/client';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
 import { UserOrderByFields, UserStatus } from '@/common/constants/status';
@@ -23,13 +21,48 @@ import { SupabaseDecodedToken } from '@/auth/guards/supabase-auth/supabase-auth.
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
+import type { User, Customer, CustomerStatus } from '@/common/types';
+
+// Helper to convert database User to OutputUserDto with proper type handling
+function mapUserToDto(user: any): OutputUserDto {
+  if (!user) return user;
+
+  return {
+    id: user.id,
+    uid: user.uid,
+    email: user.email,
+    emailVerified: user.email_verified,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    avatar: user.avatar,
+    phoneNumber: user.phone_number,
+    customerId: user.customer_id,
+    roleId: user.role_id,
+    managerId: user.manager_id,
+    status: user.status,
+    isSuperadmin: user.is_superadmin,
+    isCustomerSuccess: user.is_customer_success,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+    deletedAt: user.deleted_at,
+    // Include relations if they exist
+    ...(user.customer && { customer: user.customer }),
+    ...(user.customers && { customer: user.customers }),
+    ...(user.role && { role: user.role }),
+    ...(user.roles && { role: user.roles }),
+    ...(user.manager && { manager: user.manager }),
+    ...(user.managers && { manager: user.managers }),
+    // Add permissions if they exist
+    ...(user.permissions && { permissions: user.permissions }),
+  } as OutputUserDto;
+}
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly supabaseService: SupabaseService,
     private readonly frontendPathsService: FrontendPathsService,
   ) {}
@@ -42,11 +75,13 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
-    let user: OutputUserDto | null = null;
+    let user: User | null = null;
 
     try {
       this.logger.log(`Create user with email ${createUserDto.email}`);
-      user = await this.prisma.user.create({ data: createUserDto });
+      user = await this.database.create('users', {
+        data: createUserDto as Partial<User>,
+      });
     } catch (error) {
       this.logger.error(`Error creating user: ${error}`);
       if (typeof error == 'string') {
@@ -59,10 +94,10 @@ export class UsersService {
     }
 
     if (!skipInvite && user) {
-      await this.sendInviteEmail(user);
+      await this.sendInviteEmail(mapUserToDto(user));
     }
 
-    return user;
+    return mapUserToDto(user);
   }
 
   async createSystemUser(
@@ -76,6 +111,7 @@ export class UsersService {
     const { systemRole, ...makeUser } = createSystemUserDto;
     const isSuperadmin = systemRole === UserSystemRoles.SYSTEM_ADMIN;
     const isCustomerSuccess = systemRole === UserSystemRoles.CUSTOMER_SUCCESS;
+
     if (!(isSuperadmin || isCustomerSuccess)) {
       throw new ConflictException('Invalid system role');
     }
@@ -85,7 +121,7 @@ export class UsersService {
         'Customer ID is required for Customer Success role',
       );
     } else if (isCustomerSuccess && createSystemUserDto.customerId) {
-      const customer = await this.prisma.customer.findUnique({
+      const customer = await this.database.findUnique('customers', {
         where: { id: createSystemUserDto.customerId },
       });
       if (!customer) {
@@ -93,18 +129,22 @@ export class UsersService {
       }
     }
 
-    let user: OutputUserDto | null = null;
+    let user: User | null = null;
 
     try {
-      user = await this.prisma.user.create({
-        data: { ...makeUser, isSuperadmin, isCustomerSuccess },
+      user = await this.database.create('users', {
+        data: {
+          ...makeUser,
+          is_superadmin: isSuperadmin,
+          is_customer_success: isCustomerSuccess,
+        } as Partial<User>,
       });
 
       // attach customer success to customer
       if (isCustomerSuccess && createSystemUserDto.customerId) {
-        await this.prisma.customer.update({
+        await this.database.update('customers', {
           where: { id: createSystemUserDto.customerId },
-          data: { customerSuccessId: user.id },
+          data: { customer_success_id: user.id },
         });
       }
     } catch (error) {
@@ -119,10 +159,10 @@ export class UsersService {
     }
 
     if (!skipInvite && user) {
-      await this.sendInviteEmail(user);
+      await this.sendInviteEmail(mapUserToDto(user));
     }
 
-    return user;
+    return mapUserToDto(user);
   }
 
   async invite(inviteUserDto: InviteUserDto): Promise<OutputUserDto> {
@@ -131,7 +171,7 @@ export class UsersService {
     }
 
     if (inviteUserDto.customerId) {
-      const customer = await this.prisma.customer.findUnique({
+      const customer = await this.database.findUnique('customers', {
         where: { id: inviteUserDto.customerId },
       });
       if (!customer) {
@@ -139,20 +179,23 @@ export class UsersService {
       }
     }
 
-    const user = await this.prisma.user.create({ data: inviteUserDto });
-    await this.sendInviteEmail(user);
-    return user;
+    const user = await this.database.create('users', {
+      data: inviteUserDto as Partial<User>,
+    });
+    await this.sendInviteEmail(mapUserToDto(user));
+    return mapUserToDto(user);
   }
 
   async getUserByEmail(email: string): Promise<OutputUserDto | null> {
-    return this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+    const user = await this.database.findFirst('users', {
+      where: { email, deleted_at: null },
     });
+    return mapUserToDto(user);
   }
 
   async resendInviteEmail(email: string): Promise<OutputUserDto> {
-    const user = await this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+    const user = await this.database.findFirst('users', {
+      where: { email, deleted_at: null },
     });
 
     if (!user) {
@@ -161,8 +204,8 @@ export class UsersService {
       throw new ConflictException('User is already active');
     }
 
-    await this.sendInviteEmail(user);
-    return user;
+    await this.sendInviteEmail(mapUserToDto(user));
+    return mapUserToDto(user);
   }
 
   async checkEmailExists(checkUserExistsDto: CheckUserExistsDto) {
@@ -172,23 +215,22 @@ export class UsersService {
   }
 
   async emailExists(checkUserExistsDto: CheckUserExistsDto) {
-    return !!(await this.prisma.user.findFirst({
+    const user = await this.database.findFirst('users', {
       where: { email: checkUserExistsDto.email },
-    }));
+    });
+    return !!user;
   }
 
   async emailsExists(emails: string[]): Promise<string[]> {
-    const existingEmails = await this.prisma.user.findMany({
-      select: { email: true },
+    const existingUsers = await this.database.findMany('users', {
+      select: 'email',
       where: {
-        deletedAt: null,
-        email: {
-          in: emails,
-        },
+        deleted_at: null,
+        email: { in: emails },
       },
     });
 
-    return existingEmails.map((user) => user.email);
+    return existingUsers.map((user) => user.email);
   }
 
   async findAll(
@@ -208,46 +250,57 @@ export class UsersService {
 
     this.logger.debug(status);
     this.logger.debug(listUsersInput);
-    const where: Prisma.UserFindManyArgs['where'] = {
-      ...(roleId && { roleId: { in: roleId } }),
-      ...(customerId && { customerId: { in: customerId } }),
-      ...(hasCustomer == true
-        ? { customerId: { not: null } }
-        : hasCustomer == false
-          ? { customerId: null }
+
+    // Build where conditions using snake_case
+    const where: any = {
+      ...(roleId && { role_id: { in: roleId } }),
+      ...(customerId && { customer_id: { in: customerId } }),
+      ...(hasCustomer === true
+        ? { customer_id: { not: null } }
+        : hasCustomer === false
+          ? { customer_id: null }
           : {}),
       ...(status && { status: { in: status } }),
       ...(search && {
         OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+          { first_name: { contains: search } },
+          { last_name: { contains: search } },
+          { email: { contains: search } },
         ],
       }),
-      ...{
-        AND: [{ isSuperadmin: false }, { isCustomerSuccess: false }],
-      },
-      deletedAt: null,
+      AND: [{ is_superadmin: false }, { is_customer_success: false }],
+      deleted_at: null,
     };
+
     const applyOrderByField = this.applyOrderParams(orderBy, orderDirection);
-    const paginate = createPaginator({ perPage });
-    return paginate<OutputUserDto, Prisma.UserFindManyArgs>(
-      this.prisma.user,
+
+    const result = await this.database.paginate(
+      'users',
+      { page: page || 1, per_page: perPage || 10 },
       {
         where,
         orderBy: applyOrderByField,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              ownerId: true,
-            },
-          },
-        },
+        select: `
+          *,
+          customers!customer_id(id, name, owner_id)
+        `,
       },
-      { page },
     );
+
+    return {
+      data: result.data.map(mapUserToDto),
+      meta: {
+        total: result.meta.total,
+        lastPage: result.meta.total_pages,
+        currentPage: result.meta.page,
+        perPage: result.meta.per_page,
+        prev: result.meta.page > 1 ? result.meta.page - 1 : null,
+        next:
+          result.meta.page < result.meta.total_pages
+            ? result.meta.page + 1
+            : null,
+      },
+    };
   }
 
   async findAllSystemUsers(
@@ -263,64 +316,72 @@ export class UsersService {
       perPage,
       page,
     } = listUsersInput;
+
     this.logger.debug(status);
     this.logger.debug(listUsersInput);
-    const where: Prisma.UserFindManyArgs['where'] = {
-      ...(roleId && { roleId: { in: roleId } }),
-      ...(customerId && { customerId: { in: customerId } }),
+
+    const where: any = {
+      ...(roleId && { role_id: { in: roleId } }),
+      ...(customerId && { customer_id: { in: customerId } }),
       ...(status && { status: { in: status } }),
       ...(search && {
         OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+          { first_name: { contains: search } },
+          { last_name: { contains: search } },
+          { email: { contains: search } },
         ],
       }),
-      ...{ AND: { OR: [{ isSuperadmin: true }, { isCustomerSuccess: true }] } },
-      deletedAt: null,
+      OR: [{ is_superadmin: true }, { is_customer_success: true }],
+      deleted_at: null,
     };
 
     const applyOrderByField = this.applyOrderParams(orderBy, orderDirection);
-    const paginate = createPaginator({ perPage });
-    return paginate<OutputUserDto, Prisma.UserFindManyArgs>(
-      this.prisma.user,
+
+    const result = await this.database.paginate(
+      'users',
+      { page: page || 1, per_page: perPage || 10 },
       {
         where,
         orderBy: applyOrderByField,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              ownerId: true,
-            },
-          },
-        },
+        select: `
+          *,
+          customers!customer_id(id, name, owner_id)
+        `,
       },
-      { page },
     );
+
+    return {
+      data: result.data.map(mapUserToDto),
+      meta: {
+        total: result.meta.total,
+        lastPage: result.meta.total_pages,
+        currentPage: result.meta.page,
+        perPage: result.meta.per_page,
+        prev: result.meta.page > 1 ? result.meta.page - 1 : null,
+        next:
+          result.meta.page < result.meta.total_pages
+            ? result.meta.page + 1
+            : null,
+      },
+    };
   }
 
   async findOne(
     id: number,
     customerId: number | null = null,
   ): Promise<OutputUserDto> {
-    const where = customerId
-      ? { AND: [{ id }, { customerId }, { deletedAt: null }] }
-      : { AND: [{ id }, { deletedAt: null }] };
-    const user = await this.prisma.user.findFirst({
+    const where: any = customerId
+      ? { id, customer_id: customerId, deleted_at: null }
+      : { id, deleted_at: null };
+
+    const user = await this.database.findFirst('users', {
       where,
-      include: {
-        role: true,
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            ownerId: true,
-          },
-        },
-        manager: true,
-      },
+      select: `
+        *,
+        roles!role_id(*),
+        customers!customer_id(id, name, owner_id),
+        managers!manager_id(*)
+      `,
     });
 
     if (!user) {
@@ -328,51 +389,47 @@ export class UsersService {
     }
 
     let userPermissions: string[] = [];
-    if (user.role) {
-      const rolePermissions = await this.prisma.rolePermission.findMany({
-        where: { roleId: user.role.id },
-        include: {
-          permission: true,
-        },
+    if (user.role_id) {
+      const rolePermissions = await this.database.findMany('role_permissions', {
+        where: { role_id: user.role_id },
+        select: `
+          *,
+          permissions!permission_id(name)
+        `,
       });
 
       userPermissions = rolePermissions
-        ? rolePermissions.map(
-            (permission) => permission.permission.name.split(':')[1],
-          )
+        ? rolePermissions
+            .map((rp: any) => rp.permissions?.name?.split(':')[1] || '')
+            .filter(Boolean)
         : [];
     }
 
-    return { ...user, permissions: userPermissions } as OutputUserDto;
+    return mapUserToDto({ ...user, permissions: userPermissions });
   }
 
   async findOneSystemUser(id: number): Promise<OutputUserDto> {
-    const where: Prisma.UserFindManyArgs['where'] = {
+    const where: any = {
       id,
-      ...{
-        OR: [{ isSuperadmin: true }, { isCustomerSuccess: true }],
-      },
-      deletedAt: null,
+      OR: [{ is_superadmin: true }, { is_customer_success: true }],
+      deleted_at: null,
     };
 
-    const user = await this.prisma.user.findFirst({
-      where: where,
-      include: {
-        role: true,
-        customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        manager: true,
-      },
+    const user = await this.database.findFirst('users', {
+      where,
+      select: `
+        *,
+        roles!role_id(*),
+        customers!customer_id(id, name),
+        managers!manager_id(*)
+      `,
     });
+
     if (!user) {
       throw new NotFoundException('No user with given ID exists');
     }
 
-    return user as OutputUserDto;
+    return mapUserToDto(user);
   }
 
   async update(
@@ -383,8 +440,13 @@ export class UsersService {
     if (updateUserDto.email) {
       updateUserDto.email = undefined;
     }
-    const existingUser = await this.prisma.user.findFirst({
-      where: { id, customerId: updateUserDto.customerId, deletedAt: null },
+
+    const whereClause: any = { id, deleted_at: null };
+    if (updateUserDto.customerId) {
+      whereClause.customer_id = updateUserDto.customerId;
+    }
+    const existingUser = await this.database.findFirst('users', {
+      where: whereClause,
     });
 
     if (!existingUser) {
@@ -394,7 +456,10 @@ export class UsersService {
     if (updatedBy && updateUserDto.status) {
       if (updatedBy.id === id) {
         throw new ConflictException('You cannot change your own status');
-      } else if (existingUser.isSuperadmin || existingUser.isCustomerSuccess) {
+      } else if (
+        existingUser.is_superadmin ||
+        existingUser.is_customer_success
+      ) {
         throw new ConflictException(
           'You cannot change status of superadmin or customer success user',
         );
@@ -417,12 +482,16 @@ export class UsersService {
       }
     }
 
-    const user = await this.prisma.user.update({
-      where: { id, customerId: updateUserDto.customerId },
-      data: updateUserDto,
+    const updateWhereClause: any = { id };
+    if (updateUserDto.customerId) {
+      updateWhereClause.customer_id = updateUserDto.customerId;
+    }
+    const user = await this.database.update('users', {
+      where: updateWhereClause,
+      data: updateUserDto as Partial<User>,
     });
 
-    return user;
+    return mapUserToDto(user);
   }
 
   async updateSystemUser(
@@ -458,7 +527,7 @@ export class UsersService {
           'Customer ID is required for Customer Success role',
         );
       } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
-        const customer = await this.prisma.customer.findUnique({
+        const customer = await this.database.findUnique('customers', {
           where: { id: updateSystemUserDto.customerId },
         });
         if (!customer) {
@@ -467,43 +536,47 @@ export class UsersService {
       }
     }
 
-    const user = await this.prisma.user.update({
-      where: { id, deletedAt: null },
+    const user = await this.database.update('users', {
+      where: { id, deleted_at: null },
       data: {
         ...updateUser,
-        ...(systemRole ? { isSuperadmin, isCustomerSuccess } : {}),
-        ...(isSuperadmin ? { customerId: null } : {}),
-      },
+        ...(systemRole
+          ? {
+              is_superadmin: isSuperadmin,
+              is_customer_success: isCustomerSuccess,
+            }
+          : {}),
+        ...(isSuperadmin ? { customer_id: null } : {}),
+      } as Partial<User>,
     });
 
     // attach customer success to customer
     if (isSuperadmin) {
-      await this.prisma.customer.updateMany({
-        where: { customerSuccessId: id },
-        data: { customerSuccessId: null },
+      await this.database.updateMany('customers', {
+        where: { customer_success_id: id },
+        data: { customer_success_id: null },
       });
     } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
-      await this.prisma.customer.update({
+      await this.database.update('customers', {
         where: { id: updateSystemUserDto.customerId },
-        data: { customerSuccessId: user.id },
+        data: { customer_success_id: user.id },
       });
     }
 
-    return user;
+    return mapUserToDto(user);
   }
 
-  async findByUid(uid: string) {
-    return this.prisma.user.findUnique({
-      where: {
-        uid,
-      },
+  async findByUid(uid: string): Promise<OutputUserDto | null> {
+    const user = await this.database.findUnique('users', {
+      where: { uid },
     });
+    return user ? mapUserToDto(user) : null;
   }
 
   async createSupabaseUser(
     supabaseUser: SupabaseDecodedToken,
     subscriptionId: number | null = null,
-  ) {
+  ): Promise<OutputUserDto> {
     const existingUser = await this.findByUid(supabaseUser.uid);
     if (existingUser) {
       return existingUser;
@@ -518,7 +591,7 @@ export class UsersService {
     if (isPublicEmailDomain(domain))
       throw new ConflictException('Public email domains are not allowed');
 
-    const existingUserEmail = await this.prisma.user.findUnique({
+    const existingUserEmail = await this.database.findUnique('users', {
       where: { email },
     });
 
@@ -527,80 +600,86 @@ export class UsersService {
       existingUserEmail.uid == null &&
       supabaseUser.uid
     ) {
-      const existingUserEmailUpdated = await this.prisma.user.update({
+      const existingUserEmailUpdated = await this.database.update('users', {
         where: { id: existingUserEmail.id },
         data: {
           uid: supabaseUser.uid,
           status: UserStatus.ACTIVE,
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
         },
       });
-      return existingUserEmailUpdated;
+      return mapUserToDto(existingUserEmailUpdated);
     }
 
-    const existingCustomer = await this.prisma.customer.findFirst({
+    const existingCustomer = await this.database.findFirst('customers', {
       where: { domain },
     });
 
     const [newUser] = await Promise.all([
-      this.prisma.user.create({
+      this.database.create('users', {
         data: {
           email,
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
           avatar: supabaseUser.picture,
           uid: supabaseUser.uid,
           status: supabaseUser.uid ? UserStatus.ACTIVE : UserStatus.INACTIVE,
-          customerId: existingCustomer?.id,
-        },
+          customer_id: existingCustomer?.id,
+        } as Partial<User>,
       }),
     ]);
 
     if (!existingCustomer) {
-      const newCustomer = await this.prisma.customer.create({
+      const newCustomer = await this.database.create('customers', {
         data: {
           name: domain,
           email,
           domain,
-          ownerId: newUser.id,
-          subscriptionId,
-        },
+          owner_id: newUser.id,
+          subscription_id: subscriptionId,
+        } as Partial<Customer>,
       });
 
-      await this.prisma.user.update({
+      await this.database.update('users', {
         where: { id: newUser.id },
-        data: { customerId: newCustomer.id },
+        data: { customer_id: newCustomer.id },
       });
     }
 
-    await this.sendInviteEmail(newUser);
-    return newUser;
+    await this.sendInviteEmail(mapUserToDto(newUser));
+    return mapUserToDto(newUser);
   }
 
   async sendInviteEmail(user: OutputUserDto) {
-    const foundUser = await this.prisma.user.findFirst({
-      where: { email: user.email, deletedAt: null },
+    const foundUser = await this.database.findFirst('users', {
+      where: { email: user.email, deleted_at: null },
     });
 
     if (foundUser) {
       if (
         foundUser.status === UserStatus.ACTIVE ||
         foundUser.uid ||
-        foundUser.emailVerified
+        foundUser.email_verified
       ) {
         throw new ConflictException('Please use forgot password flow');
       }
 
-      const rawQueryResult = await this.prisma.$queryRaw<
-        { id: string | null }[]
-      >`SELECT * FROM auth.users WHERE email = ${user.email};`;
+      // Use Admin Client to find and delete existing auth user
+      try {
+        const { data: authUsers } =
+          await this.supabaseService.admin.listUsers();
+        const existingAuthUser = authUsers?.users?.find(
+          (u: any) => u.email === user.email,
+        );
 
-      if (rawQueryResult?.length) {
-        const supabaseUserId = rawQueryResult[0]?.id;
-        if (supabaseUserId) {
-          await this.supabaseService.admin.deleteUser(supabaseUserId);
+        if (existingAuthUser) {
+          await this.supabaseService.admin.deleteUser(existingAuthUser.id);
         }
+      } catch (error) {
+        this.logger.debug(
+          `No auth user found for email ${user.email}: ${error}`,
+        );
       }
     }
 
@@ -629,30 +708,31 @@ export class UsersService {
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const existing_code = await this.prisma.userOneTimeCodes.findFirst({
+    const existing_code = await this.database.findFirst('user_one_time_codes', {
       where: {
         code: code,
-        isUsed: false,
-        createdAt: {
-          gte: yesterday,
-          lte: now,
+        is_used: false,
+        created_at: {
+          gte: yesterday.toISOString(),
+          lte: now.toISOString(),
         },
       },
     });
     if (!existing_code) {
       return false;
     }
-    existing_code.isUsed = true;
+
     const id = existing_code.id;
-    await this.prisma.userOneTimeCodes.update({
+    await this.database.update('user_one_time_codes', {
       where: { id },
-      data: existing_code,
+      data: { is_used: true },
     });
-    await this.prisma.user.update({
-      where: { id: existing_code.userId },
+
+    await this.database.update('users', {
+      where: { id: existing_code.user_id },
       data: {
-        emailVerified: true,
-        status: CustomerStatus.active,
+        email_verified: true,
+        status: 'active' as CustomerStatus,
       },
     });
     return true;
@@ -669,18 +749,19 @@ export class UsersService {
       );
     }
 
-    const applyOrderDirection = orderDirection
-      ? (orderDirection as Prisma.SortOrder)
-      : 'desc';
+    const applyOrderDirection: 'asc' | 'desc' =
+      orderDirection === 'asc' ? 'asc' : 'desc';
 
-    const applyOrderByField: Prisma.UserFindManyArgs['orderBy'] =
-      orderByField === 'name'
-        ? [
-            { firstName: applyOrderDirection },
-            { lastName: applyOrderDirection },
-          ]
-        : { [orderByField]: applyOrderDirection };
-    return applyOrderByField;
+    if (orderByField === 'name') {
+      return [
+        { field: 'first_name', direction: applyOrderDirection },
+        { field: 'last_name', direction: applyOrderDirection },
+      ];
+    } else if (orderByField === 'createdAt') {
+      return [{ field: 'created_at', direction: applyOrderDirection }];
+    } else {
+      return [{ field: orderByField, direction: applyOrderDirection }];
+    }
   }
 
   getRandomString(length: number) {
@@ -696,8 +777,8 @@ export class UsersService {
   async resetPassword(
     email: string,
   ): Promise<{ status: string; message: string }> {
-    const user = await this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+    const user = await this.database.findFirst('users', {
+      where: { email, deleted_at: null },
     });
 
     if (!user) {
@@ -731,11 +812,11 @@ export class UsersService {
     id: number,
     customerId: number | null = null,
   ): Promise<OutputUserDto> {
-    const where = customerId
-      ? { AND: [{ id }, { customerId }, { deletedAt: null }] }
-      : { AND: [{ id }, { deletedAt: null }] };
+    const where: any = customerId
+      ? { id, customer_id: customerId, deleted_at: null }
+      : { id, deleted_at: null };
 
-    const user = await this.prisma.user.findFirst({
+    const user = await this.database.findFirst('users', {
       where,
     });
 
@@ -743,15 +824,15 @@ export class UsersService {
       throw new NotFoundException(
         'No user with given ID exists or user is already deleted',
       );
-    } else if (user && (user.isSuperadmin || user.isCustomerSuccess)) {
+    } else if (user && (user.is_superadmin || user.is_customer_success)) {
       throw new ConflictException(
         'Not supported operation for superadmin or customer success user',
       );
     }
 
-    if (user.customerId) {
-      const customer = await this.prisma.customer.findFirst({
-        where: { ownerId: user.id },
+    if (user.customer_id) {
+      const customer = await this.database.findFirst('customers', {
+        where: { owner_id: user.id },
       });
       if (customer) {
         throw new ConflictException(
@@ -760,9 +841,9 @@ export class UsersService {
       }
     }
 
-    if (user.isCustomerSuccess) {
-      const customerWithSuccess = await this.prisma.customer.findFirst({
-        where: { customerSuccessId: user.id },
+    if (user.is_customer_success) {
+      const customerWithSuccess = await this.database.findFirst('customers', {
+        where: { customer_success_id: user.id },
       });
       if (customerWithSuccess) {
         throw new ConflictException(
@@ -772,38 +853,42 @@ export class UsersService {
     }
 
     const deletedAt = new Date();
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.database.update('users', {
       where: { id },
       data: {
         email: `__deleted__${user.email}`,
-        deletedAt: deletedAt,
+        deleted_at: deletedAt.toISOString(),
         status: UserStatus.SUSPENDED,
-        emailVerified: false,
-        roleId: null,
+        email_verified: false,
+        role_id: null,
       },
     });
 
-    // Remove user from Supabase
-    const rawQueryResult = await this.prisma.$queryRaw<
-      { id: string | null }[]
-    >`SELECT * FROM auth.users WHERE email = ${user.email};`;
+    // Remove user from Supabase using Admin Client
+    try {
+      const { data: authUsers } = await this.supabaseService.admin.listUsers();
+      const existingAuthUser = authUsers?.users?.find(
+        (u: any) => u.email === user.email,
+      );
 
-    if (rawQueryResult?.length) {
-      const supabaseUserId = rawQueryResult[0]?.id;
-      if (supabaseUserId) {
-        await this.supabaseService.admin.deleteUser(supabaseUserId);
+      if (existingAuthUser) {
+        await this.supabaseService.admin.deleteUser(existingAuthUser.id);
       }
+    } catch (error) {
+      this.logger.warn(
+        `Could not delete auth user for ${user.email}: ${error}`,
+      );
     }
 
     this.logger.log(`User ${id} soft deleted at ${deletedAt.toISOString()}`);
 
-    return updatedUser;
+    return mapUserToDto(updatedUser);
   }
 
   async isUserDeleted(uid: string): Promise<boolean> {
-    const deletedUserCount = await this.prisma.user.count({
-      where: { uid, deletedAt: { not: null } },
+    const count = await this.database.count('users', {
+      where: { uid, deleted_at: { not: null } },
     });
-    return deletedUserCount > 0;
+    return count > 0;
   }
 }
