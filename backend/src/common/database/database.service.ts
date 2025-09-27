@@ -1,7 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '@/common/supabase/supabase.service';
-import { SupabaseCRUD, executeQuery, handleSupabaseError, type WhereClause } from '@/common/utils/supabase-crud.util';
+import {
+  SupabaseCRUD,
+  executeQuery,
+  handleSupabaseError,
+  type WhereClause,
+} from '@/common/utils/supabase-crud.util';
 import type {
   TableNames,
   TableType,
@@ -97,7 +102,7 @@ export class DatabaseService implements OnModuleInit {
         string,
         boolean | { select?: string; where?: WhereClause }
       >;
-    }
+    },
   ): Promise<TableType<T>[]> {
     return this.crud.findMany(tableName, options);
   }
@@ -114,7 +119,7 @@ export class DatabaseService implements OnModuleInit {
         string,
         boolean | { select?: string; where?: WhereClause }
       >;
-    }
+    },
   ): Promise<TableType<T> | null> {
     return this.crud.findUnique(tableName, options);
   }
@@ -128,7 +133,7 @@ export class DatabaseService implements OnModuleInit {
       where?: WhereClause;
       select?: string;
       orderBy?: { field: string; direction: OrderDirection }[];
-    }
+    },
   ): Promise<TableType<T> | null> {
     return this.crud.findFirst(tableName, options);
   }
@@ -141,7 +146,7 @@ export class DatabaseService implements OnModuleInit {
     options: {
       data: Partial<TableType<T>>;
       select?: string;
-    }
+    },
   ): Promise<TableType<T>> {
     return this.crud.create(tableName, options);
   }
@@ -155,7 +160,7 @@ export class DatabaseService implements OnModuleInit {
       where: WhereClause;
       data: Partial<TableType<T>>;
       select?: string;
-    }
+    },
   ): Promise<TableType<T>> {
     return this.crud.update(tableName, options);
   }
@@ -168,7 +173,7 @@ export class DatabaseService implements OnModuleInit {
     options: {
       where?: WhereClause;
       data: Partial<TableType<T>>;
-    }
+    },
   ): Promise<{ count: number }> {
     return this.crud.updateMany(tableName, options);
   }
@@ -180,7 +185,7 @@ export class DatabaseService implements OnModuleInit {
     tableName: T,
     options: {
       where: WhereClause;
-    }
+    },
   ): Promise<TableType<T>> {
     return this.crud.delete(tableName, options);
   }
@@ -192,7 +197,7 @@ export class DatabaseService implements OnModuleInit {
     tableName: T,
     options?: {
       where?: WhereClause;
-    }
+    },
   ): Promise<{ count: number }> {
     return this.crud.deleteMany(tableName, options);
   }
@@ -204,7 +209,7 @@ export class DatabaseService implements OnModuleInit {
     tableName: T,
     options?: {
       where?: WhereClause;
-    }
+    },
   ): Promise<number> {
     return this.crud.count(tableName, options);
   }
@@ -219,7 +224,7 @@ export class DatabaseService implements OnModuleInit {
       create: Partial<TableType<T>>;
       update: Partial<TableType<T>>;
       select?: string;
-    }
+    },
   ): Promise<TableType<T>> {
     return this.crud.upsert(tableName, options);
   }
@@ -234,7 +239,7 @@ export class DatabaseService implements OnModuleInit {
       where?: WhereClause;
       select?: string;
       orderBy?: { field: string; direction: OrderDirection }[];
-    }
+    },
   ): Promise<PaginatedResult<TableType<T>>> {
     return this.crud.paginate(tableName, paginationOptions, queryOptions);
   }
@@ -276,10 +281,15 @@ export class DatabaseService implements OnModuleInit {
   /**
    * Helper method for soft delete pattern (sets deleted_at timestamp)
    */
-  async softDelete<T extends TableNames>(tableName: T, id: number): Promise<void> {
+  async softDelete<T extends TableNames>(
+    tableName: T,
+    id: number,
+  ): Promise<void> {
     await this.update(tableName, {
       where: { id },
-      data: { deleted_at: new Date().toISOString() } as unknown as Partial<TableType<T>>,
+      data: { deleted_at: new Date().toISOString() } as unknown as Partial<
+        TableType<T>
+      >,
     });
   }
 

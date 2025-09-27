@@ -623,7 +623,6 @@ export class SupabaseCRUD {
     return `${field}.eq.unknown`;
   }
 
-
   /**
    * Helper method to build common relation patterns
    * Maps Prisma relation names to Supabase foreign key patterns

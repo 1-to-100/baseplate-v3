@@ -39,6 +39,13 @@ export class CreateNotificationDto {
   @ApiProperty({ description: 'Message content of the notification' })
   message: string;
 
+  @IsInt()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Template ID associated with the notification',
+  })
+  templateId?: number;
+
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Metadata in JSON format',

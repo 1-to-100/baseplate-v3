@@ -50,20 +50,23 @@ export class ArticleCategoriesService {
 
   async findAllSubcategories(customerId: number) {
     // Using raw Supabase client for distinct query as it's not supported in our CRUD wrapper
-    const { data: categories, error } = await this.database.getClient()
+    const { data: categories, error } = await this.database
+      .getClient()
       .from('article_categories')
       .select('subcategory')
       .eq('customer_id', customerId)
       .not('subcategory', 'is', null)
       .order('subcategory', { ascending: true });
-    
+
     if (error) {
       throw new ConflictException('Failed to fetch subcategories');
     }
-    
+
     this.logger.log(`Find all subcategories for customer ${customerId}`);
     // Remove duplicates manually since Supabase doesn't have distinct in the same way
-    const uniqueSubcategories = [...new Set(categories?.map(cat => cat.subcategory).filter(Boolean))];
+    const uniqueSubcategories = [
+      ...new Set(categories?.map((cat) => cat.subcategory).filter(Boolean)),
+    ];
     return uniqueSubcategories;
   }
 
@@ -76,14 +79,18 @@ export class ArticleCategoriesService {
       this.logger.log(
         `Update category ${id} with data: ${JSON.stringify(updateArticleCategoryDto)}`,
       );
-      
+
       // Convert camelCase to snake_case for database fields
       const updateData: any = {};
-      if (updateArticleCategoryDto.name !== undefined) updateData.name = updateArticleCategoryDto.name;
-      if (updateArticleCategoryDto.subcategory !== undefined) updateData.subcategory = updateArticleCategoryDto.subcategory;
-      if (updateArticleCategoryDto.about !== undefined) updateData.about = updateArticleCategoryDto.about;
-      if (updateArticleCategoryDto.icon !== undefined) updateData.icon = updateArticleCategoryDto.icon;
-      
+      if (updateArticleCategoryDto.name !== undefined)
+        updateData.name = updateArticleCategoryDto.name;
+      if (updateArticleCategoryDto.subcategory !== undefined)
+        updateData.subcategory = updateArticleCategoryDto.subcategory;
+      if (updateArticleCategoryDto.about !== undefined)
+        updateData.about = updateArticleCategoryDto.about;
+      if (updateArticleCategoryDto.icon !== undefined)
+        updateData.icon = updateArticleCategoryDto.icon;
+
       const category = await this.database.update('article_categories', {
         where: { id, customer_id: customerId },
         data: updateData,
@@ -120,11 +127,11 @@ export class ArticleCategoriesService {
       const category = await this.database.findFirst('article_categories', {
         where: { id, customer_id: customerId },
       });
-      
+
       if (!category) {
         throw new NotFoundException('Category not found');
       }
-      
+
       return category as OutputArticleCategoryDto;
     } catch (error) {
       this.logger.error(`Error finding category: ${error}`);

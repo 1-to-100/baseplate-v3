@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TemplatesService } from './templates.service';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { NotificationsService } from './notifications.service';
 import { Logger } from '@nestjs/common';
 
 describe('TemplatesService', () => {
   let service: TemplatesService;
-  let prismaService: PrismaService;
+  let databaseService: DatabaseService;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let notificationsService: NotificationsService;
 
@@ -15,13 +15,25 @@ describe('TemplatesService', () => {
       providers: [
         TemplatesService,
         {
-          provide: PrismaService,
+          provide: DatabaseService,
           useValue: {
-            notificationTemplate: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
+            notification_templates: {
+              select: jest.fn().mockReturnThis(),
+              insert: jest.fn().mockReturnThis(),
+              update: jest.fn().mockReturnThis(),
+              delete: jest.fn().mockReturnThis(),
+              eq: jest.fn().mockReturnThis(),
+              is: jest.fn().mockReturnThis(),
+              overlaps: jest.fn().mockReturnThis(),
+              in: jest.fn().mockReturnThis(),
+              order: jest.fn().mockReturnThis(),
+              range: jest.fn().mockReturnThis(),
+              single: jest.fn(),
+            },
+            users: {
+              select: jest.fn().mockReturnThis(),
+              eq: jest.fn().mockReturnThis(),
+              is: jest.fn().mockReturnThis(),
             },
           },
         },
@@ -43,7 +55,7 @@ describe('TemplatesService', () => {
     }).compile();
 
     service = module.get<TemplatesService>(TemplatesService);
-    prismaService = module.get<PrismaService>(PrismaService);
+    databaseService = module.get<DatabaseService>(DatabaseService);
     notificationsService =
       module.get<NotificationsService>(NotificationsService);
   });
@@ -69,13 +81,40 @@ describe('TemplatesService', () => {
         },
       ];
 
-      (
-        prismaService.notificationTemplate.findMany as jest.Mock
-      ).mockResolvedValue(mockTemplates);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (prismaService.notificationTemplate as any).count = jest
-        .fn()
-        .mockResolvedValue(1);
+      // Mock the count query
+      jest
+        .spyOn(databaseService.notification_templates, 'select')
+        .mockReturnValueOnce({
+          ...databaseService.notification_templates,
+          is: jest.fn().mockResolvedValue({ count: 1 }),
+        } as any);
+
+      // Mock the data query
+      const mockQuery = {
+        is: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({
+          data: [
+            {
+              id: 1,
+              title: 'Test Template 1',
+              message: 'Message 1',
+              type: ['IN_APP'],
+              comment: null,
+              channel: 'EMAIL',
+              customer_id: null,
+              customers: null,
+              created_at: '2023-01-01T00:00:00Z',
+              deleted_at: null,
+            },
+          ],
+          error: null,
+        }),
+      };
+
+      jest
+        .spyOn(databaseService.notification_templates, 'select')
+        .mockReturnValueOnce(mockQuery as any);
 
       const query = { page: 1, perPage: 10 };
       const result = await service.findAll(query);
@@ -86,16 +125,15 @@ describe('TemplatesService', () => {
           title: 'Test Template 1',
           message: 'Message 1',
           type: ['IN_APP'],
-          comment: undefined,
+          comment: null,
           channel: 'EMAIL',
-          customerId: undefined,
-          Customer: null,
-          createdAt: mockTemplates[0].createdAt,
+          customerId: null,
+          Customer: undefined,
+          createdAt: expect.any(Date),
         },
       ]);
       expect(result.meta).toBeDefined();
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(prismaService.notificationTemplate.findMany).toHaveBeenCalled();
+      expect(result.meta.total).toBe(1);
     });
   });
 });

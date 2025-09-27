@@ -70,7 +70,9 @@ export class OutputUserDto {
   @IsOptional()
   avatar?: string | null;
 
-  @ApiPropertyOptional({ description: 'User unique identifier from auth system' })
+  @ApiPropertyOptional({
+    description: 'User unique identifier from auth system',
+  })
   @IsOptional()
   uid?: string | null;
 
