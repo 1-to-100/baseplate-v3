@@ -1,31 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { UsersService } from '@/users/users.service';
 import { CustomersService } from '@/customers/customers.service';
 import { ArticlesService } from '@/articles/articles.service';
 import { ArticleCategoriesService } from '@/article-categories/article-categories.service';
 import { NotificationsService } from '@/notifications/notifications.service';
-import { TemplatesService } from '@/notifications/templates.service';
 import { SubscriptionSeederService } from '../services/subscription-seeder.service';
-import { CustomerStatus, NotificationType } from '@prisma/client';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { OutputArticleCategoryDto } from '@/article-categories/dto/output-article-category.dto';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
 import { NotificationTypes } from '@/notifications/constants/notification-types';
-import { NotificationChannel } from '@/notifications/constants/notification-channel';
 
 @Injectable()
 export class SeedCommand {
   private readonly logger = new Logger(SeedCommand.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly usersService: UsersService,
     private readonly customersService: CustomersService,
     private readonly articlesService: ArticlesService,
     private readonly articleCategoriesService: ArticleCategoriesService,
     private readonly notificationsService: NotificationsService,
-    private readonly templatesService: TemplatesService,
     private readonly subscriptionSeederService: SubscriptionSeederService,
   ) {}
 
@@ -34,22 +30,28 @@ export class SeedCommand {
 
     try {
       // Check if test customer already exists
-      const existingCustomer = await this.prisma.customer.findFirst({
+      const existingCustomer = await this.database.findFirst('customers', {
         where: { name: 'Test Customer Inc.' },
       });
 
       if (existingCustomer) {
-        this.logger.warn('Test customer already exists. Use cleanup command first.');
+        this.logger.warn(
+          'Test customer already exists. Use cleanup command first.',
+        );
         return;
       }
 
       // Seed basic subscriptions first
       await this.subscriptionSeederService.seedBasicSubscriptions();
-      
+
       // Get the Professional subscription for the test customer (or Free if Professional doesn't exist)
-      let subscription = await this.subscriptionSeederService.getSubscriptionByName('Professional');
+      let subscription =
+        await this.subscriptionSeederService.getSubscriptionByName(
+          'Professional',
+        );
       if (!subscription) {
-        subscription = await this.subscriptionSeederService.getSubscriptionByName('Free');
+        subscription =
+          await this.subscriptionSeederService.getSubscriptionByName('Free');
       }
 
       // Create customer owner (superadmin user)
@@ -65,10 +67,17 @@ export class SeedCommand {
       const users = await this.createUsers(customer.id);
 
       // Create article categories
-      const categories = await this.createArticleCategories(customer.id, users[0].id);
+      const categories = await this.createArticleCategories(
+        customer.id,
+        users[0].id,
+      );
 
       // Create articles (documents) - created by customer owner
-      const articles = await this.createArticles(customer.id, owner.id, categories);
+      const articles = await this.createArticles(
+        customer.id,
+        owner.id,
+        categories,
+      );
 
       // Create notifications
       await this.createNotifications(customer.id, users);
@@ -77,30 +86,35 @@ export class SeedCommand {
       const templates = await this.createNotificationTemplates(customer.id);
 
       this.logger.log('Test data seeding completed successfully!');
-      this.logger.log(`Created customer: ${customer.name} (ID: ${customer.id})`);
+      this.logger.log(
+        `Created customer: ${customer.name} (ID: ${customer.id})`,
+      );
       this.logger.log(`Created ${users.length} users`);
       this.logger.log(`Created ${categories.length} article categories`);
       this.logger.log(`Created ${articles.length} articles`);
       this.logger.log(`Created ${templates.length} notification templates`);
-      this.logger.log(`Created customer success user: ${customerSuccess.email}`);
-
+      this.logger.log(
+        `Created customer success user: ${customerSuccess.email}`,
+      );
     } catch (error) {
       this.logger.error('Error seeding test data:', error);
       throw error;
     }
   }
 
-
   private async createOwner() {
     this.logger.log('Creating customer owner...');
-    return this.usersService.create({
-      email: 'owner@testcustomer.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      status: 'active',
-      isSuperadmin: false,
-      isCustomerSuccess: false,
-    }, true); // Skip invite email
+    return this.usersService.create(
+      {
+        email: 'owner@testcustomer.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        status: 'active',
+        isSuperadmin: false,
+        isCustomerSuccess: false,
+      },
+      true,
+    ); // Skip invite email
   }
 
   private async createCustomer(ownerId: number, subscriptionId: number) {
@@ -114,49 +128,82 @@ export class SeedCommand {
 
   private async createCustomerSuccess(customerId: number) {
     this.logger.log('Creating customer success user...');
-    return this.usersService.createSystemUser({
-      email: 'success@testcustomer.com',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      status: 'active',
-      systemRole: UserSystemRoles.CUSTOMER_SUCCESS,
-      customerId,
-    }, true); // Skip invite email
+    return this.usersService.createSystemUser(
+      {
+        email: 'success@testcustomer.com',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        status: 'active',
+        systemRole: UserSystemRoles.CUSTOMER_SUCCESS,
+        customerId,
+      },
+      true,
+    ); // Skip invite email
   }
 
   private async createUsers(customerId: number): Promise<OutputUserDto[]> {
     this.logger.log('Creating regular users...');
     const users: OutputUserDto[] = [];
-    
+
     const userData = [
-      { email: 'user1@testcustomer.com', firstName: 'Alice', lastName: 'Johnson' },
+      {
+        email: 'user1@testcustomer.com',
+        firstName: 'Alice',
+        lastName: 'Johnson',
+      },
       { email: 'user2@testcustomer.com', firstName: 'Bob', lastName: 'Wilson' },
-      { email: 'user3@testcustomer.com', firstName: 'Carol', lastName: 'Brown' },
+      {
+        email: 'user3@testcustomer.com',
+        firstName: 'Carol',
+        lastName: 'Brown',
+      },
     ];
 
     for (const userInfo of userData) {
-      const user = await this.usersService.create({
-        ...userInfo,
-        customerId,
-        status: 'active',
-        isSuperadmin: false,
-        isCustomerSuccess: false,
-      }, true); // Skip invite email
+      const user = await this.usersService.create(
+        {
+          ...userInfo,
+          customerId,
+          status: 'active',
+          isSuperadmin: false,
+          isCustomerSuccess: false,
+        },
+        true,
+      ); // Skip invite email
       users.push(user);
     }
 
     return users;
   }
 
-  private async createArticleCategories(customerId: number, createdBy: number): Promise<OutputArticleCategoryDto[]> {
+  private async createArticleCategories(
+    customerId: number,
+    createdBy: number,
+  ): Promise<OutputArticleCategoryDto[]> {
     this.logger.log('Creating article categories...');
     const categories: OutputArticleCategoryDto[] = [];
 
     const categoryData = [
-      { name: 'Getting Started', subcategory: 'Basics', about: 'Basic information for new users' },
-      { name: 'User Guide', subcategory: 'Tutorials', about: 'Step-by-step tutorials' },
-      { name: 'API Documentation', subcategory: 'Technical', about: 'Technical API documentation' },
-      { name: 'Troubleshooting', subcategory: 'Support', about: 'Common issues and solutions' },
+      {
+        name: 'Getting Started',
+        subcategory: 'Basics',
+        about: 'Basic information for new users',
+      },
+      {
+        name: 'User Guide',
+        subcategory: 'Tutorials',
+        about: 'Step-by-step tutorials',
+      },
+      {
+        name: 'API Documentation',
+        subcategory: 'Technical',
+        about: 'Technical API documentation',
+      },
+      {
+        name: 'Troubleshooting',
+        subcategory: 'Support',
+        about: 'Common issues and solutions',
+      },
     ];
 
     for (const categoryInfo of categoryData) {
@@ -171,14 +218,19 @@ export class SeedCommand {
     return categories;
   }
 
-  private async createArticles(customerId: number, createdBy: number, categories: OutputArticleCategoryDto[]) {
+  private async createArticles(
+    customerId: number,
+    createdBy: number,
+    categories: OutputArticleCategoryDto[],
+  ) {
     this.logger.log('Creating articles...');
     const articles: any[] = [];
 
     const articleData = [
       {
         title: 'Welcome to Test Customer Platform',
-        content: '<div class="article-content"><h1>Welcome to Test Customer Platform</h1><p>This is a comprehensive guide to get you started with our platform. You will learn about the basic features and how to navigate the system.</p><h2>Getting Started</h2><p>Our platform provides a complete solution for managing your business operations with enterprise-grade security and scalability.</p></div>',
+        content:
+          '<div class="article-content"><h1>Welcome to Test Customer Platform</h1><p>This is a comprehensive guide to get you started with our platform. You will learn about the basic features and how to navigate the system.</p><h2>Getting Started</h2><p>Our platform provides a complete solution for managing your business operations with enterprise-grade security and scalability.</p></div>',
         status: 'published',
         articleCategoryId: categories[0].id,
         subcategory: 'Introduction',
@@ -328,28 +380,32 @@ docker compose up</code></pre>
       },
       {
         title: 'How to Create Your First Document',
-        content: '<div class="article-content"><h1>How to Create Your First Document</h1><p>Learn how to create, edit, and manage documents in our system. This tutorial covers all the essential features you need to know.</p><h2>Step-by-Step Guide</h2><ol><li>Navigate to the Documents section</li><li>Click the "Create New Document" button</li><li>Choose your document template</li><li>Add your content using our rich text editor</li><li>Set permissions and visibility</li><li>Publish your document</li></ol></div>',
+        content:
+          '<div class="article-content"><h1>How to Create Your First Document</h1><p>Learn how to create, edit, and manage documents in our system. This tutorial covers all the essential features you need to know.</p><h2>Step-by-Step Guide</h2><ol><li>Navigate to the Documents section</li><li>Click the "Create New Document" button</li><li>Choose your document template</li><li>Add your content using our rich text editor</li><li>Set permissions and visibility</li><li>Publish your document</li></ol></div>',
         status: 'published',
         articleCategoryId: categories[1].id,
         subcategory: 'Tutorial',
       },
       {
         title: 'API Authentication Guide',
-        content: '<div class="article-content"><h1>API Authentication Guide</h1><p>Complete guide on how to authenticate with our API using various methods including API keys, OAuth, and JWT tokens.</p><h2>Authentication Methods</h2><h3>JWT Tokens</h3><p>Use JWT tokens for secure API access. Include the token in the Authorization header.</p><h3>OAuth 2.0</h3><p>Support for Google, LinkedIn, and Microsoft OAuth providers.</p><h3>API Keys</h3><p>Generate API keys from your account settings for programmatic access.</p></div>',
+        content:
+          '<div class="article-content"><h1>API Authentication Guide</h1><p>Complete guide on how to authenticate with our API using various methods including API keys, OAuth, and JWT tokens.</p><h2>Authentication Methods</h2><h3>JWT Tokens</h3><p>Use JWT tokens for secure API access. Include the token in the Authorization header.</p><h3>OAuth 2.0</h3><p>Support for Google, LinkedIn, and Microsoft OAuth providers.</p><h3>API Keys</h3><p>Generate API keys from your account settings for programmatic access.</p></div>',
         status: 'draft',
         articleCategoryId: categories[2].id,
         subcategory: 'Authentication',
       },
       {
         title: 'Common Login Issues',
-        content: '<div class="article-content"><h1>Common Login Issues</h1><p>Troubleshooting guide for common login problems including password reset, account lockout, and two-factor authentication issues.</p><h2>Password Issues</h2><p>If you cannot log in, try resetting your password using the "Forgot Password" link.</p><h2>Account Lockout</h2><p>Multiple failed login attempts may temporarily lock your account. Wait 15 minutes before trying again.</p><h2>Two-Factor Authentication</h2><p>Ensure you have access to your authenticator app or backup codes.</p></div>',
+        content:
+          '<div class="article-content"><h1>Common Login Issues</h1><p>Troubleshooting guide for common login problems including password reset, account lockout, and two-factor authentication issues.</p><h2>Password Issues</h2><p>If you cannot log in, try resetting your password using the "Forgot Password" link.</p><h2>Account Lockout</h2><p>Multiple failed login attempts may temporarily lock your account. Wait 15 minutes before trying again.</p><h2>Two-Factor Authentication</h2><p>Ensure you have access to your authenticator app or backup codes.</p></div>',
         status: 'published',
         articleCategoryId: categories[3].id,
         subcategory: 'Login',
       },
       {
         title: 'Advanced User Management',
-        content: '<div class="article-content"><h1>Advanced User Management</h1><p>Learn about advanced user management features including role assignment, permissions, and bulk operations.</p><h2>Role Management</h2><p>Assign roles to users based on their responsibilities and access needs.</p><h2>Permission System</h2><p>Fine-tune access control with granular permissions for different features.</p><h2>Bulk Operations</h2><p>Perform bulk user operations for efficient management of large user bases.</p></div>',
+        content:
+          '<div class="article-content"><h1>Advanced User Management</h1><p>Learn about advanced user management features including role assignment, permissions, and bulk operations.</p><h2>Role Management</h2><p>Assign roles to users based on their responsibilities and access needs.</p><h2>Permission System</h2><p>Fine-tune access control with granular permissions for different features.</p><h2>Bulk Operations</h2><p>Perform bulk user operations for efficient management of large user bases.</p></div>',
         status: 'published',
         articleCategoryId: categories[1].id,
         subcategory: 'Advanced',
@@ -368,16 +424,19 @@ docker compose up</code></pre>
     return articles;
   }
 
-  private async createNotifications(customerId: number, users: OutputUserDto[]) {
+  private async createNotifications(
+    customerId: number,
+    users: OutputUserDto[],
+  ) {
     this.logger.log('Creating notifications...');
-    
+
     // Define notification types and their corresponding channels
     const notificationTypes = ['info', 'alert', 'warning', 'article'];
     const notificationTemplates = [
       {
         title: 'Welcome to Test Customer Platform',
         message: 'Welcome! Your account has been set up successfully.',
-        type: 'IN_APP' as NotificationType,
+        type: NotificationTypes.IN_APP,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -385,15 +444,16 @@ docker compose up</code></pre>
       {
         title: 'New Feature Available',
         message: 'Check out our new document management features.',
-        type: 'IN_APP' as NotificationType,
+        type: NotificationTypes.IN_APP,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
       },
       {
         title: 'System Maintenance Scheduled',
-        message: 'We will be performing scheduled maintenance on Sunday at 2 AM.',
-        type: 'IN_APP' as NotificationType,
+        message:
+          'We will be performing scheduled maintenance on Sunday at 2 AM.',
+        type: NotificationTypes.IN_APP,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -401,7 +461,7 @@ docker compose up</code></pre>
       {
         title: 'Security Alert',
         message: 'Your account has been accessed from a new device.',
-        type: 'IN_APP' as NotificationType,
+        type: NotificationTypes.IN_APP,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -415,12 +475,13 @@ docker compose up</code></pre>
     // Create user-specific notifications with random types
     for (const user of users) {
       const notificationTypes = ['info', 'alert', 'warning', 'article'];
-      const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
-      
+      const randomType =
+        notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+
       await this.notificationsService.create({
         title: 'Personal Welcome',
         message: `Welcome ${user.firstName}! We're excited to have you on board.`,
-        type: 'IN_APP' as NotificationType,
+        type: NotificationTypes.IN_APP,
         channel: randomType,
         customerId,
         userId: user.id,
@@ -431,8 +492,9 @@ docker compose up</code></pre>
       const additionalNotifications = [
         {
           title: 'Profile Update Reminder',
-          message: 'Please complete your profile information to get the most out of our platform.',
-          type: 'IN_APP' as NotificationType,
+          message:
+            'Please complete your profile information to get the most out of our platform.',
+          type: NotificationTypes.IN_APP,
           channel: this.getRandomNotificationType(),
           customerId,
           userId: user.id,
@@ -441,7 +503,7 @@ docker compose up</code></pre>
         {
           title: 'New Article Published',
           message: 'A new article has been published in your area of interest.',
-          type: 'IN_APP' as NotificationType,
+          type: NotificationTypes.IN_APP,
           channel: this.getRandomNotificationType(),
           customerId,
           userId: user.id,
@@ -457,94 +519,16 @@ docker compose up</code></pre>
 
   private getRandomNotificationType(): string {
     const notificationTypes = ['info', 'alert', 'warning', 'article'];
-    return notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+    return notificationTypes[
+      Math.floor(Math.random() * notificationTypes.length)
+    ];
   }
 
   private async createNotificationTemplates(customerId: number) {
-    this.logger.log('Creating notification templates...');
-    const templates: any[] = [];
-
-    const templateData = [
-      {
-        title: 'Welcome Notification',
-        message: 'Welcome to our platform! We\'re excited to have you on board. Get started by exploring our features and resources.',
-        comment: 'Sent to new users upon registration',
-        type: [NotificationTypes.IN_APP, NotificationTypes.EMAIL],
-        channel: NotificationChannel.info,
-      },
-      {
-        title: 'Security Alert',
-        message: 'We detected unusual activity on your account. Please review your recent login activity and contact support if you don\'t recognize these actions.',
-        comment: 'Sent when suspicious activity is detected',
-        type: [NotificationTypes.IN_APP, NotificationTypes.EMAIL],
-        channel: NotificationChannel.alert,
-      },
-      {
-        title: 'System Maintenance Warning',
-        message: 'Scheduled maintenance will begin in 30 minutes. Some features may be temporarily unavailable. We apologize for any inconvenience.',
-        comment: 'Sent before scheduled maintenance',
-        type: [NotificationTypes.IN_APP],
-        channel: NotificationChannel.warning,
-      },
-      {
-        title: 'New Article Published',
-        message: 'A new article "{articleTitle}" has been published in your area of interest. Click here to read it now.',
-        comment: 'Sent when new content is published',
-        type: [NotificationTypes.IN_APP],
-        channel: NotificationChannel.article,
-      },
-      {
-        title: 'Account Verification Required',
-        message: 'Please verify your email address to complete your account setup. Check your inbox for the verification link.',
-        comment: 'Sent to unverified accounts',
-        type: [NotificationTypes.EMAIL],
-        channel: NotificationChannel.info,
-      },
-      {
-        title: 'Password Reset Request',
-        message: 'You requested a password reset. Click the link below to create a new password. This link will expire in 24 hours.',
-        comment: 'Sent when password reset is requested',
-        type: [NotificationTypes.EMAIL],
-        channel: NotificationChannel.alert,
-      },
-      {
-        title: 'Feature Update Available',
-        message: 'New features are now available! Check out our latest updates including improved dashboard and enhanced security features.',
-        comment: 'Sent when new features are released',
-        type: [NotificationTypes.IN_APP],
-        channel: NotificationChannel.info,
-      },
-      {
-        title: 'Subscription Expiring Soon',
-        message: 'Your subscription will expire in 7 days. Renew now to continue enjoying all features without interruption.',
-        comment: 'Sent before subscription expires',
-        type: [NotificationTypes.IN_APP, NotificationTypes.EMAIL],
-        channel: NotificationChannel.warning,
-      },
-      {
-        title: 'Document Shared',
-        message: 'A document "{documentTitle}" has been shared with you. You can access it from your dashboard.',
-        comment: 'Sent when a document is shared',
-        type: [NotificationTypes.IN_APP],
-        channel: NotificationChannel.article,
-      },
-      {
-        title: 'Account Suspended',
-        message: 'Your account has been temporarily suspended due to policy violations. Please contact support for assistance.',
-        comment: 'Sent when account is suspended',
-        type: [NotificationTypes.EMAIL],
-        channel: NotificationChannel.alert,
-      },
-    ];
-
-    for (const templateInfo of templateData) {
-      const template = await this.templatesService.createTemplate(
-        templateInfo,
-        customerId,
-      );
-      templates.push(template);
-    }
-
-    return templates;
+    this.logger.log(
+      '⚠️ Notification templates creation temporarily disabled during Supabase migration',
+    );
+    // TODO: Re-implement with DatabaseService after TemplatesService migration
+    return [];
   }
 }

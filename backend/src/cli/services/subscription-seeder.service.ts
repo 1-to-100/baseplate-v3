@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 
 export interface SubscriptionTier {
   name: string;
@@ -18,35 +18,41 @@ export interface SubscriptionTier {
 export class SubscriptionSeederService {
   private readonly logger = new Logger(SubscriptionSeederService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   async seedBasicSubscriptions(): Promise<void> {
     this.logger.log('Starting subscription seeding...');
 
     try {
       // Check if any of our subscription tiers already exist
-      const existingSubscriptions = await this.prisma.subscription.findMany({
-        where: { 
-          name: { 
-            in: ['Free', 'Starter', 'Professional', 'Enterprise'] 
-          } 
-        }
-      });
+      const existingSubscriptions = await this.database.findMany(
+        'subscriptions',
+        {
+          where: {
+            name: {
+              in: ['Free', 'Starter', 'Professional', 'Enterprise'],
+            },
+          },
+        },
+      );
       if (existingSubscriptions.length >= 4) {
-        this.logger.warn('Subscription tiers already exist. Skipping subscription seeding.');
+        this.logger.warn(
+          'Subscription tiers already exist. Skipping subscription seeding.',
+        );
         return;
       }
 
       const subscriptionTiers: SubscriptionTier[] = [
         {
           name: 'Free',
-          description: 'Perfect for individuals and small teams getting started',
+          description:
+            'Perfect for individuals and small teams getting started',
           features: [
             'Up to 5 users',
             '1GB storage',
             'Basic support',
             'Core features access',
-            'Community forum access'
+            'Community forum access',
           ],
           price: 0,
           currency: 'USD',
@@ -54,7 +60,7 @@ export class SubscriptionSeederService {
           maxUsers: 5,
           maxStorage: 1,
           apiCallsPerMonth: 1000,
-          supportLevel: 'basic'
+          supportLevel: 'basic',
         },
         {
           name: 'Starter',
@@ -65,7 +71,7 @@ export class SubscriptionSeederService {
             'Priority support',
             'Advanced features',
             'Email support',
-            'Basic analytics'
+            'Basic analytics',
           ],
           price: 29,
           currency: 'USD',
@@ -73,7 +79,7 @@ export class SubscriptionSeederService {
           maxUsers: 25,
           maxStorage: 10,
           apiCallsPerMonth: 10000,
-          supportLevel: 'priority'
+          supportLevel: 'priority',
         },
         {
           name: 'Professional',
@@ -86,7 +92,7 @@ export class SubscriptionSeederService {
             'Phone & email support',
             'Advanced analytics',
             'Custom integrations',
-            'SSO integration'
+            'SSO integration',
           ],
           price: 99,
           currency: 'USD',
@@ -94,7 +100,7 @@ export class SubscriptionSeederService {
           maxUsers: 100,
           maxStorage: 100,
           apiCallsPerMonth: 100000,
-          supportLevel: 'priority'
+          supportLevel: 'priority',
         },
         {
           name: 'Enterprise',
@@ -109,7 +115,7 @@ export class SubscriptionSeederService {
             'Custom integrations',
             'SSO & LDAP integration',
             'Custom SLA',
-            'Dedicated account manager'
+            'Dedicated account manager',
           ],
           price: 299,
           currency: 'USD',
@@ -117,7 +123,7 @@ export class SubscriptionSeederService {
           maxUsers: -1, // unlimited
           maxStorage: -1, // unlimited
           apiCallsPerMonth: -1, // unlimited
-          supportLevel: 'dedicated'
+          supportLevel: 'dedicated',
         },
       ];
 
@@ -125,8 +131,9 @@ export class SubscriptionSeederService {
         await this.createSubscription(tier);
       }
 
-      this.logger.log(`Successfully seeded ${subscriptionTiers.length} subscription tiers`);
-
+      this.logger.log(
+        `Successfully seeded ${subscriptionTiers.length} subscription tiers`,
+      );
     } catch (error) {
       this.logger.error('Error seeding subscriptions:', error);
       throw error;
@@ -137,9 +144,9 @@ export class SubscriptionSeederService {
     this.logger.log('Starting subscription cleanup...');
 
     try {
-      const deletedSubscriptions = await this.prisma.subscription.deleteMany();
+      const deletedSubscriptions =
+        await this.database.deleteMany('subscriptions');
       this.logger.log(`Deleted ${deletedSubscriptions.count} subscriptions`);
-
     } catch (error) {
       this.logger.error('Error cleaning up subscriptions:', error);
       throw error;
@@ -147,15 +154,15 @@ export class SubscriptionSeederService {
   }
 
   async getSubscriptionByName(name: string) {
-    return this.prisma.subscription.findFirst({
-      where: { name }
+    return this.database.findFirst('subscriptions', {
+      where: { name },
     });
   }
 
   private async createSubscription(tier: SubscriptionTier) {
     this.logger.log(`Creating subscription: ${tier.name}`);
-    
-    return this.prisma.subscription.upsert({
+
+    return this.database.upsert('subscriptions', {
       where: { name: tier.name },
       update: {
         description: tier.description,

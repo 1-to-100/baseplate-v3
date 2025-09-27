@@ -1,10 +1,10 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
-import { PrismaService } from 'src/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 
 @Injectable()
 export class ApiDbLoggerMiddleware implements NestMiddleware {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     const method: string = req.method;
@@ -14,14 +14,14 @@ export class ApiDbLoggerMiddleware implements NestMiddleware {
     const startTime = Date.now();
 
     res.on('finish', () => {
-      this.prisma.apiLog
-        .create({
+      this.database
+        .create('api_logs', {
           data: {
             method,
             url,
-            statusCode: res.statusCode,
+            status_code: res.statusCode,
             duration: Date.now() - startTime,
-            requestBody: JSON.stringify(body),
+            request_body: JSON.stringify(body),
             headers: JSON.stringify(headers),
           },
         })

@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger';
 import { User } from '@/common/decorators/user.decorator';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { DynamicAuthGuard } from '@/auth/guards/dynamic-auth/dynamic-auth.guard';
@@ -33,7 +33,7 @@ export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
   constructor(
-    private readonly prismaService: PrismaService,
+    private readonly database: DatabaseService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -63,7 +63,7 @@ export class NotificationsController {
     }
 
     if (customerId) {
-      const foundCustomer = await this.prismaService.customer.findUnique({
+      const foundCustomer = await this.database.findUnique('customers', {
         where: { id: customerId },
       });
 
@@ -73,11 +73,11 @@ export class NotificationsController {
     }
 
     if (userId) {
-      const foundUser = await this.prismaService.user.findUnique({
+      const foundUser = await this.database.findUnique('users', {
         where: { id: userId },
       });
 
-      if (!foundUser || foundUser.customerId !== customerId) {
+      if (!foundUser || foundUser.customer_id !== customerId) {
         throw new BadRequestException('User not linked to the customer');
       } else if (foundUser.status !== 'active') {
         throw new BadRequestException('User is not active');

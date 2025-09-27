@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { SubscriptionSeederService } from '../services/subscription-seeder.service';
 
 @Injectable()
@@ -7,24 +7,31 @@ export class CleanupCommand {
   private readonly logger = new Logger(CleanupCommand.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly subscriptionSeederService: SubscriptionSeederService,
   ) {}
 
   async execute(): Promise<void> {
     this.logger.log('Starting HARD DELETE cleanup for test data...');
-    this.logger.warn('⚠️  WARNING: This will permanently delete test users and customers from the database!');
+    this.logger.warn(
+      '⚠️  WARNING: This will permanently delete test users and customers from the database!',
+    );
+    this.logger.warn(
+      '⚠️  NOTICE: Cleanup command needs to be updated for Supabase migration',
+    );
+    this.logger.warn(
+      '⚠️  TEMPORARILY DISABLED: Please update this command to use DatabaseService',
+    );
 
+    return; // Temporarily disable until migration is complete
+
+    /*
     try {
+      // TODO: Update cleanup command for Supabase migration
       // Find test customer
-      const testCustomer = await this.prisma.customer.findFirst({
+      const testCustomer = await this.database.findFirst('customers', {
         where: { name: 'Test Customer Inc.' },
-        include: {
-          Users: true,
-          Articles: true,
-          Notification: true,
-          NotificationTemplate: true,
-        },
+        // TODO: Update include syntax for Supabase
       });
 
       if (!testCustomer) {
@@ -149,5 +156,6 @@ export class CleanupCommand {
       this.logger.error('Error during cleanup:', error);
       throw error;
     }
+    */
   }
 }

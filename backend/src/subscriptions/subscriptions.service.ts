@@ -1,17 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   async getForTaxonomy() {
-    return this.prisma.subscription.findMany({
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
+    return this.database.findMany('subscriptions', {
+      select: 'id, name, description',
     });
   }
 }

@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { UsersModule } from '@/users/users.module';
-import { PrismaService } from '@/common/prisma/prisma.service';
 import { DatabaseModule } from '@/common/database/database.module';
 import { AuthModule } from '@/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
@@ -44,6 +43,6 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, FrontendPathsService], // Keep PrismaService for now during migration
+  providers: [AppService, FrontendPathsService],
 })
 export class AppModule {}

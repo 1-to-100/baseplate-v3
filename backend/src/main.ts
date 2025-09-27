@@ -3,7 +3,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { json, NextFunction, Request, Response } from 'express';
 import { AppModule } from '@/app.module';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { ApiDbLoggerMiddleware } from '@/common/middlewares/api-db-logger.middleware';
 import { ConfigService } from '@nestjs/config';
 
@@ -15,8 +15,8 @@ async function bootstrap() {
     }),
   });
 
-  const prismaService = app.get(PrismaService);
-  const apiDbLoggerMiddleware = new ApiDbLoggerMiddleware(prismaService);
+  const databaseService = app.get(DatabaseService);
+  const apiDbLoggerMiddleware = new ApiDbLoggerMiddleware(databaseService);
   app.use((req: Request, res: Response, next: NextFunction) =>
     apiDbLoggerMiddleware.use(req, res, next),
   );

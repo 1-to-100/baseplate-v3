@@ -4,9 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { createPaginator } from 'prisma-pagination';
+import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { ArticleDto } from '@/articles/dto/article.dto';
@@ -19,15 +17,29 @@ import { UpdateArticleDto } from '@/articles/dto/update-article.dto';
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly notificationService: NotificationsService,
   ) {}
 
   async create(createArticleDto: ArticleDto) {
     try {
       this.logger.log(`Create article with title ${createArticleDto.title}`);
-      const article = await this.prisma.article.create({
-        data: createArticleDto,
+
+      // Convert camelCase to snake_case for database fields
+      const articleData = {
+        title: createArticleDto.title,
+        category_id: createArticleDto.articleCategoryId,
+        subcategory: createArticleDto.subcategory,
+        customer_id: createArticleDto.customerId,
+        created_by: createArticleDto.createdBy,
+        status: createArticleDto.status,
+        content: createArticleDto.content,
+        video_url: createArticleDto.videoUrl,
+        views_number: 0, // Default value
+      };
+
+      const article = await this.database.create('articles', {
+        data: articleData,
       });
 
       if (article.status == 'published') {
@@ -36,7 +48,7 @@ export class ArticlesService {
           message: `A new article "${article.title}" has been published.`,
           channel: 'article',
           type: NotificationTypes.IN_APP,
-          customerId: article.customerId,
+          customerId: article.customer_id,
           generatedBy: 'system (article service)',
         });
       }
@@ -53,76 +65,93 @@ export class ArticlesService {
     listArticlesInputDto: ListArticlesInputDto,
   ): Promise<PaginatedOutputDto<ListArticlesOutputDto>> {
     const { categoryId, status, search, perPage, page } = listArticlesInputDto;
-    const where: Prisma.ArticleFindManyArgs['where'] = {
-      customerId,
-      ...(categoryId && { articleCategoryId: { in: categoryId } }),
-      ...(status && {
-        status: {
-          in: status,
-        },
-      }),
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { subcategory: { contains: search, mode: 'insensitive' } },
-          { content: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
+
+    // Build where clause for Supabase
+    const whereClause: any = {
+      customer_id: customerId,
     };
 
-    const paginate = createPaginator({ perPage });
-    const paginateResult = await paginate<
-      ListArticlesOutputDto,
-      Prisma.ArticleFindManyArgs
-    >(
-      this.prisma.article,
+    if (categoryId && categoryId.length > 0) {
+      whereClause.category_id = { in: categoryId };
+    }
+
+    if (status && status.length > 0) {
+      whereClause.status = { in: status };
+    }
+
+    // For search, we'll need to use OR conditions
+    if (search) {
+      whereClause.OR = [
+        { title: { ilike: `%${search}%` } },
+        { subcategory: { ilike: `%${search}%` } },
+        { content: { ilike: `%${search}%` } },
+      ];
+    }
+
+    // Use the database service's pagination method
+    const paginateResult = await this.database.paginate(
+      'articles',
+      { page: page || 1, per_page: perPage || 10 },
       {
-        where,
-        include: {
-          Category: true,
-          Creator: true,
-        },
-        orderBy: { id: 'desc' },
+        where: whereClause,
+        select: `
+          *,
+          article_categories!category_id(*),
+          users!created_by(id, first_name, last_name)
+        `,
+        orderBy: [{ field: 'id', direction: 'desc' }],
       },
-      { page },
     );
 
     const data = paginateResult.data.map((article) => {
       return this.transform(article);
     }) as ListArticlesOutputDto[];
 
-    return { data, meta: paginateResult.meta };
+    // Transform meta to match expected format
+    const meta = {
+      total: paginateResult.meta.total,
+      lastPage: paginateResult.meta.total_pages,
+      currentPage: paginateResult.meta.page,
+      perPage: paginateResult.meta.per_page,
+      prev: paginateResult.meta.page > 1 ? paginateResult.meta.page - 1 : null,
+      next:
+        paginateResult.meta.page < paginateResult.meta.total_pages
+          ? paginateResult.meta.page + 1
+          : null,
+    };
+
+    return { data, meta };
   }
 
-  transform(article: ListArticlesOutputDto) {
+  transform(article: any) {
     return {
       id: article.id,
       title: article.title,
-      articleCategoryId: article.articleCategoryId,
+      articleCategoryId: article.category_id,
       subcategory: article.subcategory,
       status: article.status,
-      customerId: article.customerId,
+      customerId: article.customer_id,
       content: article.content,
-      videoUrl: article.videoUrl,
-      createdAt: article.createdAt,
-      updatedAt: article.updatedAt,
-      viewsNumber: article.viewsNumber,
-      Category: article.Category
+      videoUrl: article.video_url,
+      createdAt: article.created_at,
+      updatedAt: article.updated_at,
+      viewsNumber: article.views_number,
+      Category: article.article_categories
         ? {
-            id: article.Category?.id,
-            name: article.Category?.name,
-            subcategory: article.Category?.subcategory,
-            icon: article.Category?.icon,
-            about: article.Category?.about,
-            createdAt: article.Category?.createdAt,
-            updatedAt: article.Category?.updatedAt,
+            id: article.article_categories?.id,
+            name: article.article_categories?.name,
+            subcategory: article.article_categories?.subcategory,
+            icon: article.article_categories?.icon,
+            about: article.article_categories?.about,
+            createdAt: article.article_categories?.created_at,
+            updatedAt: article.article_categories?.updated_at,
           }
         : null,
-      Creator: article.Creator
+      Creator: article.users
         ? {
-            id: article.Creator?.id,
-            firstName: article.Creator?.firstName,
-            lastName: article.Creator?.lastName,
+            id: article.users?.id,
+            firstName: article.users?.first_name,
+            lastName: article.users?.last_name,
           }
         : null,
     };
@@ -132,15 +161,16 @@ export class ArticlesService {
     id: number,
     customerId: number,
   ): Promise<ListArticlesOutputDto> {
-    const article = await this.prisma.article.findFirst({
+    const article = await this.database.findFirst('articles', {
       where: {
         id,
-        customerId,
+        customer_id: customerId,
       },
-      include: {
-        Category: true,
-        Creator: true,
-      },
+      select: `
+        *,
+        article_categories!category_id(*),
+        users!created_by(id, first_name, last_name)
+      `,
     });
 
     if (!article) {
@@ -155,10 +185,10 @@ export class ArticlesService {
     updateArticleDto: UpdateArticleDto,
     customerId: number,
   ) {
-    const article = await this.prisma.article.findFirst({
+    const article = await this.database.findFirst('articles', {
       where: {
         id,
-        customerId,
+        customer_id: customerId,
       },
     });
 
@@ -166,9 +196,24 @@ export class ArticlesService {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
 
-    const updatedArticle = await this.prisma.article.update({
+    // Convert camelCase to snake_case for database fields
+    const updateData: any = {};
+    if (updateArticleDto.title !== undefined)
+      updateData.title = updateArticleDto.title;
+    if (updateArticleDto.articleCategoryId !== undefined)
+      updateData.category_id = updateArticleDto.articleCategoryId;
+    if (updateArticleDto.subcategory !== undefined)
+      updateData.subcategory = updateArticleDto.subcategory;
+    if (updateArticleDto.status !== undefined)
+      updateData.status = updateArticleDto.status;
+    if (updateArticleDto.content !== undefined)
+      updateData.content = updateArticleDto.content;
+    if (updateArticleDto.videoUrl !== undefined)
+      updateData.video_url = updateArticleDto.videoUrl;
+
+    const updatedArticle = await this.database.update('articles', {
       where: { id },
-      data: updateArticleDto,
+      data: updateData,
     });
 
     // send notification to all users of this customer
@@ -190,10 +235,10 @@ export class ArticlesService {
   }
 
   async remove(id: number, customerId: number) {
-    const article = await this.prisma.article.findFirst({
+    const article = await this.database.findFirst('articles', {
       where: {
         id,
-        customerId,
+        customer_id: customerId,
       },
     });
 
@@ -201,7 +246,7 @@ export class ArticlesService {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
 
-    return this.prisma.article.delete({
+    return this.database.delete('articles', {
       where: { id },
     });
   }

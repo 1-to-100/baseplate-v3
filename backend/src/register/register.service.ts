@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import { UsersService } from '@/users/users.service';
 import { RegisterDto } from '@/register/dto/register.dto';
@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class RegisterService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly usersService: UsersService,
     private readonly supabaseService: SupabaseService,
     private readonly configService: ConfigService,
@@ -31,7 +31,7 @@ export class RegisterService {
       );
     }
 
-    const existingCustomer = await this.prisma.customer.findFirst({
+    const existingCustomer = await this.database.findFirst('customers', {
       where: { domain },
     });
 
@@ -46,13 +46,13 @@ export class RegisterService {
     );
 
     if (!existingCustomer) {
-      const newCustomer = await this.prisma.customer.create({
-        data: { name: domain, email, domain, ownerId: newUser.id },
+      const newCustomer = await this.database.create('customers', {
+        data: { name: domain, email, domain, owner_id: newUser.id },
       });
 
-      await this.prisma.user.update({
+      await this.database.update('users', {
         where: { id: newUser.id },
-        data: { customerId: newCustomer.id },
+        data: { customer_id: newCustomer.id },
       });
     }
 

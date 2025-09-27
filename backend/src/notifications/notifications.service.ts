@@ -4,10 +4,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
-import { createPaginator } from 'prisma-pagination';
-import { Prisma } from '@prisma/client';
 
 import { CreateNotificationDto } from '@/notifications/dto/create-notification.dto';
 import { ListNotificationsInputDto } from '@/notifications/dto/list-notifications-input.dto';
@@ -20,7 +18,7 @@ import { SupabaseService } from '@/common/supabase/supabase.service';
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   constructor(
-    private prisma: PrismaService,
+    private database: DatabaseService,
     private supabaseService: SupabaseService,
   ) {}
 
@@ -35,8 +33,8 @@ export class NotificationsService {
     const { userId, customerId } = createNotification;
 
     if (!userId && customerId) {
-      const users = await this.prisma.user.findMany({
-        where: { customerId, deletedAt: null },
+      const users = await this.database.findMany('users', {
+        where: { customer_id: customerId, deleted_at: null },
       });
 
       if (!users.length) {
@@ -44,11 +42,29 @@ export class NotificationsService {
       }
 
       const notifications = users.map((user) => ({
-        ...createNotification,
-        userId: user.id,
+        user_id: user.id,
+        customer_id: createNotification.customerId,
+        sender_id: createNotification.senderId,
+        type: createNotification.type,
+        title: createNotification.title,
+        message: createNotification.message,
+        template_id: (createNotification as any).templateId,
+        metadata: createNotification.metadata,
+        channel: createNotification.channel,
+        is_read: false,
+        generated_by: createNotification.generatedBy,
       }));
 
-      await this.prisma.notification.createMany({ data: notifications });
+      // Create notifications using raw Supabase client for batch insert
+      const { data: createdNotifications, error } = await this.database
+        .getClient()
+        .from('notifications')
+        .insert(notifications)
+        .select();
+
+      if (error) {
+        throw new ConflictException('Failed to create notifications');
+      }
 
       setTimeout(() => {
         Promise.all(
@@ -57,7 +73,14 @@ export class NotificationsService {
           .then(() => {
             return Promise.all(
               notifications.map((notification) =>
-                this.sendInAppNotification(notification),
+                this.sendInAppNotification({
+                  userId: notification.user_id,
+                  customerId: notification.customer_id,
+                  type: notification.type,
+                  title: notification.title,
+                  message: notification.message,
+                  channel: notification.channel,
+                }),
               ),
             );
           })
@@ -69,10 +92,24 @@ export class NotificationsService {
           });
       }, 100);
 
-      return notifications.at(-1);
+      return createdNotifications?.at(-1);
     } else if (userId) {
-      const notification = await this.prisma.notification.create({
-        data: createNotification,
+      const notificationData = {
+        user_id: createNotification.userId,
+        customer_id: createNotification.customerId,
+        sender_id: createNotification.senderId,
+        type: createNotification.type,
+        title: createNotification.title,
+        message: createNotification.message,
+        template_id: (createNotification as any).templateId,
+        metadata: createNotification.metadata,
+        channel: createNotification.channel,
+        is_read: false,
+        generated_by: createNotification.generatedBy,
+      };
+
+      const notification = await this.database.create('notifications', {
+        data: notificationData as any,
       });
 
       await Promise.all([
@@ -90,24 +127,13 @@ export class NotificationsService {
 
   async findOne(userId: number, id: number) {
     this.logger.log(`Finding notification with id ${id}`);
-    const notification = await this.prisma.notification.findUnique({
-      where: { id, userId },
-      include: {
-        User: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        Customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+    const notification = await this.database.findFirst('notifications', {
+      where: { id, user_id: userId },
+      select: `
+        *,
+        users!user_id(id, email, first_name, last_name),
+        customers!customer_id(id, name)
+      `,
     });
 
     if (!notification) {
@@ -122,123 +148,146 @@ export class NotificationsService {
     listNotificationsInputDto: ListNotificationsInputDto,
   ): Promise<PaginatedOutputDto<NotificationDto>> {
     this.logger.log('Finding all notifications');
-    const { perPage, page } = listNotificationsInputDto;
-    const paginate = createPaginator({ perPage });
+    const { perPage, page, type, isRead, channel } = listNotificationsInputDto;
 
-    const { type, isRead, channel } = listNotificationsInputDto;
-
-    const where: Prisma.NotificationFindManyArgs['where'] = {
-      userId,
-      ...(type ? { type } : {}),
-      ...(isRead !== undefined ? { isRead } : {}),
-      ...(channel ? { channel } : {}),
+    const whereClause: any = {
+      user_id: userId,
     };
 
-    const paginatedResult = await paginate<
-      NotificationDto,
-      Prisma.NotificationFindManyArgs
-    >(
-      this.prisma.notification,
+    if (type) whereClause.type = type;
+    if (isRead !== undefined) whereClause.is_read = isRead;
+    if (channel) whereClause.channel = channel;
+
+    const paginatedResult = await this.database.paginate(
+      'notifications',
+      { page: page || 1, per_page: perPage || 10 },
       {
-        where,
-        include: {
-          User: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          Customer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
+        where: whereClause,
+        select: `
+          *,
+          users!user_id(id, email, first_name, last_name),
+          customers!customer_id(id, name)
+        `,
+        orderBy: [{ field: 'created_at', direction: 'desc' }],
       },
-      { page },
     );
 
-    return paginatedResult;
+    // Transform the data to match expected DTO format
+    const transformedData = paginatedResult.data.map((notification) => ({
+      ...notification,
+      isRead: notification.is_read,
+      createdAt: new Date(notification.created_at),
+      readAt: notification.read_at ? new Date(notification.read_at) : undefined,
+      userId: notification.user_id || undefined,
+      customerId: notification.customer_id || undefined,
+      senderId: notification.sender_id || undefined,
+      templateId: notification.template_id || undefined,
+      generatedBy: notification.generated_by || undefined,
+    }));
+
+    // Transform meta to match expected format
+    const meta = {
+      total: paginatedResult.meta.total,
+      lastPage: paginatedResult.meta.total_pages,
+      currentPage: paginatedResult.meta.page,
+      perPage: paginatedResult.meta.per_page,
+      prev:
+        paginatedResult.meta.page > 1 ? paginatedResult.meta.page - 1 : null,
+      next:
+        paginatedResult.meta.page < paginatedResult.meta.total_pages
+          ? paginatedResult.meta.page + 1
+          : null,
+    };
+
+    return { data: transformedData as any, meta };
   }
 
   async findAllForAdmin(
     inputDto: ListAdminNotificationsInputDto,
   ): Promise<PaginatedOutputDto<NotificationDto>> {
     this.logger.log('Finding all admins notifications');
-    const { perPage, page } = inputDto;
-    const paginate = createPaginator({ perPage });
+    const {
+      perPage,
+      page,
+      userId,
+      customerId,
+      type,
+      isRead,
+      channel,
+      senderId,
+      search,
+    } = inputDto;
 
-    const { userId, customerId, type, isRead, channel, senderId, search } =
-      inputDto;
+    const whereClause: any = {};
 
-    const where: Prisma.NotificationFindManyArgs['where'] = {
-      ...(userId ? { userId: { in: userId } } : {}),
-      ...(customerId ? { customerId: { in: customerId } } : {}),
-      ...(type ? { type } : {}),
-      ...(isRead !== undefined ? { isRead } : {}),
-      ...(channel ? { channel: { in: channel } } : {}),
-      ...(senderId ? { senderId: { in: senderId } } : {}),
-      ...(search
-        ? {
-            OR: [
-              { title: { contains: search, mode: 'insensitive' } },
-              { message: { contains: search, mode: 'insensitive' } },
-              { generatedBy: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    };
+    if (userId) whereClause.user_id = { in: userId };
+    if (customerId) whereClause.customer_id = { in: customerId };
+    if (senderId) whereClause.sender_id = { in: senderId };
+    if (type) whereClause.type = type;
+    if (isRead !== undefined) whereClause.is_read = isRead;
+    if (channel) whereClause.channel = { in: channel };
 
-    const paginatedResult = await paginate<
-      NotificationDto,
-      Prisma.NotificationFindManyArgs
-    >(
-      this.prisma.notification,
+    if (search) {
+      whereClause.OR = [
+        { title: { ilike: `%${search}%` } },
+        { message: { ilike: `%${search}%` } },
+        { generated_by: { ilike: `%${search}%` } },
+      ];
+    }
+
+    const paginatedResult = await this.database.paginate(
+      'notifications',
+      { page: page || 1, per_page: perPage || 10 },
       {
-        where,
-        include: {
-          Sender: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          User: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          Customer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
+        where: whereClause,
+        select: `
+          *,
+          sender:users!sender_id(id, email, first_name, last_name),
+          users!user_id(id, email, first_name, last_name),
+          customers!customer_id(id, name)
+        `,
+        orderBy: [{ field: 'created_at', direction: 'desc' }],
       },
-      { page },
     );
 
-    return paginatedResult;
+    // Transform the data to match expected DTO format
+    const transformedData = paginatedResult.data.map((notification) => ({
+      ...notification,
+      isRead: notification.is_read,
+      createdAt: new Date(notification.created_at),
+      readAt: notification.read_at ? new Date(notification.read_at) : undefined,
+      userId: notification.user_id || undefined,
+      customerId: notification.customer_id || undefined,
+      senderId: notification.sender_id || undefined,
+      templateId: notification.template_id || undefined,
+      generatedBy: notification.generated_by || undefined,
+    }));
+
+    // Transform meta to match expected format
+    const meta = {
+      total: paginatedResult.meta.total,
+      lastPage: paginatedResult.meta.total_pages,
+      currentPage: paginatedResult.meta.page,
+      perPage: paginatedResult.meta.per_page,
+      prev:
+        paginatedResult.meta.page > 1 ? paginatedResult.meta.page - 1 : null,
+      next:
+        paginatedResult.meta.page < paginatedResult.meta.total_pages
+          ? paginatedResult.meta.page + 1
+          : null,
+    };
+
+    return { data: transformedData as any, meta };
   }
 
   async markAsRead(userId: number, id: number) {
     this.logger.log(
       `Marking user (${userId}) notification with id ${id} as read`,
     );
-    const notification = await this.prisma.notification.update({
-      where: { id, userId },
-      data: { isRead: true, readAt: new Date() },
+
+    const notification = await this.database.update('notifications', {
+      where: { id, user_id: userId },
+      data: { is_read: true, read_at: new Date().toISOString() },
     });
 
     if (!notification) {
@@ -252,9 +301,9 @@ export class NotificationsService {
 
   async markAllAsRead(userId: number) {
     this.logger.log('Marking all notifications as read');
-    await this.prisma.notification.updateMany({
-      where: { isRead: false, userId },
-      data: { isRead: true, readAt: new Date() },
+    await this.database.updateMany('notifications', {
+      where: { is_read: false, user_id: userId },
+      data: { is_read: true, read_at: new Date().toISOString() },
     });
 
     await this.sendUnreadCountNotification(userId);
@@ -262,17 +311,17 @@ export class NotificationsService {
 
   async marksAsReadMultiple(userId: number, ids: number[]) {
     this.logger.log(`Marking notifications with ids ${ids.join(', ')} as read`);
-    await this.prisma.notification.updateMany({
-      where: { id: { in: ids }, isRead: false, userId },
-      data: { isRead: true, readAt: new Date() },
+    await this.database.updateMany('notifications', {
+      where: { id: { in: ids }, is_read: false, user_id: userId },
+      data: { is_read: true, read_at: new Date().toISOString() },
     });
     await this.sendUnreadCountNotification(userId);
   }
 
   async unreadCount(userId: number): Promise<number> {
     this.logger.log(`Counting unread notifications for user ${userId}`);
-    return this.prisma.notification.count({
-      where: { isRead: false, userId },
+    return this.database.count('notifications', {
+      where: { is_read: false, user_id: userId },
     });
   }
 
