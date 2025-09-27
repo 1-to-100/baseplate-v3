@@ -4,8 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { DatabaseService } from '@/common/database/database.service';
 import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
@@ -13,78 +12,115 @@ import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissi
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   async create(createRoleDto: CreateRoleDto) {
-    if (
-      await this.prisma.role.findFirst({
-        where: { name: createRoleDto.name },
-      })
-    ) {
+    const existingRole = await this.database.findFirst('roles', {
+      where: { name: createRoleDto.name },
+    });
+
+    if (existingRole) {
       throw new ConflictException('Role with name already exists');
     }
-    return this.prisma.role.create({ data: createRoleDto });
+
+    return this.database.create('roles', { data: createRoleDto });
   }
 
-  findAll(search?: string) {
-    const where: Prisma.RoleWhereInput = search
+  async findAll(search?: string) {
+    const where: any = search
       ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
+          or: [
+            { name: { ilike: `%${search}%` } },
+            { description: { ilike: `%${search}%` } },
           ],
         }
-      : {};
+      : undefined;
 
-    return this.prisma.role.findMany({
-      where,
-      orderBy: { id: 'desc' },
-      include: {
-        permissions: {
-          include: {
-            permission: true,
+    const options: any = {
+      orderBy: [{ field: 'id', direction: 'desc' }],
+    };
+
+    if (where) {
+      options.where = where;
+    }
+
+    const roles = await this.database.findMany('roles', options);
+
+    // For each role, get permissions and user count
+    const rolesWithDetails = await Promise.all(
+      roles.map(async (role: any) => {
+        // Get role permissions with permission details
+        const rolePermissions = await this.database.findMany(
+          'role_permissions',
+          {
+            where: { role_id: role.id },
+            include: {
+              permissions: true,
+            },
           },
-        },
-        _count: {
-          select: { users: true },
-        },
-      },
-    });
+        );
+
+        // Count users with this role
+        const userCount = await this.database.count('users', {
+          where: { role_id: role.id },
+        });
+
+        return {
+          ...role,
+          permissions: rolePermissions.map((rp: any) => ({
+            permission: rp.permissions,
+          })),
+          _count: {
+            users: userCount,
+          },
+        };
+      }),
+    );
+
+    return rolesWithDetails;
   }
 
-  getForTaxonomy(): Promise<OutputTaxonomyDto[]> {
-    return this.prisma.role.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
+  async getForTaxonomy(): Promise<OutputTaxonomyDto[]> {
+    const roles = await this.database.findMany('roles', {
+      select: 'id, name',
+      orderBy: [{ field: 'name', direction: 'asc' }],
     });
+
+    return roles.map((role) => ({
+      id: role.id,
+      name: role.name ?? null,
+    }));
   }
 
   async findOne(id: number) {
-    const role = await this.prisma.role.findFirst({
+    const role = await this.database.findFirst('roles', {
       where: { id },
-      include: {
-        permissions: {
-          include: {
-            permission: true,
-          },
-        },
-      },
     });
+
     if (!role) {
       throw new NotFoundException(
         'No role with given ID exists for given customer',
       );
     }
-    return role;
+
+    // Get role permissions with permission details
+    const rolePermissions = await this.database.findMany('role_permissions', {
+      where: { role_id: id },
+      include: {
+        permissions: true,
+      },
+    });
+
+    return {
+      ...role,
+      permissions: rolePermissions.map((rp: any) => ({
+        permission: rp.permissions,
+      })),
+    };
   }
 
-  update(id: number, updateRoleDto: UpdateRoleDto) {
-    return this.prisma.role.update({
+  async update(id: number, updateRoleDto: UpdateRoleDto) {
+    return this.database.update('roles', {
       where: { id },
       data: updateRoleDto,
     });
@@ -98,7 +134,7 @@ export class RolesService {
     roleId: number,
     dto: UpdateRolePermissionsByNameDto,
   ) {
-    const role = await this.prisma.role.findUnique({
+    const role = await this.database.findUnique('roles', {
       where: { id: roleId },
     });
 
@@ -106,16 +142,14 @@ export class RolesService {
       throw new NotFoundException(`Role with ID ${roleId} not found`);
     }
 
-    const permissions = await this.prisma.permission.findMany({
+    const permissions = await this.database.findMany('permissions', {
       where: {
-        name: {
-          in: dto.permissionNames,
-        },
+        name: { in: dto.permissionNames },
       },
     });
 
     if (permissions.length !== dto.permissionNames.length) {
-      const foundNames = permissions.map((p) => p.name);
+      const foundNames = permissions.map((p: any) => p.name);
       const missing = dto.permissionNames.filter(
         (name) => !foundNames.includes(name),
       );
@@ -124,17 +158,20 @@ export class RolesService {
       );
     }
 
-    // clear existing permissions
-    await this.prisma.rolePermission.deleteMany({ where: { roleId } });
-
-    // add new permissions
-    await this.prisma.rolePermission.createMany({
-      data: permissions.map((p) => ({
-        roleId,
-        permissionId: p.id,
-      })),
-      skipDuplicates: true,
+    // Clear existing permissions
+    await this.database.deleteMany('role_permissions', {
+      where: { role_id: roleId },
     });
+
+    // Add new permissions
+    const rolePermissionData = permissions.map((p: any) => ({
+      role_id: roleId,
+      permission_id: p.id,
+    }));
+
+    for (const data of rolePermissionData) {
+      await this.database.create('role_permissions', { data });
+    }
 
     return {
       message: `Permissions updated for role ID ${roleId}`,

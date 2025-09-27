@@ -334,6 +334,14 @@ export interface CustomerFilters {
   search?: string;
 }
 
+export interface RoleFilters {
+  id?: number | number[];
+  name?: string;
+  description?: string;
+  search?: string;
+  or?: { name: { ilike: string } }[];
+}
+
 export interface ArticleFilters {
   customer_id?: number | number[];
   category_id?: number | number[];

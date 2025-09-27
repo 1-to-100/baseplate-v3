@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { RequiredSuperUser } from '@/common/decorators/superuser.decorator';
 import { DynamicAuthGuard } from '@/auth/guards/dynamic-auth/dynamic-auth.guard';
@@ -31,10 +30,7 @@ import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissi
   PermissionGuard,
 )
 export class RolesController {
-  constructor(
-    private readonly rolesService: RolesService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly rolesService: RolesService) {}
 
   @Post()
   @RequiredSuperUser('superAdmin')
@@ -57,9 +53,9 @@ export class RolesController {
     const role = await this.rolesService.findOne(+id);
     const outputRole = {
       id: role.id,
-      name: role.name,
-      description: role.description,
-      imageUrl: role.imageUlrl,
+      name: role.name ?? null,
+      description: role.description ?? null,
+      imageUrl: role.image_url ?? null,
       permissions: {},
     };
 
@@ -73,7 +69,7 @@ export class RolesController {
       acc[prefix] ??= [];
 
       acc[prefix].push({
-        id: permission.permissionId,
+        id: permission.permission.id,
         name: permission.permission.name,
         label: permission.permission.label,
       });

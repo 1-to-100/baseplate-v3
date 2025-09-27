@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesService } from '@/roles/roles.service';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { PERMISSIONS_KEY } from '@/common/decorators/permissions.decorator';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { DecodedIdToken } from '@/common/types/decoded-token.type';
@@ -17,7 +17,7 @@ export class PermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly rolesService: RolesService,
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -71,17 +71,18 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    const customer = await this.prisma.customer.findFirst({
-      where: {
-        id: effectiveUser.customerId!,
-      },
-    });
+    const customer = effectiveUser.customerId
+      ? await this.database.findUnique('customers', {
+          where: { id: effectiveUser.customerId },
+          select: 'id, owner_id',
+        })
+      : null;
     console.log('======================');
     console.log(customer);
     console.log(effectiveUser);
     console.log('======================');
     // allow customer owner to access its endpoints
-    if (customer && effectiveUser.id == customer.ownerId) {
+    if (customer && effectiveUser.id == customer.owner_id) {
       return true;
     }
     if (!effectiveUser.roleId) {

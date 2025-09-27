@@ -3,10 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
-import { CustomerStatus, Prisma } from '@prisma/client';
-import { createPaginator } from 'prisma-pagination';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
@@ -15,43 +13,16 @@ import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateCustomerDto } from '@/customers/dto/update-customer.dto';
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 
-type SubscriptionDataType = {
-  id: number;
-  name: string;
-  email: string;
-  status: string;
-  subscriptionId?: number;
-  Manager: {
-    id: number;
-    name: string;
-    Users: { email: string }[];
-  };
-  CustomerSuccess: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string | null;
-  } | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-  Subscription?: {
-    id: number;
-    name: string;
-  };
-  _count: {
-    Users: number;
-  };
-};
-
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly database: DatabaseService) {}
 
   async create(createCustomerDto: CreateCustomerDto) {
     const { name, subscriptionId, ownerId, customerSuccessId } =
       createCustomerDto;
-    const owner = await this.prisma.user.findUnique({
-      where: { id: ownerId, deletedAt: null },
+
+    const owner = await this.database.findUnique('users', {
+      where: { id: ownerId, deleted_at: null },
     });
 
     await this.validateOwner(ownerId);
@@ -59,20 +30,20 @@ export class CustomersService {
     await this.validateSubscription(subscriptionId);
     await this.validateManger(customerSuccessId);
 
-    const customer = await this.prisma.customer.create({
+    const customer = await this.database.create('customers', {
       data: {
         name,
         email: owner!.email,
-        subscriptionId,
+        subscription_id: subscriptionId,
         domain: getDomainFromEmail(owner!.email),
-        customerSuccessId,
-        ownerId,
+        customer_success_id: customerSuccessId,
+        owner_id: ownerId,
       },
     });
 
-    await this.prisma.user.update({
-      where: { id: ownerId, deletedAt: null },
-      data: { customerId: customer.id },
+    await this.database.update('users', {
+      where: { id: ownerId, deleted_at: null },
+      data: { customer_id: customer.id },
     });
 
     return customer;
@@ -92,108 +63,116 @@ export class CustomersService {
       customerSuccessId,
     } = listCustomersInput;
 
-    const where: Prisma.CustomerFindManyArgs['where'] = {
+    const where: any = {
       ...(id && { id: { in: id } }),
-      ...(subscriptionId && { subscriptionId: { in: subscriptionId } }),
-      ...(managerId && { managerId: { in: managerId } }),
-      ...(managerId && { managerId: { in: managerId } }),
+      ...(subscriptionId && { subscription_id: { in: subscriptionId } }),
+      ...(managerId && { manager_id: { in: managerId } }),
       ...(customerSuccessId && {
-        customerSuccessId: { in: customerSuccessId },
+        customer_success_id: { in: customerSuccessId },
       }),
       ...(status && {
-        status: {
-          in: status.map((s) => s as CustomerStatus),
-        },
+        status: { in: status },
       }),
       ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+        or: [
+          { name: { ilike: `%${search}%` } },
+          { email: { ilike: `%${search}%` } },
         ],
       }),
     };
 
-    const paginate = createPaginator({ perPage });
-    const paginateResult = await paginate<
-      SubscriptionDataType,
-      Prisma.CustomerFindManyArgs
-    >(
-      this.prisma.customer,
+    const paginateResult = await this.database.paginate(
+      'customers',
+      { page: page || 1, per_page: perPage || 10 },
       {
         where,
-        include: {
-          Manager: {
-            select: {
-              id: true,
-              name: true,
-              Users: { select: { email: true }, take: 1 },
-            },
-          },
-          CustomerSuccess: {
-            select: { id: true, firstName: true, lastName: true, email: true },
-          },
-          Subscription: { select: { id: true, name: true } },
-          _count: {
-            select: {
-              Users: {
-                where: { isSuperadmin: false, isCustomerSuccess: false },
-              },
-            },
-          },
-        },
-        orderBy: { id: 'desc' },
+        orderBy: [{ field: 'id', direction: 'desc' }],
       },
-      { page },
     );
 
-    const data = paginateResult.data.map((customer) => {
-      return {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email,
-        status: customer.status,
-        customerSuccess: customer.CustomerSuccess
-          ? {
-              id: customer.CustomerSuccess.id,
-              name: `${customer.CustomerSuccess.firstName ?? ''} ${customer.CustomerSuccess.lastName ?? ''}`.trim(),
-              email: customer.CustomerSuccess.email,
-            }
-          : null,
-        subscriptionId: customer.Subscription?.id,
-        subscriptionName: customer.Subscription?.name,
-        numberOfUsers: customer._count.Users,
-      };
-    });
+    // For each customer, fetch related data
+    const data = await Promise.all(
+      paginateResult.data.map(async (customer: any) => {
+        // Get customer success user if exists
+        const customerSuccessUser = customer.customer_success_id
+          ? await this.database.findUnique('users', {
+              where: { id: customer.customer_success_id },
+              select: 'id, first_name, last_name, email',
+            })
+          : null;
 
-    return { data, meta: paginateResult.meta };
+        // Get subscription if exists
+        const subscription = customer.subscription_id
+          ? await this.database.findUnique('subscriptions', {
+              where: { id: customer.subscription_id },
+              select: 'id, name',
+            })
+          : null;
+
+        // Count users for this customer (excluding superadmin and customer success)
+        const userCount = await this.database.count('users', {
+          where: {
+            customer_id: customer.id,
+            is_superadmin: false,
+            is_customer_success: false,
+          },
+        });
+
+        return {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          status: customer.status,
+          customerSuccess: customerSuccessUser
+            ? {
+                id: customerSuccessUser.id,
+                name: `${customerSuccessUser.first_name ?? ''} ${customerSuccessUser.last_name ?? ''}`.trim(),
+                email: customerSuccessUser.email,
+              }
+            : null,
+          subscriptionId: subscription?.id,
+          subscriptionName: subscription?.name,
+          numberOfUsers: userCount,
+        };
+      }),
+    );
+
+    // Transform PaginationMeta to match PaginatedOutputDto format
+    const transformedMeta = {
+      total: paginateResult.meta.total,
+      lastPage: paginateResult.meta.total_pages,
+      currentPage: paginateResult.meta.page,
+      perPage: paginateResult.meta.per_page,
+      prev: paginateResult.meta.page > 1 ? paginateResult.meta.page - 1 : null,
+      next:
+        paginateResult.meta.page < paginateResult.meta.total_pages
+          ? paginateResult.meta.page + 1
+          : null,
+    };
+
+    return { data, meta: transformedMeta };
   }
 
-  getForTaxonomy(customerId: number | null): Promise<OutputTaxonomyDto[]> {
-    let where = {};
+  async getForTaxonomy(
+    customerId: number | null,
+  ): Promise<OutputTaxonomyDto[]> {
+    const options: any = {
+      select: 'id, name',
+    };
+
     if (customerId) {
-      where = {
-        id: customerId,
-      };
+      options.where = { id: customerId };
     }
-    return this.prisma.customer.findMany({
-      select: {
-        id: true,
-        name: true,
-      },
-      where,
-    });
+
+    return await this.database.findMany('customers', options);
   }
 
   async findOne(id: number) {
-    const customer = await this.prisma.customer.findFirst({
+    const customer = await this.database.findUnique('customers', {
       where: { id },
       include: {
-        CustomerSuccess: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-        Subscription: { select: { id: true, name: true } },
-        Owner: { select: { id: true, firstName: true, lastName: true } },
-        _count: { select: { Users: true } },
+        users: true, // This will include both CustomerSuccess and Owner
+        subscriptions: true,
       },
     });
 
@@ -201,35 +180,64 @@ export class CustomersService {
       throw new NotFoundException('No customer with given ID exists');
     }
 
-    const { Subscription, _count } = customer;
+    // Get user count for this customer
+    const userCount = await this.database.count('users', {
+      where: { customer_id: id },
+    });
+
+    // Find customer success user
+    const customerSuccessUser = customer.customer_success_id
+      ? await this.database.findUnique('users', {
+          where: { id: customer.customer_success_id },
+          select: 'id, first_name, last_name, email',
+        })
+      : null;
+
+    // Find owner user
+    const ownerUser = customer.owner_id
+      ? await this.database.findUnique('users', {
+          where: { id: customer.owner_id },
+          select: 'id, first_name, last_name',
+        })
+      : null;
+
+    // Get subscription if exists
+    const subscription = customer.subscription_id
+      ? await this.database.findUnique('subscriptions', {
+          where: { id: customer.subscription_id },
+          select: 'id, name',
+        })
+      : null;
 
     return {
       id: customer.id,
       name: customer.name,
       email: customer.email,
       status: customer.status,
-      customerSuccess: customer.CustomerSuccess
+      customerSuccess: customerSuccessUser
         ? {
-            id: customer.CustomerSuccess.id,
-            name: `${customer.CustomerSuccess.firstName ?? ''} ${customer.CustomerSuccess.lastName ?? ''}`.trim(),
-            email: customer.CustomerSuccess.email,
+            id: customerSuccessUser.id,
+            name: `${customerSuccessUser.first_name ?? ''} ${customerSuccessUser.last_name ?? ''}`.trim(),
+            email: customerSuccessUser.email,
           }
         : null,
-      owner: customer.Owner
+      owner: ownerUser
         ? {
-            id: customer.Owner?.id,
-            firstName: customer.Owner?.firstName,
-            lastName: customer.Owner?.lastName,
+            id: ownerUser.id,
+            firstName: ownerUser.first_name,
+            lastName: ownerUser.last_name,
           }
         : null,
-      subscriptionId: Subscription?.id,
-      subscriptionName: Subscription?.name,
-      numberOfUsers: _count.Users,
+      subscriptionId: subscription?.id,
+      subscriptionName: subscription?.name,
+      numberOfUsers: userCount,
     };
   }
 
   async update(id: number, updateCustomerDto: UpdateCustomerDto) {
-    const customer = await this.prisma.customer.findUnique({ where: { id } });
+    const customer = await this.database.findUnique('customers', {
+      where: { id },
+    });
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
@@ -238,9 +246,9 @@ export class CustomersService {
     await this.validateSubscription(subscriptionId);
 
     let ownerEmail = customer.email;
-    if (ownerId && ownerId !== customer.ownerId) {
-      const owner = await this.prisma.user.findUnique({
-        where: { id: ownerId, deletedAt: null },
+    if (ownerId && ownerId !== customer.owner_id) {
+      const owner = await this.database.findUnique('users', {
+        where: { id: ownerId, deleted_at: null },
       });
       await this.validateOwner(ownerId);
       await this.validateCustomerOwner(
@@ -250,15 +258,28 @@ export class CustomersService {
         customer.id,
       );
       ownerEmail = owner!.email;
-      await this.prisma.user.update({
-        where: { id: ownerId, deletedAt: null },
-        data: { customerId: id },
+      await this.database.update('users', {
+        where: { id: ownerId, deleted_at: null },
+        data: { customer_id: id },
       });
     }
 
-    return this.prisma.customer.update({
+    // Convert camelCase DTO fields to snake_case for database
+    const updateData = {
+      name,
+      subscription_id: subscriptionId,
+      owner_id: ownerId,
+      email: ownerEmail,
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key],
+    );
+
+    return this.database.update('customers', {
       where: { id },
-      data: { ...updateCustomerDto, email: ownerEmail },
+      data: updateData,
     });
   }
 
@@ -268,11 +289,13 @@ export class CustomersService {
     name: string,
     ignoreCustomerId?: number,
   ) {
-    const existingCustomer = await this.prisma.customer.findFirst({
-      where: {
-        ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
-        OR: [{ name }, { email }, { ownerId }],
-      },
+    const where = {
+      ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
+      or: [{ name }, { email }, { owner_id: ownerId }],
+    };
+
+    const existingCustomer = await this.database.findFirst('customers', {
+      where,
     });
 
     if (existingCustomer && existingCustomer.name === name) {
@@ -283,17 +306,19 @@ export class CustomersService {
       throw new ConflictException(
         `Customer with the same email already exists: ${email}`,
       );
-    } else if (existingCustomer && existingCustomer.ownerId === ownerId) {
+    } else if (existingCustomer && existingCustomer.owner_id === ownerId) {
       throw new ConflictException(
         `Customer with the same owner id already exists: ${ownerId}`,
       );
     }
 
-    const domainCustomer = await this.prisma.customer.findFirst({
-      where: {
-        ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
-        domain: getDomainFromEmail(email),
-      },
+    const domainWhere = {
+      ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
+      domain: getDomainFromEmail(email),
+    };
+
+    const domainCustomer = await this.database.findFirst('customers', {
+      where: domainWhere,
     });
 
     if (domainCustomer) {
@@ -306,7 +331,7 @@ export class CustomersService {
   private async validateSubscription(subscriptionId?: number) {
     if (!subscriptionId) return;
 
-    const subscriptionExists = await this.prisma.subscription.findUnique({
+    const subscriptionExists = await this.database.findUnique('subscriptions', {
       where: { id: subscriptionId },
     });
     if (!subscriptionExists) {
@@ -319,8 +344,8 @@ export class CustomersService {
   private async validateManger(managerId?: number) {
     if (!managerId) return;
 
-    const manager = await this.prisma.user.findUnique({
-      where: { id: managerId, deletedAt: null },
+    const manager = await this.database.findUnique('users', {
+      where: { id: managerId, deleted_at: null },
     });
 
     if (!manager) {
@@ -329,14 +354,14 @@ export class CustomersService {
       );
     }
 
-    if (!manager.isCustomerSuccess) {
+    if (!manager.is_customer_success) {
       throw new ConflictException(
         'Manager user must have a customer success role',
       );
     }
 
-    const findCustomer = await this.prisma.customer.findFirst({
-      where: { customerSuccessId: managerId },
+    const findCustomer = await this.database.findFirst('customers', {
+      where: { customer_success_id: managerId },
     });
 
     if (findCustomer) {
@@ -347,8 +372,10 @@ export class CustomersService {
   }
 
   private async validateOwner(ownerId?: number) {
-    const owner = await this.prisma.user.findUnique({
-      where: { id: ownerId, deletedAt: null },
+    if (!ownerId) return;
+
+    const owner = await this.database.findUnique('users', {
+      where: { id: ownerId, deleted_at: null },
     });
 
     if (!owner) {
@@ -359,11 +386,11 @@ export class CustomersService {
       throw new ConflictException(
         'Owner email cannot be a public email domain',
       );
-    } else if (owner.isSuperadmin) {
+    } else if (owner.is_superadmin) {
       throw new ConflictException(
         'Owner user cannot be a superadmin. Please assign a different user as the owner.',
       );
-    } else if (owner.isCustomerSuccess) {
+    } else if (owner.is_customer_success) {
       throw new ConflictException(
         'Owner user cannot be a customer success role. Please assign a different user as the owner.',
       );
