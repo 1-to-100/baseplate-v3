@@ -79,8 +79,23 @@ export class UsersService {
 
     try {
       this.logger.log(`Create user with email ${createUserDto.email}`);
+
+      // Convert camelCase DTO fields to snake_case database fields
+      const userData = {
+        email: createUserDto.email,
+        first_name: createUserDto.firstName,
+        last_name: createUserDto.lastName,
+        phone_number: createUserDto.phoneNumber,
+        customer_id: createUserDto.customerId,
+        role_id: createUserDto.roleId,
+        manager_id: createUserDto.managerId,
+        status: createUserDto.status || 'inactive',
+        is_superadmin: createUserDto.isSuperadmin || false,
+        is_customer_success: createUserDto.isCustomerSuccess || false,
+      };
+
       user = await this.database.create('users', {
-        data: createUserDto as Partial<User>,
+        data: userData,
       });
     } catch (error) {
       this.logger.error(`Error creating user: ${error}`);
@@ -132,12 +147,22 @@ export class UsersService {
     let user: User | null = null;
 
     try {
+      // Convert camelCase DTO fields to snake_case database fields
+      const userData = {
+        email: makeUser.email,
+        first_name: makeUser.firstName,
+        last_name: makeUser.lastName,
+        phone_number: makeUser.phoneNumber,
+        customer_id: makeUser.customerId,
+        role_id: makeUser.roleId,
+        manager_id: makeUser.managerId,
+        status: makeUser.status || 'inactive',
+        is_superadmin: isSuperadmin,
+        is_customer_success: isCustomerSuccess,
+      };
+
       user = await this.database.create('users', {
-        data: {
-          ...makeUser,
-          is_superadmin: isSuperadmin,
-          is_customer_success: isCustomerSuccess,
-        } as Partial<User>,
+        data: userData,
       });
 
       // attach customer success to customer
@@ -179,8 +204,17 @@ export class UsersService {
       }
     }
 
+    // Convert camelCase DTO fields to snake_case database fields
+    const userData = {
+      email: inviteUserDto.email,
+      customer_id: inviteUserDto.customerId,
+      role_id: inviteUserDto.roleId,
+      manager_id: inviteUserDto.managerId,
+      status: 'inactive',
+    };
+
     const user = await this.database.create('users', {
-      data: inviteUserDto as Partial<User>,
+      data: userData,
     });
     await this.sendInviteEmail(mapUserToDto(user));
     return mapUserToDto(user);
@@ -486,9 +520,33 @@ export class UsersService {
     if (updateUserDto.customerId) {
       updateWhereClause.customer_id = updateUserDto.customerId;
     }
+
+    // Convert camelCase DTO fields to snake_case database fields
+    const updateData: any = {};
+    if (updateUserDto.email !== undefined)
+      updateData.email = updateUserDto.email;
+    if (updateUserDto.firstName !== undefined)
+      updateData.first_name = updateUserDto.firstName;
+    if (updateUserDto.lastName !== undefined)
+      updateData.last_name = updateUserDto.lastName;
+    if (updateUserDto.phoneNumber !== undefined)
+      updateData.phone_number = updateUserDto.phoneNumber;
+    if (updateUserDto.customerId !== undefined)
+      updateData.customer_id = updateUserDto.customerId;
+    if (updateUserDto.roleId !== undefined)
+      updateData.role_id = updateUserDto.roleId;
+    if (updateUserDto.managerId !== undefined)
+      updateData.manager_id = updateUserDto.managerId;
+    if (updateUserDto.status !== undefined)
+      updateData.status = updateUserDto.status;
+    if (updateUserDto.isSuperadmin !== undefined)
+      updateData.is_superadmin = updateUserDto.isSuperadmin;
+    if (updateUserDto.isCustomerSuccess !== undefined)
+      updateData.is_customer_success = updateUserDto.isCustomerSuccess;
+
     const user = await this.database.update('users', {
       where: updateWhereClause,
-      data: updateUserDto as Partial<User>,
+      data: updateData,
     });
 
     return mapUserToDto(user);
@@ -536,18 +594,35 @@ export class UsersService {
       }
     }
 
+    // Convert camelCase DTO fields to snake_case database fields
+    const updateData: any = {};
+    if (updateUser.firstName !== undefined)
+      updateData.first_name = updateUser.firstName;
+    if (updateUser.lastName !== undefined)
+      updateData.last_name = updateUser.lastName;
+    if (updateUser.phoneNumber !== undefined)
+      updateData.phone_number = updateUser.phoneNumber;
+    if (updateUser.customerId !== undefined)
+      updateData.customer_id = updateUser.customerId;
+    if (updateUser.roleId !== undefined) updateData.role_id = updateUser.roleId;
+    if (updateUser.managerId !== undefined)
+      updateData.manager_id = updateUser.managerId;
+    if (updateUser.status !== undefined) updateData.status = updateUser.status;
+
+    // Add system role fields
+    if (systemRole) {
+      updateData.is_superadmin = isSuperadmin;
+      updateData.is_customer_success = isCustomerSuccess;
+    }
+
+    // Clear customer_id for superadmin
+    if (isSuperadmin) {
+      updateData.customer_id = null;
+    }
+
     const user = await this.database.update('users', {
       where: { id, deleted_at: null },
-      data: {
-        ...updateUser,
-        ...(systemRole
-          ? {
-              is_superadmin: isSuperadmin,
-              is_customer_success: isCustomerSuccess,
-            }
-          : {}),
-        ...(isSuperadmin ? { customer_id: null } : {}),
-      } as Partial<User>,
+      data: updateData,
     });
 
     // attach customer success to customer
