@@ -6,6 +6,7 @@ import { CustomersService } from '@/customers/customers.service';
 import { ArticlesService } from '@/articles/articles.service';
 import { ArticleCategoriesService } from '@/article-categories/article-categories.service';
 import { NotificationsService } from '@/notifications/notifications.service';
+import { TemplatesService } from '@/notifications/templates.service';
 import { SupabaseModule } from '@/common/supabase/supabase.module';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
 import { SubscriptionSeederService } from './services/subscription-seeder.service';
@@ -26,6 +27,7 @@ import { CleanupCommand } from './commands/cleanup.command';
     ArticlesService,
     ArticleCategoriesService,
     NotificationsService,
+    TemplatesService,
     FrontendPathsService,
     SubscriptionSeederService,
     SeedCommand,

@@ -5,11 +5,13 @@ import { CustomersService } from '@/customers/customers.service';
 import { ArticlesService } from '@/articles/articles.service';
 import { ArticleCategoriesService } from '@/article-categories/article-categories.service';
 import { NotificationsService } from '@/notifications/notifications.service';
+import { TemplatesService } from '@/notifications/templates.service';
 import { SubscriptionSeederService } from '../services/subscription-seeder.service';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { OutputArticleCategoryDto } from '@/article-categories/dto/output-article-category.dto';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
 import { NotificationTypes } from '@/notifications/constants/notification-types';
+import { NotificationChannel } from '@/notifications/constants/notification-channel';
 
 @Injectable()
 export class SeedCommand {
@@ -22,6 +24,7 @@ export class SeedCommand {
     private readonly articlesService: ArticlesService,
     private readonly articleCategoriesService: ArticleCategoriesService,
     private readonly notificationsService: NotificationsService,
+    private readonly templatesService: TemplatesService,
     private readonly subscriptionSeederService: SubscriptionSeederService,
   ) {}
 
@@ -525,10 +528,70 @@ docker compose up</code></pre>
   }
 
   private async createNotificationTemplates(customerId: number) {
+    this.logger.log('Creating notification templates...');
+
+    const templates = [
+      {
+        title: 'Welcome Template',
+        message: 'Welcome to our platform! We are excited to have you here.',
+        comment: 'Sent to new users upon registration',
+        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        channel: NotificationChannel.info,
+      },
+      {
+        title: 'Article Published',
+        message:
+          'A new article has been published: {{articleTitle}}. Check it out!',
+        comment: 'Notification when a new article is published',
+        type: [NotificationTypes.IN_APP],
+        channel: NotificationChannel.article,
+      },
+      {
+        title: 'System Alert',
+        message:
+          'Important system update: {{message}}. Please review at your earliest convenience.',
+        comment: 'Critical system notifications',
+        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        channel: NotificationChannel.alert,
+      },
+      {
+        title: 'Weekly Digest',
+        message:
+          'Your weekly digest is ready! Check out the latest updates and articles.',
+        comment: 'Weekly summary for users',
+        type: [NotificationTypes.EMAIL],
+        channel: NotificationChannel.info,
+      },
+      {
+        title: 'Account Warning',
+        message:
+          'Warning: {{warningMessage}}. Please take action to resolve this issue.',
+        comment: 'Account-related warnings',
+        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        channel: NotificationChannel.warning,
+      },
+    ];
+
+    const createdTemplates: any[] = [];
+    for (const templateData of templates) {
+      try {
+        const template = await this.templatesService.createTemplate(
+          templateData,
+          customerId,
+        );
+        createdTemplates.push(template);
+        this.logger.log(`Created template: ${template.title}`);
+      } catch (error) {
+        this.logger.error(
+          `Error creating template ${templateData.title}:`,
+          error,
+        );
+      }
+    }
+
     this.logger.log(
-      '⚠️ Notification templates creation temporarily disabled during Supabase migration',
+      `Created ${createdTemplates.length} notification templates`,
     );
-    // TODO: Re-implement with DatabaseService after TemplatesService migration
-    return [];
+    return createdTemplates;
   }
 }

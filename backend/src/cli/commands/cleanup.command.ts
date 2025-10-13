@@ -16,22 +16,11 @@ export class CleanupCommand {
     this.logger.warn(
       '⚠️  WARNING: This will permanently delete test users and customers from the database!',
     );
-    this.logger.warn(
-      '⚠️  NOTICE: Cleanup command needs to be updated for Supabase migration',
-    );
-    this.logger.warn(
-      '⚠️  TEMPORARILY DISABLED: Please update this command to use DatabaseService',
-    );
 
-    return; // Temporarily disable until migration is complete
-
-    /*
     try {
-      // TODO: Update cleanup command for Supabase migration
       // Find test customer
       const testCustomer = await this.database.findFirst('customers', {
         where: { name: 'Test Customer Inc.' },
-        // TODO: Update include syntax for Supabase
       });
 
       if (!testCustomer) {
@@ -39,123 +28,190 @@ export class CleanupCommand {
         return;
       }
 
-      this.logger.log(`Found test customer: ${testCustomer.name} (ID: ${testCustomer.id})`);
+      this.logger.log(
+        `Found test customer: ${testCustomer.name} (ID: ${testCustomer.id})`,
+      );
 
       // Delete in correct order to respect foreign key constraints
       let deletedCount = 0;
 
       // 1. Delete notifications
-      const deletedNotifications = await this.prisma.notification.deleteMany({
-        where: { customerId: testCustomer.id },
-      });
-      deletedCount += deletedNotifications.count;
-      this.logger.log(`Deleted ${deletedNotifications.count} notifications`);
+      const { data: notifications, error: notifError } =
+        (await this.database.notifications
+          .delete()
+          .eq('customer_id', testCustomer.id)) as {
+          data: any[] | null;
+          error: any;
+        };
+
+      if (notifError) {
+        this.logger.error('Error deleting notifications:', notifError);
+      } else {
+        const notifCount = Array.isArray(notifications)
+          ? notifications.length
+          : 0;
+        deletedCount += notifCount;
+        this.logger.log(`Deleted ${notifCount} notifications`);
+      }
 
       // 2. Delete notification templates
-      const deletedTemplates = await this.prisma.notificationTemplate.deleteMany({
-        where: { customerId: testCustomer.id },
-      });
-      deletedCount += deletedTemplates.count;
-      this.logger.log(`Deleted ${deletedTemplates.count} notification templates`);
+      const { data: templates, error: templateError } =
+        (await this.database.notification_templates
+          .delete()
+          .eq('customer_id', testCustomer.id)) as {
+          data: any[] | null;
+          error: any;
+        };
+
+      if (templateError) {
+        this.logger.error('Error deleting templates:', templateError);
+      } else {
+        const templateCount = Array.isArray(templates) ? templates.length : 0;
+        deletedCount += templateCount;
+        this.logger.log(`Deleted ${templateCount} notification templates`);
+      }
 
       // 3. Delete articles
-      const deletedArticles = await this.prisma.article.deleteMany({
-        where: { customerId: testCustomer.id },
-      });
-      deletedCount += deletedArticles.count;
-      this.logger.log(`Deleted ${deletedArticles.count} articles`);
+      const { data: articles, error: articleError } =
+        (await this.database.articles
+          .delete()
+          .eq('customer_id', testCustomer.id)) as {
+          data: any[] | null;
+          error: any;
+        };
+
+      if (articleError) {
+        this.logger.error('Error deleting articles:', articleError);
+      } else {
+        const articleCount = Array.isArray(articles) ? articles.length : 0;
+        deletedCount += articleCount;
+        this.logger.log(`Deleted ${articleCount} articles`);
+      }
 
       // 4. Delete article categories
-      const deletedCategories = await this.prisma.articleCategory.deleteMany({
-        where: { customerId: testCustomer.id },
-      });
-      deletedCount += deletedCategories.count;
-      this.logger.log(`Deleted ${deletedCategories.count} article categories`);
+      const { data: categories, error: categoryError } =
+        (await this.database.article_categories
+          .delete()
+          .eq('customer_id', testCustomer.id)) as {
+          data: any[] | null;
+          error: any;
+        };
 
-      // 5. Use raw SQL to handle foreign key constraints properly
-      // First, find all users associated with this customer
-      const allUsers = await this.prisma.user.findMany({
-        where: { 
-          OR: [
-            { customerId: testCustomer.id },
-            { id: testCustomer.ownerId },
-            { email: { contains: '@testcustomer.com' } }
-          ]
-        },
-        select: { id: true, email: true },
-      });
+      if (categoryError) {
+        this.logger.error('Error deleting categories:', categoryError);
+      } else {
+        const categoryCount = Array.isArray(categories) ? categories.length : 0;
+        deletedCount += categoryCount;
+        this.logger.log(`Deleted ${categoryCount} article categories`);
+      }
+
+      // 5. Find all users associated with this customer
+      // Use direct Supabase query for complex OR conditions
+      const { data: allUsers, error: usersError } = await this.database.users
+        .select('id, email')
+        .or(
+          `customer_id.eq.${testCustomer.id},id.eq.${testCustomer.owner_id},email.ilike.%@testcustomer.com%`,
+        );
+
+      if (usersError) {
+        this.logger.error('Error finding users:', usersError);
+        throw usersError;
+      }
+
+      if (!allUsers) {
+        this.logger.warn('No users found to clean up');
+        return;
+      }
+
+      this.logger.log(`Found ${allUsers.length} users to clean up`);
 
       // First, update all users to remove customerId reference
-      await this.prisma.user.updateMany({
-        where: { customerId: testCustomer.id },
-        data: { customerId: null },
-      });
-      this.logger.log('Removed customerId references from users');
+      const { error: updateError } = await this.database.users
+        .update({ customer_id: null })
+        .eq('customer_id', testCustomer.id);
+
+      if (updateError) {
+        this.logger.error('Error updating users:', updateError);
+      } else {
+        this.logger.log('Removed customerId references from users');
+      }
 
       // Delete all related data for each user
       for (const user of allUsers) {
-        // Delete notifications
-        await this.prisma.notification.deleteMany({
-          where: { senderId: user.id },
-        });
+        // Delete notifications sent by this user
+        await this.database.notifications.delete().eq('sender_id', user.id);
 
-        await this.prisma.notification.deleteMany({
-          where: { userId: user.id },
-        });
+        // Delete notifications received by this user
+        await this.database.notifications.delete().eq('user_id', user.id);
 
-        // Delete articles
-        await this.prisma.article.deleteMany({
-          where: { createdBy: user.id },
-        });
+        // Delete articles created by this user
+        await this.database.articles.delete().eq('created_by', user.id);
 
-        // Delete article categories
-        await this.prisma.articleCategory.deleteMany({
-          where: { createdBy: user.id },
-        });
+        // Delete article categories created by this user
+        await this.database.article_categories
+          .delete()
+          .eq('created_by', user.id);
 
         // Update any users that reference this user as manager
-        await this.prisma.user.updateMany({
-          where: { managerId: user.id },
-          data: { managerId: null },
-        });
+        await this.database.users
+          .update({ manager_id: null })
+          .eq('manager_id', user.id);
       }
 
       // Now delete the customer
-      await this.prisma.customer.delete({
-        where: { id: testCustomer.id },
-      });
-      deletedCount += 1;
-      this.logger.log(`Deleted customer: ${testCustomer.name}`);
+      const { error: customerError } = await this.database.customers
+        .delete()
+        .eq('id', testCustomer.id);
+
+      if (customerError) {
+        this.logger.error('Error deleting customer:', customerError);
+      } else {
+        deletedCount += 1;
+        this.logger.log(`Deleted customer: ${testCustomer.name}`);
+      }
 
       // Now delete all the users
       for (const user of allUsers) {
-        await this.prisma.user.delete({
-          where: { id: user.id },
-        });
+        const { error: userError } = await this.database.users
+          .delete()
+          .eq('id', user.id);
+
+        if (userError) {
+          this.logger.error(`Error deleting user ${user.email}:`, userError);
+        }
       }
       deletedCount += allUsers.length;
       this.logger.log(`Hard deleted ${allUsers.length} users`);
 
       // 8. Clean up test subscription only (keep other subscriptions)
-      const testSubscription = await this.prisma.subscription.findFirst({
+      const testSubscription = await this.database.findFirst('subscriptions', {
         where: { name: 'Test Subscription' },
       });
 
       if (testSubscription) {
-        await this.prisma.subscription.delete({
-          where: { id: testSubscription.id },
-        });
-        deletedCount += 1;
-        this.logger.log(`Deleted test subscription: ${testSubscription.name}`);
+        const { error: subError } = await this.database.subscriptions
+          .delete()
+          .eq('id', testSubscription.id);
+
+        if (subError) {
+          this.logger.error('Error deleting subscription:', subError);
+        } else {
+          deletedCount += 1;
+          this.logger.log(
+            `Deleted test subscription: ${testSubscription.name}`,
+          );
+        }
       }
 
-      this.logger.log(`Test data cleanup completed successfully! Total items deleted: ${deletedCount} (HARD DELETE)`);
-      this.logger.warn('⚠️  All test data has been permanently removed from the database.');
-
+      this.logger.log(
+        `Test data cleanup completed successfully! Total items deleted: ${deletedCount} (HARD DELETE)`,
+      );
+      this.logger.warn(
+        '⚠️  All test data has been permanently removed from the database.',
+      );
     } catch (error) {
       this.logger.error('Error during cleanup:', error);
       throw error;
     }
-    */
   }
 }

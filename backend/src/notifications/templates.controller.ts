@@ -25,7 +25,7 @@ import { CreateTemplateDto } from '@/notifications/dto/create-template.dto';
 import { UpdateTemplateDto } from '@/notifications/dto/update-template.dto';
 import { SendTemplatesInputDto } from '@/notifications/dto/send-templates-input.dto';
 import { NotificationTemplateDto } from '@/notifications/dto/notification-template.dto';
-import { PrismaService } from '@/common/prisma/prisma.service';
+import { DatabaseService } from '@/common/database/database.service';
 import { UserStatus } from '@/common/constants/status';
 
 @ApiTags('Notification Templates')
@@ -33,7 +33,7 @@ import { UserStatus } from '@/common/constants/status';
 @UseGuards(DynamicAuthGuard, ImpersonationGuard)
 export class TemplatesController {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly database: DatabaseService,
     private readonly templatesService: TemplatesService,
   ) {}
 
@@ -193,9 +193,9 @@ export class TemplatesController {
       sendTemplateInputDto.userIds &&
       sendTemplateInputDto.userIds.length > 0
     ) {
-      const foundUsers = await this.prisma.user.findMany({
+      const foundUsers = await this.database.findMany('users', {
         where: {
-          deletedAt: null,
+          deleted_at: null,
           id: { in: sendTemplateInputDto.userIds },
         },
       });
@@ -213,7 +213,7 @@ export class TemplatesController {
       for (const foundUser of foundUsers) {
         if (
           user.isCustomerSuccess &&
-          foundUser.customerId !== user.customerId
+          foundUser.customer_id !== user.customerId
         ) {
           throw new ForbiddenException(
             'Customer success user cannot send notifications for users belonging to a different customer',
