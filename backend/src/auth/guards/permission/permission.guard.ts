@@ -5,19 +5,18 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolesService } from '@/roles/roles.service';
-import { DatabaseService } from '@/common/database/database.service';
+import { SupabaseService } from '@/common/supabase/supabase.service';
 import { PERMISSIONS_KEY } from '@/common/decorators/permissions.decorator';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { DecodedIdToken } from '@/common/types/decoded-token.type';
 import { SYSTEM_MODULES } from '@/system-modules/system-modules.data';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly rolesService: RolesService,
-    private readonly database: DatabaseService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -50,60 +49,107 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Access denied: user not found');
     }
 
-    if (effectiveUser.isSuperadmin) {
-      return true;
+    // Check if user has System Administrator role
+    if (effectiveUser.roleId) {
+      const { data: userRole } = await this.supabaseService
+        .getClient()
+        .from('roles')
+        .select('name')
+        .eq('id', effectiveUser.roleId)
+        .single();
+
+      if (userRole?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+        return true;
+      }
     }
 
-    const userManagementPermissions =
-      SYSTEM_MODULES.find(
-        (module) => module.name === 'UserManagement',
-      )?.permissions?.map((permission) => permission.name) || [];
+    // Check if user has Customer Success role and appropriate permissions
+    if (effectiveUser.roleId) {
+      const { data: userRole } = await this.supabaseService
+        .getClient()
+        .from('roles')
+        .select('name')
+        .eq('id', effectiveUser.roleId)
+        .single();
 
-    const hasCustomerSuccessAccess =
-      effectiveUser.isCustomerSuccess &&
-      allowedPermissions.some(
-        (permission) =>
-          userManagementPermissions.includes(permission) ||
-          permission.startsWith('Documents:'),
-      );
+      if (userRole?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
+        const userManagementPermissions =
+          SYSTEM_MODULES.find(
+            (module) => module.name === 'UserManagement',
+          )?.permissions?.map((permission) => permission.name) || [];
 
-    if (hasCustomerSuccessAccess) {
-      return true;
+        const hasCustomerSuccessAccess = allowedPermissions.some(
+          (permission) =>
+            userManagementPermissions.includes(permission) ||
+            permission.startsWith('Documents:'),
+        );
+
+        if (hasCustomerSuccessAccess) {
+          return true;
+        }
+      }
     }
 
-    const customer = effectiveUser.customerId
-      ? await this.database.findUnique('customers', {
-          where: { id: effectiveUser.customerId },
-          select: 'id, owner_id',
-        })
-      : null;
+    // Get customer information using SupabaseClient
+    const { data: customer } = await this.supabaseService
+      .getClient()
+      .from('customers')
+      .select('id, owner_id')
+      .eq('id', effectiveUser.customerId!)
+      .single();
+
     console.log('======================');
     console.log(customer);
     console.log(effectiveUser);
     console.log('======================');
+
     // allow customer owner to access its endpoints
     if (customer && effectiveUser.id == customer.owner_id) {
       return true;
     }
+
     if (!effectiveUser.roleId) {
       throw new ForbiddenException('Access denied: user has no role assigned');
     }
 
-    const userRole = await this.rolesService.findOne(effectiveUser.roleId);
-    if (!userRole) {
+    // Get user's role permissions using SupabaseClient
+    const { data: userRoleData, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select(
+        `
+        id,
+        name,
+        permissions:role_permissions(
+          permission:permissions(
+            name
+          )
+        )
+      `,
+      )
+      .eq('id', effectiveUser.roleId)
+      .single();
+
+    if (error || !userRoleData) {
       throw new ForbiddenException('Access denied: role not found');
     }
-    const rolePermissions = userRole.permissions;
+
+    const rolePermissions = userRoleData.permissions;
     if (!rolePermissions) {
       throw new ForbiddenException('Access denied: permissions not found');
     }
 
     let allowed = false;
-    rolePermissions.forEach((permission) => {
-      if (allowedPermissions.includes(permission.permission.name)) {
-        allowed = true;
-      }
-    });
+    (rolePermissions as Array<{ permission: Array<{ name: string }> }>).forEach(
+      (rolePermission) => {
+        if (
+          rolePermission.permission?.[0]?.name &&
+          allowedPermissions.includes(rolePermission.permission[0].name)
+        ) {
+          allowed = true;
+        }
+      },
+    );
 
     if (!allowed) {
       const userContext = request.isImpersonating

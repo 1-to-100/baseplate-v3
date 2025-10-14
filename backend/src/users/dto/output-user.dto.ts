@@ -58,6 +58,15 @@ export class OutputUserDto {
   @IsOptional()
   isCustomerSuccess?: boolean | null;
 
+  @ApiPropertyOptional({ description: 'User role information' })
+  @IsOptional()
+  role?: {
+    id: number;
+    name: string;
+    description: string | null;
+    systemRole: boolean;
+  };
+
   @ApiPropertyOptional({ description: 'List of permissions' })
   @IsOptional()
   permissions?: string[];

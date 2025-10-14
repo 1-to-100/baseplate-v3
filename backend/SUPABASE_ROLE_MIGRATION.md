@@ -80,14 +80,16 @@ const { data } = await supabase
 - [x] Verify with test queries (SQL file created)
 
 ### Phase 2: Backend Code Updates
-- [ ] Create SystemRoles decorator
-- [ ] Create SystemRoleGuard
-- [ ] Update PermissionGuard
-- [ ] Update RequireSuperuserGuard
+- [x] Create SystemRoles decorator
+- [x] Create system roles constants (SYSTEM_ROLES, SYSTEM_ROLE_IDS)
+- [x] Create SystemRoleGuard (with constants)
+- [x] Update PermissionGuard (with constants)
+- [x] Update RequireSuperuserGuard (with constants)
+- [x] Update OutputUserDto (add role field)
 - [ ] Update RolesService
 - [ ] Update RolesController
 - [ ] Add explicit filters to all services
-- [ ] Create RoleMigrationService
+- [x] Create RoleMigrationService (with constants)
 
 ### Phase 3: Data Migration
 - [ ] Run role migration service
@@ -865,6 +867,47 @@ EXPLAIN ANALYZE SELECT * FROM users LIMIT 1;
 
 ### Step 2.1: Create New Files
 
+#### Create: `backend/src/common/constants/system-roles.ts`
+
+```typescript
+/**
+ * System Role Constants
+ * 
+ * These constants define the three system roles that are created during migration.
+ * System roles have IDs 1-3 and cannot be modified or deleted.
+ * Custom roles created by users will have IDs >= 100.
+ */
+
+export const SYSTEM_ROLES = {
+  SYSTEM_ADMINISTRATOR: 'System Administrator',
+  CUSTOMER_SUCCESS: 'Customer Success',
+  CUSTOMER_ADMINISTRATOR: 'Customer Administrator',
+} as const;
+
+export const SYSTEM_ROLE_IDS = {
+  SYSTEM_ADMINISTRATOR: 1,
+  CUSTOMER_SUCCESS: 2,
+  CUSTOMER_ADMINISTRATOR: 3,
+} as const;
+
+export type SystemRoleName = typeof SYSTEM_ROLES[keyof typeof SYSTEM_ROLES];
+export type SystemRoleId = typeof SYSTEM_ROLE_IDS[keyof typeof SYSTEM_ROLE_IDS];
+
+export const CUSTOM_ROLE_MIN_ID = 100;
+
+export function isSystemRole(roleName: string): roleName is SystemRoleName {
+  return Object.values(SYSTEM_ROLES).includes(roleName as SystemRoleName);
+}
+
+export function isSystemRoleId(roleId: number): roleId is SystemRoleId {
+  return roleId >= 1 && roleId <= 3;
+}
+
+export function isCustomRoleId(roleId: number): boolean {
+  return roleId >= CUSTOM_ROLE_MIN_ID;
+}
+```
+
 #### Create: `backend/src/common/decorators/system-roles.decorator.ts`
 
 ```typescript
@@ -873,6 +916,17 @@ import { SetMetadata } from '@nestjs/common';
 export const SYSTEM_ROLES_KEY = 'system_roles';
 export const SystemRoles = (...roles: string[]) => 
   SetMetadata(SYSTEM_ROLES_KEY, roles);
+```
+
+**Usage Example:**
+```typescript
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
+
+@SystemRoles(SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS)
+@Get('admin-only')
+async adminEndpoint() {
+  // Only System Administrators and Customer Success can access
+}
 ```
 
 #### Create: `backend/src/auth/guards/system-role/system-role.guard.ts`
