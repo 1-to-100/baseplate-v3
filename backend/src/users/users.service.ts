@@ -316,11 +316,13 @@ export class UsersService {
           { email: { contains: search } },
         ],
       }),
-      // Exclude system roles using AND with not conditions
-      AND: [
-        { role_id: { not: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR } },
-        { role_id: { not: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS } },
-      ],
+      // Exclude system roles only when roleId is not specified
+      ...(!roleId && {
+        AND: [
+          { role_id: { not: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR } },
+          { role_id: { not: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS } },
+        ],
+      }),
       deleted_at: null,
     };
 
