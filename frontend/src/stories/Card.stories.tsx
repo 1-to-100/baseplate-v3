@@ -18,7 +18,6 @@ const meta: Meta<typeof CardComponent> = {
 export default meta;
 type Story = StoryObj<typeof CardComponent>;
 
-// Приклад даних для карток
 const sampleData: CardData[] = [
   {
     id: '1',

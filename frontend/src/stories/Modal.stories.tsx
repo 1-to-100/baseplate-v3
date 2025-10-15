@@ -18,7 +18,6 @@ const meta: Meta<typeof ModalComponent> = {
 export default meta;
 type Story = StoryObj<typeof ModalComponent>;
 
-// Приклад даних для модального вікна
 const userFormData: ModalData = {
   title: 'Add User',
   fields: [

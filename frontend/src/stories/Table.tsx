@@ -47,7 +47,6 @@ export function TableComponent({
   const endIndex = startIndex + itemsPerPage;
   const currentData = data.slice(startIndex, endIndex);
 
-  // Закриваємо Popper при кліку на будь-яку частину екрану
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (anchorEl && !anchorEl.contains(event.target as Node)) {

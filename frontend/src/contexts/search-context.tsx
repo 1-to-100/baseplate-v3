@@ -24,7 +24,6 @@ export function SearchProvider({ children }: SearchProviderProps): React.JSX.Ele
     setSearchValue("");
   }, []);
 
-  // Очищаємо пошук при зміні маршруту
   React.useEffect(() => {
     setSearchValue("");
   }, [pathname]);

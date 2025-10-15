@@ -22,7 +22,6 @@ export function ImpersonationProvider({
   const [impersonatedUserId, setImpersonatedUserId] = React.useState<
     number | null
   >(() => {
-    // Відновлюємо з localStorage при ініціалізації
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("impersonatedUserId");
       return stored ? parseInt(stored, 10) : null;
@@ -34,7 +33,6 @@ export function ImpersonationProvider({
     (userId: number | null) => {
       setImpersonatedUserId(userId);
 
-      // Зберігаємо в localStorage
       if (typeof window !== "undefined") {
         if (userId) {
           localStorage.setItem("impersonatedUserId", userId.toString());

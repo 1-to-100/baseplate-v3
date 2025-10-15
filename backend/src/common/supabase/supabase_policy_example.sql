@@ -1,8 +1,5 @@
--- Відкликаємо абсолютно всі права (SELECT, INSERT, UPDATE, DELETE, etc.)
--- на таблицю _prisma_migrations у ролей anon і authenticated.
 REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
 
--- проблеми з включення RLS articles, тому поки прибрав всі права
 REVOKE ALL ON TABLE public.articles FROM anon, authenticated;
 
 
@@ -42,7 +39,6 @@ create policy "enable_read_access_subscriptions_for_all_users"
     to public
     using (true);
 
--- не виконалась
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 create policy "enable_read_access_articles_for_all_users"
     on "public"."articles"

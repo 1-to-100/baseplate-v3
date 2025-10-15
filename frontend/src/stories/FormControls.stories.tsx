@@ -33,14 +33,12 @@ const meta: Meta<typeof FormControls> = {
 export default meta;
 type Story = StoryObj<typeof FormControls>;
 
-// Приклад опцій для радіобатонів
 const radioOptions = [
   { value: 'option1', label: 'Option 1' },
   { value: 'option2', label: 'Option 2' },
   { value: 'option3', label: 'Option 3' },
 ];
 
-// Приклад опцій для чекбоксів
 const checkboxOptions = [
   { value: 'feature1', label: 'Feature 1' },
   { value: 'feature2', label: 'Feature 2' },
@@ -48,7 +46,6 @@ const checkboxOptions = [
   { value: 'feature4', label: 'Feature 4' },
 ];
 
-// Компонент-обгортка для інтерактивних сторі
 function FormControlsWrapper(props: React.ComponentProps<typeof FormControls>) {
   const [value, setValue] = useState<string | string[]>(props.type === 'radio' ? '' : []);
 

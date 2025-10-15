@@ -41,7 +41,6 @@ export const Button = ({
       color={buttonColor}
       size={joySize}
       sx={{
-        // Базові стилі для різних варіантів
         ...(buttonVariant === 'solid' && {
           background: buttonColor === 'primary' 
             ? 'linear-gradient(120deg, #282490 0%, #3F4DCF 100%)'

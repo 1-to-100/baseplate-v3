@@ -60,7 +60,6 @@ export const Tabs = ({
         size={size}
         variant={variant}
         sx={{
-          // Стилі з theme файлу
           backgroundColor: 'transparent',
           '& .MuiTabList-root': {
             backgroundColor: 'var(--joy-palette-background-mainBg)',

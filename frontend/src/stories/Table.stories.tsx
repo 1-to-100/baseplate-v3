@@ -24,7 +24,6 @@ const meta: Meta<typeof TableComponent> = {
 export default meta;
 type Story = StoryObj<typeof TableComponent>;
 
-// Приклад даних для таблиці з оригінальною структурою
 const sampleData: TableData[] = [
   {
     id: '1',

@@ -82,7 +82,6 @@ export const Input = ({
         '& .MuiInput-endDecorator': {
           color: 'var(--joy-palette-text-primary)',
         },
-        // Стилі для бордера
         '--Input-borderColor': 'var(--joy-palette-text-primary)',
         '--Input-hoverBorderColor': 'var(--joy-palette-text-primary)',
         '--Input-focusedBorderColor': 'var(--joy-palette-text-primary)',

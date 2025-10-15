@@ -477,7 +477,6 @@ describe('UsersService', () => {
           next: null,
         },
       };
-      // Мокаємо createPaginator через spyOn
       const { createPaginator } = require('prisma-pagination');
       jest
         .spyOn(require('prisma-pagination'), 'createPaginator')

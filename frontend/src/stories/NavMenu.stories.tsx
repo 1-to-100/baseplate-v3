@@ -13,7 +13,6 @@ const meta: Meta<typeof NavMenu> = {
 export default meta;
 type Story = StoryObj<typeof NavMenu>;
 
-// Навігаційні елементи як на зображенні
 const navItems: NavItemConfig[] = [
   {
     key: 'role',

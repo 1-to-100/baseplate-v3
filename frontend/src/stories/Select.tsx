@@ -88,7 +88,6 @@ export const Select = ({
         '& .MuiSelect-icon': {
           color: 'var(--joy-palette-text-primary)',
         },
-        // Стилі для бордера
         '--Select-borderColor': 'var(--joy-palette-text-primary)',
         '--Select-hoverBorderColor': 'var(--joy-palette-text-primary)',
         '--Select-focusedBorderColor': 'var(--joy-palette-text-primary)',

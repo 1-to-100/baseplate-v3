@@ -10,7 +10,6 @@ import RouterLink from 'next/link';
 import type { NavItemConfig } from '../types/nav';
 import { icons } from '../components/dashboard/layout/nav-icons';
 
-// Простий компонент навігації для Storybook
 function SimpleNavItem({ 
   item, 
   depth = 0, 
@@ -131,7 +130,7 @@ export function NavMenu({
   items, 
   showLogo = true
 }: NavMenuProps) {
-  const [activeItem, setActiveItem] = React.useState('role'); // Початковий активний елемент
+  const [activeItem, setActiveItem] = React.useState('role');
 
   const handleItemClick = (key: string) => {
     setActiveItem(key);
