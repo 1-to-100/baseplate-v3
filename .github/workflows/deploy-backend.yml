@@ -18,9 +18,9 @@ jobs:
 
       - name: Build Backend Docker Image
         run: |
-          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > backend/.env.backend
-          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > backend/.env
-          docker build -f Dockerfile.api -t baseplate-v2-backend:latest backend/
+          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env.backend
+          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env
+          docker build -f Dockerfile.api -t baseplate-v2-backend:latest 
 
       - name: Save Docker Image
         run: |
@@ -34,7 +34,7 @@ jobs:
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
-          path: baseplate-v2-backend.tar.gz docker-compose.backend.yml backend/.env.backend backend/prisma/* 
+          path: baseplate-v2-backend.tar.gz docker-compose.backend.yml .env.backend 
           remote_path: /opt/1-to-100/baseplate-v2/backend
           remote_host: ${{ secrets.DEPLOY_HOST }}
           remote_user: ${{ secrets.DEPLOY_USER }}
