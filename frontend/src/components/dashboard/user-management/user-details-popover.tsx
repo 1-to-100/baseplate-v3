@@ -24,6 +24,7 @@ import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {getUserById, updateUser} from "../../../lib/api/users";
 import {useImpersonation} from "@/contexts/impersonation-context";
 import {useUserInfo} from "@/hooks/use-user-info";
+import { isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES } from "@/lib/user-utils";
 
 interface UserDetailsPopoverProps {
   open: boolean;
@@ -155,7 +156,7 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
       handleMenuClose();
       onClose();
 
-      const redirectTo = userData.isCustomerSuccess ? "/dashboard/user-management" : undefined;
+      const redirectTo = userData.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS ? "/dashboard/user-management" : undefined;
       if (redirectTo) {
         window.location.href = redirectTo;
       } else {
@@ -392,9 +393,9 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
               <PencilIcon fontSize="16px" style={iconStyle} />
               Edit
             </Box>
-            {userData?.status === "active" && !isImpersonating && !userData.isSuperadmin &&
+            {userData?.status === "active" && !isImpersonating && userData.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
               userInfo &&
-              (userInfo.isSuperadmin || userInfo.isCustomerSuccess) && (
+              (isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo)) && (
                 <Box
                   onMouseDown={(event) => {
                     event.preventDefault();

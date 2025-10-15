@@ -20,6 +20,7 @@ import { NoSsr } from "@/components/core/no-ssr";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { ColorSchemeSwitch } from "./color-scheme-switch";
 import { icons } from "./nav-icons";
+import { isSystemAdministrator, isCustomerSuccess } from "@/lib/user-utils";
 
 export interface SideNavProps {
   items: NavItemConfig[];
@@ -32,10 +33,10 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
   const filteredItems = items.map((group) => ({
     ...group,
     items: group.items?.filter((item) => {
-      if (userInfo?.isCustomerSuccess) {
+      if (isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "system-users";
       }
-      if (!userInfo?.isSuperadmin && !userInfo?.isCustomerSuccess) {
+      if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management";
       }
       return true;
@@ -240,7 +241,6 @@ interface NavItemProps extends Omit<NavItemConfig, 'items'> {
   forceOpen?: boolean;
   pathname: string;
   type?: 'divider';
-  show?: (userInfo: { isSuperadmin?: boolean; isCustomerSuccess?: boolean }) => boolean;
 }
 
 function NavItem({
@@ -266,7 +266,7 @@ function NavItem({
   const { userInfo } = useUserInfo();
 
   if (type === 'divider') {
-    const shouldShowDivider = Boolean(userInfo?.isSuperadmin || userInfo?.isCustomerSuccess);
+    const shouldShowDivider = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
     if (!shouldShowDivider) {
       return <></>;
     }

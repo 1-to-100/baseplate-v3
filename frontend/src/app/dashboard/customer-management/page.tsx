@@ -33,6 +33,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { useColorScheme } from '@mui/joy/styles';
 import { useGlobalSearch } from "@/hooks/use-global-search";
+import { isSystemAdministrator, isCustomerSuccess } from "@/lib/user-utils";
 
 interface HttpError extends Error {
   response?: {
@@ -291,7 +292,7 @@ export default function Page(): React.JSX.Element {
     );
   }
 
-  if (error || !userInfo.isSuperadmin) {
+  if (error || !isSystemAdministrator(userInfo)) {
     const httpError = error as HttpError;
     let status: number | undefined = httpError?.response?.status;
 
@@ -300,7 +301,7 @@ export default function Page(): React.JSX.Element {
       status = match ? parseInt(match[1] ?? "0", 10) : undefined;
     }
 
-    if (status === 403 || !(userInfo.isSuperadmin || userInfo.isCustomerSuccess)) {
+    if (status === 403 || !(isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo))) {
       return (
         <Box sx={{ textAlign: "center", mt: { xs: 10, sm: 20, md: 35 } }}>
           <Typography

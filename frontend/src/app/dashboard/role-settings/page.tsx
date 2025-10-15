@@ -18,6 +18,7 @@ import { useUserInfo } from "@/hooks/use-user-info";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/api/users";
 import { Role } from "@/contexts/auth/types";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 interface HttpError extends Error {
   response?: {
@@ -60,7 +61,7 @@ export default function Page(): React.JSX.Element {
   };
 
 
-  if (error || !userInfo?.isSuperadmin) {
+  if (error || !isSystemAdministrator(userInfo)) {
     const httpError = error as HttpError;
     let status: number | undefined = httpError?.response?.status;
 

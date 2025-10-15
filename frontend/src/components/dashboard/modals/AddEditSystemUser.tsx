@@ -116,7 +116,7 @@ export default function AddEditSystemUser({
         lastName: userData.lastName || "",
         email: userData.email || "",
         customer: userData.customer?.name || "",
-        systemRole: userData.isSuperadmin ? 'system_admin' : 'customer_success',
+        systemRole: userData.role?.name === 'System Administrator' ? 'system_admin' : 'customer_success',
       });
       setAvatarPreview(userData.avatar || null);
       setIsActive(userData.status === "active");
@@ -278,18 +278,16 @@ export default function AddEditSystemUser({
   };
 
   const handleSystemRoleChange = (newValue: string) => {
-    const isSuperadmin = newValue === "system_admin";
+    const isSystemAdmin = newValue === "system_admin";
     setFormData((prev) => ({
       ...prev,
       systemRole: newValue as SystemRole,
-      isSuperadmin,
-      isCustomerSuccess: !isSuperadmin,
-      customer: isSuperadmin ? "" : prev.customer,
+      customer: isSystemAdmin ? "" : prev.customer,
     }));
     setErrors((prev) => ({ 
       ...prev, 
       systemRole: undefined,
-      customer: isSuperadmin ? undefined : prev?.customer 
+      customer: isSystemAdmin ? undefined : prev?.customer 
     }));
   };
 

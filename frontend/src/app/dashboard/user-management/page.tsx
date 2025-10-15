@@ -40,7 +40,7 @@ import {PaperPlaneRight, ToggleRight, TrashSimple} from "@phosphor-icons/react";
 import { toast } from "@/components/core/toaster";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-import { isUserOwner } from "@/lib/user-utils";
+import { isUserOwner, isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES } from "@/lib/user-utils";
 import { ArrowRight as ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { useImpersonation } from "@/contexts/impersonation-context";
 import {getCustomers} from "@/lib/api/customers";
@@ -605,9 +605,9 @@ export default function Page(): React.JSX.Element {
               open={isFilterOpen}
               onOpen={handleOpenFilter}
             />
-            {userInfo?.isSuperadmin ||
+            {isSystemAdministrator(userInfo) ||
             isUserOwner(userInfo) ||
-            userInfo?.isCustomerSuccess ||
+            isCustomerSuccess(userInfo) ||
             userInfo?.permissions?.includes("inviteUser") ||
             userInfo?.permissions?.includes("createUser") ? (
               <Box sx={{ position: "relative" }}>
@@ -1107,10 +1107,10 @@ export default function Page(): React.JSX.Element {
                                     Resend invite
                                   </Box>
                                 )}
-                              {user.status == "active" && !isImpersonating && !user.isSuperadmin &&
+                              {user.status == "active" && !isImpersonating && user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
                                 userInfo &&
-                                (userInfo.isSuperadmin ||
-                                  userInfo.isCustomerSuccess) && (
+                                (isSystemAdministrator(userInfo) ||
+                                  isCustomerSuccess(userInfo)) && (
                                   <Box
                                     onMouseDown={(event) => {
                                       event.preventDefault();
@@ -1168,7 +1168,7 @@ export default function Page(): React.JSX.Element {
                                   Activate
                                 </Box>
                               )}
-                              {!user.isSuperadmin && !user.isCustomerSuccess && (isUserOwner(userInfo, user) || userInfo?.permissions?.includes("deleteUser")) && (
+                              {user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR && user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS && (isUserOwner(userInfo, user) || userInfo?.permissions?.includes("deleteUser")) && (
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();

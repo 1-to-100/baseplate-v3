@@ -157,7 +157,7 @@ export default function Page(): React.JSX.Element {
           </Stack>
         </Stack>
 
-        {userInfo?.isSuperadmin ? (
+        {isSystemAdministrator(userInfo) ? (
           isLoading ? (
             <Box
               sx={{

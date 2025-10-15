@@ -32,8 +32,7 @@ export interface GetUsersParams {
   search?: string;
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
-  isSuperadmin?: boolean;
-  isCustomerSuccess?: boolean;
+  roleFilter?: string;
   customerId?: number[];
   statusId?: string[];
 }
@@ -82,8 +81,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
   if (params.orderBy) query.set('orderBy', params.orderBy);
   if (params.orderDirection) query.set('orderDirection', params.orderDirection);
   
-  if (params.isSuperadmin) query.set('isSuperadmin', params.isSuperadmin.toString());
-  if (params.isCustomerSuccess) query.set('isCustomerSuccess', params.isCustomerSuccess.toString());
+  if (params.roleFilter) query.set('roleFilter', params.roleFilter);
   if (params.customerId && params.customerId.length > 0) {
     params.customerId.forEach(id => query.append('customerId', id.toString()));
   }

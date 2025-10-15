@@ -28,6 +28,7 @@ import { icons } from './nav-icons';
 import { WorkspaceSwitch } from './workspace-switch';
 import { useUserInfo } from "@/hooks/use-user-info";
 import { CustomerSelect } from "./customer-select";
+import { isSystemAdministrator, isCustomerSuccess } from "@/lib/user-utils";
 
 export interface MobileNavProps {
   items: NavItemConfig[];
@@ -43,10 +44,10 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
   const filteredItems = items.map((group) => ({
     ...group,
     items: group.items?.filter((item) => {
-      if (userInfo?.isCustomerSuccess) {
+      if (isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "system-users";
       }
-      if (!userInfo?.isSuperadmin && !userInfo?.isCustomerSuccess) {
+      if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management";
       }
       return true;
@@ -115,7 +116,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {userInfo?.isSuperadmin || userInfo?.isCustomerSuccess ? (
+        {isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo) ? (
           <Box sx={{ mt: '10px' }}>
             <CustomerSelect />
           </Box>
@@ -232,7 +233,7 @@ function NavItem({
   const { userInfo } = useUserInfo();
 
   if (type === 'divider') {
-    const shouldShowDivider = Boolean(userInfo?.isSuperadmin || userInfo?.isCustomerSuccess);
+    const shouldShowDivider = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
     if (!shouldShowDivider) {
       return <></>;
     }

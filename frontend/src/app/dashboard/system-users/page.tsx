@@ -40,6 +40,7 @@ import {getRoles} from "@/lib/api/roles";
 import {getCustomers} from "@/lib/api/customers";
 import {getSystemUserById, getSystemUsers} from "@/lib/api/system-users";
 import {useRouter} from "next/navigation";
+import { isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES } from "@/lib/user-utils";
 
 interface HttpError extends Error {
   response?: {
@@ -75,13 +76,11 @@ export default function Page(): React.JSX.Element {
   const [filters, setFilters] = useState<{
     statusId: string[];
     customerId: number[];
-    isSuperadmin: boolean;
-    isCustomerSuccess: boolean;
+    roleFilter?: string;
   }>({
     statusId: [],
     customerId: [],
-    isSuperadmin: false,
-    isCustomerSuccess: false,
+    roleFilter: undefined,
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { userInfo } = useUserInfo();
@@ -118,8 +117,8 @@ export default function Page(): React.JSX.Element {
       status: apiUser.status,
       avatar: apiUser.avatar || undefined,
       activity: apiUser.activity,
-      isSuperadmin: apiUser.isSuperadmin,
-      isCustomerSuccess: apiUser.isCustomerSuccess,
+      isSuperadmin: apiUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
+      isCustomerSuccess: apiUser.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS,
     };
   };
 
@@ -132,8 +131,7 @@ export default function Page(): React.JSX.Element {
       sortDirection,
       filters.statusId,
       filters.customerId,
-      filters.isSuperadmin,
-      filters.isCustomerSuccess,
+      filters.roleFilter,
     ],
     queryFn: async () => {
       const response = await getSystemUsers({
@@ -145,8 +143,6 @@ export default function Page(): React.JSX.Element {
         statusId: filters.statusId.length > 0 ? filters.statusId : undefined,
         customerId:
           filters.customerId.length > 0 ? filters.customerId : undefined,
-        isSuperadmin: filters.isSuperadmin,
-        isCustomerSuccess: filters.isCustomerSuccess,
       });
       return {
         ...response,
@@ -349,8 +345,7 @@ export default function Page(): React.JSX.Element {
   const handleFilter = (filters: {
     statusId: string[];
     customerId: number[];
-    isSuperadmin: boolean;
-    isCustomerSuccess: boolean;
+    roleFilter?: string;
   }) => {
     setFilters(filters);
     setCurrentPage(1);
@@ -879,9 +874,7 @@ export default function Page(): React.JSX.Element {
                                 wordBreak: "break-all",
                               }}
                             >
-                              {user.isSuperadmin
-                                ? "System Administrator"
-                                : "Customer Success"}
+                              {user.role?.name || 'No Role'}
                             </Box>
                           </td>
                           <td>
@@ -954,16 +947,16 @@ export default function Page(): React.JSX.Element {
                                 <PencilIcon fontSize="20px" />
                                 Edit
                               </Box>
-                              {user.status === "active" && !isImpersonating && !user.isSuperadmin &&
+                              {user.status === "active" && !isImpersonating && user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
                                 userInfo &&
-                                (userInfo.isSuperadmin ||
-                                  userInfo.isCustomerSuccess) && (
+                                (isSystemAdministrator(userInfo) ||
+                                  isCustomerSuccess(userInfo)) && (
                                   <Box
                                     onMouseDown={(event) => {
                                       event.preventDefault();
                                       handleImpersonateUser(
                                         user.id,
-                                        user.isCustomerSuccess ? "/dashboard/user-management" : undefined
+                                        user.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS ? "/dashboard/user-management" : undefined
                                       );
                                     }}
                                     sx={{

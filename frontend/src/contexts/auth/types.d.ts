@@ -47,6 +47,7 @@ export interface Role {
   id: number;
   name: string;
   description: string | null;
+  systemRole?: boolean;
   permissions: PermissionsByModule;
   _count: {
     users: number;
