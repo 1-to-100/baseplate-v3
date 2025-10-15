@@ -1,0 +1,53 @@
+name: '[dev] Deploy Backend to Hetzner'
+on: 
+  push:
+    branches: [ supabase-migration ]
+    paths:
+      - 'backend/**'
+      - 'Dockerfile.api'
+      - 'docker-compose.backend.yml'
+env: 
+  CI: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:   
+      
+      - uses: actions/checkout@v2
+
+      - name: Build Backend Docker Image
+        run: |
+          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > backend/.env.backend
+          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > backend/.env
+          docker build -f Dockerfile.api -t baseplate-v2-backend:latest backend/
+
+      - name: Save Docker Image
+        run: |
+          docker save baseplate-v2-backend:latest | gzip > baseplate-v2-backend.tar.gz
+
+      - name: List files
+        run: |
+          ls -lah
+
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: baseplate-v2-backend.tar.gz docker-compose.backend.yml backend/.env.backend backend/prisma/* 
+          remote_path: /opt/1-to-100/baseplate-v2/backend
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.SSH_KEY }}          
+
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /opt/1-to-100/baseplate-v2/backend
+            docker load < baseplate-v2-backend.tar.gz
+            docker-compose -f docker-compose.backend.yml down; docker-compose -f docker-compose.backend.yml up -d 
+
