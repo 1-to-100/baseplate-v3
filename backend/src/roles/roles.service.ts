@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   ConflictException,
@@ -16,6 +15,43 @@ import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
 import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissions-by-name.dto';
+
+// Type definitions for role entity and permissions
+export interface Role {
+  id: number;
+  name: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Permission {
+  id: number;
+  name: string;
+  label: string | null;
+  description: string | null;
+}
+
+export interface RolePermissionWithDetails {
+  permission_id: number;
+  permissions: Permission | Permission[];
+}
+
+export interface RoleWithPermissions extends Role {
+  permissions: Array<{
+    permission: Permission | Permission[];
+  }>;
+}
+
+export interface RoleWithDetails extends Role {
+  permissions: Array<{
+    permission: Permission | Permission[];
+  }>;
+  _count: {
+    users: number;
+  };
+}
 
 @Injectable()
 export class RolesService {
@@ -51,7 +87,7 @@ export class RolesService {
     return newRole;
   }
 
-  async findAll(search?: string) {
+  async findAll(search?: string): Promise<RoleWithDetails[]> {
     // Build query
     let query = this.supabaseService
       .getClient()
@@ -72,7 +108,7 @@ export class RolesService {
 
     // For each role, get permissions and user count
     const rolesWithDetails = await Promise.all(
-      (roles || []).map(async (role) => {
+      (roles || []).map(async (role: Role) => {
         // Get role permissions with permission details
         const { data: rolePermissions } = await this.supabaseService
           .getClient()
@@ -100,7 +136,7 @@ export class RolesService {
         return {
           ...role,
           permissions: (rolePermissions || []).map(
-            (rp: { permissions: any }) => ({
+            (rp: RolePermissionWithDetails) => ({
               permission: rp.permissions,
             }),
           ),
@@ -133,7 +169,7 @@ export class RolesService {
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<RoleWithPermissions> {
     const { data: role, error } = await this.supabaseService
       .getClient()
       .from('roles')
@@ -163,10 +199,12 @@ export class RolesService {
       .eq('role_id', id);
 
     return {
-      ...role,
-      permissions: (rolePermissions || []).map((rp: { permissions: any }) => ({
-        permission: rp.permissions,
-      })),
+      ...(role as Role),
+      permissions: (rolePermissions || []).map(
+        (rp: RolePermissionWithDetails) => ({
+          permission: rp.permissions,
+        }),
+      ),
     };
   }
 

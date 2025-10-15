@@ -21,9 +21,10 @@ import { ImpersonationGuard } from '@/auth/guards/impersonation.guard';
 import { RolesService } from '@/roles/roles.service';
 import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { ListRolesDto } from '@/roles/dto/list-roles.dto';
-// import { OutputRoleDto } from '@/roles/dto/output-role.dto';
+import { OutputRoleDto } from '@/roles/dto/output-role.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
 import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissions-by-name.dto';
+import type { RoleWithDetails } from '@/roles/roles.service';
 
 @Controller('roles')
 @UseGuards(
@@ -47,43 +48,50 @@ export class RolesController {
   @Get()
   @RequiredSuperUser('superAdmin')
   @Permissions('RoleManagement:viewRoles')
-  findAll(@Query() listRolesDto: ListRolesDto) {
+  findAll(@Query() listRolesDto: ListRolesDto): Promise<RoleWithDetails[]> {
     return this.rolesService.findAll(listRolesDto.search);
   }
 
-  // @Get(':id')
-  // @RequiredSuperUser('superAdmin')
-  // @Permissions('RoleManagement:viewRoles')
-  // async findOne(@Param('id') id: string): Promise<OutputRoleDto> {
-  //   const role = await this.rolesService.findOne(+id);
-  //   const outputRole = {
-  //     id: role.id,
-  //     name: role.name ?? null,
-  //     description: role.description ?? null,
-  //     imageUrl: role.image_url ?? null,
-  //     permissions: {},
-  //   };
+  @Get(':id')
+  @RequiredSuperUser('superAdmin')
+  @Permissions('RoleManagement:viewRoles')
+  async findOne(@Param('id') id: string): Promise<OutputRoleDto> {
+    const role = await this.rolesService.findOne(+id);
+    const outputRole: OutputRoleDto = {
+      id: role.id,
+      name: role.name ?? null,
+      description: role.description ?? null,
+      imageUrl: role.imageUrl ?? null,
+      permissions: {},
+    };
 
-  //   const rolePermissions = role.permissions;
+    const rolePermissions = role.permissions;
 
-  //   outputRole.permissions = rolePermissions.reduce<
-  //     Record<string, Array<{ id: number; name: string; label: string }>>
-  //   >((acc, permission) => {
-  //     const prefix = permission.permission.name.split(':')[0];
+    outputRole.permissions = rolePermissions.reduce<
+      Record<string, Array<{ id: number; name: string; label: string }>>
+    >((acc, permission) => {
+      // Handle both single permission object and array (Supabase type inference)
+      const perm = Array.isArray(permission.permission)
+        ? permission.permission[0]
+        : permission.permission;
 
-  //     acc[prefix] ??= [];
+      if (!perm) return acc;
 
-  //     acc[prefix].push({
-  //       id: permission.permission.id,
-  //       name: permission.permission.name,
-  //       label: permission.permission.label,
-  //     });
+      const prefix = perm.name.split(':')[0];
 
-  //     return acc;
-  //   }, {});
+      acc[prefix] ??= [];
 
-  //   return outputRole;
-  // }
+      acc[prefix].push({
+        id: perm.id,
+        name: perm.name,
+        label: perm.label ?? '',
+      });
+
+      return acc;
+    }, {});
+
+    return outputRole;
+  }
 
   @Patch(':id')
   @RequiredSuperUser('superAdmin')
