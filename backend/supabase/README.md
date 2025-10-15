@@ -655,25 +655,18 @@ ALTER TABLE users RENAME COLUMN new_status TO status;
 - **Consider partitioning** for large tables
 - **Monitor query performance** after changes
 
-## 🔄 Migration from Prisma
+## 🔄 Migration from Prisma (Completed)
 
-This project is migrating from Prisma to Supabase. Key differences:
+This project has been migrated from Prisma to Supabase. The database now uses:
 
-| Aspect | Prisma | Supabase |
-|--------|--------|----------|
-| **Schema Definition** | Declarative (schema.prisma) | Imperative (SQL migrations) |
-| **Field Naming** | camelCase | snake_case |
-| **Migrations** | Auto-generated | Hand-written SQL |
-| **Relationships** | Implicit via @relation | Explicit via FOREIGN KEY |
-| **Enums** | Prisma enums | PostgreSQL enums |
-| **Indexes** | @@index directive | CREATE INDEX statements |
+- **Schema Definition**: Imperative SQL migrations
+- **Field Naming**: snake_case
+- **Migrations**: Hand-written SQL files in `supabase/migrations/`
+- **Relationships**: Explicit FOREIGN KEY constraints
+- **Enums**: PostgreSQL enums
+- **Indexes**: CREATE INDEX statements
 
-### Migration Status
-
-- ✅ **Initial Schema**: Created from Prisma schema
-- 🔄 **Service Migration**: In progress (see `SUPABASE_MIGRATION.md`)
-- ⏳ **Testing**: Pending
-- ⏳ **Production Deployment**: Pending
+For historical reference, see archived migration documentation.
 
 ---
 

@@ -1,5 +1,7 @@
 # UsersService Migration Comparison
 
+> **📝 Note**: This migration has been completed. This document is kept for historical reference.
+
 This document shows the key differences between the Prisma-based and Supabase-based implementations.
 
 ## Key Changes Summary

@@ -10,15 +10,9 @@ export class RelationQueryExamples {
   constructor(private readonly database: DatabaseService) {}
 
   /**
-   * Example 1: Simple relation include (equivalent to Prisma include)
+   * Example 1: Simple relation include
    */
   async getUserWithCustomer(userId: number) {
-    // Prisma equivalent:
-    // await prisma.user.findUnique({
-    //   where: { id: userId },
-    //   include: { customer: true }
-    // });
-
     return this.database.findUnique('users', {
       where: { id: userId },
       include: {
@@ -31,16 +25,6 @@ export class RelationQueryExamples {
    * Example 2: Complex relation with custom select
    */
   async getUserWithCustomerDetails(userId: number) {
-    // Prisma equivalent:
-    // await prisma.user.findUnique({
-    //   where: { id: userId },
-    //   include: {
-    //     customer: {
-    //       select: { id: true, name: true, email: true }
-    //     }
-    //   }
-    // });
-
     return this.database.findUnique('users', {
       where: { id: userId },
       include: {
@@ -55,16 +39,6 @@ export class RelationQueryExamples {
    * Example 3: Multiple relations
    */
   async getUserWithAllRelations(userId: number) {
-    // Prisma equivalent:
-    // await prisma.user.findUnique({
-    //   where: { id: userId },
-    //   include: {
-    //     customer: true,
-    //     role: true,
-    //     manager: true
-    //   }
-    // });
-
     return this.database.findUnique('users', {
       where: { id: userId },
       include: {
@@ -79,12 +53,6 @@ export class RelationQueryExamples {
    * Example 4: Reverse relation (one-to-many)
    */
   async getCustomerWithUsers(customerId: number) {
-    // Prisma equivalent:
-    // await prisma.customer.findUnique({
-    //   where: { id: customerId },
-    //   include: { users: true }
-    // });
-
     return this.database.findUnique('customers', {
       where: { id: customerId },
       include: {
@@ -97,17 +65,6 @@ export class RelationQueryExamples {
    * Example 5: Complex query with relations and filtering
    */
   async getActiveUsersWithCustomers() {
-    // Prisma equivalent:
-    // await prisma.user.findMany({
-    //   where: {
-    //     status: 'active',
-    //     deletedAt: null
-    //   },
-    //   include: { customer: true },
-    //   orderBy: { createdAt: 'desc' },
-    //   take: 10
-    // });
-
     return this.database.findMany('users', {
       where: {
         status: 'active',
@@ -141,17 +98,8 @@ export class RelationQueryExamples {
    * Example 7: Nested relations (limited by Supabase)
    */
   async getCustomerWithUsersAndRoles(customerId: number) {
-    // Note: Supabase doesn't support nested relations like Prisma
-    // You'd need to make separate queries or use raw SQL functions
-
-    // This won't work in Supabase:
-    // include: {
-    //   users: {
-    //     include: { role: true }
-    //   }
-    // }
-
-    // Instead, you can select the fields directly:
+    // Note: Supabase doesn't support nested relations in the same way
+    // You can select the fields directly:
     return this.database.findUnique('customers', {
       where: { id: customerId },
       select: `

@@ -2464,7 +2464,7 @@ ORDER BY tablename, policyname;
 ## Notes
 
 ### Implementation Details
-- This implementation uses SupabaseClient with raw SQL queries instead of Prisma
+- This implementation uses SupabaseClient with raw SQL queries
 - All database operations follow the `{ data, error }` pattern
 - Error handling is consistent throughout the implementation
 - The migration maintains backward compatibility during the transition
@@ -2511,7 +2511,7 @@ USING ((SELECT has_system_role('System Administrator')))
 
 ### Quick Start
 1. **Run migration SQL**: Copy complete SQL script from guide
-2. **Update backend guards**: Use SupabaseClient instead of Prisma
+2. **Update backend guards**: Use SupabaseClient
 3. **Add explicit filters**: Never rely only on RLS, always add `.eq()` filters
 4. **Test performance**: Use `EXPLAIN ANALYZE` to verify InitPlan nodes
 5. **Verify benchmarks**: Should see 99%+ performance improvement

@@ -32,7 +32,7 @@ export class DatabaseService implements OnModuleInit {
     return this.client;
   }
 
-  // Database table accessors - matches your Prisma schema
+  // Database table accessors
   get users() {
     return this.client.from('users');
   }
@@ -85,10 +85,10 @@ export class DatabaseService implements OnModuleInit {
     return this.client.from('notification_templates');
   }
 
-  // CRUD Operations - Prisma-like interface using SupabaseCRUD
+  // CRUD Operations using SupabaseCRUD
 
   /**
-   * Find many records - equivalent to Prisma's findMany
+   * Find many records
    */
   async findMany<T extends TableNames>(
     tableName: T,
@@ -108,7 +108,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Find unique record - equivalent to Prisma's findUnique
+   * Find unique record
    */
   async findUnique<T extends TableNames>(
     tableName: T,
@@ -125,7 +125,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Find first record - equivalent to Prisma's findFirst
+   * Find first record
    */
   async findFirst<T extends TableNames>(
     tableName: T,
@@ -139,7 +139,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Create record - equivalent to Prisma's create
+   * Create record
    */
   async create<T extends TableNames>(
     tableName: T,
@@ -152,7 +152,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Update record - equivalent to Prisma's update
+   * Update record
    */
   async update<T extends TableNames>(
     tableName: T,
@@ -166,7 +166,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Update many records - equivalent to Prisma's updateMany
+   * Update many records
    */
   async updateMany<T extends TableNames>(
     tableName: T,
@@ -179,7 +179,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Delete record - equivalent to Prisma's delete
+   * Delete record
    */
   async delete<T extends TableNames>(
     tableName: T,
@@ -191,7 +191,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Delete many records - equivalent to Prisma's deleteMany
+   * Delete many records
    */
   async deleteMany<T extends TableNames>(
     tableName: T,
@@ -203,7 +203,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Count records - equivalent to Prisma's count
+   * Count records
    */
   async count<T extends TableNames>(
     tableName: T,
@@ -215,7 +215,7 @@ export class DatabaseService implements OnModuleInit {
   }
 
   /**
-   * Upsert record - equivalent to Prisma's upsert
+   * Upsert record
    */
   async upsert<T extends TableNames>(
     tableName: T,

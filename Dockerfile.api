@@ -12,9 +12,6 @@ RUN npm install --force
 # Copy the entire project
 COPY backend/ .
 
-# Generate Prisma client
-RUN npm run prisma:generate
-
 # Build the application (including CLI)
 RUN npm run build
 

@@ -1,9 +1,9 @@
 /**
  * Database Types for Supabase Client
- * Generated from Prisma schema - matches the actual database structure
+ * Matches the actual database structure
  */
 
-// Enums matching Prisma schema
+// Enums matching database schema
 export enum CustomerStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',

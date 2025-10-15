@@ -1,6 +1,6 @@
 /**
  * CRUD Operation Utilities for Supabase Client
- * Provides Prisma-like interface for common database operations
+ * Provides interface for common database operations
  *
  * Uses pragmatic typing approach: type-safe API with controlled any types
  * for Supabase's complex internal query builder types.
@@ -40,7 +40,7 @@ type WhereValue =
       not?: string | number | null;
     };
 
-// Where clause type - covers most common Prisma-like patterns
+// Where clause type - covers most common query patterns
 export type WhereClause = {
   [key: string]: WhereValue;
 } & {
@@ -117,14 +117,14 @@ export async function executeArrayQuery<T>(
 
 /**
  * CRUD Operations Class
- * Provides Prisma-like methods for common database operations.
+ * Provides methods for common database operations.
  * Uses controlled any types for Supabase internals but maintains type safety at API level.
  */
 export class SupabaseCRUD {
   constructor(private client: SupabaseClient) {}
 
   /**
-   * Find many records - equivalent to Prisma's findMany
+   * Find many records
    * Supports relations via select parameter with Supabase foreign table syntax
    */
   async findMany<T extends TableNames>(
@@ -177,7 +177,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Find unique record - equivalent to Prisma's findUnique
+   * Find unique record
    * Supports relations via select parameter or include option
    */
   async findUnique<T extends TableNames>(
@@ -212,7 +212,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Find first record - equivalent to Prisma's findFirst
+   * Find first record
    */
   async findFirst<T extends TableNames>(
     tableName: T,
@@ -246,7 +246,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Create record - equivalent to Prisma's create
+   * Create record
    */
   async create<T extends TableNames>(
     tableName: T,
@@ -271,7 +271,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Update record - equivalent to Prisma's update
+   * Update record
    */
   async update<T extends TableNames>(
     tableName: T,
@@ -292,7 +292,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Update many records - equivalent to Prisma's updateMany
+   * Update many records
    */
   async updateMany<T extends TableNames>(
     tableName: T,
@@ -317,7 +317,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Delete record - equivalent to Prisma's delete
+   * Delete record
    */
   async delete<T extends TableNames>(
     tableName: T,
@@ -336,7 +336,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Delete many records - equivalent to Prisma's deleteMany
+   * Delete many records
    */
   async deleteMany<T extends TableNames>(
     tableName: T,
@@ -360,7 +360,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Count records - equivalent to Prisma's count
+   * Count records
    */
   async count<T extends TableNames>(
     tableName: T,
@@ -387,7 +387,7 @@ export class SupabaseCRUD {
   }
 
   /**
-   * Upsert record - equivalent to Prisma's upsert
+   * Upsert record
    */
   async upsert<T extends TableNames>(
     tableName: T,
@@ -484,7 +484,7 @@ export class SupabaseCRUD {
 
   /**
    * Apply where conditions to a query
-   * Handles common Prisma-like where patterns
+   * Handles common where patterns
    */
 
   private applyWhereConditions(query: any, where: WhereClause): any {
@@ -625,7 +625,7 @@ export class SupabaseCRUD {
 
   /**
    * Helper method to build common relation patterns
-   * Maps Prisma relation names to Supabase foreign key patterns
+   * Maps relation names to Supabase foreign key patterns
    */
   private getRelationMapping(tableName: string): Record<string, string> {
     // Common relation mappings based on your schema

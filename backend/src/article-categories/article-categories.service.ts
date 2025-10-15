@@ -39,8 +39,6 @@ export class ArticleCategoriesService {
   }
 
   async findAll(customerId: number): Promise<OutputArticleCategoryDto[]> {
-    // Note: Supabase doesn't have _count like Prisma, so we'll need to handle article counts separately
-    // For now, we'll fetch categories without the count and add it later if needed
     const categories = await this.database.findMany('article_categories', {
       where: { customer_id: customerId },
     });
