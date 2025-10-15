@@ -116,7 +116,7 @@ export default function Page(): React.JSX.Element {
             </Typography>
           </Stack>
           <Stack>
-            <Button
+            {/* <Button
               variant="solid"
               color="primary"
               onClick={handleAddRoleModal}
@@ -127,7 +127,7 @@ export default function Page(): React.JSX.Element {
               }}
             >
               Add role
-            </Button>
+            </Button> */}
           </Stack>
         </Stack>
 
