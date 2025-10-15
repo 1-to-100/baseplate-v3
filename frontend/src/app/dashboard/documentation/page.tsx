@@ -19,6 +19,7 @@ import { Category } from "@/contexts/auth/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import CategoriesListComponentForUsers from "@/components/dashboard/documentation/categories-list-component-for-users";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 interface HttpError extends Error {
   response?: {
