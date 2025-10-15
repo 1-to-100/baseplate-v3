@@ -34,7 +34,7 @@ jobs:
         uses: burnett01/rsync-deployments@5.2
         with:
           switches: -avzr --delete
-          path: baseplate-v2-frontend.tar.gz .env.frontend docker-compose.frontend.yml
+          path: baseplate-v2-frontend.tar.gz .env docker-compose.frontend.yml
           remote_path: /opt/1-to-100/baseplate-v2/frontend
           remote_host: ${{ secrets.DEPLOY_HOST }}
           remote_user: ${{ secrets.DEPLOY_USER }}
