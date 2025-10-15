@@ -27,16 +27,18 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3002',
-      'https://dev-app-381393991104.us-central1.run.app',
-      'https://baseplate.huboxt.com',
+      "https://1to100.huboxt.com",
+      "https://1to100-api.huboxt.com",
+      "https://app-baseplate-v2.vercel.app",
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    // allowedHeaders: 'Content-Type, Accept, Authorization',
-    // exposedHeaders: 'Content-Length, X-Knowledge-Base',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+    exposedHeaders: 'Content-Length, X-Knowledge-Base',
     credentials: true, // Allow cookies
-    // preflightContinue: false,
-    // optionsSuccessStatus: 204,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+  
   const config = new DocumentBuilder()
     .setTitle('Baseplate API')
     .setDescription('The Baseplate API description')
