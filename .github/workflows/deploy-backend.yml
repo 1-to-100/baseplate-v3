@@ -18,7 +18,7 @@ jobs:
 
       - name: Build Backend Docker Image
         run: |
-          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env.backend
+          echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > backend/.env
           echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env
           docker build -f Dockerfile.api -t baseplate-v2-backend:latest .
 

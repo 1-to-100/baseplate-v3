@@ -8,9 +8,9 @@ services:
       VIRTUAL_HOST: ${DOMAIN_NAME}
       LETSENCRYPT_HOST: ${DOMAIN_NAME}
       LETSENCRYPT_EMAIL: ${NOTIFICATION_EMAIL}
-      VIRTUAL_PORT: ${VIRTUAL_PORT}      
+      VIRTUAL_PORT: 3001   
     env_file:
-      - ./.env.backend
+      - ./.env
     restart: unless-stopped
     logging:
       driver: "json-file"

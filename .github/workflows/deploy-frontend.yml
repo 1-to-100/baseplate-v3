@@ -18,8 +18,8 @@ jobs:
 
       - name: Build Frontend Docker Image
         run: |
+          echo "${{ secrets.FRONTEND_ENV }}" | base64 --decode > frontend/.env
           echo "${{ secrets.FRONTEND_ENV }}" | base64 --decode > .env
-          echo "${{ secrets.FRONTEND_ENV }}" | base64 --decode > .env.frontend
           docker build -f Dockerfile.app -t baseplate-v2-frontend:latest .
 
       - name: Save Docker Image
