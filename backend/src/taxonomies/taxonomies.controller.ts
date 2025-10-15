@@ -14,6 +14,7 @@ import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { NotificationTypeList } from '@/notifications/constants/notification-types';
 import { NotificationChannelList } from '@/notifications/constants/notification-channel';
 import { OutputNotificationsTaxonomyDto } from '@/taxonomies/dto/output-notifications-taxonomy.dto';
+import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 
 @Controller('taxonomies')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard)
@@ -32,7 +33,7 @@ export class TaxonomiesController {
   })
   findAllCustomers(@User() user: OutputUserDto) {
     let customerId: number | null = 0;
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       customerId = user.customerId ?? 0;
     } else {
       customerId = null;

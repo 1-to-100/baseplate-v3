@@ -25,6 +25,7 @@ import { CreateArticleDto } from '@/articles/dto/create-article.dto';
 import { ListArticlesInputDto } from '@/articles/dto/list-articles-input.dto';
 import { UpdateArticleDto } from '@/articles/dto/update-article.dto';
 import { ArticleDto } from '@/articles/dto/article.dto';
+import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 
 @Controller('documents/articles')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -44,9 +45,9 @@ export class ArticlesController {
     @Body() createArticleDto: CreateArticleDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 
@@ -71,9 +72,9 @@ export class ArticlesController {
     @CustomerId() customerId: number,
     @Query() listArticlesInputDto: ListArticlesInputDto,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
     if (!customerId) {
@@ -93,9 +94,9 @@ export class ArticlesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
     if (!customerId) {
@@ -119,9 +120,9 @@ export class ArticlesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
     if (!customerId) {
@@ -141,9 +142,9 @@ export class ArticlesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
     if (!customerId) {

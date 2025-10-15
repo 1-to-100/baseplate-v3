@@ -19,6 +19,10 @@ import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
 import { UpdateCustomerDto } from '@/customers/dto/update-customer.dto';
+import {
+  isSystemAdministrator,
+  isCustomerSuccess,
+} from '@/common/utils/user-role-helpers';
 
 @Controller('customers')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard)
@@ -30,7 +34,7 @@ export class CustomersController {
     @User() user: OutputUserDto,
     @Body() createCustomerDto: CreateCustomerDto,
   ) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to customers.');
     }
     return this.customersService.create(createCustomerDto);
@@ -42,13 +46,13 @@ export class CustomersController {
     @User() user: OutputUserDto,
     @CustomerId() customerId?: string,
   ) {
-    if (!(user.isSuperadmin || user.isCustomerSuccess)) {
+    if (!(isSystemAdministrator(user) || isCustomerSuccess(user))) {
       throw new ForbiddenException('You have no access to customers.');
     }
 
-    if (user.isCustomerSuccess && user.customerId) {
+    if (isCustomerSuccess(user) && user.customerId) {
       listCustomersInputDto.id = [user.customerId];
-    } else if (user.isCustomerSuccess && !user.customerId) {
+    } else if (isCustomerSuccess(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to customers.');
     }
 
@@ -61,11 +65,11 @@ export class CustomersController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @User() user: OutputUserDto) {
-    if (!(user.isSuperadmin || user.isCustomerSuccess)) {
+    if (!(isSystemAdministrator(user) || isCustomerSuccess(user))) {
       throw new ForbiddenException('You have no access to customers.');
     }
 
-    if (user.isCustomerSuccess && user.customerId != +id) {
+    if (isCustomerSuccess(user) && user.customerId != +id) {
       throw new ForbiddenException('You have no access to customers.');
     }
 
@@ -78,7 +82,7 @@ export class CustomersController {
     @Body() updateCustomerDto: UpdateCustomerDto,
     @User() user: OutputUserDto,
   ) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to customers.');
     }
     return this.customersService.update(+id, updateCustomerDto);
@@ -86,7 +90,7 @@ export class CustomersController {
 
   @Delete(':id')
   remove(@Param('id') id: string, @User() user: OutputUserDto) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to customers.');
     }
     return this.customersService.remove(+id);

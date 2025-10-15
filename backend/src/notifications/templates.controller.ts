@@ -27,6 +27,10 @@ import { SendTemplatesInputDto } from '@/notifications/dto/send-templates-input.
 import { NotificationTemplateDto } from '@/notifications/dto/notification-template.dto';
 import { DatabaseService } from '@/common/database/database.service';
 import { UserStatus } from '@/common/constants/status';
+import {
+  isSystemAdministrator,
+  isCustomerSuccess,
+} from '@/common/utils/user-role-helpers';
 
 @ApiTags('Notification Templates')
 @Controller('notification/templates')
@@ -48,7 +52,7 @@ export class TemplatesController {
     @User() user: OutputUserDto,
     @Query() query: ListTemplatesInputDto,
   ): Promise<PaginatedOutputDto<NotificationTemplateDto>> {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to access notification templates',
       );
@@ -67,7 +71,7 @@ export class TemplatesController {
     @Param('id', ParseIntPipe) id: number,
     @User() user: OutputUserDto,
   ): Promise<NotificationTemplateDto> {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to access notification templates',
       );
@@ -91,7 +95,7 @@ export class TemplatesController {
     @User() user: OutputUserDto,
     @Body() createTemplateDto: CreateTemplateDto,
   ): Promise<NotificationTemplateDto> {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to create notification templates',
       );
@@ -110,7 +114,7 @@ export class TemplatesController {
     @User() user: OutputUserDto,
     @Body() updateTemplateDto: UpdateTemplateDto,
   ): Promise<NotificationTemplateDto> {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to update notification templates',
       );
@@ -129,7 +133,7 @@ export class TemplatesController {
     @Param('id', ParseIntPipe) id: number,
     @User() user: OutputUserDto,
   ) {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to delete notification templates',
       );
@@ -150,7 +154,7 @@ export class TemplatesController {
     @Body() sendTemplateInputDto: SendTemplatesInputDto,
     @CustomerId() customerId: number | null,
   ): Promise<NotificationTemplateDto> {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to send notifications using templates',
       );
@@ -162,24 +166,24 @@ export class TemplatesController {
       );
     }
 
-    if (user.isSuperadmin && customerId) {
+    if (isSystemAdministrator(user) && customerId) {
       sendTemplateInputDto.customerId = customerId;
     }
 
-    if (user.isCustomerSuccess && !user.customerId) {
+    if (isCustomerSuccess(user) && !user.customerId) {
       throw new ForbiddenException(
         'Customer success user must have a customerId to send notifications using templates',
       );
     } else if (
       customerId !== null &&
-      user.isCustomerSuccess &&
+      isCustomerSuccess(user) &&
       user.customerId != customerId
     ) {
       throw new ForbiddenException(
         'Customer success user cannot send notifications for a different customer',
       );
     } else if (
-      user.isCustomerSuccess &&
+      isCustomerSuccess(user) &&
       sendTemplateInputDto.customerId &&
       user.customerId != sendTemplateInputDto.customerId
     ) {
@@ -212,7 +216,7 @@ export class TemplatesController {
 
       for (const foundUser of foundUsers) {
         if (
-          user.isCustomerSuccess &&
+          isCustomerSuccess(user) &&
           foundUser.customer_id !== user.customerId
         ) {
           throw new ForbiddenException(

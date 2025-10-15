@@ -34,6 +34,7 @@ import { UserStatus } from '@/common/constants/status';
 import { UserWithImpersonationDto } from '@/users/dto/user-with-impersonation.dto';
 import { IsImpersonating } from '@/common/decorators/is-impersonating.decorator';
 import { OriginalUser } from '@/common/decorators/original-user.decorator';
+import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 
 @Controller('users')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -54,10 +55,10 @@ export class UsersController {
     @User() user: OutputUserDto,
     @Body() createUserDto: CreateUserDto,
   ) {
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to create users.');
     }
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       // user cannot set another customer when creating users, assign the same he belongs to
       createUserDto.customerId = user.customerId;
     }
@@ -75,10 +76,10 @@ export class UsersController {
     @User() user: OutputUserDto,
     @Body() inviteUserDto: InviteUserDto,
   ) {
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to invite users.');
     } else if (
-      !user.isSuperadmin &&
+      !isSystemAdministrator(user) &&
       user.customerId !== inviteUserDto.customerId
     ) {
       throw new ForbiddenException(
@@ -86,7 +87,7 @@ export class UsersController {
       );
     }
 
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       inviteUserDto.customerId = user.customerId;
     }
 
@@ -103,7 +104,7 @@ export class UsersController {
     @User() user: OutputUserDto,
     @Body() resendInviteUserDto: ResendInviteUserDto,
   ) {
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to resend invites.');
     }
 
@@ -120,7 +121,7 @@ export class UsersController {
         `User with email ${resendInviteUserDto.email} is already active.`,
       );
     } else if (
-      !user.isSuperadmin &&
+      !isSystemAdministrator(user) &&
       foundUser &&
       foundUser.customerId !== user.customerId
     ) {
@@ -153,10 +154,10 @@ export class UsersController {
     @User() user: OutputUserDto,
     @Body() inviteUsersDto: InviteMultipleUsersDto,
   ) {
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to create users.');
     } else if (
-      !user.isSuperadmin &&
+      !isSystemAdministrator(user) &&
       user.customerId !== inviteUsersDto.customerId
     ) {
       throw new ForbiddenException(
@@ -164,7 +165,7 @@ export class UsersController {
       );
     }
 
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       // user cannot set another customer when creating users, assign the same he belongs to
       inviteUsersDto.customerId = user.customerId;
     }
@@ -221,10 +222,10 @@ export class UsersController {
     @CustomerId() customerId?: string,
   ) {
     this.logger.debug(listUserInputDto);
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to list users.');
     }
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       // user cannot set another customer when creating users, assign the same he belongs to
       listUserInputDto.customerId = [user.customerId];
     }
@@ -312,7 +313,7 @@ export class UsersController {
   @Permissions('UserManagement:viewUsers')
   findOne(@User() user: OutputUserDto, @Param('id') id: number) {
     let customerId: number | null = null;
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       customerId = user.customerId;
     }
 
@@ -330,10 +331,10 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @User() user: OutputUserDto,
   ) {
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to update users.');
     }
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       // user cannot set another customer when updating users, assign the same he belongs to
       updateUserDto.customerId = user.customerId;
     }
@@ -352,11 +353,11 @@ export class UsersController {
       throw new BadRequestException('You cannot delete yourself.');
     }
 
-    if (!user.isSuperadmin && !user.customerId) {
+    if (!isSystemAdministrator(user) && !user.customerId) {
       throw new ForbiddenException('You have no access to delete users.');
     }
 
-    const customerId = user.isSuperadmin ? null : user.customerId;
+    const customerId = isSystemAdministrator(user) ? null : user.customerId;
 
     return await this.usersService.softDelete(id, customerId);
   }

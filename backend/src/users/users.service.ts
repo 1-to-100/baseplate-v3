@@ -48,8 +48,22 @@ function mapUserToDto(user: any): OutputUserDto {
     // Include relations if they exist
     ...(user.customer && { customer: user.customer }),
     ...(user.customers && { customer: user.customers }),
-    ...(user.role && { role: user.role }),
-    ...(user.roles && { role: user.roles }),
+    ...(user.role && {
+      role: {
+        id: user.role.id,
+        name: user.role.name,
+        description: user.role.description,
+        systemRole: user.role.system_role,
+      },
+    }),
+    ...(user.roles && {
+      role: {
+        id: user.roles.id,
+        name: user.roles.name,
+        description: user.roles.description,
+        systemRole: user.roles.system_role,
+      },
+    }),
     ...(user.manager && { manager: user.manager }),
     ...(user.managers && { manager: user.managers }),
     // Add permissions if they exist
@@ -644,6 +658,10 @@ export class UsersService {
   async findByUid(uid: string): Promise<OutputUserDto | null> {
     const user = await this.database.findUnique('users', {
       where: { uid },
+      include: {
+        role: true,
+        customer: true,
+      },
     });
     return user ? mapUserToDto(user) : null;
   }
@@ -675,7 +693,7 @@ export class UsersService {
       existingUserEmail.uid == null &&
       supabaseUser.uid
     ) {
-      const existingUserEmailUpdated = await this.database.update('users', {
+      await this.database.update('users', {
         where: { id: existingUserEmail.id },
         data: {
           uid: supabaseUser.uid,
@@ -684,7 +702,17 @@ export class UsersService {
           last_name: lastName,
         },
       });
-      return mapUserToDto(existingUserEmailUpdated);
+
+      // Refetch user with role relation
+      const existingUserEmailUpdated = await this.database.findUnique('users', {
+        where: { id: existingUserEmail.id },
+        include: {
+          role: true,
+          customer: true,
+        },
+      });
+
+      return mapUserToDto(existingUserEmailUpdated!);
     }
 
     const existingCustomer = await this.database.findFirst('customers', {
@@ -722,8 +750,17 @@ export class UsersService {
       });
     }
 
-    await this.sendInviteEmail(mapUserToDto(newUser));
-    return mapUserToDto(newUser);
+    // Refetch user with role relation
+    const userWithRole = await this.database.findUnique('users', {
+      where: { id: newUser.id },
+      include: {
+        role: true,
+        customer: true,
+      },
+    });
+
+    await this.sendInviteEmail(mapUserToDto(userWithRole || newUser));
+    return mapUserToDto(userWithRole || newUser);
   }
 
   async sendInviteEmail(user: OutputUserDto) {

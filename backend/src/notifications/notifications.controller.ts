@@ -26,6 +26,10 @@ import { CreateNotificationDto } from '@/notifications/dto/create-notification.d
 import { ListNotificationsInputDto } from '@/notifications/dto/list-notifications-input.dto';
 import { ListAdminNotificationsInputDto } from '@/notifications/dto/list-admin-notifications-input.dto';
 import { CustomerId } from '@/common/decorators/customer-id.decorator';
+import {
+  isSystemAdministrator,
+  isCustomerSuccess,
+} from '@/common/utils/user-role-helpers';
 
 @Controller('notifications')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard)
@@ -48,7 +52,7 @@ export class NotificationsController {
     @User() user: OutputUserDto,
     @Body() createNotificationDto: CreateNotificationDto,
   ) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException(
         'User is not authorized to create notifications',
       );
@@ -126,16 +130,16 @@ export class NotificationsController {
     @Query() adminNotificationsInputDto: ListAdminNotificationsInputDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && !user.isCustomerSuccess) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to access all notifications',
       );
-    } else if (user.isCustomerSuccess && !user.customerId) {
+    } else if (isCustomerSuccess(user) && !user.customerId) {
       throw new ForbiddenException(
         'Customer Success is not authorized to access all notifications without a customer ID',
       );
     } else if (
-      user.isCustomerSuccess &&
+      isCustomerSuccess(user) &&
       adminNotificationsInputDto.customerId &&
       adminNotificationsInputDto.customerId.length == 1 &&
       !adminNotificationsInputDto.customerId.includes(user.customerId!)
@@ -144,7 +148,7 @@ export class NotificationsController {
         'Customer Success is not authorized to access notifications for this customer',
       );
     } else if (
-      user.isCustomerSuccess &&
+      isCustomerSuccess(user) &&
       adminNotificationsInputDto.customerId &&
       adminNotificationsInputDto.customerId.length > 1
     ) {
@@ -154,13 +158,13 @@ export class NotificationsController {
     }
 
     if (
-      user.isSuperadmin &&
+      isSystemAdministrator(user) &&
       customerId &&
       !adminNotificationsInputDto.customerId
     ) {
       adminNotificationsInputDto.customerId = [customerId];
     } else if (
-      user.isCustomerSuccess &&
+      isCustomerSuccess(user) &&
       !adminNotificationsInputDto.customerId
     ) {
       adminNotificationsInputDto.customerId = [user.customerId!];

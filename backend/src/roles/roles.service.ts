@@ -1,10 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DatabaseService } from '@/common/database/database.service';
+import { SupabaseService } from '@/common/supabase/supabase.service';
+import {
+  CUSTOM_ROLE_MIN_ID,
+  isSystemRoleId,
+} from '@/common/constants/system-roles';
 import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
@@ -12,66 +19,93 @@ import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissi
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async create(createRoleDto: CreateRoleDto) {
-    const existingRole = await this.database.findFirst('roles', {
-      where: { name: createRoleDto.name },
-    });
+    // Check if role name already exists
+    const { data: existingRole } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('id')
+      .eq('name', createRoleDto.name)
+      .single();
 
     if (existingRole) {
       throw new ConflictException('Role with name already exists');
     }
 
-    return this.database.create('roles', { data: createRoleDto });
+    // Create the role
+    const { data: newRole, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .insert(createRoleDto)
+      .select()
+      .single();
+
+    if (error || !newRole) {
+      throw new BadRequestException(
+        `Failed to create role: ${error?.message || 'Unknown error'}`,
+      );
+    }
+
+    return newRole;
   }
 
   async findAll(search?: string) {
-    const where: any = search
-      ? {
-          or: [
-            { name: { ilike: `%${search}%` } },
-            { description: { ilike: `%${search}%` } },
-          ],
-        }
-      : undefined;
+    // Build query
+    let query = this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('*')
+      .order('id', { ascending: false });
 
-    const options: any = {
-      orderBy: [{ field: 'id', direction: 'desc' }],
-    };
-
-    if (where) {
-      options.where = where;
+    // Add search filter if provided
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
     }
 
-    const roles = await this.database.findMany('roles', options);
+    const { data: roles, error } = await query;
+
+    if (error) {
+      throw new BadRequestException(`Failed to fetch roles: ${error.message}`);
+    }
 
     // For each role, get permissions and user count
     const rolesWithDetails = await Promise.all(
-      roles.map(async (role: any) => {
+      (roles || []).map(async (role) => {
         // Get role permissions with permission details
-        const rolePermissions = await this.database.findMany(
-          'role_permissions',
-          {
-            where: { role_id: role.id },
-            include: {
-              permissions: true,
-            },
-          },
-        );
+        const { data: rolePermissions } = await this.supabaseService
+          .getClient()
+          .from('role_permissions')
+          .select(
+            `
+            permission_id,
+            permissions (
+              id,
+              name,
+              label,
+              description
+            )
+          `,
+          )
+          .eq('role_id', role.id);
 
         // Count users with this role
-        const userCount = await this.database.count('users', {
-          where: { role_id: role.id },
-        });
+        const { count: userCount } = await this.supabaseService
+          .getClient()
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('role_id', role.id);
 
         return {
           ...role,
-          permissions: rolePermissions.map((rp: any) => ({
-            permission: rp.permissions,
-          })),
+          permissions: (rolePermissions || []).map(
+            (rp: { permissions: any }) => ({
+              permission: rp.permissions,
+            }),
+          ),
           _count: {
-            users: userCount,
+            users: userCount || 0,
           },
         };
       }),
@@ -81,49 +115,91 @@ export class RolesService {
   }
 
   async getForTaxonomy(): Promise<OutputTaxonomyDto[]> {
-    const roles = await this.database.findMany('roles', {
-      select: 'id, name',
-      orderBy: [{ field: 'name', direction: 'asc' }],
-    });
+    const { data: roles, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('id, name')
+      .order('name', { ascending: true });
 
-    return roles.map((role) => ({
+    if (error) {
+      throw new BadRequestException(
+        `Failed to fetch roles for taxonomy: ${error.message}`,
+      );
+    }
+
+    return (roles || []).map((role) => ({
       id: role.id,
       name: role.name ?? null,
     }));
   }
 
   async findOne(id: number) {
-    const role = await this.database.findFirst('roles', {
-      where: { id },
-    });
+    const { data: role, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!role) {
-      throw new NotFoundException(
-        'No role with given ID exists for given customer',
-      );
+    if (error || !role) {
+      throw new NotFoundException('No role with given ID exists');
     }
 
     // Get role permissions with permission details
-    const rolePermissions = await this.database.findMany('role_permissions', {
-      where: { role_id: id },
-      include: {
-        permissions: true,
-      },
-    });
+    const { data: rolePermissions } = await this.supabaseService
+      .getClient()
+      .from('role_permissions')
+      .select(
+        `
+        permission_id,
+        permissions (
+          id,
+          name,
+          label,
+          description
+        )
+      `,
+      )
+      .eq('role_id', id);
 
     return {
       ...role,
-      permissions: rolePermissions.map((rp: any) => ({
+      permissions: (rolePermissions || []).map((rp: { permissions: any }) => ({
         permission: rp.permissions,
       })),
     };
   }
 
   async update(id: number, updateRoleDto: UpdateRoleDto) {
-    return this.database.update('roles', {
-      where: { id },
-      data: updateRoleDto,
-    });
+    // Protect system roles from modification
+    if (isSystemRoleId(id)) {
+      throw new ForbiddenException(
+        `Cannot modify system role (ID: ${id}). System roles (IDs 1-3) are protected.`,
+      );
+    }
+
+    // Ensure ID is >= 100 (custom roles only)
+    if (id < CUSTOM_ROLE_MIN_ID) {
+      throw new ForbiddenException(
+        `Cannot modify role with ID < ${CUSTOM_ROLE_MIN_ID}. Only custom roles can be modified.`,
+      );
+    }
+
+    const { data: updatedRole, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .update(updateRoleDto)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !updatedRole) {
+      throw new BadRequestException(
+        `Failed to update role: ${error?.message || 'Unknown error'}`,
+      );
+    }
+
+    return updatedRole;
   }
 
   // remove(id: number) {
@@ -134,22 +210,49 @@ export class RolesService {
     roleId: number,
     dto: UpdateRolePermissionsByNameDto,
   ) {
-    const role = await this.database.findUnique('roles', {
-      where: { id: roleId },
-    });
+    // Protect system roles from permission modification
+    if (isSystemRoleId(roleId)) {
+      throw new ForbiddenException(
+        `Cannot modify permissions for system role (ID: ${roleId}). System roles (IDs 1-3) are protected.`,
+      );
+    }
 
-    if (!role) {
+    // Ensure ID is >= 100 (custom roles only)
+    if (roleId < CUSTOM_ROLE_MIN_ID) {
+      throw new ForbiddenException(
+        `Cannot modify permissions for role with ID < ${CUSTOM_ROLE_MIN_ID}. Only custom roles can be modified.`,
+      );
+    }
+
+    // Check if role exists
+    const { data: role, error: roleError } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('id')
+      .eq('id', roleId)
+      .single();
+
+    if (roleError || !role) {
       throw new NotFoundException(`Role with ID ${roleId} not found`);
     }
 
-    const permissions = await this.database.findMany('permissions', {
-      where: {
-        name: { in: dto.permissionNames },
-      },
-    });
+    // Get all permissions by name
+    const { data: permissions, error: permError } = await this.supabaseService
+      .getClient()
+      .from('permissions')
+      .select('id, name')
+      .in('name', dto.permissionNames);
 
-    if (permissions.length !== dto.permissionNames.length) {
-      const foundNames = permissions.map((p: any) => p.name);
+    if (permError) {
+      throw new BadRequestException(
+        `Failed to fetch permissions: ${permError.message}`,
+      );
+    }
+
+    if (!permissions || permissions.length !== dto.permissionNames.length) {
+      const foundNames = (permissions || []).map(
+        (p: { name: string }) => p.name,
+      );
       const missing = dto.permissionNames.filter(
         (name) => !foundNames.includes(name),
       );
@@ -159,18 +262,33 @@ export class RolesService {
     }
 
     // Clear existing permissions
-    await this.database.deleteMany('role_permissions', {
-      where: { role_id: roleId },
-    });
+    const { error: deleteError } = await this.supabaseService
+      .getClient()
+      .from('role_permissions')
+      .delete()
+      .eq('role_id', roleId);
+
+    if (deleteError) {
+      throw new BadRequestException(
+        `Failed to clear existing permissions: ${deleteError.message}`,
+      );
+    }
 
     // Add new permissions
-    const rolePermissionData = permissions.map((p: any) => ({
+    const rolePermissionData = permissions.map((p: { id: number }) => ({
       role_id: roleId,
       permission_id: p.id,
     }));
 
-    for (const data of rolePermissionData) {
-      await this.database.create('role_permissions', { data });
+    const { error: insertError } = await this.supabaseService
+      .getClient()
+      .from('role_permissions')
+      .insert(rolePermissionData);
+
+    if (insertError) {
+      throw new BadRequestException(
+        `Failed to add new permissions: ${insertError.message}`,
+      );
     }
 
     return {

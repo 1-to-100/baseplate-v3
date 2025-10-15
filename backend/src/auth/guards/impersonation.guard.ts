@@ -7,6 +7,10 @@ import {
 import { UsersService } from '@/users/users.service';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { UserStatus } from '@/common/constants/status';
+import {
+  isSystemAdministrator,
+  isCustomerSuccess,
+} from '@/common/utils/user-role-helpers';
 
 @Injectable()
 export class ImpersonationGuard implements CanActivate {
@@ -28,10 +32,9 @@ export class ImpersonationGuard implements CanActivate {
     }
 
     if (impersonateUserId && request.currentUser) {
-      const { isSuperadmin, isCustomerSuccess, customerId } =
-        request.currentUser;
+      const user = request.currentUser;
 
-      if (!isSuperadmin && !isCustomerSuccess) {
+      if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
         throw new ForbiddenException(
           'You do not have permission to impersonate users',
         );
@@ -40,9 +43,9 @@ export class ImpersonationGuard implements CanActivate {
       const impersonatedUser =
         await this.usersService.findOne(impersonateUserId);
 
-      if (impersonatedUser.isSuperadmin) {
+      if (isSystemAdministrator(impersonatedUser)) {
         throw new ForbiddenException(
-          'You cannot impersonate a superadmin user',
+          'You cannot impersonate a System Administrator',
         );
       } else if (impersonatedUser.status !== UserStatus.ACTIVE) {
         throw new ForbiddenException('You cannot impersonate an inactive user');
@@ -51,8 +54,9 @@ export class ImpersonationGuard implements CanActivate {
       }
 
       if (
-        isSuperadmin ||
-        (isCustomerSuccess && impersonatedUser.customerId === customerId)
+        isSystemAdministrator(user) ||
+        (isCustomerSuccess(user) &&
+          impersonatedUser.customerId === user.customerId)
       ) {
         request.impersonatedUser = impersonatedUser;
         request.isImpersonating = true;

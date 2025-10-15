@@ -79,16 +79,17 @@ const { data } = await supabase
 - [x] Apply migration
 - [x] Verify with test queries (SQL file created)
 
-### Phase 2: Backend Code Updates
+### Phase 2: Backend Code Updates ✅ COMPLETE
 - [x] Create SystemRoles decorator
 - [x] Create system roles constants (SYSTEM_ROLES, SYSTEM_ROLE_IDS)
 - [x] Create SystemRoleGuard (with constants)
 - [x] Update PermissionGuard (with constants)
 - [x] Update RequireSuperuserGuard (with constants)
 - [x] Update OutputUserDto (add role field)
-- [ ] Update RolesService
-- [ ] Update RolesController
-- [ ] Add explicit filters to all services
+- [x] Update RolesService (convert to Supabase, protect system roles)
+- [x] Update RolesController (add SystemRoleGuard)
+- [x] Replace all isSuperadmin/isCustomerSuccess checks with role-based checks
+- [ ] Add explicit filters to all services (Phase 2 continued)
 - [x] Create RoleMigrationService (with constants)
 
 ### Phase 3: Data Migration

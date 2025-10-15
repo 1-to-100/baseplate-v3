@@ -24,6 +24,7 @@ import { ArticleCategoriesService } from '@/article-categories/article-categorie
 import { OutputArticleCategoryDto } from '@/article-categories/dto/output-article-category.dto';
 import { CreateArticleCategoryDto } from '@/article-categories/dto/create-article-category.dto';
 import { UpdateArticleCategoryDto } from '@/article-categories/dto/update-article-category.dto';
+import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 
 @Controller('documents/categories')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -40,9 +41,9 @@ export class ArticleCategoriesController {
   })
   @Permissions('Documents:viewCategories')
   async findAll(@User() user: OutputUserDto, @CustomerId() customerId: number) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 
@@ -65,9 +66,9 @@ export class ArticleCategoriesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 
@@ -103,9 +104,9 @@ export class ArticleCategoriesController {
       createdBy: user.id,
       icon: createArticleCategoryDto.icon,
     };
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       fields.customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       fields.customerId = user.customerId;
     } else {
       fields.customerId = customerId;
@@ -129,9 +130,9 @@ export class ArticleCategoriesController {
     @Body() updateArticleCategoryDto: UpdateArticleCategoryDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 
@@ -158,9 +159,9 @@ export class ArticleCategoriesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 
@@ -184,9 +185,9 @@ export class ArticleCategoriesController {
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
   ) {
-    if (!user.isSuperadmin && user.customerId) {
+    if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
-    } else if (!customerId && user.isSuperadmin && user.customerId) {
+    } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     }
 

@@ -24,6 +24,7 @@ import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { ListUsersInputDto } from '@/users/dto/list-users-input.dto';
 import { CreateSystemUserDto } from '@/users/dto/create-system-user.dto';
 import { UpdateSystemUserDto } from '@/users/dto/update-system-user.dto';
+import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 
 @Controller('system-users')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -45,7 +46,7 @@ export class SystemUsersController {
     @CustomerId() customerId?: string,
   ) {
     this.logger.debug(listUserInputDto);
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to list users.');
     }
 
@@ -62,7 +63,7 @@ export class SystemUsersController {
     type: OutputUserDto,
   })
   findOne(@User() user: OutputUserDto, @Param('id') id: number) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to user.');
     }
     return this.usersService.findOneSystemUser(+id);
@@ -81,7 +82,7 @@ export class SystemUsersController {
     @User() user: OutputUserDto,
     @Body() createSystemUserDto: CreateSystemUserDto,
   ) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to create users.');
     }
 
@@ -98,7 +99,7 @@ export class SystemUsersController {
     @Body() updateSystemUserDto: UpdateSystemUserDto,
     @User() user: OutputUserDto,
   ) {
-    if (!user.isSuperadmin) {
+    if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to create users.');
     }
 
