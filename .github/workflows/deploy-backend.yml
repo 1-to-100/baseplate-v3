@@ -20,7 +20,7 @@ jobs:
         run: |
           echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env.backend
           echo "${{ secrets.BACKEND_ENV }}" | base64 --decode > .env
-          docker build -f Dockerfile.api -t baseplate-v2-backend:latest 
+          docker build -f Dockerfile.api -t baseplate-v2-backend:latest .
 
       - name: Save Docker Image
         run: |
