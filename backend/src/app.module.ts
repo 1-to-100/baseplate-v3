@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { UsersModule } from '@/users/users.module';
@@ -18,6 +18,8 @@ import { NotificationsModule } from '@/notifications/notifications.module';
 import { SupabaseModule } from '@/common/supabase/supabase.module';
 import { validate } from '@/common/config/config.validation';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
+import { BootstrapModule } from '@/common/bootstrap/bootstrap.module';
+import { BootstrapService } from '@/common/bootstrap/bootstrap.service';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
     }),
     SupabaseModule,
     DatabaseModule, // New database service layer
+    BootstrapModule, // Bootstrap service for system initialization
     SystemModulesModule,
     RolesModule,
     ManagersModule,
@@ -45,4 +48,10 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
   controllers: [AppController],
   providers: [AppService, FrontendPathsService],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly bootstrapService: BootstrapService) {}
+
+  async onModuleInit() {
+    await this.bootstrapService.ensureSystemAdmin();
+  }
+}

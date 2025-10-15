@@ -273,7 +273,6 @@ export class UsersController {
   ) {
     const userData = await this.usersService.findOne(user.id);
 
-    // Якщо це імперсонація, додаємо інформацію про неї
     if (isImpersonating && originalUser) {
       const response: UserWithImpersonationDto = {
         ...userData,

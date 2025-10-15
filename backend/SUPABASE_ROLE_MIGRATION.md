@@ -1231,6 +1231,65 @@ SELECT COUNT(*) FROM users WHERE role_id IS NULL;
 
 ---
 
+## 🔐 Default System Administrator
+
+### Automatic Bootstrap
+The application automatically ensures at least one System Administrator exists on startup.
+
+### Default Credentials
+If no System Administrator is found, the following user is created:
+
+**Email**: `admin@system.local`  
+**Password**: `Admin@123456`
+
+### ⚠️ CRITICAL SECURITY WARNING
+1. **IMMEDIATELY** change this password after first login
+2. This default user is created with `customer_id = null` (system-level admin)
+3. For production deployments, manually create a proper admin user BEFORE first startup
+4. Consider disabling auto-creation in production via environment variable
+
+### How to Disable Auto-Creation
+Set environment variable:
+```bash
+DISABLE_BOOTSTRAP_ADMIN=true
+```
+
+### How It Works
+- On application startup, the `BootstrapService` checks if any user has `role_id = 1` (System Administrator)
+- If no System Administrator is found, it creates:
+  1. A user in Supabase Auth with the default credentials
+  2. A corresponding user record in the database with `role_id = 1`
+- The process is idempotent - it's safe to run multiple times
+- If bootstrap fails, the error is logged but won't prevent app startup
+
+### Testing Bootstrap
+To test the bootstrap functionality:
+
+```sql
+-- Temporarily remove all System Administrators
+UPDATE users SET role_id = NULL WHERE role_id = 1;
+
+-- Restart the application
+-- Check logs for bootstrap messages
+
+-- Verify default admin was created
+SELECT id, email, first_name, last_name, role_id 
+FROM users 
+WHERE email = 'admin@system.local';
+
+-- Try logging in with default credentials
+-- Email: admin@system.local
+-- Password: Admin@123456
+```
+
+### Production Deployment Checklist
+- [ ] Manually create System Administrator before first deployment
+- [ ] Set `DISABLE_BOOTSTRAP_ADMIN=true` in production environment
+- [ ] Remove or rotate default credentials if accidentally created
+- [ ] Monitor logs for bootstrap warnings
+
+---
+
 ## 🎨 Phase 4: Frontend Updates
 
 ### Step 4.1: Update Type Definitions
