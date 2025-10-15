@@ -37,8 +37,6 @@ export interface User {
   role_id?: number | null;
   manager_id?: number | null;
   status: string;
-  is_superadmin?: boolean | null;
-  is_customer_success?: boolean | null;
   created_at: string;
   updated_at?: string | null;
   deleted_at?: string | null;
@@ -320,8 +318,6 @@ export interface UserFilters {
   has_customer?: boolean;
   status?: string | string[];
   search?: string;
-  is_superadmin?: boolean;
-  is_customer_success?: boolean;
   deleted_at?: null | 'not_null';
 }
 

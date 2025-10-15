@@ -8,6 +8,7 @@ import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
+import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
 import { UserOrderByFields, UserStatus } from '@/common/constants/status';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { CreateUserDto } from '@/users/dto/create-user.dto';
@@ -40,8 +41,6 @@ function mapUserToDto(user: any): OutputUserDto {
     roleId: user.role_id,
     managerId: user.manager_id,
     status: user.status,
-    isSuperadmin: user.is_superadmin,
-    isCustomerSuccess: user.is_customer_success,
     createdAt: user.created_at,
     updatedAt: user.updated_at,
     deletedAt: user.deleted_at,
@@ -104,8 +103,6 @@ export class UsersService {
         role_id: createUserDto.roleId,
         manager_id: createUserDto.managerId,
         status: createUserDto.status || 'inactive',
-        is_superadmin: createUserDto.isSuperadmin || false,
-        is_customer_success: createUserDto.isCustomerSuccess || false,
       };
 
       user = await this.database.create('users', {
@@ -158,6 +155,11 @@ export class UsersService {
       }
     }
 
+    // Determine role_id based on system role
+    const roleId = isSuperadmin
+      ? SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR
+      : SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS;
+
     let user: User | null = null;
 
     try {
@@ -168,11 +170,9 @@ export class UsersService {
         last_name: makeUser.lastName,
         phone_number: makeUser.phoneNumber,
         customer_id: makeUser.customerId,
-        role_id: makeUser.roleId,
+        role_id: roleId,
         manager_id: makeUser.managerId,
         status: makeUser.status || 'inactive',
-        is_superadmin: isSuperadmin,
-        is_customer_success: isCustomerSuccess,
       };
 
       user = await this.database.create('users', {
@@ -316,7 +316,11 @@ export class UsersService {
           { email: { contains: search } },
         ],
       }),
-      AND: [{ is_superadmin: false }, { is_customer_success: false }],
+      // Exclude system roles using AND with not conditions
+      AND: [
+        { role_id: { not: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR } },
+        { role_id: { not: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS } },
+      ],
       deleted_at: null,
     };
 
@@ -379,7 +383,13 @@ export class UsersService {
           { email: { contains: search } },
         ],
       }),
-      OR: [{ is_superadmin: true }, { is_customer_success: true }],
+      // Include only system roles (System Administrator and Customer Success)
+      role_id: {
+        in: [
+          SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
+          SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
+        ],
+      },
       deleted_at: null,
     };
 
@@ -459,7 +469,12 @@ export class UsersService {
   async findOneSystemUser(id: number): Promise<OutputUserDto> {
     const where: any = {
       id,
-      OR: [{ is_superadmin: true }, { is_customer_success: true }],
+      role_id: {
+        in: [
+          SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
+          SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
+        ],
+      },
       deleted_at: null,
     };
 
@@ -505,11 +520,11 @@ export class UsersService {
       if (updatedBy.id === id) {
         throw new ConflictException('You cannot change your own status');
       } else if (
-        existingUser.is_superadmin ||
-        existingUser.is_customer_success
+        existingUser.role_id === SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR ||
+        existingUser.role_id === SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS
       ) {
         throw new ConflictException(
-          'You cannot change status of superadmin or customer success user',
+          'You cannot change status of system administrator or customer success user',
         );
       } else if (!existingUser.uid) {
         throw new ConflictException(
@@ -553,10 +568,6 @@ export class UsersService {
       updateData.manager_id = updateUserDto.managerId;
     if (updateUserDto.status !== undefined)
       updateData.status = updateUserDto.status;
-    if (updateUserDto.isSuperadmin !== undefined)
-      updateData.is_superadmin = updateUserDto.isSuperadmin;
-    if (updateUserDto.isCustomerSuccess !== undefined)
-      updateData.is_customer_success = updateUserDto.isCustomerSuccess;
 
     const user = await this.database.update('users', {
       where: updateWhereClause,
@@ -623,10 +634,11 @@ export class UsersService {
       updateData.manager_id = updateUser.managerId;
     if (updateUser.status !== undefined) updateData.status = updateUser.status;
 
-    // Add system role fields
+    // Update role_id based on system role
     if (systemRole) {
-      updateData.is_superadmin = isSuperadmin;
-      updateData.is_customer_success = isCustomerSuccess;
+      updateData.role_id = isSuperadmin
+        ? SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR
+        : SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS;
     }
 
     // Clear customer_id for superadmin
@@ -936,9 +948,13 @@ export class UsersService {
       throw new NotFoundException(
         'No user with given ID exists or user is already deleted',
       );
-    } else if (user && (user.is_superadmin || user.is_customer_success)) {
+    } else if (
+      user &&
+      (user.role_id === SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR ||
+        user.role_id === SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS)
+    ) {
       throw new ConflictException(
-        'Not supported operation for superadmin or customer success user',
+        'Not supported operation for system administrator or customer success user',
       );
     }
 
@@ -953,7 +969,7 @@ export class UsersService {
       }
     }
 
-    if (user.is_customer_success) {
+    if (user.role_id === SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS) {
       const customerWithSuccess = await this.database.findFirst('customers', {
         where: { customer_success_id: user.id },
       });

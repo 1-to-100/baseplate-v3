@@ -113,8 +113,6 @@ export class SeedCommand {
         firstName: 'John',
         lastName: 'Doe',
         status: 'active',
-        isSuperadmin: false,
-        isCustomerSuccess: false,
       },
       true,
     ); // Skip invite email
@@ -168,8 +166,6 @@ export class SeedCommand {
           ...userInfo,
           customerId,
           status: 'active',
-          isSuperadmin: false,
-          isCustomerSuccess: false,
         },
         true,
       ); // Skip invite email

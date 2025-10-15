@@ -4,8 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
+import { SupabaseService } from '@/common/supabase/supabase.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
+import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
 import { ListCustomersOutputDto } from '@/customers/dto/list-customers-output.dto';
@@ -15,7 +17,10 @@ import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   async create(createCustomerDto: CreateCustomerDto) {
     const { name, subscriptionId, ownerId, customerSuccessId } =
@@ -109,14 +114,18 @@ export class CustomersService {
             })
           : null;
 
-        // Count users for this customer (excluding superadmin and customer success)
-        const userCount = await this.database.count('users', {
-          where: {
-            customer_id: customer.id,
-            is_superadmin: false,
-            is_customer_success: false,
-          },
-        });
+        // Count users for this customer (excluding system roles)
+        // Use raw Supabase query since notIn is not supported in our WhereClause type
+        const { count: userCount } = await this.supabaseService
+          .getClient()
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('customer_id', customer.id)
+          .not(
+            'role_id',
+            'in',
+            `(${SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR},${SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS})`,
+          );
 
         return {
           id: customer.id,
@@ -132,7 +141,7 @@ export class CustomersService {
             : null,
           subscriptionId: subscription?.id,
           subscriptionName: subscription?.name,
-          numberOfUsers: userCount,
+          numberOfUsers: userCount ?? 0,
         };
       }),
     );
@@ -354,7 +363,7 @@ export class CustomersService {
       );
     }
 
-    if (!manager.is_customer_success) {
+    if (manager.role_id !== SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS) {
       throw new ConflictException(
         'Manager user must have a customer success role',
       );
@@ -386,13 +395,13 @@ export class CustomersService {
       throw new ConflictException(
         'Owner email cannot be a public email domain',
       );
-    } else if (owner.is_superadmin) {
+    } else if (owner.role_id === SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR) {
       throw new ConflictException(
-        'Owner user cannot be a superadmin. Please assign a different user as the owner.',
+        'Owner user cannot be a system administrator. Please assign a different user as the owner.',
       );
-    } else if (owner.is_customer_success) {
+    } else if (owner.role_id === SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS) {
       throw new ConflictException(
-        'Owner user cannot be a customer success role. Please assign a different user as the owner.',
+        'Owner user cannot have a customer success role. Please assign a different user as the owner.',
       );
     }
   }

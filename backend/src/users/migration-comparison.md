@@ -38,8 +38,8 @@ firstName → first_name
 lastName → last_name
 deletedAt → deleted_at
 emailVerified → email_verified
-isSuperadmin → is_superadmin
-isCustomerSuccess → is_customer_success
+isSuperadmin → REMOVED (use role_id instead)
+isCustomerSuccess → REMOVED (use role_id instead)
 ```
 
 ### 4. **Complex Queries with Relations**

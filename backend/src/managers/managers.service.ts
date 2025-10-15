@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
+import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
 import { CreateManagerDto } from '@/managers/dto/create-manager.dto';
 import { OutputManagerDto } from '@/managers/dto/output-manager.dto';
 import { UpdateManagerDto } from '@/managers/dto/update-manager.dto';
@@ -35,7 +36,7 @@ export class ManagersService {
 
   async getForTaxonomy(): Promise<OutputManagerDto[]> {
     const usersManagers = await this.database.findMany('users', {
-      where: { is_customer_success: true },
+      where: { role_id: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS },
       select: 'id, email, first_name, last_name',
     });
 
@@ -48,7 +49,7 @@ export class ManagersService {
 
   async findOne(id: number) {
     const manager = await this.database.findFirst('users', {
-      where: { id, is_customer_success: true },
+      where: { id, role_id: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS },
     });
     if (!manager) {
       throw new NotFoundException('No manager with given ID exists');
