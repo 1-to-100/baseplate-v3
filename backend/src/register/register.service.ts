@@ -6,6 +6,7 @@ import { RegisterDto } from '@/register/dto/register.dto';
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { ConfigService } from '@nestjs/config';
+import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
 
 @Injectable()
 export class RegisterService {
@@ -52,7 +53,10 @@ export class RegisterService {
 
       await this.database.update('users', {
         where: { id: newUser.id },
-        data: { customer_id: newCustomer.id },
+        data: {
+          customer_id: newCustomer.id,
+          role_id: SYSTEM_ROLE_IDS.CUSTOMER_ADMINISTRATOR,
+        },
       });
     }
 
