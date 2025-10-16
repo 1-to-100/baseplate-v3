@@ -317,11 +317,14 @@ export class UsersService {
         ],
       }),
       // Exclude system roles only when roleId is not specified
+      // Note: notIn doesn't match NULL, so users with null role_id will be included automatically
       ...(!roleId && {
-        AND: [
-          { role_id: { not: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR } },
-          { role_id: { not: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS } },
-        ],
+        role_id: {
+          notIn: [
+            SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
+            SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
+          ],
+        },
       }),
       deleted_at: null,
     };
