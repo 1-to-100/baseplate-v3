@@ -6,6 +6,6 @@
   "devCommand": "pnpm run dev",
   "regions": ["iad1"],
   "git": {
-    "deploymentEnabled": { "*": false }
+    "deploymentEnabled": { "*": false, "vercel-deployment": true }
   }
 }
