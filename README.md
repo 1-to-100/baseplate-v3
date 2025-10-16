@@ -18,6 +18,7 @@ Ensure you have the following installed:
 - Git
 - Node.js (v22)
 - pnpm (for frontend)
+- Supabase CLI (for database migrations)
 - NVM (optional, for managing Node versions)
 
 ---
@@ -57,30 +58,62 @@ cp .env.template .env
 This README assumes that you have setup a Supabase tenant and have a Supabase project created.
 If you haven't go do that first.  Then:
 
-#### 🔐 Connect to Supabase Database
-
-1. Go to Supabase project → **Connect** (top bar)
-2. Go to **ORMs** tab and select **Prisma** from Tool dropdown:
-   - Copy the **Direct connection** and replace the value of your `DIRECT_URL` key in `.env` for stock-app-api
-   - Copy the **Transaction pooler** and replace the value of your `DATABASE_URL` key in `.env` for stock-app-api
-   - Replace `[YOUR-PASSWORD]` token for both .env files
 
 #### 🌐 Connect App Frameworks
 
 1. Go to **Settings > Data API**
 2. Copy the **Project URL**:
-   - Replace the value of the `SUPABASE_URL` key in `.env` for stock-app-api
-   - Replace the value of the `NEXT_PUBLIC_SUPABASE_URL` key in `.env` for stock-app
+   - Replace the value of the `SUPABASE_URL` key in `.env` for backend
+   - Replace the value of the `NEXT_PUBLIC_SUPABASE_URL` key in `.env` for frontend
 3. Go to **Settings > API Keys**
 4. Copy the **Legacy API Keys**:
-   - **anon/public**: Replace the value of the `NEXT_PUBLIC_SUPABASE_ANON_KEY` key in `.env` for stock-app
-   - **service_role/secret**: Replace the value of the `SUPABASE_SERVICE_ROLE_KEY` key in `.env` for stock-app-api
+   - **anon/public**: Replace the value of the `NEXT_PUBLIC_SUPABASE_ANON_KEY` key in `.env` for frontend
+   - **service_role/secret**: Replace the value of the `SUPABASE_SERVICE_ROLE_KEY` key in `.env` for backend
 
 #### 🔑 JWT Secret
 
 1. Go to **Settings > JWT Keys**
 2. In the **Legacy JWT Secret** tab, click **Reveal** to show the JWT secret
-3. Copy the revealed JWT secret and replace the value of your `SUPABASE_JWT_SECRET` key in `.env` for stock-app-api
+3. Copy the revealed JWT secret and replace the value of your `SUPABASE_JWT_SECRET` key in `.env` for backend
+
+#### 👤 Default System Administrator
+
+On first startup, the application automatically creates a default System Administrator account:
+
+**Email:** `admin@system.local`  
+**Password:** `Admin@123456`
+
+**⚠️ CRITICAL:** Change this password immediately after first login.
+
+To disable auto-creation in production:
+```bash
+DISABLE_BOOTSTRAP_ADMIN=true
+```
+
+#### 🗄️ Database Migrations
+
+Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `backend/supabase/migrations/`.
+
+**Prerequisites:**
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Login to Supabase
+supabase login
+
+# Link to your project (from backend directory)
+cd backend
+supabase link --project-ref your-project-ref
+```
+
+To apply migrations manually:
+```bash
+cd backend
+npm run supabase:push
+```
+
+For detailed migration management, see `backend/supabase/README.md`.
 
 ---
 
@@ -170,12 +203,6 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 docker compose up
 ```
 
-Then run database migration:
-
-```bash
-docker compose exec stock-app-api npx prisma migrate deploy
-```
-
 Services will be available at:
 
 - Frontend: http://localhost:3000  
@@ -213,10 +240,10 @@ pnpm dev
 ```bash
 cd backend
 npm install
-npm run prisma:generate
-npx prisma migrate deploy
 npm run start:dev // npm run start:dev:env - alternative start command (as start:dev doesn't work on some devices)
 ```
+
+**Note:** Database migrations are managed via Supabase. See `backend/supabase/README.md` for migration management.
 
 ---
 
@@ -225,20 +252,20 @@ npm run start:dev // npm run start:dev:env - alternative start command (as start
 ### Docker
 ```bash
 # Seed test data
-docker compose exec stock-app-api npm run docker:seed
+docker compose exec backend npm run docker:seed
 
 # Cleanup test data
-docker compose exec stock-app-api npm run docker:cleanup
+docker compose exec backend npm run docker:cleanup
 ```
 
 ### Non-Docker
 ```bash
 # Seed test data
-cd stock-app-api
+cd backend
 npm run cli:seed
 
 # Cleanup test data
-cd stock-app-api
+cd backend
 npm run cli:cleanup
 ```
 
@@ -255,7 +282,7 @@ After running the backend:
 To rebuild the docs:
 
 ```bash
-cd stock-app-api
+cd backend
 npm run build
 ```
 
@@ -311,11 +338,23 @@ Once saved, all transactional emails from Supabase will be sent using your confi
 ---
 
 ## Setup a super user account for yourself
-* Your app should now be running on localhost
-* Login to the app (either with user / pass or via federated login)
-* Logout of the app - you should now have a record in the users table
-* Go to Supabase
-* Select [Your Project] -> Database -> Tables -> Users
-* For the Users Table select the three vertical dots and activate the "View In Table Editor" option
-* This will show you all the users in the system.  Select your user and set the is_superadmin = true
-* Log back in and you should now see the extended set of system management options
+
+### Option 1: Automatic Bootstrap
+On first startup, the application automatically creates a default System Administrator account:
+- Email: `admin@system.local`
+- Password: `Admin@123456`
+- **⚠️ IMPORTANT:** Change this password immediately after first login
+
+### Option 2: Manual Setup
+1. Login to the app (with user/pass or federated login)
+2. Logout - you should now have a record in the users table
+3. Go to Supabase Dashboard
+4. Navigate to: Database → Tables → Users → View In Table Editor
+5. Find your user and set `role_id = 1` (System Administrator role)
+6. Log back in to see full system management options
+
+### System Roles
+The application uses three system roles:
+- **System Administrator** (role_id: 1) - Full system access
+- **Customer Success** (role_id: 2) - Customer management access
+- **Customer Administrator** (role_id: 3) - Customer-specific admin access

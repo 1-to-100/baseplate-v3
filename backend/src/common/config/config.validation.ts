@@ -3,7 +3,6 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
   IsString,
   IsUrl,
   validateSync,
@@ -19,26 +18,6 @@ class EnvironmentVariables {
   @IsNumber()
   @IsNotEmpty()
   PORT: number;
-
-  @IsString()
-  @IsNotEmpty()
-  DATABASE_URL: string;
-
-  @IsString()
-  @IsOptional()
-  DIRECT_URL?: string;
-
-  // @IsString()
-  // @IsNotEmpty()
-  // DATABASE_USER: string;
-  //
-  // @IsString()
-  // @IsNotEmpty()
-  // DATABASE_PASSWORD: string;
-  //
-  // @IsString()
-  // @IsNotEmpty()
-  // DATABASE_NAME: string;
 
   @IsString()
   @IsNotEmpty()
