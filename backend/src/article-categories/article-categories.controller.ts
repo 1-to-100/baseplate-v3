@@ -12,7 +12,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiConflictResponse, ApiOkResponse, ApiParam } from '@nestjs/swagger';
-import { Permissions } from '@/common/decorators/permissions.decorator';
 import { User } from '@/common/decorators/user.decorator';
 import { CustomerId } from '@/common/decorators/customer-id.decorator';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
@@ -39,7 +38,6 @@ export class ArticleCategoriesController {
     description: 'The categories list',
     type: OutputArticleCategoryDto,
   })
-  @Permissions('Documents:viewCategories')
   async findAll(@User() user: OutputUserDto, @CustomerId() customerId: number) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -61,7 +59,6 @@ export class ArticleCategoriesController {
   @ApiOkResponse({
     description: 'The subcategories list',
   })
-  @Permissions('Documents:viewCategories')
   async findAllSubcategories(
     @User() user: OutputUserDto,
     @CustomerId() customerId: number,
@@ -90,7 +87,6 @@ export class ArticleCategoriesController {
   @ApiConflictResponse({
     description: 'Error creating category with provided data',
   })
-  @Permissions('Documents:createCategories')
   async create(
     @User() user: OutputUserDto,
     @Body() createArticleCategoryDto: CreateArticleCategoryDto,
@@ -123,7 +119,6 @@ export class ArticleCategoriesController {
     description: 'Error updating category with provided data',
   })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:editCategories')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @User() user: OutputUserDto,
@@ -153,7 +148,6 @@ export class ArticleCategoriesController {
     description: 'The category has been successfully deleted',
   })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:deleteCategories')
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @User() user: OutputUserDto,
@@ -179,7 +173,6 @@ export class ArticleCategoriesController {
     type: OutputArticleCategoryDto,
   })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:viewCategories')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @User() user: OutputUserDto,
