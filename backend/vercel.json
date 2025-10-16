@@ -17,6 +17,6 @@
     }
   },
   "git": {
-    "deploymentEnabled": { "*": false, "supabase-migration": true, "master": false }
+    "deploymentEnabled": { "*": false, "master": true }
   }
 }
