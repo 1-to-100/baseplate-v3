@@ -20,5 +20,8 @@
     "api/index.js": {
       "maxDuration": 30
     }
+  },
+  "git": {
+    "deploymentEnabled": { "*": false, "vercel-deployment": true }
   }
 }
