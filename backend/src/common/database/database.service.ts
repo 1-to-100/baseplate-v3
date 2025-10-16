@@ -33,55 +33,55 @@ export class DatabaseService implements OnModuleInit {
   }
 
   // Database table accessors
-  get users() {
+  get users(): any {
     return this.client.from('users');
   }
 
-  get customers() {
+  get customers(): any {
     return this.client.from('customers');
   }
 
-  get roles() {
+  get roles(): any {
     return this.client.from('roles');
   }
 
-  get permissions() {
+  get permissions(): any {
     return this.client.from('permissions');
   }
 
-  get role_permissions() {
+  get role_permissions(): any {
     return this.client.from('role_permissions');
   }
 
-  get managers() {
+  get managers(): any {
     return this.client.from('managers');
   }
 
-  get subscriptions() {
+  get subscriptions(): any {
     return this.client.from('subscriptions');
   }
 
-  get user_one_time_codes() {
+  get user_one_time_codes(): any {
     return this.client.from('user_one_time_codes');
   }
 
-  get api_logs() {
+  get api_logs(): any {
     return this.client.from('api_logs');
   }
 
-  get article_categories() {
+  get article_categories(): any {
     return this.client.from('article_categories');
   }
 
-  get articles() {
+  get articles(): any {
     return this.client.from('articles');
   }
 
-  get notifications() {
+  get notifications(): any {
     return this.client.from('notifications');
   }
 
-  get notification_templates() {
+  get notification_templates(): any {
     return this.client.from('notification_templates');
   }
 

@@ -37,19 +37,19 @@ export class SupabaseService implements OnModuleInit {
     return this.supabase;
   }
 
-  get admin() {
+  get admin(): any {
     return this.getClient().auth.admin;
   }
 
-  get auth() {
+  get auth(): any {
     return this.getClient().auth;
   }
 
-  get storage() {
+  get storage(): any {
     return this.getClient().storage;
   }
 
-  get functions() {
+  get functions(): any {
     return this.getClient().functions;
   }
 
