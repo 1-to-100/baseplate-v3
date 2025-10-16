@@ -53,7 +53,7 @@ async function createApp() {
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     
     // Setup Swagger UI for all environments
-    SwaggerModule.setup('api', app, documentFactory, {
+    SwaggerModule.setup('swagger', app, documentFactory, {
       customCss: '.swagger-ui .topbar { display: none }',
       customSiteTitle: 'Baseplate API Documentation',
       swaggerOptions: {
@@ -64,6 +64,11 @@ async function createApp() {
         showRequestHeaders: true,
         tryItOutEnabled: true,
       },
+      customJs: [
+        'https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js',
+        'https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js',
+      ],
+      customCssUrl: 'https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css',
     });
     app.useGlobalPipes(
       new ValidationPipe({
