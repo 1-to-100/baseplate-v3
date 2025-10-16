@@ -6,6 +6,6 @@
   "devCommand": "pnpm run dev",
   "regions": ["iad1"],
   "git": {
-    "deploymentEnabled": { "*": false, "supabase-migration": true, "master": true }
+    "deploymentEnabled": { "*": false, "supabase-migration": true, "master": false }
   }
 }
