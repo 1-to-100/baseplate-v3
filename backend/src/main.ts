@@ -33,8 +33,6 @@ async function createApp() {
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:3002',
-        "https://1to100.huboxt.com",
-        "https://1to100-api.huboxt.com",
         "https://app-baseplate-v2.vercel.app",
         ...(frontendUrl ? [frontendUrl] : []),
       ],
