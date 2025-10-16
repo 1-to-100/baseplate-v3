@@ -57,11 +57,11 @@ async function createApp() {
     if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
       SwaggerModule.setup('api', app, documentFactory);
     } else {
-      // In production, only provide JSON documentation
-      SwaggerModule.setup('api-json', app, documentFactory, {
-        swaggerOptions: {
-          persistAuthorization: true,
-        },
+      // In production, only provide raw JSON documentation
+      const document = documentFactory();
+      app.use('/api-json', (req: any, res: any) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.send(JSON.stringify(document, null, 2));
       });
     }
     app.useGlobalPipes(
