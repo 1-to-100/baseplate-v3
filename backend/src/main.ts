@@ -51,7 +51,19 @@ async function createApp() {
       .addTag('baseplate')
       .build();
     const documentFactory = () => SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, documentFactory);
+    
+    // Only setup Swagger UI in non-production environments
+    // In production (Vercel), only provide JSON documentation
+    if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+      SwaggerModule.setup('api', app, documentFactory);
+    } else {
+      // In production, only provide JSON documentation
+      SwaggerModule.setup('api-json', app, documentFactory, {
+        swaggerOptions: {
+          persistAuthorization: true,
+        },
+      });
+    }
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
