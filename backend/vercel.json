@@ -4,6 +4,14 @@
   "installCommand": "pnpm install",
   "routes": [
     {
+      "src": "/api/swagger-ui-.*",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/api/favicon.*",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.js"
     }

@@ -52,18 +52,19 @@ async function createApp() {
       .build();
     const documentFactory = () => SwaggerModule.createDocument(app, config);
     
-    // Only setup Swagger UI in non-production environments
-    // In production (Vercel), only provide JSON documentation
-    if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
-      SwaggerModule.setup('api', app, documentFactory);
-    } else {
-      // In production, only provide raw JSON documentation
-      const document = documentFactory();
-      app.use('/api-json', (req: any, res: any) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.send(JSON.stringify(document, null, 2));
-      });
-    }
+    // Setup Swagger UI for all environments
+    SwaggerModule.setup('api', app, documentFactory, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Baseplate API Documentation',
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        docExpansion: 'none',
+        filter: true,
+        showRequestHeaders: true,
+        tryItOutEnabled: true,
+      },
+    });
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
