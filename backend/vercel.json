@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "pnpm run vercel-build",
   "builds": [
     {
       "src": "api/index.js",
