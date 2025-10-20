@@ -15,7 +15,6 @@ import {
 import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 import { ApiConflictResponse, ApiOkResponse } from '@nestjs/swagger';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
-import { Permissions } from '@/common/decorators/permissions.decorator';
 import { User } from '@/common/decorators/user.decorator';
 import { CustomerId } from '@/common/decorators/customer-id.decorator';
 import { DynamicAuthGuard } from '@/auth/guards/dynamic-auth/dynamic-auth.guard';
@@ -50,7 +49,6 @@ export class UsersController {
   @ApiConflictResponse({
     description: 'Error creating user with provided data',
   })
-  @Permissions('UserManagement:createUser')
   async create(
     @User() user: OutputUserDto,
     @Body() createUserDto: CreateUserDto,
@@ -71,7 +69,6 @@ export class UsersController {
     description: 'The user record',
     type: OutputUserDto,
   })
-  @Permissions('UserManagement:inviteUser')
   async invite(
     @User() user: OutputUserDto,
     @Body() inviteUserDto: InviteUserDto,
@@ -99,7 +96,6 @@ export class UsersController {
     description: 'The user record',
     type: OutputUserDto,
   })
-  @Permissions('UserManagement:inviteUser')
   async resendInvite(
     @User() user: OutputUserDto,
     @Body() resendInviteUserDto: ResendInviteUserDto,
@@ -138,7 +134,6 @@ export class UsersController {
     description: 'Validation result',
     type: Boolean,
   })
-  @Permissions('UserManagement:inviteUser')
   async checkEmailExists(@Body() checkEmailDto: CheckUserExistsDto) {
     return await this.usersService.checkEmailExists(checkEmailDto);
   }
@@ -149,7 +144,6 @@ export class UsersController {
     type: OutputUserDto,
     isArray: true,
   })
-  @Permissions('UserManagement:inviteUser')
   async inviteMultiple(
     @User() user: OutputUserDto,
     @Body() inviteUsersDto: InviteMultipleUsersDto,
@@ -215,7 +209,6 @@ export class UsersController {
     type: PaginatedOutputDto,
     isArray: true,
   })
-  @Permissions('UserManagement:viewUsers')
   findAll(
     @User() user: OutputUserDto,
     @Query() listUserInputDto: ListUsersInputDto,
@@ -309,7 +302,6 @@ export class UsersController {
     description: 'User',
     type: OutputUserDto,
   })
-  @Permissions('UserManagement:viewUsers')
   findOne(@User() user: OutputUserDto, @Param('id') id: number) {
     let customerId: number | null = null;
     if (!isSystemAdministrator(user)) {
@@ -324,7 +316,6 @@ export class UsersController {
     description: 'User',
     type: OutputUserDto,
   })
-  @Permissions('UserManagement:editUser')
   update(
     @Param('id') id: number,
     @Body() updateUserDto: UpdateUserDto,
@@ -346,7 +337,6 @@ export class UsersController {
     description: 'User soft deleted',
     type: OutputUserDto,
   })
-  @Permissions('UserManagement:deleteUser')
   async softDelete(@Param('id') id: number, @User() user: OutputUserDto) {
     if (user.id === id) {
       throw new BadRequestException('You cannot delete yourself.');

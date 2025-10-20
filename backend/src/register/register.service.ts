@@ -68,7 +68,7 @@ export class RegisterService {
       options: {
         emailRedirectTo: `${this.configService.get<string>(
           'FRONTEND_URL',
-        )}/callback/implicit`,
+        )}/auth/supabase/callback/implicit`,
         data: {
           firstName: registerDto.firstName,
           lastName: registerDto.lastName,

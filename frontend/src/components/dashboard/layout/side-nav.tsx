@@ -20,7 +20,7 @@ import { NoSsr } from "@/components/core/no-ssr";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { ColorSchemeSwitch } from "./color-scheme-switch";
 import { icons } from "./nav-icons";
-import { isSystemAdministrator, isCustomerSuccess } from "@/lib/user-utils";
+import { isSystemAdministrator, isCustomerSuccess, isCustomerAdministrator } from "@/lib/user-utils";
 
 export interface SideNavProps {
   items: NavItemConfig[];
@@ -36,6 +36,11 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
       if (isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "system-users";
       }
+
+      if (isCustomerAdministrator(userInfo)) {
+        return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management";
+      }
+
       if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
         return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management" && item.key !== "management";
       }
