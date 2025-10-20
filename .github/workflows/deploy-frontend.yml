@@ -1,7 +1,7 @@
 name: '[master] Deploy Frontend to Hetzner'
 on: 
   push:
-    branches: [ supabase-migration ]
+    branches: [ master ]
     paths:
       - 'frontend/**'
       - 'Dockerfile.app'

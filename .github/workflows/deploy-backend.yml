@@ -1,7 +1,7 @@
 name: '[dev] Deploy Backend to Hetzner'
 on: 
   push:
-    branches: [ supabase-migration ]
+    branches: [ master ]
     paths:
       - 'backend/**'
       - 'Dockerfile.api'
