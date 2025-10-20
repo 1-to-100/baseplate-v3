@@ -33,7 +33,11 @@ import { UserStatus } from '@/common/constants/status';
 import { UserWithImpersonationDto } from '@/users/dto/user-with-impersonation.dto';
 import { IsImpersonating } from '@/common/decorators/is-impersonating.decorator';
 import { OriginalUser } from '@/common/decorators/original-user.decorator';
-import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
+import {
+  isSystemAdministrator,
+  isCustomerAdministrator,
+  isCustomerSuccess,
+} from '@/common/utils/user-role-helpers';
 
 @Controller('users')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -215,19 +219,42 @@ export class UsersController {
     @CustomerId() customerId?: string,
   ) {
     this.logger.debug(listUserInputDto);
-    if (!isSystemAdministrator(user) && !user.customerId) {
+
+    // Users without a role (role_id: null) shouldn't have access to this endpoint at all
+    if (!user.role) {
       throw new ForbiddenException('You have no access to list users.');
     }
-    if (!isSystemAdministrator(user) && user.customerId) {
-      // user cannot set another customer when creating users, assign the same he belongs to
+
+    // System administrators have access to all users
+    if (isSystemAdministrator(user)) {
+      // System administrators can access any customer's users
+      if (customerId) {
+        listUserInputDto.customerId = [+customerId];
+      }
+      return this.usersService.findAll(listUserInputDto);
+    }
+
+    // Customer success and customer administrator can have access to all users for their customerId
+    if (isCustomerSuccess(user) || isCustomerAdministrator(user)) {
+      if (!user.customerId) {
+        throw new ForbiddenException('You have no access to list users.');
+      }
+
+      // Force the query to only include users from their customer
       listUserInputDto.customerId = [user.customerId];
+
+      // If a specific customerId is provided in the query, validate it matches their customer
+      if (customerId && +customerId !== user.customerId) {
+        throw new ForbiddenException(
+          'You can only access users from your own customer.',
+        );
+      }
+
+      return this.usersService.findAll(listUserInputDto);
     }
 
-    if (customerId) {
-      listUserInputDto.customerId = [+customerId];
-    }
-
-    return this.usersService.findAll(listUserInputDto);
+    // All other users (including those with custom roles) don't have access
+    throw new ForbiddenException('You have no access to list users.');
   }
 
   @Get('/me')

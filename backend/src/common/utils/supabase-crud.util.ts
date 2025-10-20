@@ -37,16 +37,16 @@ type WhereValue =
       gte?: string | number;
       lt?: string | number;
       lte?: string | number;
-      not?: string | number | null;
+      not?: string | number | null | { in?: (string | number)[] };
     };
 
 // Where clause type - covers most common query patterns
-export type WhereClause = {
-  [key: string]: WhereValue;
-} & {
+
+export interface WhereClause {
+  [key: string]: WhereValue | WhereClause[] | undefined;
   OR?: WhereClause[];
   AND?: WhereClause[];
-};
+}
 
 /**
  * Error handling utility for Supabase responses
@@ -496,7 +496,13 @@ export class SupabaseCRUD {
             .map((condition) => {
               return Object.entries(condition)
                 .map(([k, v]) => {
-                  if (
+                  if (v === null) {
+                    // Handle null values with .is.null syntax
+                    return `${k}.is.null`;
+                  } else if (Array.isArray(v)) {
+                    // Handle array values as 'in' operation
+                    return `${k}.in.(${v.join(',')})`;
+                  } else if (
                     typeof v === 'object' &&
                     v !== null &&
                     !Array.isArray(v)
@@ -506,7 +512,19 @@ export class SupabaseCRUD {
                       v as Record<string, unknown>,
                     );
                   }
-                  return `${k}.eq.${String(v)}`;
+                  // Handle primitive values (string, number, boolean)
+                  const primitiveValue =
+                    typeof v === 'string' ||
+                    typeof v === 'number' ||
+                    typeof v === 'boolean'
+                      ? v
+                      : (() => {
+                          console.warn(
+                            `Unexpected value type in OR condition: ${typeof v}`,
+                          );
+                          return '';
+                        })();
+                  return `${k}.eq.${primitiveValue}`;
                 })
                 .join(',');
             })
@@ -584,6 +602,13 @@ export class SupabaseCRUD {
         case 'not':
           if (value === null) {
             query = query.not(field, 'is', null);
+          } else if (
+            typeof value === 'object' &&
+            value !== null &&
+            'in' in value
+          ) {
+            // Handle not.in operator: field.not.in.(value1,value2)
+            query = query.not(field, 'in', (value.in as (string | number)[]));
           } else {
             query = query.neq(field, value);
           }
@@ -608,6 +633,24 @@ export class SupabaseCRUD {
           return `${field}.ilike.%${String(value)}%`;
         case 'in':
           return `${field}.in.(${Array.isArray(value) ? value.join(',') : String(value)})`;
+        case 'not':
+          // Handle not operator with nested conditions
+          if (typeof value === 'object' && value !== null && 'in' in value) {
+            const inValues = (value as { in?: (string | number)[] }).in;
+            return `${field}.not.in.(${Array.isArray(inValues) ? inValues.join(',') : String(inValues)})`;
+          } else if (value === null) {
+            return `${field}.not.is.null`;
+          } else if (
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean'
+          ) {
+            return `${field}.neq.${value}`;
+          }
+          console.warn(
+            `Unexpected value type in not condition: ${typeof value}`,
+          );
+          return `${field}.neq.`;
         case 'gt':
           return `${field}.gt.${String(value)}`;
         case 'gte':
@@ -616,8 +659,21 @@ export class SupabaseCRUD {
           return `${field}.lt.${String(value)}`;
         case 'lte':
           return `${field}.lte.${String(value)}`;
-        default:
-          return `${field}.eq.${String(value)}`;
+        default: {
+          // Handle primitive values
+          const primitiveValue =
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean'
+              ? value
+              : (() => {
+                  console.warn(
+                    `Unexpected value type in condition: ${typeof value}`,
+                  );
+                  return '';
+                })();
+          return `${field}.eq.${primitiveValue}`;
+        }
       }
     }
     return `${field}.eq.unknown`;

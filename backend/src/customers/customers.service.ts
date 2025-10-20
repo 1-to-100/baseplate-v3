@@ -114,18 +114,29 @@ export class CustomersService {
             })
           : null;
 
-        // Count users for this customer (excluding system roles)
-        // Use raw Supabase query since notIn is not supported in our WhereClause type
-        const { count: userCount } = await this.supabaseService
-          .getClient()
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('customer_id', customer.id)
-          .not(
-            'role_id',
-            'in',
-            `(${SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR},${SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS})`,
-          );
+        // Count users for this customer (excluding system roles, including users with no role)
+        const userCount = await this.database.count('users', {
+          where: {
+            AND: [
+              { customer_id: customer.id },
+              {
+                OR: [
+                  { role_id: null },
+                  {
+                    role_id: {
+                      not: {
+                        in: [
+                          SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
+                          SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        });
 
         return {
           id: customer.id,
