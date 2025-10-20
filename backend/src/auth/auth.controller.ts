@@ -1,10 +1,17 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { SupabaseUser } from '@/common/decorators/supabase-user.decorator';
 import { UsersService } from '@/users/users.service';
 import { SupabaseDecodedToken } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 import { ApiOkResponse } from '@nestjs/swagger';
 import { ResetPasswortDto } from '@/auth/dto/reset-passwort.dto';
 import { OutputResetPasswortDto } from '@/auth/dto/output-reset-passwort.dto';
+import { SupabaseAuthGuard } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -20,6 +27,7 @@ export class AuthController {
   }
 
   @Post('sync/supabase')
+  @UseGuards(SupabaseAuthGuard)
   async syncSupabaseUser(@SupabaseUser() user: SupabaseDecodedToken) {
     if (!user) throw new UnauthorizedException();
     const dbUser = await this.userService.createSupabaseUser(user);
