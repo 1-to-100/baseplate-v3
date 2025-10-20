@@ -38,13 +38,14 @@ async function createApp() {
         ...(frontendUrl ? [frontendUrl] : []),
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+      allowedHeaders:
+        'Content-Type, Accept, Authorization, X-Requested-With, x-customer-id, x-impersonate-user-id',
       exposedHeaders: 'Content-Length, X-Knowledge-Base',
       credentials: true, // Allow cookies
       preflightContinue: false,
       optionsSuccessStatus: 204,
     });
-    
+
     const config = new DocumentBuilder()
       .setTitle('Baseplate API')
       .setDescription('The Baseplate API description')
@@ -52,7 +53,7 @@ async function createApp() {
       .addTag('baseplate')
       .build();
     const documentFactory = () => SwaggerModule.createDocument(app, config);
-    
+
     // Setup Swagger UI for all environments
     SwaggerModule.setup('swagger', app, documentFactory, {
       customCss: '.swagger-ui .topbar { display: none }',
