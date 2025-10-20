@@ -20,7 +20,6 @@ import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 import { ToggleLeft } from "@phosphor-icons/react/dist/ssr/ToggleLeft";
 import { ArrowsDownUp as SortIcon } from "@phosphor-icons/react/dist/ssr/ArrowsDownUp";
-import { CaretDown } from "@phosphor-icons/react/dist/ssr/CaretDown";
 import { config } from "@/config";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import UserDetailsPopover from "@/components/dashboard/user-management/user-details-popover";
@@ -29,7 +28,6 @@ import AddEditUser from "@/components/dashboard/modals/AddEditUser";
 import Pagination from "@/components/dashboard/layout/pagination";
 import Filter from "@/components/dashboard/filter";
 import { Popper } from "@mui/base/Popper";
-import SearchInput from "@/components/dashboard/layout/search-input";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiUser } from "@/contexts/auth/types";
 import CircularProgress from "@mui/joy/CircularProgress";
@@ -40,7 +38,7 @@ import {PaperPlaneRight, ToggleRight, TrashSimple} from "@phosphor-icons/react";
 import { toast } from "@/components/core/toaster";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-import { isUserOwner, isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES } from "@/lib/user-utils";
+import { isUserOwner, isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES, isCustomerAdministrator } from "@/lib/user-utils";
 import { ArrowRight as ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { useImpersonation } from "@/contexts/impersonation-context";
 import {getCustomers} from "@/lib/api/customers";
@@ -608,6 +606,7 @@ export default function Page(): React.JSX.Element {
             {isSystemAdministrator(userInfo) ||
             isUserOwner(userInfo) ||
             isCustomerSuccess(userInfo) ||
+            isCustomerAdministrator(userInfo) ||
             userInfo?.permissions?.includes("inviteUser") ||
             userInfo?.permissions?.includes("createUser") ? (
               <Box sx={{ position: "relative" }}>
