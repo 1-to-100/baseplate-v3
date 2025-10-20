@@ -5,12 +5,14 @@ import { NotificationsService } from '@/notifications/notifications.service';
 import { NotificationsController } from '@/notifications/notifications.controller';
 // import { TemplatesController } from '@/notifications/templates.controller';
 import { UsersModule } from '@/users/users.module';
+import { TemplatesController } from './templates.controller';
+import { TemplatesService } from './templates.service';
 
 @Global()
 @Module({
   imports: [DatabaseModule, UsersModule],
-  providers: [NotificationsService], // TemplatesService temporarily disabled
-  controllers: [NotificationsController], // TemplatesController temporarily disabled
+  providers: [NotificationsService, TemplatesService],
+  controllers: [NotificationsController, TemplatesController],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}
