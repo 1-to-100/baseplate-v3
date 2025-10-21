@@ -160,7 +160,17 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) {
+      return 'No date';
+    }
+    
     const date = new Date(dateString);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
     return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
   };
 
