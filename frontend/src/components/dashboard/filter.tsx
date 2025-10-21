@@ -378,7 +378,7 @@ const Filter = ({
                     <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
                   </Box>
                 )}
-                {users && users?.length > 0 && (
+                {/* {users && users?.length > 0 && (
                   <Box
                     sx={{
                       display: "flex",
@@ -409,7 +409,7 @@ const Filter = ({
                     </Typography>
                     <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
                   </Box>
-                )}
+                )} */}
                 {customers && customers?.length > 0 && (
                   <Box
                     sx={{
