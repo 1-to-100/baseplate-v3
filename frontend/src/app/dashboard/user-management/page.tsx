@@ -786,53 +786,11 @@ export default function Page(): React.JSX.Element {
                           />
                         </Box>
                       </th>
-                      <th
-                        style={{ width: "20%" }}
-                        onClick={() => handleSort("customer")}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
-                              opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
-                            },
-                            "&:hover .sort-icon": { opacity: 1 },
-                          }}
-                        >
-                          Customer
-                          <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
-                          />
-                        </Box>
+                      <th style={{ width: "20%" }}>
+                        Customer
                       </th>
-                      <th
-                        style={{ width: "15%" }}
-                        onClick={() => handleSort("role")}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
-                              opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
-                            },
-                            "&:hover .sort-icon": { opacity: 1 },
-                          }}
-                        >
-                          Role
-                          <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
-                          />
-                        </Box>
+                      <th style={{ width: "15%" }}>
+                        Role
                       </th>
                       <th style={{ width: "60px" }}></th>
                     </tr>
