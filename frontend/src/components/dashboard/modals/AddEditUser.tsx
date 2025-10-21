@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
@@ -9,8 +9,6 @@ import ModalClose from "@mui/joy/ModalClose";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
 import Input from "@mui/joy/Input";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
 import Autocomplete from "@mui/joy/Autocomplete";
 import Button from "@mui/joy/Button";
 import IconButton from "@mui/joy/IconButton";
@@ -94,6 +92,15 @@ export default function AddEditUser({
     queryFn: () => getUserById(userId!),
     enabled: !!userId && open,
   });
+
+  const roleOptions = useMemo(() => {
+    if (userData?.roleId) {
+      const userRole = roles?.find((role) => role.id === userData?.roleId);
+      return userRole?.name ? [userRole.name] : [];
+    }
+
+    return [];
+  }, [roles, userData]);
 
   useEffect(() => {
     if (userId && userData && open) {
@@ -725,7 +732,7 @@ export default function AddEditUser({
                 placeholder="Select role"
                 value={formData.role}
                 onChange={handleRoleChange}
-                options={roles?.sort((a, b) => a.name.localeCompare(b.name)).map((role) => role.name) || []}
+                options={roleOptions}
                 slotProps={{
                   listbox: {
                     placement: 'top',
