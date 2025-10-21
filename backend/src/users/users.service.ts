@@ -401,6 +401,7 @@ export class UsersService {
         in: [
           SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
           SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
+          SYSTEM_ROLE_IDS.CUSTOMER_ADMINISTRATOR,
         ],
       },
       deleted_at: null,
