@@ -22,7 +22,7 @@ import { useColorScheme } from "@mui/joy/styles";
 import { createUser, updateUser, getUserById } from "./../../../lib/api/users";
 import { getRoles } from "./../../../lib/api/roles";
 import { getCustomers } from "./../../../lib/api/customers";
-import { getManagers, Manager } from "./../../../lib/api/managers";
+import { getManagers } from "./../../../lib/api/managers";
 import { toast } from "@/components/core/toaster";
 
 interface HttpError {
