@@ -7,8 +7,8 @@ export class CreateArticleDto {
   title: string;
 
   @ApiProperty({ description: 'ID of the article category' })
-  @IsNumber()
-  articleCategoryId: number;
+  @IsString()
+  articleCategoryId: string;
 
   @ApiPropertyOptional({ description: 'Subcategory of the article' })
   @IsOptional()

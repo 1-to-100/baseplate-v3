@@ -3,7 +3,7 @@ import { IsOptional } from 'class-validator';
 
 export class OutputRoleDto {
   @ApiProperty({ description: 'Role ID' })
-  id: number;
+  id: string;
 
   @ApiProperty({ description: 'Role name' })
   name: string | null = null;
@@ -24,7 +24,7 @@ export class OutputRoleDto {
       items: {
         type: 'object',
         properties: {
-          id: { type: 'number' },
+          id: { type: 'string' },
           name: { type: 'string' },
           label: { type: 'string' },
         },
@@ -33,6 +33,6 @@ export class OutputRoleDto {
   })
   permissions: Record<
     string,
-    Array<{ id: number; name: string; label: string }>
+    Array<{ id: string; name: string; label: string }>
   >;
 }

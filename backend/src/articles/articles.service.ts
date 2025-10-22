@@ -61,7 +61,7 @@ export class ArticlesService {
   }
 
   async findAll(
-    customerId: number,
+    customerId: string,
     listArticlesInputDto: ListArticlesInputDto,
   ): Promise<PaginatedOutputDto<ListArticlesOutputDto>> {
     const { categoryId, status, search, perPage, page } = listArticlesInputDto;
@@ -158,8 +158,8 @@ export class ArticlesService {
   }
 
   async findOne(
-    id: number,
-    customerId: number,
+    id: string,
+    customerId: string,
   ): Promise<ListArticlesOutputDto> {
     const article = await this.database.findFirst('articles', {
       where: {
@@ -181,9 +181,9 @@ export class ArticlesService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateArticleDto: UpdateArticleDto,
-    customerId: number,
+    customerId: string,
   ) {
     const article = await this.database.findFirst('articles', {
       where: {
@@ -234,7 +234,7 @@ export class ArticlesService {
     return updatedArticle;
   }
 
-  async remove(id: number, customerId: number) {
+  async remove(id: string, customerId: string) {
     const article = await this.database.findFirst('articles', {
       where: {
         id,

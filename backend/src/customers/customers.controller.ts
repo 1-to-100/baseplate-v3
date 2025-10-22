@@ -57,7 +57,7 @@ export class CustomersController {
     }
 
     if (customerId) {
-      listCustomersInputDto.id = [+customerId];
+      listCustomersInputDto.id = [customerId];
     }
 
     return this.customersService.findAll(listCustomersInputDto);
@@ -69,11 +69,11 @@ export class CustomersController {
       throw new ForbiddenException('You have no access to customers.');
     }
 
-    if (isCustomerSuccess(user) && user.customerId != +id) {
+    if (isCustomerSuccess(user) && user.customerId != id) {
       throw new ForbiddenException('You have no access to customers.');
     }
 
-    return this.customersService.findOne(+id);
+    return this.customersService.findOne(id);
   }
 
   @Patch(':id')
@@ -85,7 +85,7 @@ export class CustomersController {
     if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to customers.');
     }
-    return this.customersService.update(+id, updateCustomerDto);
+    return this.customersService.update(id, updateCustomerDto);
   }
 
   @Delete(':id')

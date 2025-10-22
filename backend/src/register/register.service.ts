@@ -6,7 +6,7 @@ import { RegisterDto } from '@/register/dto/register.dto';
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { ConfigService } from '@nestjs/config';
-import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
 
 @Injectable()
 export class RegisterService {
@@ -16,6 +16,21 @@ export class RegisterService {
     private readonly supabaseService: SupabaseService,
     private readonly configService: ConfigService,
   ) {}
+
+  private async getRoleIdByName(roleName: string): Promise<string> {
+    const { data: role } = await this.database
+      .getClient()
+      .from('roles')
+      .select('id')
+      .eq('name', roleName)
+      .single();
+    
+    if (!role) {
+      throw new Error(`Role ${roleName} not found`);
+    }
+    
+    return role.id;
+  }
 
   async register(registerDto: RegisterDto) {
     const { firstName, lastName, email } = registerDto;
@@ -55,7 +70,7 @@ export class RegisterService {
         where: { id: newUser.id },
         data: {
           customer_id: newCustomer.id,
-          role_id: SYSTEM_ROLE_IDS.CUSTOMER_ADMINISTRATOR,
+          role_id: await this.getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR),
         },
       });
     }

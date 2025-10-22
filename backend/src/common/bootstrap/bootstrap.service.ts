@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { DatabaseService } from '@/common/database/database.service';
-import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
 
 @Injectable()
 export class BootstrapService implements OnModuleInit {
@@ -24,9 +24,22 @@ export class BootstrapService implements OnModuleInit {
         return;
       }
 
-      // Count users with role_id = 1 (System Administrator)
+      // Find System Administrator role by name
+      const { data: systemAdminRole } = await this.databaseService
+        .getClient()
+        .from('roles')
+        .select('id')
+        .eq('name', SYSTEM_ROLES.SYSTEM_ADMINISTRATOR)
+        .single();
+
+      if (!systemAdminRole) {
+        this.logger.error('System Administrator role not found in database');
+        return;
+      }
+
+      // Count users with System Administrator role
       const count = await this.databaseService.count('users', {
-        where: { role_id: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR },
+        where: { role_id: systemAdminRole.id },
       });
 
       if (count > 0) {
@@ -57,7 +70,7 @@ export class BootstrapService implements OnModuleInit {
           uid: authData.user.id,
           first_name: 'System',
           last_name: 'Administrator',
-          role_id: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
+          role_id: systemAdminRole.id,
           status: 'active',
           customer_id: null, // System-level admin
         },

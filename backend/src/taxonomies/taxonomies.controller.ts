@@ -32,9 +32,9 @@ export class TaxonomiesController {
     type: OutputTaxonomyDto,
   })
   findAllCustomers(@User() user: OutputUserDto) {
-    let customerId: number | null = 0;
+    let customerId: string | null = null;
     if (!isSystemAdministrator(user)) {
-      customerId = user.customerId ?? 0;
+      customerId = user.customerId;
     } else {
       customerId = null;
     }

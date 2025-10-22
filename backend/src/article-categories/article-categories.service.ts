@@ -38,7 +38,7 @@ export class ArticleCategoriesService {
     }
   }
 
-  async findAll(customerId: number): Promise<OutputArticleCategoryDto[]> {
+  async findAll(customerId: string): Promise<OutputArticleCategoryDto[]> {
     const categories = await this.database.findMany('article_categories', {
       where: { customer_id: customerId },
     });
@@ -46,7 +46,7 @@ export class ArticleCategoriesService {
     return categories as OutputArticleCategoryDto[];
   }
 
-  async findAllSubcategories(customerId: number) {
+  async findAllSubcategories(customerId: string) {
     // Using raw Supabase client for distinct query as it's not supported in our CRUD wrapper
     const { data: categories, error } = await this.database
       .getClient()
@@ -69,9 +69,9 @@ export class ArticleCategoriesService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateArticleCategoryDto: UpdateArticleCategoryDto,
-    customerId: number,
+    customerId: string,
   ): Promise<OutputArticleCategoryDto> {
     try {
       this.logger.log(
@@ -100,7 +100,7 @@ export class ArticleCategoriesService {
     }
   }
 
-  async remove(id: number, customerId: number) {
+  async remove(id: string, customerId: string) {
     try {
       this.logger.log(`Delete category ${id} for customer ${customerId}`);
       await this.database.delete('article_categories', {
@@ -117,8 +117,8 @@ export class ArticleCategoriesService {
   }
 
   async findOne(
-    id: number,
-    customerId: number,
+    id: string,
+    customerId: string,
   ): Promise<OutputArticleCategoryDto> {
     try {
       this.logger.log(`Find category ${id} for customer ${customerId}`);

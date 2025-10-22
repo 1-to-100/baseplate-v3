@@ -3,8 +3,8 @@ import { IsOptional } from 'class-validator';
 import { UserStatusList } from '@/common/constants/status';
 
 export class OutputUserDto {
-  @ApiProperty({ description: 'Email address' })
-  id: number;
+  @ApiProperty({ description: 'User ID' })
+  id: string;
 
   @ApiProperty({ description: 'Email address' })
   email: string;
@@ -20,28 +20,28 @@ export class OutputUserDto {
 
   @ApiProperty({ description: 'ID of the Customer this user belongs to' })
   @IsOptional()
-  customerId: number | null = null;
+  customerId: string | null = null;
 
   @ApiPropertyOptional({
     description: 'Customer associated with the user',
     type: 'object',
     properties: {
-      id: { type: 'number', description: 'Customer ID' },
+      id: { type: 'string', description: 'Customer ID' },
       name: { type: 'string', description: 'Customer name' },
     },
   })
   customer?: {
-    id: number;
+    id: string;
     name: string;
   };
 
   @ApiProperty({ description: 'The role of the user' })
   @IsOptional()
-  roleId: number | null = null;
+  roleId: string | null = null;
 
   @ApiPropertyOptional({ description: 'Manager ID' })
   @IsOptional()
-  managerId: number | null = null;
+  managerId: string | null = null;
 
   @ApiPropertyOptional({
     description: 'Status (optional). Default: inactive',
@@ -53,7 +53,7 @@ export class OutputUserDto {
   @ApiPropertyOptional({ description: 'User role information' })
   @IsOptional()
   role?: {
-    id: number;
+    id: string;
     name: string;
     description: string | null;
     systemRole: boolean;

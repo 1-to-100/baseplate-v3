@@ -12,7 +12,7 @@ export class NotificationTemplateDto extends CreateTemplateDto {
   @ApiPropertyOptional({
     description: 'Customer ID associated with the notification template',
   })
-  customerId?: number;
+  customerId?: string;
 
   @ApiPropertyOptional({
     description: 'Customer associated with the notification template',

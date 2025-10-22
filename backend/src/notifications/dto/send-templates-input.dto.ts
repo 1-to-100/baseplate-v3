@@ -1,4 +1,4 @@
-import { IsInt, IsOptional } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendTemplatesInputDto {
@@ -9,14 +9,14 @@ export class SendTemplatesInputDto {
     required: false,
     type: Number,
   })
-  customerId?: number;
+  customerId?: string;
 
   @IsOptional()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @ApiProperty({
     description: 'User IDs to send the notification',
     required: false,
-    type: [Number],
+    type: [String],
   })
-  userIds?: number[];
+  userIds?: string[];
 }

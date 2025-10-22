@@ -229,7 +229,7 @@ export class UsersController {
     if (isSystemAdministrator(user)) {
       // System administrators can access any customer's users
       if (customerId) {
-        listUserInputDto.customerId = [+customerId];
+        listUserInputDto.customerId = [customerId];
       }
       return this.usersService.findAll(listUserInputDto);
     }
@@ -244,7 +244,7 @@ export class UsersController {
       listUserInputDto.customerId = [user.customerId];
 
       // If a specific customerId is provided in the query, validate it matches their customer
-      if (customerId && +customerId !== user.customerId) {
+      if (customerId && customerId !== user.customerId) {
         throw new ForbiddenException(
           'You can only access users from your own customer.',
         );
@@ -321,7 +321,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     updateUserDto.customerId = user.customerId!; // do not allow to change customer
-    return this.usersService.update(+user.id, updateUserDto, user);
+    return this.usersService.update(user.id, updateUserDto, user);
   }
 
   @Get(':id')
@@ -329,13 +329,13 @@ export class UsersController {
     description: 'User',
     type: OutputUserDto,
   })
-  findOne(@User() user: OutputUserDto, @Param('id') id: number) {
-    let customerId: number | null = null;
+  findOne(@User() user: OutputUserDto, @Param('id') id: string) {
+    let customerId: string | null = null;
     if (!isSystemAdministrator(user)) {
       customerId = user.customerId;
     }
 
-    return this.usersService.findOne(+id, customerId);
+    return this.usersService.findOne(id, customerId);
   }
 
   @Patch(':id')
@@ -344,7 +344,7 @@ export class UsersController {
     type: OutputUserDto,
   })
   update(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
     @User() user: OutputUserDto,
   ) {
@@ -356,7 +356,7 @@ export class UsersController {
       updateUserDto.customerId = user.customerId;
     }
 
-    return this.usersService.update(+id, updateUserDto, user);
+    return this.usersService.update(id, updateUserDto, user);
   }
 
   @Delete(':id')
@@ -364,7 +364,7 @@ export class UsersController {
     description: 'User soft deleted',
     type: OutputUserDto,
   })
-  async softDelete(@Param('id') id: number, @User() user: OutputUserDto) {
+  async softDelete(@Param('id') id: string, @User() user: OutputUserDto) {
     if (user.id === id) {
       throw new BadRequestException('You cannot delete yourself.');
     }

@@ -7,19 +7,19 @@ import {
 } from '@/notifications/constants/notification-types';
 
 export class CreateNotificationDto {
-  @IsInt()
+  @IsString()
   @IsOptional()
   @ApiPropertyOptional({
     description: 'User ID associated with the notification',
   })
-  userId?: number;
+  userId?: string;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Customer ID associated with the notification',
   })
-  customerId?: number;
+  customerId?: string;
 
   @IsEnum(NotificationTypeList, { each: true })
   @ApiProperty({

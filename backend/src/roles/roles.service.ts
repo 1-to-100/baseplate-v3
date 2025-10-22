@@ -7,10 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '@/common/supabase/supabase.service';
-import {
-  CUSTOM_ROLE_MIN_ID,
-  isSystemRoleId,
-} from '@/common/constants/system-roles';
+import { isSystemRole } from '@/common/constants/system-roles';
 import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
@@ -169,7 +166,7 @@ export class RolesService {
     }));
   }
 
-  async findOne(id: number): Promise<RoleWithPermissions> {
+  async findOne(id: string): Promise<RoleWithPermissions> {
     const { data: role, error } = await this.supabaseService
       .getClient()
       .from('roles')
@@ -208,18 +205,23 @@ export class RolesService {
     };
   }
 
-  async update(id: number, updateRoleDto: UpdateRoleDto) {
-    // Protect system roles from modification
-    if (isSystemRoleId(id)) {
-      throw new ForbiddenException(
-        `Cannot modify system role (ID: ${id}). System roles (IDs 1-3) are protected.`,
-      );
+  async update(id: string, updateRoleDto: UpdateRoleDto) {
+    // First, get the role to check if it's a system role
+    const { data: existingRole, error: roleError } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('name')
+      .eq('id', id)
+      .single();
+
+    if (roleError || !existingRole) {
+      throw new NotFoundException('Role not found');
     }
 
-    // Ensure ID is >= 100 (custom roles only)
-    if (id < CUSTOM_ROLE_MIN_ID) {
+    // Protect system roles from modification
+    if (existingRole.name && isSystemRole(existingRole.name)) {
       throw new ForbiddenException(
-        `Cannot modify role with ID < ${CUSTOM_ROLE_MIN_ID}. Only custom roles can be modified.`,
+        `Cannot modify system role "${existingRole.name}". System roles are protected.`,
       );
     }
 
@@ -240,39 +242,34 @@ export class RolesService {
     return updatedRole;
   }
 
-  // remove(id: number) {
+  // remove(id: string) {
   //   return `This action removes a #${id} role`;
   // }
 
   async updateRolePermissionsByName(
-    roleId: number,
+    roleId: string,
     dto: UpdateRolePermissionsByNameDto,
   ) {
-    // Protect system roles from permission modification
-    if (isSystemRoleId(roleId)) {
-      throw new ForbiddenException(
-        `Cannot modify permissions for system role (ID: ${roleId}). System roles (IDs 1-3) are protected.`,
-      );
-    }
-
-    // Ensure ID is >= 100 (custom roles only)
-    if (roleId < CUSTOM_ROLE_MIN_ID) {
-      throw new ForbiddenException(
-        `Cannot modify permissions for role with ID < ${CUSTOM_ROLE_MIN_ID}. Only custom roles can be modified.`,
-      );
-    }
-
-    // Check if role exists
+    // Check if role exists and get its name
     const { data: role, error: roleError } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('id')
+      .select('name')
       .eq('id', roleId)
       .single();
 
     if (roleError || !role) {
-      throw new NotFoundException(`Role with ID ${roleId} not found`);
+      throw new NotFoundException('Role not found');
     }
+
+    // Protect system roles from permission modification
+    if (role.name && isSystemRole(role.name)) {
+      throw new ForbiddenException(
+        `Cannot modify permissions for system role "${role.name}". System roles are protected.`,
+      );
+    }
+
+    // Role existence already checked above
 
     // Get all permissions by name
     const { data: permissions, error: permError } = await this.supabaseService

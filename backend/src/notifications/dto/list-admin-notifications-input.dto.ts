@@ -58,7 +58,7 @@ export class ListAdminNotificationsInputDto extends PaginatedInputDto {
     isArray: true,
   })
   @Transform(eachNumberTransformer)
-  customerId?: number[];
+  customerId?: string[];
 
   @IsArray()
   @IsInt({ each: true })

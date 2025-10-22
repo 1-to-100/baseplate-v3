@@ -128,7 +128,7 @@ export class NotificationsController {
   async findAllNotificationsForAdmin(
     @User() user: OutputUserDto,
     @Query() adminNotificationsInputDto: ListAdminNotificationsInputDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
@@ -189,7 +189,7 @@ export class NotificationsController {
     },
   })
   async unreadCount(@User() user: OutputUserDto) {
-    const count = await this.notificationsService.unreadCount(+user.id);
+    const count = await this.notificationsService.unreadCount(user.id);
     return { count };
   }
 
@@ -221,7 +221,7 @@ export class NotificationsController {
   })
   async markAllAsRead(@User() user: OutputUserDto) {
     try {
-      await this.notificationsService.markAllAsRead(+user.id);
+      await this.notificationsService.markAllAsRead(user.id);
     } catch (error) {
       this.logger.error('Failed to mark notifications as read', error);
       throw new BadRequestException('Failed to mark all notifications as read');
@@ -237,10 +237,10 @@ export class NotificationsController {
   @ApiParam({ name: 'id', type: Number })
   async markAsRead(
     @User() user: OutputUserDto,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
   ) {
     try {
-      await this.notificationsService.markAsRead(+user.id, +id);
+      await this.notificationsService.markAsRead(user.id, id);
     } catch (error) {
       this.logger.error('Failed to mark notifications as read', error);
       throw new BadRequestException('Failed to mark notification as read');
@@ -277,7 +277,7 @@ export class NotificationsController {
   })
   async marksAsReadMultiple(
     @User() user: OutputUserDto,
-    @Body('ids') ids: number[],
+    @Body('ids') ids: string[],
   ) {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new BadRequestException(
@@ -286,7 +286,7 @@ export class NotificationsController {
     }
 
     try {
-      await this.notificationsService.marksAsReadMultiple(+user.id, ids);
+      await this.notificationsService.marksAsReadMultiple(user.id, ids);
     } catch (error) {
       this.logger.error('Failed to mark notifications as read', error);
       throw new BadRequestException('Failed to mark notifications as read');

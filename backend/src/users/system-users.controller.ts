@@ -51,7 +51,7 @@ export class SystemUsersController {
     }
 
     if (customerId) {
-      listUserInputDto.customerId = [+customerId];
+      listUserInputDto.customerId = [customerId];
     }
 
     return this.usersService.findAllSystemUsers(listUserInputDto);
@@ -62,11 +62,11 @@ export class SystemUsersController {
     description: 'User',
     type: OutputUserDto,
   })
-  findOne(@User() user: OutputUserDto, @Param('id') id: number) {
+  findOne(@User() user: OutputUserDto, @Param('id') id: string) {
     if (!isSystemAdministrator(user)) {
       throw new ForbiddenException('You have no access to user.');
     }
-    return this.usersService.findOneSystemUser(+id);
+    return this.usersService.findOneSystemUser(id);
   }
 
   @Post()
@@ -95,7 +95,7 @@ export class SystemUsersController {
     type: OutputUserDto,
   })
   update(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() updateSystemUserDto: UpdateSystemUserDto,
     @User() user: OutputUserDto,
   ) {
@@ -103,6 +103,6 @@ export class SystemUsersController {
       throw new ForbiddenException('You have no access to create users.');
     }
 
-    return this.usersService.updateSystemUser(+id, updateSystemUserDto, user);
+    return this.usersService.updateSystemUser(id, updateSystemUserDto, user);
   }
 }

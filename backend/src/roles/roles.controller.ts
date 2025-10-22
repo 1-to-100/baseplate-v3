@@ -56,9 +56,9 @@ export class RolesController {
   @RequiredSuperUser('superAdmin')
   @Permissions('RoleManagement:viewRoles')
   async findOne(@Param('id') id: string): Promise<OutputRoleDto> {
-    const role = await this.rolesService.findOne(+id);
+    const role = await this.rolesService.findOne(id);
     const outputRole: OutputRoleDto = {
-      id: role.id,
+      id: role.id.toString(),
       name: role.name ?? null,
       description: role.description ?? null,
       imageUrl: role.imageUrl ?? null,
@@ -68,7 +68,7 @@ export class RolesController {
     const rolePermissions = role.permissions;
 
     outputRole.permissions = rolePermissions.reduce<
-      Record<string, Array<{ id: number; name: string; label: string }>>
+      Record<string, Array<{ id: string; name: string; label: string }>>
     >((acc, permission) => {
       // Handle both single permission object and array (Supabase type inference)
       const perm = Array.isArray(permission.permission)
@@ -82,7 +82,7 @@ export class RolesController {
       acc[prefix] ??= [];
 
       acc[prefix].push({
-        id: perm.id,
+        id: perm.id.toString(),
         name: perm.name,
         label: perm.label ?? '',
       });
@@ -97,7 +97,7 @@ export class RolesController {
   @RequiredSuperUser('superAdmin')
   @Permissions('RoleManagement:editRoles')
   update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
-    return this.rolesService.update(+id, updateRoleDto);
+    return this.rolesService.update(id, updateRoleDto);
   }
 
   //
@@ -110,7 +110,7 @@ export class RolesController {
   @RequiredSuperUser('superAdmin')
   @Permissions('RoleManagement:editRoles')
   updatePermissionsByName(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateRolePermissionsByNameDto,
   ) {
     return this.rolesService.updateRolePermissionsByName(id, dto);

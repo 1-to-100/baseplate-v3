@@ -25,7 +25,7 @@ export enum NotificationType {
 
 // Base interfaces for database tables
 export interface User {
-  id: number;
+  id: string;
   uid?: string | null;
   email: string;
   email_verified?: boolean | null;
@@ -33,31 +33,35 @@ export interface User {
   last_name?: string | null;
   avatar?: string | null;
   phone_number?: string | null;
-  customer_id?: number | null;
-  role_id?: number | null;
-  manager_id?: number | null;
+  customer_id?: string | null;
+  role_id?: string | null;
+  manager_id?: string | null;
   status: string;
   created_at: string;
   updated_at?: string | null;
   deleted_at?: string | null;
 }
 
+export interface UserWithRole extends User {
+  role?: Role | null;
+}
+
 export interface Customer {
-  id: number;
+  id: string;
   name: string;
   email: string;
   domain: string;
-  owner_id: number;
+  owner_id: string;
   status: CustomerStatus;
-  subscription_id?: number | null;
-  manager_id?: number | null;
-  customer_success_id?: number | null;
+  subscription_id?: string | null;
+  manager_id?: string | null;
+  customer_success_id?: string | null;
   created_at: string;
   updated_at?: string | null;
 }
 
 export interface Role {
-  id: number;
+  id: string;
   name?: string | null;
   description?: string | null;
   image_url?: string | null;
@@ -66,25 +70,25 @@ export interface Role {
 }
 
 export interface Permission {
-  id: number;
+  id: string;
   name: string;
   label: string;
 }
 
 export interface RolePermission {
-  role_id: number;
-  permission_id: number;
+  role_id: string;
+  permission_id: string;
 }
 
 export interface Manager {
-  id: number;
+  id: string;
   name?: string | null;
   created_at: string;
   updated_at?: string | null;
 }
 
 export interface Subscription {
-  id: number;
+  id: string;
   name: string;
   description?: string | null;
   created_at: string;
@@ -92,15 +96,15 @@ export interface Subscription {
 }
 
 export interface UserOneTimeCodes {
-  id: number;
+  id: string;
   code: string;
-  user_id: number;
+  user_id: string;
   is_used: boolean;
   created_at: string;
 }
 
 export interface ApiLog {
-  id: number;
+  id: string;
   method: string;
   url: string;
   status_code: number;
@@ -111,24 +115,24 @@ export interface ApiLog {
 }
 
 export interface ArticleCategory {
-  id: number;
+  id: string;
   name: string;
   subcategory?: string | null;
   about?: string | null;
   icon?: string | null;
-  customer_id: number;
-  created_by: number;
+  customer_id: string;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface Article {
-  id: number;
+  id: string;
   title: string;
-  category_id: number;
+  category_id: string;
   subcategory?: string | null;
-  customer_id: number;
-  created_by: number;
+  customer_id: string;
+  created_by: string;
   status?: string | null;
   content?: string | null;
   video_url?: string | null;
@@ -138,14 +142,14 @@ export interface Article {
 }
 
 export interface Notification {
-  id: number;
-  user_id?: number | null;
-  customer_id?: number | null;
-  sender_id?: number | null;
+  id: string;
+  user_id?: string | null;
+  customer_id?: string | null;
+  sender_id?: string | null;
   type: NotificationType;
   title?: string | null;
   message?: string | null;
-  template_id?: number | null;
+  template_id?: string | null;
   metadata?: any; // JSON type
   channel?: string | null;
   is_read: boolean;
@@ -155,13 +159,13 @@ export interface Notification {
 }
 
 export interface NotificationTemplate {
-  id: number;
+  id: string;
   title: string;
   message?: string | null;
   comment?: string | null;
   type: NotificationType[];
   channel: string;
-  customer_id?: number | null;
+  customer_id?: string | null;
   created_at: string;
   updated_at?: string | null;
   deleted_at?: string | null;
@@ -313,8 +317,8 @@ export type UpdateNotificationTemplateInput = Partial<
 
 // Query filter types for common filtering patterns
 export interface UserFilters {
-  role_id?: number | number[];
-  customer_id?: number | number[];
+  role_id?: string | string[];
+  customer_id?: string | string[];
   has_customer?: boolean;
   status?: string | string[];
   search?: string;
@@ -322,16 +326,16 @@ export interface UserFilters {
 }
 
 export interface CustomerFilters {
-  id?: number | number[];
+  id?: string | string[];
   status?: CustomerStatus | CustomerStatus[];
-  subscription_id?: number | number[];
-  manager_id?: number | number[];
-  customer_success_id?: number | number[];
+  subscription_id?: string | string[];
+  manager_id?: string | string[];
+  customer_success_id?: string | string[];
   search?: string;
 }
 
 export interface RoleFilters {
-  id?: number | number[];
+  id?: string | string[];
   name?: string;
   description?: string;
   search?: string;
@@ -339,17 +343,17 @@ export interface RoleFilters {
 }
 
 export interface ArticleFilters {
-  customer_id?: number | number[];
-  category_id?: number | number[];
-  created_by?: number | number[];
+  customer_id?: string | string[];
+  category_id?: string | string[];
+  created_by?: string | string[];
   status?: string | string[];
   search?: string;
 }
 
 export interface NotificationFilters {
-  user_id?: number | number[];
-  customer_id?: number | number[];
-  sender_id?: number | number[];
+  user_id?: string | string[];
+  customer_id?: string | string[];
+  sender_id?: string | string[];
   type?: NotificationType | NotificationType[];
   is_read?: boolean;
   channel?: string | string[];
@@ -411,7 +415,7 @@ export type TableNames =
 
 // Generic database record type
 export interface DatabaseRecord {
-  id: number;
+  id: string;
   created_at: string;
   updated_at?: string | null;
   deleted_at?: string | null;

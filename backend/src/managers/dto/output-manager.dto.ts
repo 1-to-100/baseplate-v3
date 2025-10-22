@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class OutputManagerDto {
   @ApiProperty({ description: 'ID Manager' })
-  id: number;
+  id: string;
 
   @ApiProperty({ description: 'Email Manager' })
   email: string;

@@ -91,7 +91,7 @@ export class TemplatesService {
     }
   }
 
-  async findOne(id: number): Promise<NotificationTemplateDto> {
+  async findOne(id: string): Promise<NotificationTemplateDto> {
     try {
       const { data: template, error } =
         await this.database.notification_templates
@@ -132,7 +132,7 @@ export class TemplatesService {
 
   async createTemplate(
     createTemplateDto: CreateTemplateDto,
-    customerId?: number,
+    customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
       const templateData = {
@@ -185,7 +185,7 @@ export class TemplatesService {
   async updateTemplate(
     id: number,
     updateTemplateDto: UpdateTemplateDto,
-    customerId?: number,
+    customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
       // First check if the template exists and belongs to the customer (if specified)
@@ -270,14 +270,14 @@ export class TemplatesService {
   async update(
     id: number,
     updateTemplateDto: UpdateTemplateDto,
-    customerId: number,
+    customerId: string,
   ): Promise<NotificationTemplateDto> {
     return this.updateTemplate(id, updateTemplateDto, customerId);
   }
 
   async remove(
     id: number,
-    customerId?: number,
+    customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
       // First check if the template exists and belongs to the customer (if specified)
@@ -343,9 +343,9 @@ export class TemplatesService {
   }
 
   async sendTemplate(
-    id: number,
+    id: string,
     sendTemplatesInputDto: SendTemplatesInputDto,
-    customerId: number,
+    customerId: string,
   ): Promise<{ message: string }> {
     try {
       // First get the template
@@ -375,9 +375,9 @@ export class TemplatesService {
   }
 
   async sendNotificationUsingTemplate(
-    templateId: number,
+    templateId: string,
     sendTemplateInputDto: SendTemplatesInputDto,
-    customerId?: number,
+    customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
       // Get the template
@@ -395,7 +395,7 @@ export class TemplatesService {
       }
 
       // Determine target users
-      let targetUserIds: number[] = [];
+      let targetUserIds: string[] = [];
 
       if (
         sendTemplateInputDto.userIds &&

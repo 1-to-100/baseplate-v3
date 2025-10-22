@@ -118,7 +118,7 @@ export class SeedCommand {
     ); // Skip invite email
   }
 
-  private async createCustomer(ownerId: number, subscriptionId: number) {
+  private async createCustomer(ownerId: string, subscriptionId: string) {
     this.logger.log('Creating customer...');
     return this.customersService.create({
       name: 'Test Customer Inc.',
@@ -127,7 +127,7 @@ export class SeedCommand {
     });
   }
 
-  private async createCustomerSuccess(customerId: number) {
+  private async createCustomerSuccess(customerId: string) {
     this.logger.log('Creating customer success user...');
     return this.usersService.createSystemUser(
       {
@@ -142,7 +142,7 @@ export class SeedCommand {
     ); // Skip invite email
   }
 
-  private async createUsers(customerId: number): Promise<OutputUserDto[]> {
+  private async createUsers(customerId: string): Promise<OutputUserDto[]> {
     this.logger.log('Creating regular users...');
     const users: OutputUserDto[] = [];
 
@@ -176,8 +176,8 @@ export class SeedCommand {
   }
 
   private async createArticleCategories(
-    customerId: number,
-    createdBy: number,
+    customerId: string,
+    createdBy: string,
   ): Promise<OutputArticleCategoryDto[]> {
     this.logger.log('Creating article categories...');
     const categories: OutputArticleCategoryDto[] = [];
@@ -218,8 +218,8 @@ export class SeedCommand {
   }
 
   private async createArticles(
-    customerId: number,
-    createdBy: number,
+    customerId: string,
+    createdBy: string,
     categories: OutputArticleCategoryDto[],
   ) {
     this.logger.log('Creating articles...');
@@ -424,7 +424,7 @@ docker compose up</code></pre>
   }
 
   private async createNotifications(
-    customerId: number,
+    customerId: string,
     users: OutputUserDto[],
   ) {
     this.logger.log('Creating notifications...');
@@ -523,7 +523,7 @@ docker compose up</code></pre>
     ];
   }
 
-  private async createNotificationTemplates(customerId: number) {
+  private async createNotificationTemplates(customerId: string) {
     this.logger.log('Creating notification templates...');
 
     const templates = [

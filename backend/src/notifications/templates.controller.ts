@@ -70,7 +70,7 @@ export class TemplatesController {
   })
   @ApiParam({ name: 'id', type: Number })
   async findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
   ): Promise<NotificationTemplateDto> {
     if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
@@ -151,10 +151,10 @@ export class TemplatesController {
   })
   @ApiParam({ name: 'templateId', type: Number })
   async sendNotificationUsingTemplate(
-    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('templateId') templateId: string,
     @User() user: OutputUserDto,
     @Body() sendTemplateInputDto: SendTemplatesInputDto,
-    @CustomerId() customerId: number | null,
+    @CustomerId() customerId: string | null,
   ): Promise<NotificationTemplateDto> {
     if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(

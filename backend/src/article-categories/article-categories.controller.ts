@@ -7,7 +7,6 @@ import {
   Get,
   Patch,
   Param,
-  ParseIntPipe,
   Delete,
   BadRequestException,
 } from '@nestjs/common';
@@ -38,7 +37,7 @@ export class ArticleCategoriesController {
     description: 'The categories list',
     type: OutputArticleCategoryDto,
   })
-  async findAll(@User() user: OutputUserDto, @CustomerId() customerId: number) {
+  async findAll(@User() user: OutputUserDto, @CustomerId() customerId: string) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
     } else if (!customerId && isSystemAdministrator(user) && user.customerId) {
@@ -61,7 +60,7 @@ export class ArticleCategoriesController {
   })
   async findAllSubcategories(
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -90,7 +89,7 @@ export class ArticleCategoriesController {
   async create(
     @User() user: OutputUserDto,
     @Body() createArticleCategoryDto: CreateArticleCategoryDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     const fields: ArticleCategoryDto = {
       name: createArticleCategoryDto.name,
@@ -120,10 +119,10 @@ export class ArticleCategoriesController {
   })
   @ApiParam({ name: 'id', type: Number })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
     @Body() updateArticleCategoryDto: UpdateArticleCategoryDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -149,9 +148,9 @@ export class ArticleCategoriesController {
   })
   @ApiParam({ name: 'id', type: Number })
   async remove(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -174,9 +173,9 @@ export class ArticleCategoriesController {
   })
   @ApiParam({ name: 'id', type: Number })
   async findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;

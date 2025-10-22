@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@/common/supabase/supabase.service';
-import { SYSTEM_ROLE_IDS, SYSTEM_ROLES } from '@/common/constants/system-roles';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
 
 @Injectable()
 export class RoleMigrationService {
@@ -12,7 +12,34 @@ export class RoleMigrationService {
     this.logger.log('Starting role migration...');
 
     try {
-      // Migrate users with isSuperadmin = true to System Administrator (id: 1)
+      // Get system role IDs by name
+      const { data: systemAdminRole } = await this.supabaseService
+        .getClient()
+        .from('roles')
+        .select('id')
+        .eq('name', SYSTEM_ROLES.SYSTEM_ADMINISTRATOR)
+        .single();
+
+      const { data: customerSuccessRole } = await this.supabaseService
+        .getClient()
+        .from('roles')
+        .select('id')
+        .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
+        .single();
+
+      const { data: customerAdminRole } = await this.supabaseService
+        .getClient()
+        .from('roles')
+        .select('id')
+        .eq('name', SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR)
+        .single();
+
+      if (!systemAdminRole || !customerSuccessRole || !customerAdminRole) {
+        this.logger.error('System roles not found in database');
+        return;
+      }
+
+      // Migrate users with isSuperadmin = true to System Administrator
       const { data: superadminUsers } = await this.supabaseService
         .getClient()
         .from('users')
@@ -24,7 +51,7 @@ export class RoleMigrationService {
           const { error } = await this.supabaseService
             .getClient()
             .from('users')
-            .update({ role_id: SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR })
+            .update({ role_id: systemAdminRole.id })
             .eq('id', user.id);
 
           if (error) {
@@ -40,7 +67,7 @@ export class RoleMigrationService {
         }
       }
 
-      // Migrate users with isCustomerSuccess = true to Customer Success (id: 2)
+      // Migrate users with isCustomerSuccess = true to Customer Success
       const { data: customerSuccessUsers } = await this.supabaseService
         .getClient()
         .from('users')
@@ -52,7 +79,7 @@ export class RoleMigrationService {
           const { error } = await this.supabaseService
             .getClient()
             .from('users')
-            .update({ role_id: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS })
+            .update({ role_id: customerSuccessRole.id })
             .eq('id', user.id);
 
           if (error) {
@@ -68,7 +95,7 @@ export class RoleMigrationService {
         }
       }
 
-      // Set Customer Administrator role (id: 3) for customer owners
+      // Set Customer Administrator role for customer owners
       const { data: customers } = await this.supabaseService
         .getClient()
         .from('customers')
@@ -80,7 +107,7 @@ export class RoleMigrationService {
           const { error } = await this.supabaseService
             .getClient()
             .from('users')
-            .update({ role_id: SYSTEM_ROLE_IDS.CUSTOMER_ADMINISTRATOR })
+            .update({ role_id: customerAdminRole.id })
             .eq('id', customer.owner_id);
 
           if (error) {

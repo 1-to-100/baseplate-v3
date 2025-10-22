@@ -18,9 +18,9 @@ export class ListCustomersOutputDto extends PaginatedInputDto {
   @ApiProperty({ description: 'Status' })
   status: string;
 
-  @IsInt()
+  @IsString()
   @ApiPropertyOptional({ description: 'Subscription ID' })
-  subscriptionId?: number;
+  subscriptionId?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -28,9 +28,8 @@ export class ListCustomersOutputDto extends PaginatedInputDto {
   subscriptionName?: string;
 
   @IsOptional()
-  @IsInt()
   @ApiPropertyOptional({ description: 'Manager Fields' })
-  customerSuccess: { id: number; name: string; email: string | null } | null =
+  customerSuccess: { id: string; name: string; email: string | null } | null =
     null;
 
   // @IsOptional()

@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  ParseIntPipe,
   Logger,
   Query,
   BadRequestException,
@@ -43,7 +42,7 @@ export class ArticlesController {
   async create(
     @User() user: OutputUserDto,
     @Body() createArticleDto: CreateArticleDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -69,7 +68,7 @@ export class ArticlesController {
   @Permissions('Documents:viewArticles')
   async findAll(
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
     @Query() listArticlesInputDto: ListArticlesInputDto,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
@@ -90,9 +89,9 @@ export class ArticlesController {
   @ApiParam({ name: 'id', type: Number })
   @Permissions('Documents:viewArticles')
   async findOne(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -115,10 +114,10 @@ export class ArticlesController {
   @ApiParam({ name: 'id', type: Number })
   @Permissions('Documents:editArticles')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() updateArticleDto: UpdateArticleDto,
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;
@@ -138,9 +137,9 @@ export class ArticlesController {
   @ApiParam({ name: 'id', type: Number })
   @Permissions('Documents:deleteArticles')
   async remove(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
-    @CustomerId() customerId: number,
+    @CustomerId() customerId: string,
   ) {
     if (!isSystemAdministrator(user) && user.customerId) {
       customerId = user.customerId;

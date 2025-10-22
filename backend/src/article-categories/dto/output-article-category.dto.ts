@@ -2,8 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
 export class OutputArticleCategoryDto {
-  @ApiProperty({ description: 'Email address' })
-  id: number;
+  @ApiProperty({ description: 'Category ID' })
+  id: string;
 
   @ApiProperty({ description: 'Category name' })
   @IsString()

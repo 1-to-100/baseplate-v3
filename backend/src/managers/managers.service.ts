@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
-import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
 import { CreateManagerDto } from '@/managers/dto/create-manager.dto';
 import { OutputManagerDto } from '@/managers/dto/output-manager.dto';
 import { UpdateManagerDto } from '@/managers/dto/update-manager.dto';
@@ -35,8 +35,20 @@ export class ManagersService {
   }
 
   async getForTaxonomy(): Promise<OutputManagerDto[]> {
+    // Get customer success role ID by name
+    const { data: role } = await this.database
+      .getClient()
+      .from('roles')
+      .select('id')
+      .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
+      .single();
+    
+    if (!role) {
+      throw new Error('Customer Success role not found');
+    }
+
     const usersManagers = await this.database.findMany('users', {
-      where: { role_id: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS },
+      where: { role_id: role.id },
       select: 'id, email, first_name, last_name',
     });
 
@@ -47,9 +59,21 @@ export class ManagersService {
     })) as OutputManagerDto[];
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
+    // Get customer success role ID by name
+    const { data: role } = await this.database
+      .getClient()
+      .from('roles')
+      .select('id')
+      .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
+      .single();
+    
+    if (!role) {
+      throw new Error('Customer Success role not found');
+    }
+
     const manager = await this.database.findFirst('users', {
-      where: { id, role_id: SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS },
+      where: { id, role_id: role.id },
     });
     if (!manager) {
       throw new NotFoundException('No manager with given ID exists');
@@ -57,14 +81,14 @@ export class ManagersService {
     return manager;
   }
 
-  update(id: number, updateManagerDto: UpdateManagerDto) {
+  update(id: string, updateManagerDto: UpdateManagerDto) {
     return this.database.update('managers', {
       where: { id },
       data: updateManagerDto,
     });
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     try {
       return await this.database.delete('managers', { where: { id } });
     } catch (error) {

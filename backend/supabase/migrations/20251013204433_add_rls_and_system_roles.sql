@@ -17,21 +17,17 @@
 -- Add system_role column to roles table
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS system_role BOOLEAN DEFAULT false;
 
--- Insert default system roles
-INSERT INTO roles (id, name, description, system_role, created_at, updated_at)
+-- Insert default system roles with random UUIDs
+INSERT INTO roles (name, description, system_role, created_at, updated_at)
 VALUES
-  (1, 'System Administrator', 'Role with full system access and control', true, NOW(), NOW()),
-  (2, 'Customer Success', 'Role focused on ensuring customer satisfaction and retention', true, NOW(), NOW()),
-  (3, 'Customer Administrator', 'Role for managing customer-specific configurations and settings', true, NOW(), NOW())
-ON CONFLICT (id) DO UPDATE 
+  ('System Administrator', 'Role with full system access and control', true, NOW(), NOW()),
+  ('Customer Success', 'Role focused on ensuring customer satisfaction and retention', true, NOW(), NOW()),
+  ('Customer Administrator', 'Role for managing customer-specific configurations and settings', true, NOW(), NOW())
+ON CONFLICT (name) DO UPDATE 
 SET 
   system_role = true,
-  name = EXCLUDED.name,
   description = EXCLUDED.description,
   updated_at = NOW();
-
--- Reset sequence to start from 100 for custom roles
-SELECT setval('roles_id_seq', 100, false);
 
 -- ============================================================================
 -- PART 2: Helper Functions (SECURITY DEFINER for performance)
@@ -39,7 +35,7 @@ SELECT setval('roles_id_seq', 100, false);
 
 -- Function to get current user's role ID
 CREATE OR REPLACE FUNCTION get_user_role_id()
-RETURNS INTEGER AS $$
+RETURNS UUID AS $$
 BEGIN
   RETURN (
     SELECT role_id 
@@ -66,7 +62,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to get user's customer ID
 CREATE OR REPLACE FUNCTION get_user_customer_id()
-RETURNS INTEGER AS $$
+RETURNS UUID AS $$
 BEGIN
   RETURN (
     SELECT customer_id 
@@ -404,7 +400,7 @@ CREATE POLICY roles_insert_system_admin
   TO authenticated
   WITH CHECK (
     (SELECT has_system_role('System Administrator')) AND
-    id >= 100
+    name NOT IN ('System Administrator', 'Customer Success', 'Customer Administrator')
   );
 
 -- UPDATE Policies (only admins, only custom roles)
@@ -413,11 +409,11 @@ CREATE POLICY roles_update_system_admin
   TO authenticated
   USING (
     (SELECT has_system_role('System Administrator')) AND
-    id >= 100
+    name NOT IN ('System Administrator', 'Customer Success', 'Customer Administrator')
   )
   WITH CHECK (
     (SELECT has_system_role('System Administrator')) AND
-    id >= 100
+    name NOT IN ('System Administrator', 'Customer Success', 'Customer Administrator')
   );
 
 -- DELETE Policies (only admins, only custom roles)
@@ -426,7 +422,7 @@ CREATE POLICY roles_delete_system_admin
   TO authenticated
   USING (
     (SELECT has_system_role('System Administrator')) AND
-    id >= 100
+    name NOT IN ('System Administrator', 'Customer Success', 'Customer Administrator')
   );
 
 -- ============================================================================

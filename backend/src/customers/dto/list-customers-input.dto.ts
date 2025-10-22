@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
@@ -10,36 +10,28 @@ import { UserStatusList } from '@/common/constants/status';
 
 export class ListCustomersInputDto extends PaginatedInputDto {
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({ description: 'Customer IDs' })
-  @Transform(eachNumberTransformer)
-  id?: number[];
+  id?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({ description: 'Subscription ID' })
-  @Transform(eachNumberTransformer)
-  subscriptionId?: number[];
+  subscriptionId?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({ description: 'Manager IDs' })
-  @Transform(eachNumberTransformer)
-  managerId?: number[];
+  managerId?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({ description: 'Manager IDs' })
-  @Transform(eachNumberTransformer)
-  customerSuccessId?: number[];
+  customerSuccessId?: string[];
 
   @IsArray()
   @IsEnum(UserStatusList, { each: true })

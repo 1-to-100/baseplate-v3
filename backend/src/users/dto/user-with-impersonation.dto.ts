@@ -13,7 +13,7 @@ export class UserWithImpersonationDto extends OutputUserDto {
       'Information about the impersonating user (only present when impersonating)',
     type: 'object',
     properties: {
-      id: { type: 'number', description: 'Impersonating user ID' },
+      id: { type: 'string', description: 'Impersonating user ID' },
       email: { type: 'string', description: 'Impersonating user email' },
       firstName: {
         type: 'string',
@@ -23,7 +23,7 @@ export class UserWithImpersonationDto extends OutputUserDto {
     },
   })
   impersonatedBy?: {
-    id: number;
+    id: string;
     email: string;
     firstName: string | null;
     lastName: string | null;

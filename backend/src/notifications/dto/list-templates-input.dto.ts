@@ -19,7 +19,7 @@ export class ListTemplatesInputDto extends PaginatedInputDto {
     description: 'Customer ID associated with the notification template',
     required: false,
   })
-  customerId?: number;
+  customerId?: string;
 
   @IsOptional()
   @IsArray()

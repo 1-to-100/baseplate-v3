@@ -8,15 +8,15 @@ export class CreateCustomerDto {
   @MaxLength(255)
   name: string;
 
-  @IsInt()
+  @IsString()
   @ApiProperty({ description: 'Subscription ID', required: true })
-  subscriptionId: number;
+  subscriptionId: string;
 
-  @IsInt()
+  @IsString()
   @ApiProperty({ description: 'Customer Manager ID', required: false })
-  customerSuccessId?: number;
+  customerSuccessId?: string;
 
-  @IsInt()
+  @IsString()
   @ApiProperty({ description: 'Owner User ID', required: true })
-  ownerId: number;
+  ownerId: string;
 }

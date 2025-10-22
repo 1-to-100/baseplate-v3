@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsInt,
   IsOptional,
+  IsString,
 } from 'class-validator';
 
 export class InviteMultipleUsersDto {
@@ -16,20 +17,20 @@ export class InviteMultipleUsersDto {
 
   @ApiProperty({ description: 'ID of the Customer these users belong to' })
   @IsOptional()
-  @IsInt()
-  customerId: number;
+  @IsString()
+  customerId: string;
 
   @ApiProperty({
     description: 'The role that should be assigned to these users',
   })
   @IsOptional()
-  @IsInt()
-  roleId: number;
+  @IsString()
+  roleId: string;
 
   @ApiPropertyOptional({
     description: 'Manager ID that should be assigned to these users',
   })
   @IsOptional()
-  @IsInt()
-  managerId: number;
+  @IsString()
+  managerId: string;
 }

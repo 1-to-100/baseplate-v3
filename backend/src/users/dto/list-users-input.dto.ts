@@ -16,20 +16,16 @@ import {
 
 export class ListUsersInputDto extends PaginatedInputDto {
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
-  @ApiPropertyOptional({ description: 'Role IDs', type: [Number] })
-  @Transform(eachNumberTransformer)
-  roleId?: number[];
+  @ApiPropertyOptional({ description: 'Role IDs', type: [String] })
+  roleId?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
+  @IsString({ each: true })
   @IsOptional()
-  @Type(() => Number)
-  @ApiPropertyOptional({ description: 'Customer IDs', type: [Number] })
-  @Transform(eachNumberTransformer)
-  customerId?: number[];
+  @ApiPropertyOptional({ description: 'Customer IDs', type: [String] })
+  customerId?: string[];
 
   @IsOptional()
   // @IsArray()

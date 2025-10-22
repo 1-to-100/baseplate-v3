@@ -24,7 +24,7 @@ export class NotificationsService {
 
   async create(
     createNotification: CreateNotificationDto & {
-      senderId?: number;
+      senderId?: string;
       generatedBy?: string;
     },
   ) {
@@ -280,7 +280,7 @@ export class NotificationsService {
     return { data: transformedData as any, meta };
   }
 
-  async markAsRead(userId: number, id: number) {
+  async markAsRead(userId: string, id: string) {
     this.logger.log(
       `Marking user (${userId}) notification with id ${id} as read`,
     );
@@ -299,7 +299,7 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAllAsRead(userId: number) {
+  async markAllAsRead(userId: string) {
     this.logger.log('Marking all notifications as read');
     await this.database.updateMany('notifications', {
       where: { is_read: false, user_id: userId },
@@ -309,7 +309,7 @@ export class NotificationsService {
     await this.sendUnreadCountNotification(userId);
   }
 
-  async marksAsReadMultiple(userId: number, ids: number[]) {
+  async marksAsReadMultiple(userId: string, ids: string[]) {
     this.logger.log(`Marking notifications with ids ${ids.join(', ')} as read`);
     await this.database.updateMany('notifications', {
       where: { id: { in: ids }, is_read: false, user_id: userId },
@@ -318,7 +318,7 @@ export class NotificationsService {
     await this.sendUnreadCountNotification(userId);
   }
 
-  async unreadCount(userId: number): Promise<number> {
+  async unreadCount(userId: string): Promise<number> {
     this.logger.log(`Counting unread notifications for user ${userId}`);
     return this.database.count('notifications', {
       where: { is_read: false, user_id: userId },
@@ -341,7 +341,7 @@ export class NotificationsService {
     );
   }
 
-  async sendUnreadCountNotification(userId: number) {
+  async sendUnreadCountNotification(userId: string) {
     const count = await this.unreadCount(userId);
     await this.supabaseService.sendNotification(
       `unread-notifications:${userId}`,

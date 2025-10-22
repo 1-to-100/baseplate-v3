@@ -1,9 +1,13 @@
--- Migration: Initial Schema from Prisma
+-- Migration: Initial Schema with UUID Primary Keys
 -- Created: 2024-10-01
--- Description: Creates the complete initial database schema based on the current Prisma schema
+-- Description: Creates the complete initial database schema with UUID primary keys
 -- 
--- This migration creates all tables, enums, indexes, and relationships
--- to match the existing Prisma schema structure.
+-- IMPORTANT NOTES:
+-- - This schema uses UUID primary keys instead of integer SERIAL
+-- - For fresh installations only (dev environment)
+-- - Cannot be applied to databases with existing data
+-- - PostgreSQL 13+ required for gen_random_uuid()
+-- - System roles use deterministic UUIDs for consistency
 
 -- ============================================================================
 -- ENUMS
@@ -24,7 +28,7 @@ CREATE TYPE "NotificationType" AS ENUM ('EMAIL', 'IN_APP');
 
 -- Subscriptions table (independent)
 CREATE TABLE "subscriptions" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "description" TEXT,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -35,7 +39,7 @@ CREATE TABLE "subscriptions" (
 
 -- Roles table (independent)
 CREATE TABLE "roles" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT,
     "description" TEXT,
     "image_url" TEXT,
@@ -47,7 +51,7 @@ CREATE TABLE "roles" (
 
 -- Permissions table (independent)
 CREATE TABLE "permissions" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "label" TEXT NOT NULL,
 
@@ -56,15 +60,15 @@ CREATE TABLE "permissions" (
 
 -- Role permissions junction table
 CREATE TABLE "role_permissions" (
-    "role_id" INTEGER NOT NULL,
-    "permission_id" INTEGER NOT NULL,
+    "role_id" UUID NOT NULL,
+    "permission_id" UUID NOT NULL,
 
     CONSTRAINT "role_permissions_pkey" PRIMARY KEY ("role_id", "permission_id")
 );
 
 -- Managers table (independent)
 CREATE TABLE "managers" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ,
@@ -74,7 +78,7 @@ CREATE TABLE "managers" (
 
 -- Users table (references roles and managers)
 CREATE TABLE "users" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "uid" TEXT,
     "email" TEXT NOT NULL,
     "email_verified" BOOLEAN DEFAULT false,
@@ -82,12 +86,10 @@ CREATE TABLE "users" (
     "last_name" TEXT,
     "avatar" TEXT,
     "phone_number" TEXT,
-    "customer_id" INTEGER,
-    "role_id" INTEGER,
-    "manager_id" INTEGER,
+    "customer_id" UUID,
+    "role_id" UUID,
+    "manager_id" UUID,
     "status" TEXT NOT NULL DEFAULT 'inactive',
-    "is_superadmin" BOOLEAN DEFAULT false,
-    "is_customer_success" BOOLEAN DEFAULT false,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ,
     "deleted_at" TIMESTAMPTZ,
@@ -97,15 +99,15 @@ CREATE TABLE "users" (
 
 -- Customers table (references users, subscriptions, managers)
 CREATE TABLE "customers" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "domain" TEXT NOT NULL,
-    "owner_id" INTEGER NOT NULL,
+    "owner_id" UUID NOT NULL,
     "status" "CustomerStatus" DEFAULT 'inactive',
-    "subscription_id" INTEGER,
-    "manager_id" INTEGER,
-    "customer_success_id" INTEGER,
+    "subscription_id" UUID,
+    "manager_id" UUID,
+    "customer_success_id" UUID,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ,
 
@@ -114,9 +116,9 @@ CREATE TABLE "customers" (
 
 -- User one time codes table
 CREATE TABLE "user_one_time_codes" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "code" TEXT NOT NULL,
-    "user_id" INTEGER NOT NULL,
+    "user_id" UUID NOT NULL,
     "is_used" BOOLEAN NOT NULL,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -125,7 +127,7 @@ CREATE TABLE "user_one_time_codes" (
 
 -- API logs table
 CREATE TABLE "api_logs" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "method" TEXT NOT NULL,
     "url" TEXT NOT NULL,
     "status_code" INTEGER NOT NULL,
@@ -139,13 +141,13 @@ CREATE TABLE "api_logs" (
 
 -- Article categories table (references customers and users)
 CREATE TABLE "article_categories" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "subcategory" TEXT,
     "about" VARCHAR(256),
     "icon" VARCHAR(256),
-    "customer_id" INTEGER NOT NULL,
-    "created_by" INTEGER NOT NULL,
+    "customer_id" UUID NOT NULL,
+    "created_by" UUID NOT NULL,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -154,12 +156,12 @@ CREATE TABLE "article_categories" (
 
 -- Articles table (references article categories, customers, and users)
 CREATE TABLE "articles" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "title" TEXT NOT NULL,
-    "category_id" INTEGER NOT NULL,
+    "category_id" UUID NOT NULL,
     "subcategory" TEXT,
-    "customer_id" INTEGER NOT NULL,
-    "created_by" INTEGER NOT NULL,
+    "customer_id" UUID NOT NULL,
+    "created_by" UUID NOT NULL,
     "status" TEXT DEFAULT 'draft',
     "content" TEXT,
     "video_url" TEXT,
@@ -172,13 +174,13 @@ CREATE TABLE "articles" (
 
 -- Notification templates table (references customers)
 CREATE TABLE "notification_templates" (
-    "id" SERIAL NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "title" VARCHAR(100) NOT NULL,
     "message" TEXT,
     "comment" VARCHAR(100),
     "type" "NotificationType"[] NOT NULL,
     "channel" VARCHAR(256) NOT NULL,
-    "customer_id" INTEGER,
+    "customer_id" UUID,
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ,
     "deleted_at" TIMESTAMPTZ,
@@ -188,14 +190,14 @@ CREATE TABLE "notification_templates" (
 
 -- Notifications table (references users, customers, notification templates)
 CREATE TABLE "notifications" (
-    "id" SERIAL NOT NULL,
-    "user_id" INTEGER,
-    "customer_id" INTEGER,
-    "sender_id" INTEGER,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID,
+    "customer_id" UUID,
+    "sender_id" UUID,
     "type" "NotificationType" NOT NULL,
     "title" TEXT,
     "message" TEXT,
-    "template_id" INTEGER,
+    "template_id" UUID,
     "metadata" JSONB,
     "channel" VARCHAR(256),
     "is_read" BOOLEAN DEFAULT false,

@@ -7,7 +7,8 @@ import { DatabaseService } from '@/common/database/database.service';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
-import { SYSTEM_ROLE_IDS } from '@/common/constants/system-roles';
+import { SYSTEM_ROLES } from '@/common/constants/system-roles';
+import { UserWithRole } from '@/common/types/database.types';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
 import { ListCustomersOutputDto } from '@/customers/dto/list-customers-output.dto';
@@ -21,6 +22,16 @@ export class CustomersService {
     private readonly database: DatabaseService,
     private readonly supabaseService: SupabaseService,
   ) {}
+
+  private async getSystemRoleIds(): Promise<string[]> {
+    const { data: roles } = await this.database
+      .getClient()
+      .from('roles')
+      .select('id')
+      .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
+    
+    return roles?.map(role => role.id) || [];
+  }
 
   async create(createCustomerDto: CreateCustomerDto) {
     const { name, subscriptionId, ownerId, customerSuccessId } =
@@ -125,10 +136,7 @@ export class CustomersService {
                   {
                     role_id: {
                       not: {
-                        in: [
-                          SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR,
-                          SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS,
-                        ],
+                        in: await this.getSystemRoleIds(),
                       },
                     },
                   },
@@ -174,7 +182,7 @@ export class CustomersService {
   }
 
   async getForTaxonomy(
-    customerId: number | null,
+    customerId: string | null,
   ): Promise<OutputTaxonomyDto[]> {
     const options: any = {
       select: 'id, name',
@@ -187,7 +195,7 @@ export class CustomersService {
     return await this.database.findMany('customers', options);
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const customer = await this.database.findUnique('customers', {
       where: { id },
       include: {
@@ -254,7 +262,7 @@ export class CustomersService {
     };
   }
 
-  async update(id: number, updateCustomerDto: UpdateCustomerDto) {
+  async update(id: string, updateCustomerDto: UpdateCustomerDto) {
     const customer = await this.database.findUnique('customers', {
       where: { id },
     });
@@ -305,9 +313,9 @@ export class CustomersService {
 
   private async validateCustomerOwner(
     email: string,
-    ownerId: number,
+    ownerId: string,
     name: string,
-    ignoreCustomerId?: number,
+    ignoreCustomerId?: string,
   ) {
     const where = {
       ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
@@ -348,7 +356,7 @@ export class CustomersService {
     }
   }
 
-  private async validateSubscription(subscriptionId?: number) {
+  private async validateSubscription(subscriptionId?: string) {
     if (!subscriptionId) return;
 
     const subscriptionExists = await this.database.findUnique('subscriptions', {
@@ -361,12 +369,13 @@ export class CustomersService {
     }
   }
 
-  private async validateManger(managerId?: number) {
+  private async validateManger(managerId?: string) {
     if (!managerId) return;
 
     const manager = await this.database.findUnique('users', {
       where: { id: managerId, deleted_at: null },
-    });
+      include: { role: true },
+    }) as UserWithRole;
 
     if (!manager) {
       throw new ConflictException(
@@ -374,7 +383,7 @@ export class CustomersService {
       );
     }
 
-    if (manager.role_id !== SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS) {
+    if (manager.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS) {
       throw new ConflictException(
         'Manager user must have a customer success role',
       );
@@ -391,12 +400,13 @@ export class CustomersService {
     }
   }
 
-  private async validateOwner(ownerId?: number) {
+  private async validateOwner(ownerId?: string) {
     if (!ownerId) return;
 
     const owner = await this.database.findUnique('users', {
       where: { id: ownerId, deleted_at: null },
-    });
+      include: { role: true },
+    }) as UserWithRole;
 
     if (!owner) {
       throw new ConflictException(`Owner user not found with ID: ${ownerId}`);
@@ -406,11 +416,11 @@ export class CustomersService {
       throw new ConflictException(
         'Owner email cannot be a public email domain',
       );
-    } else if (owner.role_id === SYSTEM_ROLE_IDS.SYSTEM_ADMINISTRATOR) {
+    } else if (owner.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
       throw new ConflictException(
         'Owner user cannot be a system administrator. Please assign a different user as the owner.',
       );
-    } else if (owner.role_id === SYSTEM_ROLE_IDS.CUSTOMER_SUCCESS) {
+    } else if (owner.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
       throw new ConflictException(
         'Owner user cannot have a customer success role. Please assign a different user as the owner.',
       );
