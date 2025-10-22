@@ -22,18 +22,13 @@ INSERT INTO roles (name, description, system_role, created_at, updated_at)
 VALUES
   ('System Administrator', 'Role with full system access and control', true, NOW(), NOW()),
   ('Customer Success', 'Role focused on ensuring customer satisfaction and retention', true, NOW(), NOW()),
-  ('Customer Administrator', 'Role for managing customer-specific configurations and settings', true, NOW(), NOW())
-ON CONFLICT (name) DO UPDATE 
-SET 
-  system_role = true,
-  description = EXCLUDED.description,
-  updated_at = NOW();
+  ('Customer Administrator', 'Role for managing customer-specific configurations and settings', true, NOW(), NOW());
 
 -- ============================================================================
 -- PART 2: Helper Functions (SECURITY DEFINER for performance)
 -- ============================================================================
 
--- Function to get current user's role ID
+-- Function to get current user's role IDa
 CREATE OR REPLACE FUNCTION get_user_role_id()
 RETURNS UUID AS $$
 BEGIN
