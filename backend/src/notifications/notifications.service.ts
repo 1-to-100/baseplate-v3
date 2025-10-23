@@ -125,7 +125,7 @@ export class NotificationsService {
     );
   }
 
-  async findOne(userId: number, id: number) {
+  async findOne(userId: string, id: number) {
     this.logger.log(`Finding notification with id ${id}`);
     const notification = await this.database.findFirst('notifications', {
       where: { id, user_id: userId },
@@ -144,7 +144,7 @@ export class NotificationsService {
   }
 
   async findAll(
-    userId: number,
+    userId: string,
     listNotificationsInputDto: ListNotificationsInputDto,
   ): Promise<PaginatedOutputDto<NotificationDto>> {
     this.logger.log('Finding all notifications');
@@ -335,7 +335,7 @@ export class NotificationsService {
     if (
       !notification.userId ||
       !notification.customerId ||
-      notification.type !== NotificationTypes.IN_APP
+      notification.type !== NotificationTypes.in_app
     ) {
       return;
     }

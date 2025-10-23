@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { NotificationTypeList, NotificationChannelList } from '@/notifications/constants/notification-types';
+import { NotificationTypeList } from '@/notifications/constants/notification-types';
+import { NotificationChannelList } from '@/notifications/constants/notification-channel';
 
 export class OutputNotificationsTaxonomyDto {
   @ApiProperty({

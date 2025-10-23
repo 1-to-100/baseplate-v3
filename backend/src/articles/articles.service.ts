@@ -47,7 +47,7 @@ export class ArticlesService {
           title: 'New Article Published',
           message: `A new article "${article.title}" has been published.`,
           channel: 'article',
-          type: NotificationTypes.IN_APP,
+          type: NotificationTypes.in_app,
           customerId: article.customer_id,
           generatedBy: 'system (article service)',
         });
@@ -225,7 +225,7 @@ export class ArticlesService {
         title: 'New Article Published',
         message: `A new article "${updatedArticle.title}" has been published.`,
         channel: 'article',
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         customerId,
         generatedBy: 'system (article service)',
       });

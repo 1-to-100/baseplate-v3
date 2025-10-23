@@ -1,21 +1,4 @@
 -- =============================================================================
--- UNIFIED BASEPLATE SCHEMA
--- Following Baseplate Database Conventions
--- =============================================================================
---
--- This schema combines the Baseplate reference schema with the ATC platform
--- requirements, following all Baseplate database conventions.
---
--- Key Design Principles:
--- 1. UUID primary keys with full table name (e.g., customer_id, user_id)
--- 2. Snake_case naming throughout
--- 3. PostgreSQL enum types for type-safe status fields
--- 4. Row Level Security (RLS) enabled on all tables
--- 5. Comprehensive indexes for performance
--- 6. Automatic timestamp triggers
--- 7. Helper functions for RLS policies
--- 8. Defined paradigm for extensible data on system objects
--- =============================================================================
 
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
@@ -645,10 +628,12 @@ create index idx_subscription_types_stripe_product_id on public.subscription_typ
 
 -- Roles indexes
 create index idx_roles_is_system_role on public.roles(is_system_role);
+create index idx_roles_name on public.roles(name);
 
 -- Managers indexes
 create index idx_managers_active on public.managers(active);
 create index idx_managers_email on public.managers(email);
+create index idx_managers_auth_user_id on public.managers(auth_user_id);
 
 -- Customers indexes
 create index idx_customers_lifecycle_stage on public.customers(lifecycle_stage);
@@ -818,89 +803,632 @@ create trigger update_notifications_updated_at
 -- RLS (ROW LEVEL SECURITY) HELPER FUNCTIONS
 -- =============================================================================
 
--- Get the current user's user_id from JWT
-create or replace function public.current_user_id()
-returns uuid as $$
-  select nullif(current_setting('request.jwt.claims', true)::json->>'user_id', '')::uuid;
-$$ language sql stable;
+-- Get the current user's user_id from auth.uid()
+CREATE OR REPLACE FUNCTION public.current_user_id()
+RETURNS uuid AS $$
+  SELECT user_id 
+  FROM public.users 
+  WHERE auth_user_id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 
-comment on function public.current_user_id() is 
-  'Returns the user_id from the JWT claims';
+COMMENT ON FUNCTION public.current_user_id() IS 
+  'Returns the user_id for the current authenticated user (via auth.uid())';
 
 -- Get the current user's customer_id
-create or replace function public.current_customer_id()
-returns uuid as $$
-  select customer_id from public.users where user_id = public.current_user_id();
-$$ language sql stable;
+CREATE OR REPLACE FUNCTION public.current_customer_id()
+RETURNS uuid AS $$
+  SELECT customer_id 
+  FROM public.users 
+  WHERE auth_user_id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 
-comment on function public.current_customer_id() is 
-  'Returns the customer_id for the current user';
+COMMENT ON FUNCTION public.current_customer_id() IS 
+  'Returns the customer_id for the current authenticated user';
 
 -- Check if current user is system admin
-create or replace function public.is_system_admin()
-returns boolean as $$
-  select exists (
-    select 1 from public.users u
-    join public.roles r on u.role_id = r.role_id
-    where u.user_id = public.current_user_id()
-    and r.name = 'system_admin'
+CREATE OR REPLACE FUNCTION public.is_system_admin()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND r.name = 'system_admin'
+    AND r.is_system_role = true
   );
-$$ language sql stable;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 
-comment on function public.is_system_admin() is 
+COMMENT ON FUNCTION public.is_system_admin() IS 
   'Returns true if current user has system_admin role';
 
 -- Check if user has specific permission
-create or replace function public.has_permission(permission_name text)
-returns boolean as $$
-  select exists (
-    select 1 from public.users u
-    join public.roles r on u.role_id = r.role_id
-    where u.user_id = public.current_user_id()
-    and (
-      r.permissions @> to_jsonb(array[permission_name])
-      or r.permissions @> to_jsonb(array['*'])
+CREATE OR REPLACE FUNCTION public.has_permission(permission_name text)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND (
+      r.permissions @> to_jsonb(ARRAY[permission_name])
+      OR r.permissions @> '["*"]'::jsonb
     )
   );
-$$ language sql stable;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
 
-comment on function public.has_permission(text) is 
+COMMENT ON FUNCTION public.has_permission(text) IS 
   'Returns true if current user has the specified permission';
 
+-- Get current user's role UUID
+CREATE OR REPLACE FUNCTION public.get_user_role_id()
+RETURNS uuid AS $$
+  SELECT role_id 
+  FROM public.users 
+  WHERE auth_user_id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_user_role_id() IS 
+  'Returns the role_id (UUID) for the current authenticated user';
+
+-- Check if user has a specific role (by name) - any role
+CREATE OR REPLACE FUNCTION public.has_role(role_name text)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND r.name = role_name
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.has_role(text) IS 
+  'Returns true if current user has the specified role (checks any role, system or custom)';
+
+-- Check if user has a specific system role (by name)
+CREATE OR REPLACE FUNCTION public.has_system_role(role_name text)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND r.name = role_name
+    AND r.is_system_role = true
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.has_system_role(text) IS 
+  'Returns true if current user has the specified system role (must be marked as system role)';
+
+-- Get customer IDs accessible by Customer Success user
+CREATE OR REPLACE FUNCTION public.get_accessible_customer_ids()
+RETURNS SETOF uuid AS $$
+BEGIN
+  -- System admins can access all customers
+  IF (SELECT public.is_system_admin()) THEN
+    RETURN QUERY SELECT customer_id FROM public.customers WHERE active = true;
+  
+  -- Customer Success users can access their assigned customers
+  ELSIF (SELECT public.has_system_role('customer_success')) THEN
+    RETURN QUERY 
+      SELECT DISTINCT c.customer_id
+      FROM public.customers c
+      WHERE c.manager_id IN (
+        SELECT m.manager_id
+        FROM public.managers m
+        WHERE m.auth_user_id = auth.uid()
+        AND m.active = true
+      )
+      AND c.active = true;
+  
+  -- Customer admins and users can access their own customer
+  ELSIF (SELECT public.current_customer_id()) IS NOT NULL THEN
+    RETURN QUERY SELECT public.current_customer_id();
+  
+  -- No access
+  ELSE
+    RETURN;
+  END IF;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_accessible_customer_ids() IS 
+  'Returns a set of customer_ids accessible by the current user based on their role';
+
+-- Check if user belongs to a specific customer
+CREATE OR REPLACE FUNCTION public.user_belongs_to_customer(check_customer_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users 
+    WHERE auth_user_id = auth.uid()
+    AND customer_id = check_customer_id
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.user_belongs_to_customer(uuid) IS 
+  'Returns true if the current user belongs to the specified customer';
+
+-- Get the current user's full record
+CREATE OR REPLACE FUNCTION public.get_current_user()
+RETURNS TABLE (
+  user_id uuid,
+  auth_user_id uuid,
+  email text,
+  full_name text,
+  customer_id uuid,
+  role_id uuid,
+  status UserStatus
+) AS $$
+  SELECT 
+    user_id,
+    auth_user_id,
+    email,
+    full_name,
+    customer_id,
+    role_id,
+    status
+  FROM public.users 
+  WHERE auth_user_id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_current_user() IS 
+  'Returns the complete user record for the current authenticated user';
+
+-- Check if current user is a system manager
+CREATE OR REPLACE FUNCTION public.is_manager()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.managers 
+    WHERE auth_user_id = auth.uid()
+    AND active = true
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.is_manager() IS 
+  'Returns true if the current user is an active manager (Customer Success)';
+
+-- Get all roles for current user
+CREATE OR REPLACE FUNCTION public.get_user_roles()
+RETURNS TABLE (
+  role_id uuid,
+  role_name text,
+  display_name text,
+  is_system_role boolean,
+  permissions jsonb
+) AS $$
+  SELECT 
+    r.role_id,
+    r.name,
+    r.display_name,
+    r.is_system_role,
+    r.permissions
+  FROM public.users u
+  JOIN public.roles r ON u.role_id = r.role_id
+  WHERE u.auth_user_id = auth.uid();
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_user_roles() IS 
+  'Returns role information for the current authenticated user';
+
+-- Check if user has any of the specified permissions
+CREATE OR REPLACE FUNCTION public.has_any_permission(permission_names text[])
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND (
+      r.permissions ?| permission_names
+      OR r.permissions @> '["*"]'::jsonb
+    )
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.has_any_permission(text[]) IS 
+  'Returns true if current user has any of the specified permissions';
+
+-- Check if user has all of the specified permissions
+CREATE OR REPLACE FUNCTION public.has_all_permissions(permission_names text[])
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.users u
+    JOIN public.roles r ON u.role_id = r.role_id
+    WHERE u.auth_user_id = auth.uid()
+    AND (
+      r.permissions @> to_jsonb(permission_names)
+      OR r.permissions @> '["*"]'::jsonb
+    )
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.has_all_permissions(text[]) IS 
+  'Returns true if current user has all of the specified permissions';
+
+-- Get customer owner's user_id
+CREATE OR REPLACE FUNCTION public.get_customer_owner_id(check_customer_id uuid)
+RETURNS uuid AS $$
+  SELECT owner_id 
+  FROM public.customers 
+  WHERE customer_id = check_customer_id;
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.get_customer_owner_id(uuid) IS 
+  'Returns the owner_id for the specified customer';
+
+-- Check if current user is the owner of their customer
+CREATE OR REPLACE FUNCTION public.is_customer_owner()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.customers c
+    JOIN public.users u ON c.owner_id = u.user_id
+    WHERE u.auth_user_id = auth.uid()
+    AND c.customer_id = u.customer_id
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.is_customer_owner() IS 
+  'Returns true if the current user is the owner of their customer organization';
+
 -- =============================================================================
--- SEED DATA
+-- ENABLE ROW LEVEL SECURITY ON ALL TABLES
 -- =============================================================================
 
--- Insert default permissions
-insert into public.permissions (name, display_name, description) values
-  ('*', 'All Permissions', 'Full system access'),
-  ('customer:*', 'All Customer Permissions', 'Full access within customer'),
-  ('customer:read', 'Read Customer Data', 'View customer data'),
-  ('customer:write', 'Write Customer Data', 'Create and edit customer data'),
-  ('customer:delete', 'Delete Customer Data', 'Delete customer data'),
-  ('users:manage', 'Manage Users', 'Create, edit, and delete users'),
-  ('help_articles:manage', 'Manage Help Articles', 'Create, edit, and delete help articles'),
-  ('notifications:manage', 'Manage Notifications', 'Create and send notifications');
+ALTER TABLE public.subscription_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.managers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_one_time_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customer_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.taxonomies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.extension_data_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.extension_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.article_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.api_logs ENABLE ROW LEVEL SECURITY;
 
--- Insert default system roles
-insert into public.roles (name, display_name, description, is_system_role, permissions) values
-  ('system_admin', 'System Administrator', 'Full system access', true, '["*"]'::jsonb),
-  ('customer_success', 'Customer Success', 'Full access within mapped customers', true, '["customer:*"]'::jsonb),
-  ('customer_admin', 'Customer Admin', 'Full access within customer', true, '["customer:*"]'::jsonb),
-  ('customer_user', 'Customer User', 'Standard user access', true, '["customer:read", "customer:write"]'::jsonb),
-  ('customer_viewer', 'Customer Viewer', 'Read-only access', true, '["customer:read"]'::jsonb);
+-- =============================================================================
+-- RLS POLICIES: USERS TABLE
+-- =============================================================================
 
--- Insert default subscription type
-insert into public.subscription_types (name, description, active, is_default, max_users, max_contacts) values
-  ('free', 'Free tier with basic features', true, true, 3, 100);
+CREATE POLICY users_select_system_admin ON public.users
+  FOR SELECT TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY users_select_customer_admin ON public.users
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY users_select_self ON public.users
+  FOR SELECT TO authenticated
+  USING (user_id = public.current_user_id());
+
+CREATE POLICY users_insert_system_admin ON public.users
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY users_insert_customer_admin ON public.users
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY users_update_system_admin ON public.users
+  FOR UPDATE TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY users_update_customer_admin ON public.users
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  )
+  WITH CHECK (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY users_update_self ON public.users
+  FOR UPDATE TO authenticated
+  USING (user_id = public.current_user_id())
+  WITH CHECK (user_id = public.current_user_id());
+
+CREATE POLICY users_delete_system_admin ON public.users
+  FOR DELETE TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY users_delete_customer_admin ON public.users
+  FOR DELETE TO authenticated
+  USING (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+-- =============================================================================
+-- RLS POLICIES: CUSTOMERS TABLE
+-- =============================================================================
+
+CREATE POLICY customers_select_system_admin ON public.customers
+  FOR SELECT TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY customers_select_customer_admin ON public.customers
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY customers_insert_system_admin ON public.customers
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY customers_update_system_admin ON public.customers
+  FOR UPDATE TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY customers_update_customer_admin ON public.customers
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  )
+  WITH CHECK (
+    public.has_role('customer_admin') AND
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY customers_delete_system_admin ON public.customers
+  FOR DELETE TO authenticated
+  USING (public.has_role('system_admin'));
+
+-- =============================================================================
+-- RLS POLICIES: ROLES & PERMISSIONS TABLES
+-- =============================================================================
+
+CREATE POLICY roles_select_all ON public.roles
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY roles_modify_system_admin ON public.roles
+  FOR ALL TO authenticated
+  USING (
+    public.has_role('system_admin') AND
+    NOT is_system_role
+  )
+  WITH CHECK (
+    public.has_role('system_admin') AND
+    NOT is_system_role
+  );
+
+CREATE POLICY permissions_select_all ON public.permissions
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY permissions_modify_system_admin ON public.permissions
+  FOR ALL TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+-- =============================================================================
+-- RLS POLICIES: ARTICLES & CATEGORIES
+-- =============================================================================
+
+CREATE POLICY article_categories_select_all ON public.article_categories
+  FOR SELECT TO authenticated
+  USING (
+    customer_id = public.current_customer_id() OR
+    public.has_role('system_admin')
+  );
+
+CREATE POLICY article_categories_modify_customer ON public.article_categories
+  FOR ALL TO authenticated
+  USING (
+    customer_id = public.current_customer_id() AND
+    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+  )
+  WITH CHECK (
+    customer_id = public.current_customer_id() AND
+    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+  );
+
+CREATE POLICY articles_select_all ON public.articles
+  FOR SELECT TO authenticated
+  USING (
+    customer_id = public.current_customer_id() OR
+    public.has_role('system_admin')
+  );
+
+CREATE POLICY articles_modify_customer ON public.articles
+  FOR ALL TO authenticated
+  USING (
+    customer_id = public.current_customer_id() AND
+    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+  )
+  WITH CHECK (
+    customer_id = public.current_customer_id() AND
+    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+  );
+
+-- =============================================================================
+-- RLS POLICIES: NOTIFICATIONS
+-- =============================================================================
+
+CREATE POLICY notification_templates_select_customer ON public.notification_templates
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IS NULL OR
+    customer_id = public.current_customer_id() OR
+    public.has_role('system_admin')
+  );
+
+CREATE POLICY notification_templates_modify_admin ON public.notification_templates
+  FOR ALL TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    (public.has_role('customer_admin') AND customer_id = public.current_customer_id())
+  )
+  WITH CHECK (
+    public.has_role('system_admin') OR
+    (public.has_role('customer_admin') AND customer_id = public.current_customer_id())
+  );
+
+CREATE POLICY notifications_select_own ON public.notifications
+  FOR SELECT TO authenticated
+  USING (
+    user_id = public.current_user_id() OR
+    public.has_role('system_admin')
+  );
+
+CREATE POLICY notifications_insert_system ON public.notifications
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY notifications_update_own ON public.notifications
+  FOR UPDATE TO authenticated
+  USING (user_id = public.current_user_id())
+  WITH CHECK (user_id = public.current_user_id());
+
+-- =============================================================================
+-- RLS POLICIES: OTHER TABLES
+-- =============================================================================
+
+CREATE POLICY subscription_types_select_all ON public.subscription_types
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY subscription_types_modify_system_admin ON public.subscription_types
+  FOR ALL TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY managers_all_system_admin ON public.managers
+  FOR ALL TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY customer_subscriptions_select ON public.customer_subscriptions
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id())
+  );
+
+CREATE POLICY customer_subscriptions_modify_system_admin ON public.customer_subscriptions
+  FOR ALL TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY user_invitations_select ON public.user_invitations
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+  );
+
+CREATE POLICY user_invitations_modify ON public.user_invitations
+  FOR ALL TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+  )
+  WITH CHECK (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+  );
+
+CREATE POLICY taxonomies_select ON public.taxonomies
+  FOR SELECT TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    customer_id = public.current_customer_id()
+  );
+
+CREATE POLICY taxonomies_modify ON public.taxonomies
+  FOR ALL TO authenticated
+  USING (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+  )
+  WITH CHECK (
+    public.has_role('system_admin') OR
+    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+  );
+
+CREATE POLICY extension_data_types_select_all ON public.extension_data_types
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY extension_data_types_modify_system_admin ON public.extension_data_types
+  FOR ALL TO authenticated
+  USING (public.has_role('system_admin'))
+  WITH CHECK (public.has_role('system_admin'));
+
+CREATE POLICY extension_data_select ON public.extension_data
+  FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY extension_data_modify ON public.extension_data
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY audit_logs_select_system_admin ON public.audit_logs
+  FOR SELECT TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY audit_logs_insert_all ON public.audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY api_logs_select_system_admin ON public.api_logs
+  FOR SELECT TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY api_logs_insert_all ON public.api_logs
+  FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY user_one_time_codes_select_own ON public.user_one_time_codes
+  FOR SELECT TO authenticated
+  USING (user_id = public.current_user_id());
+
+CREATE POLICY user_one_time_codes_insert_all ON public.user_one_time_codes
+  FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY user_one_time_codes_update_all ON public.user_one_time_codes
+  FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
 
 -- =============================================================================
 -- VIEWS
 -- =============================================================================
 
--- Active customers with owner information
-create view public.active_customers as
-select 
+CREATE VIEW public.active_customers AS
+SELECT 
   c.customer_id,
   c.name,
   c.email_domain,
@@ -910,17 +1438,16 @@ select
   owner.full_name as owner_name,
   c.created_at,
   c.onboarded_at
-from public.customers c
-left join public.subscription_types st on c.subscription_type_id = st.subscription_type_id
-left join public.users owner on c.owner_id = owner.user_id
-where c.active = true;
+FROM public.customers c
+LEFT JOIN public.subscription_types st ON c.subscription_type_id = st.subscription_type_id
+LEFT JOIN public.users owner ON c.owner_id = owner.user_id
+WHERE c.active = true;
 
-comment on view public.active_customers is 
+COMMENT ON VIEW public.active_customers IS 
   'Convenience view showing active customers with subscription type and owner details';
 
--- Active users with role information
-create view public.active_users as
-select 
+CREATE VIEW public.active_users AS
+SELECT 
   u.user_id,
   u.email,
   u.full_name,
@@ -930,17 +1457,16 @@ select
   r.name as role_name,
   u.last_login_at,
   u.created_at
-from public.users u
-join public.customers c on u.customer_id = c.customer_id
-left join public.roles r on u.role_id = r.role_id
-where u.status = 'active';
+FROM public.users u
+JOIN public.customers c ON u.customer_id = c.customer_id
+LEFT JOIN public.roles r ON u.role_id = r.role_id
+WHERE u.status = 'active';
 
-comment on view public.active_users is 
+COMMENT ON VIEW public.active_users IS 
   'Convenience view showing active users with customer and role details';
 
--- Extension data enriched view
-create view public.extension_data_enriched as
-select 
+CREATE VIEW public.extension_data_enriched AS
+SELECT 
   ed.extension_data_id,
   ed.data_id,
   edt.table_being_extended,
@@ -951,44 +1477,168 @@ select
   ed.value,
   ed.created_at,
   ed.updated_at
-from public.extension_data ed
-join public.extension_data_types edt 
-  on ed.extension_data_type_id = edt.extension_data_type_id
-where edt.is_active = true;
+FROM public.extension_data ed
+JOIN public.extension_data_types edt 
+  ON ed.extension_data_type_id = edt.extension_data_type_id
+WHERE edt.is_active = true;
 
-comment on view public.extension_data_enriched is 
-  'Convenience view showing extension data with field type definitions. Use data_id and table_being_extended to join to the appropriate table (users or customers).';
+COMMENT ON VIEW public.extension_data_enriched IS 
+  'Convenience view showing extension data with field type definitions';
 
 -- =============================================================================
 -- GRANT PERMISSIONS
 -- =============================================================================
--- Grant necessary permissions to authenticated and anon roles
--- Note: service_role already has superuser access
 
--- Grant usage on schema
 GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
 
--- Grant all privileges on all tables to service_role (for backend operations)
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
 
--- Grant select/insert/update/delete to authenticated users (RLS will control access)
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
--- Grant limited access to anon users (for public operations like registration)
 GRANT SELECT, INSERT, UPDATE ON public.user_one_time_codes TO anon;
 GRANT INSERT ON public.api_logs TO anon;
 GRANT INSERT ON public.users TO anon;
 GRANT SELECT ON public.roles TO anon;
 GRANT SELECT ON public.subscription_types TO anon;
 
--- Make sure future tables also get these permissions
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 
+-- Grant execute permissions on helper functions
+GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.current_customer_id() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.is_system_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_permission(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_role_id() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_system_role(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_accessible_customer_ids() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_belongs_to_customer(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_current_user() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_manager() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_roles() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_any_permission(text[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_all_permissions(text[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_customer_owner_id(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_customer_owner() TO authenticated;
+
 -- =============================================================================
--- END OF SCHEMA
+-- SEED DATA
+-- =============================================================================
+
+-- Insert default permissions
+INSERT INTO public.permissions (name, display_name, description) VALUES
+  ('*', 'All Permissions', 'Full system access'),
+  ('customer:*', 'All Customer Permissions', 'Full access within customer'),
+  ('customer:read', 'Read Customer Data', 'View customer data'),
+  ('customer:write', 'Write Customer Data', 'Create and edit customer data'),
+  ('customer:delete', 'Delete Customer Data', 'Delete customer data'),
+  ('users:manage', 'Manage Users', 'Create, edit, and delete users'),
+  ('help_articles:manage', 'Manage Help Articles', 'Create, edit, and delete help articles'),
+  ('notifications:manage', 'Manage Notifications', 'Create and send notifications');
+
+-- Insert default system roles
+INSERT INTO public.roles (name, display_name, description, is_system_role, permissions) VALUES
+  ('system_admin', 'System Administrator', 'Full system access', true, '["*"]'::jsonb),
+  ('customer_success', 'Customer Success', 'Full access within mapped customers', true, '["customer:*"]'::jsonb),
+  ('customer_admin', 'Customer Admin', 'Full access within customer', true, '["customer:*"]'::jsonb),
+  ('customer_user', 'Customer User', 'Standard user access', true, '["customer:read", "customer:write"]'::jsonb),
+  ('customer_viewer', 'Customer Viewer', 'Read-only access', true, '["customer:read"]'::jsonb);
+
+-- Insert subscription types
+INSERT INTO public.subscription_types (
+  name,
+  description,
+  active,
+  is_default,
+  max_users,
+  max_contacts,
+  created_at,
+  updated_at
+)
+VALUES
+  (
+    'Free',
+    'Perfect for individuals and small teams getting started',
+    true,
+    true,
+    3,
+    100,
+    NOW(),
+    NOW()
+  ),
+  (
+    'Starter',
+    'Great for growing teams that need more resources',
+    true,
+    false,
+    10,
+    1000,
+    NOW(),
+    NOW()
+  ),
+  (
+    'Professional',
+    'For established teams that need comprehensive features',
+    true,
+    false,
+    50,
+    10000,
+    NOW(),
+    NOW()
+  ),
+  (
+    'Enterprise',
+    'For large organizations with custom requirements',
+    true,
+    false,
+    NULL,
+    NULL,
+    NOW(),
+    NOW()
+  )
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  active = EXCLUDED.active,
+  max_users = EXCLUDED.max_users,
+  max_contacts = EXCLUDED.max_contacts,
+  updated_at = NOW();
+
+-- =============================================================================
+-- SCHEMA DOCUMENTATION
+-- =============================================================================
+
+COMMENT ON SCHEMA public IS 
+  'Complete Baseplate schema with tables, indexes, triggers, RLS policies, and helper functions
+   
+   Core Helper Functions:
+   - current_user_id() → Get current user UUID
+   - current_customer_id() → Get current user''s customer UUID
+   - is_system_admin() → Check if user is system administrator
+   - has_permission(text) → Check for specific permission
+   
+   Role & Permission Functions:
+   - get_user_role_id() → Get current user''s role UUID
+   - has_role(text) → Check if user has specific role (any role)
+   - has_system_role(text) → Check if user has specific system role
+   - has_any_permission(text[]) → Check for any of multiple permissions
+   - has_all_permissions(text[]) → Check for all of multiple permissions
+   - get_user_roles() → Get user''s complete role information
+   
+   Customer Access Functions:
+   - get_accessible_customer_ids() → Get customer IDs accessible by user
+   - user_belongs_to_customer(uuid) → Check customer membership
+   - get_customer_owner_id(uuid) → Get customer owner
+   - is_customer_owner() → Check if user owns their customer
+   
+   Utility Functions:
+   - get_current_user() → Get full user record
+   - is_manager() → Check if user is a Customer Success manager';
+
+-- =============================================================================
+-- MIGRATION COMPLETE
 -- =============================================================================
 

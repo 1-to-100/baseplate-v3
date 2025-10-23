@@ -531,7 +531,7 @@ docker compose up</code></pre>
         title: 'Welcome Template',
         message: 'Welcome to our platform! We are excited to have you here.',
         comment: 'Sent to new users upon registration',
-        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        type: [NotificationTypes.email, NotificationTypes.in_app],
         channel: NotificationChannel.info,
       },
       {
@@ -539,7 +539,7 @@ docker compose up</code></pre>
         message:
           'A new article has been published: {{articleTitle}}. Check it out!',
         comment: 'Notification when a new article is published',
-        type: [NotificationTypes.IN_APP],
+        type: [NotificationTypes.in_app],
         channel: NotificationChannel.article,
       },
       {
@@ -547,7 +547,7 @@ docker compose up</code></pre>
         message:
           'Important system update: {{message}}. Please review at your earliest convenience.',
         comment: 'Critical system notifications',
-        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        type: [NotificationTypes.email, NotificationTypes.in_app],
         channel: NotificationChannel.alert,
       },
       {
@@ -555,7 +555,7 @@ docker compose up</code></pre>
         message:
           'Your weekly digest is ready! Check out the latest updates and articles.',
         comment: 'Weekly summary for users',
-        type: [NotificationTypes.EMAIL],
+        type: [NotificationTypes.email],
         channel: NotificationChannel.info,
       },
       {
@@ -563,7 +563,7 @@ docker compose up</code></pre>
         message:
           'Warning: {{warningMessage}}. Please take action to resolve this issue.',
         comment: 'Account-related warnings',
-        type: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+        type: [NotificationTypes.email, NotificationTypes.in_app],
         channel: NotificationChannel.warning,
       },
     ];

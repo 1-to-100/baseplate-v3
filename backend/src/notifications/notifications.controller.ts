@@ -203,7 +203,7 @@ export class NotificationsController {
     @User() user: OutputUserDto,
     @Param('id') id: string,
   ) {
-    return this.notificationsService.findOne(user.id, id);
+    return this.notificationsService.findOne(user.id, parseInt(id));
   }
 
   @Patch('/read-all')

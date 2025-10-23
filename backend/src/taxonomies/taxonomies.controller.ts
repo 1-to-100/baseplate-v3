@@ -11,7 +11,8 @@ import { ManagersService } from '@/managers/managers.service';
 import { SubscriptionsService } from '@/subscriptions/subscriptions.service';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
-import { NotificationTypeList, NotificationChannelList } from '@/notifications/constants/notification-types';
+import { NotificationTypeList } from '@/notifications/constants/notification-types';
+import { NotificationChannelList } from '@/notifications/constants/notification-channel';
 import { OutputNotificationsTaxonomyDto } from '@/taxonomies/dto/output-notifications-taxonomy.dto';
 import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
 

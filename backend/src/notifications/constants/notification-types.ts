@@ -1,6 +1,6 @@
 export const NotificationTypes = {
-  EMAIL: 'email',
-  IN_APP: 'in_app',
+  email: 'email',
+  in_app: 'in_app',
 } as const;
 
 export type NotificationType =

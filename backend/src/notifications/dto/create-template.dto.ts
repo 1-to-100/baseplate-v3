@@ -49,7 +49,7 @@ export class CreateTemplateDto {
     enum: NotificationTypes,
     isArray: true,
     default: [],
-    example: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+    example: [NotificationTypes.email, NotificationTypes.in_app],
   })
   type: NotificationType[];
 

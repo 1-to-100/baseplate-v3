@@ -30,7 +30,7 @@ export class ListTemplatesInputDto extends PaginatedInputDto {
     isArray: true,
     default: [],
     required: false,
-    example: [NotificationTypes.EMAIL, NotificationTypes.IN_APP],
+    example: [NotificationTypes.email, NotificationTypes.in_app],
   })
   @Transform(eachNotificationTypeTransformer)
   type?: NotificationType[];
