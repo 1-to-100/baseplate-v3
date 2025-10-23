@@ -463,9 +463,9 @@ export class UsersService {
       where,
       select: `
         *,
-        roles!role_id(*),
-        customers!customer_id(customer_id, name, owner_id),
-        managers!manager_id(*)
+        role:roles!role_id(*),
+        customer:customers!customer_id(customer_id, name, owner_id),
+        manager:managers!manager_id(manager_id, email, full_name)
       `,
     });
 
@@ -502,9 +502,9 @@ export class UsersService {
       where,
       select: `
         *,
-        roles!role_id(*),
-        customers!customer_id(customer_id, name),
-        managers!manager_id(*)
+        role:roles!role_id(*),
+        customer:customers!customer_id(customer_id, name),
+        manager:managers!manager_id(manager_id, email, full_name)
       `,
     });
 

@@ -128,11 +128,11 @@ export class NotificationsService {
   async findOne(userId: number, id: number) {
     this.logger.log(`Finding notification with id ${id}`);
     const notification = await this.database.findFirst('notifications', {
-      where: { id, user_id: userId },
+      where: { notification_id: id, user_id: userId },
       select: `
         *,
-        users!user_id(id, email, first_name, last_name),
-        customers!customer_id(id, name)
+        users!user_id(user_id, email, full_name),
+        customers!customer_id(customer_id, name)
       `,
     });
 
@@ -168,8 +168,8 @@ export class NotificationsService {
         where: whereClause,
         select: `
           *,
-          users!user_id(id, email, first_name, last_name),
-          customers!customer_id(id, name)
+          users!user_id(user_id, email, full_name),
+          customers!customer_id(customer_id, name)
         `,
         orderBy: [{ field: 'created_at', direction: 'desc' }],
       },
@@ -248,9 +248,9 @@ export class NotificationsService {
         where: whereClause,
         select: `
           *,
-          sender:users!sender_id(id, email, first_name, last_name),
-          users!user_id(id, email, first_name, last_name),
-          customers!customer_id(id, name)
+          sender:users!sender_id(user_id, email, full_name),
+          users!user_id(user_id, email, full_name),
+          customers!customer_id(customer_id, name)
         `,
         orderBy: [{ field: 'created_at', direction: 'desc' }],
       },

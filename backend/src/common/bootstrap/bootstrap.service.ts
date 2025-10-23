@@ -44,7 +44,7 @@ export class BootstrapService implements OnModuleInit {
         .from('users')
         .select('*', { count: 'exact', head: true })
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        .eq('role_id', systemAdminRole?.id);
+        .eq('role_id', systemAdminRole?.role_id);
 
       if (countError) {
         this.logger.error('Failed to count system administrators:', countError);
@@ -60,19 +60,33 @@ export class BootstrapService implements OnModuleInit {
         '⚠️ No System Administrator found. Creating default admin user...',
       );
 
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } =
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-        await this.supabaseService.admin.createUser({
-          email: 'admin@system.local',
-          password: 'Admin@123456',
-          email_confirm: true,
-        });
+      // Check if auth user already exists
+      let authUserId: string;
+      const { data: existingAuthUsers } = await this.supabaseService.admin.listUsers();
+      const existingAuthUser = existingAuthUsers?.users?.find(
+        (u: any) => u.email === 'admin@system.local',
+      );
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (authError || !authData?.user) {
+      if (existingAuthUser) {
+        this.logger.log('Auth user already exists, will create database record');
+        authUserId = existingAuthUser.id;
+      } else {
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } =
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          await this.supabaseService.admin.createUser({
+            email: 'admin@system.local',
+            password: 'Admin@123456',
+            email_confirm: true,
+          });
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        throw new Error(`Failed to create auth user: ${authError?.message}`);
+        if (authError || !authData?.user) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          throw new Error(`Failed to create auth user: ${authError?.message}`);
+        }
+        
+        authUserId = authData.user.id;
       }
 
       // Create user record in database using direct client
@@ -80,12 +94,10 @@ export class BootstrapService implements OnModuleInit {
         .from('users')
         .insert({
           email: 'admin@system.local',
+          auth_user_id: authUserId,
+          full_name: 'System Administrator',
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          uid: authData?.user?.id,
-          first_name: 'System',
-          last_name: 'Administrator',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          role_id: systemAdminRole?.id,
+          role_id: systemAdminRole?.role_id,
           status: 'active',
           customer_id: null, // System-level admin
         })

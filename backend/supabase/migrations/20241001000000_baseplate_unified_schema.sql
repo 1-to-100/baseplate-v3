@@ -224,6 +224,7 @@ create table public.users (
   phone_number text,
   customer_id uuid,
   role_id uuid,
+  manager_id uuid,
   status UserStatus not null default 'inactive',
   last_login_at timestamptz,
   preferences jsonb,
@@ -506,6 +507,11 @@ alter table public.users
   foreign key (role_id) references public.roles(role_id)
   on delete set null;
 
+alter table public.users
+  add constraint users_manager_id_fkey
+  foreign key (manager_id) references public.managers(manager_id)
+  on delete set null;
+
 -- User one-time codes foreign keys
 alter table public.user_one_time_codes
   add constraint user_one_time_codes_user_id_fkey
@@ -661,6 +667,7 @@ create index idx_customers_created_at on public.customers(created_at);
 -- Users indexes
 create index idx_users_customer_id on public.users(customer_id);
 create index idx_users_role_id on public.users(role_id);
+create index idx_users_manager_id on public.users(manager_id);
 create index idx_users_status on public.users(status);
 create index idx_users_email on public.users(email);
 create index idx_users_auth_user_id on public.users(auth_user_id);

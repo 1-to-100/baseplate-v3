@@ -148,6 +148,7 @@ export interface User {
   phone_number?: string | null;
   customer_id?: string | null;
   role_id?: string | null;
+  manager_id?: string | null;
   status: UserStatus;
   email_verified?: boolean | null;
   last_login_at?: string | null;
