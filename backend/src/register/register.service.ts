@@ -17,18 +17,26 @@ export class RegisterService {
     private readonly configService: ConfigService,
   ) {}
 
-  private async getRoleIdByName(roleName: string): Promise<string> {
-    const { data: role } = await this.database
-      .getClient()
+  private async getRoleIdByName(
+    roleName: string,
+    adminClient: any,
+  ): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const { data: role, error: roleError } = await adminClient
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .from('roles')
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .select('id')
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .eq('name', roleName)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .single();
-    
-    if (!role) {
+
+    if (roleError || !role) {
       throw new Error(`Role ${roleName} not found`);
     }
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     return role.id;
   }
 
@@ -47,36 +55,76 @@ export class RegisterService {
       );
     }
 
-    const existingCustomer = await this.database.findFirst('customers', {
-      where: { domain },
-    });
+    // Use direct client to bypass RLS for registration
+    const adminClient = this.database.getClient();
+
+    // Find existing customer by domain
+    const { data: existingCustomer, error: customerError } = await adminClient
+      .from('customers')
+      .select('*')
+      .eq('domain', domain)
+      .single();
+
+    if (customerError && customerError.code !== 'PGRST116') {
+      throw new ConflictException(
+        `Failed to check existing customer: ${customerError.message}`,
+      );
+    }
 
     const newUser = await this.usersService.create(
       {
         email,
         firstName,
         lastName,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         customerId: existingCustomer?.id,
       },
       true,
     );
 
     if (!existingCustomer) {
-      const newCustomer = await this.database.create('customers', {
-        data: { name: domain, email, domain, owner_id: newUser.id },
-      });
+      // Create new customer using direct client
+      const { data: newCustomer, error: createCustomerError } =
+        await adminClient
+          .from('customers')
+          .insert({
+            name: domain,
+            email,
+            domain,
+            owner_id: newUser.id,
+          })
+          .select()
+          .single();
 
-      await this.database.update('users', {
-        where: { id: newUser.id },
-        data: {
+      if (createCustomerError) {
+        throw new ConflictException(
+          `Failed to create customer: ${createCustomerError.message}`,
+        );
+      }
+
+      // Update user with customer ID and role using direct client
+      const { error: updateUserError } = await adminClient
+        .from('users')
+        .update({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           customer_id: newCustomer.id,
-          role_id: await this.getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR),
-        },
-      });
+          role_id: await this.getRoleIdByName(
+            SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
+            adminClient,
+          ),
+        })
+        .eq('id', newUser.id);
+
+      if (updateUserError) {
+        throw new ConflictException(
+          `Failed to update user: ${updateUserError.message}`,
+        );
+      }
     }
 
     // Sign up in Supabase
     // await this.signUpInSupabase(registerDto);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const { error } = await this.supabaseService.auth.signUp({
       email: registerDto.email,
       password: registerDto.password,
@@ -93,7 +141,8 @@ export class RegisterService {
 
     if (error) {
       throw new ConflictException(
-        `Failed to sign up in Supabase: ${error.message}`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        `Failed to sign up in Supabase: ${error?.message}`,
       );
     }
 

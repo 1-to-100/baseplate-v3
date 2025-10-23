@@ -465,6 +465,7 @@ export type Database = {
           image_url: string | null;
           name: string | null;
           updated_at: string | null;
+          system_role: boolean;
         };
         Insert: {
           created_at?: string;
@@ -473,6 +474,7 @@ export type Database = {
           image_url?: string | null;
           name?: string | null;
           updated_at?: string | null;
+          system_role?: boolean;
         };
         Update: {
           created_at?: string;
@@ -481,6 +483,7 @@ export type Database = {
           image_url?: string | null;
           name?: string | null;
           updated_at?: string | null;
+          system_role?: boolean;
         };
         Relationships: [];
       };
