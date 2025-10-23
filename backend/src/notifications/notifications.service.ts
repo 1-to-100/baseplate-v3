@@ -42,7 +42,7 @@ export class NotificationsService {
       }
 
       const notifications = users.map((user) => ({
-        user_id: user.id,
+        user_id: user.user_id,
         customer_id: createNotification.customerId,
         sender_id: createNotification.senderId,
         type: createNotification.type,
@@ -51,7 +51,7 @@ export class NotificationsService {
         template_id: createNotification.templateId,
         metadata: createNotification.metadata,
         channel: createNotification.channel,
-        is_read: false,
+        read_at: null, // null means unread; read_at is source of truth
         generated_by: createNotification.generatedBy,
       }));
 
@@ -68,7 +68,7 @@ export class NotificationsService {
 
       setTimeout(() => {
         Promise.all(
-          users.map((user) => this.sendUnreadCountNotification(user.id)),
+          users.map((user) => this.sendUnreadCountNotification(user.user_id)),
         )
           .then(() => {
             return Promise.all(
@@ -104,7 +104,7 @@ export class NotificationsService {
         template_id: createNotification.templateId,
         metadata: createNotification.metadata,
         channel: createNotification.channel,
-        is_read: false,
+        read_at: null, // null means unread; read_at is source of truth
         generated_by: createNotification.generatedBy,
       };
 
@@ -155,7 +155,10 @@ export class NotificationsService {
     };
 
     if (type) whereClause.type = type;
-    if (isRead !== undefined) whereClause.is_read = isRead;
+    // Use read_at as source of truth: null = unread, not null = read
+    if (isRead !== undefined) {
+      whereClause.read_at = isRead ? { not: null } : null;
+    }
     if (channel) whereClause.channel = channel;
 
     const paginatedResult = await this.database.paginate(
@@ -175,7 +178,7 @@ export class NotificationsService {
     // Transform the data to match expected DTO format
     const transformedData = paginatedResult.data.map((notification) => ({
       ...notification,
-      isRead: notification.is_read,
+      isRead: notification.read_at !== null, // Computed from read_at for frontend compatibility
       createdAt: new Date(notification.created_at),
       readAt: notification.read_at ? new Date(notification.read_at) : undefined,
       userId: notification.user_id || undefined,
@@ -224,7 +227,10 @@ export class NotificationsService {
     if (customerId) whereClause.customer_id = { in: customerId };
     if (senderId) whereClause.sender_id = { in: senderId };
     if (type) whereClause.type = type;
-    if (isRead !== undefined) whereClause.is_read = isRead;
+    // Use read_at as source of truth: null = unread, not null = read
+    if (isRead !== undefined) {
+      whereClause.read_at = isRead ? { not: null } : null;
+    }
     if (channel) whereClause.channel = { in: channel };
 
     if (search) {
@@ -253,7 +259,7 @@ export class NotificationsService {
     // Transform the data to match expected DTO format
     const transformedData = paginatedResult.data.map((notification) => ({
       ...notification,
-      isRead: notification.is_read,
+      isRead: notification.read_at !== null, // Computed from read_at for frontend compatibility
       createdAt: new Date(notification.created_at),
       readAt: notification.read_at ? new Date(notification.read_at) : undefined,
       userId: notification.user_id || undefined,
@@ -286,8 +292,8 @@ export class NotificationsService {
     );
 
     const notification = await this.database.update('notifications', {
-      where: { id, user_id: userId },
-      data: { is_read: true, read_at: new Date().toISOString() },
+      where: { notification_id: id, user_id: userId },
+      data: { read_at: new Date().toISOString() }, // read_at is source of truth
     });
 
     if (!notification) {
@@ -302,8 +308,8 @@ export class NotificationsService {
   async markAllAsRead(userId: string) {
     this.logger.log('Marking all notifications as read');
     await this.database.updateMany('notifications', {
-      where: { is_read: false, user_id: userId },
-      data: { is_read: true, read_at: new Date().toISOString() },
+      where: { read_at: null, user_id: userId }, // Only mark unread ones (where read_at is null)
+      data: { read_at: new Date().toISOString() }, // read_at is source of truth
     });
 
     await this.sendUnreadCountNotification(userId);
@@ -312,8 +318,8 @@ export class NotificationsService {
   async marksAsReadMultiple(userId: string, ids: string[]) {
     this.logger.log(`Marking notifications with ids ${ids.join(', ')} as read`);
     await this.database.updateMany('notifications', {
-      where: { id: { in: ids }, is_read: false, user_id: userId },
-      data: { is_read: true, read_at: new Date().toISOString() },
+      where: { notification_id: { in: ids }, read_at: null, user_id: userId }, // Only mark unread ones
+      data: { read_at: new Date().toISOString() }, // read_at is source of truth
     });
     await this.sendUnreadCountNotification(userId);
   }
@@ -321,7 +327,7 @@ export class NotificationsService {
   async unreadCount(userId: string): Promise<number> {
     this.logger.log(`Counting unread notifications for user ${userId}`);
     return this.database.count('notifications', {
-      where: { is_read: false, user_id: userId },
+      where: { read_at: null, user_id: userId }, // read_at is null = unread
     });
   }
 

@@ -20,9 +20,7 @@ export class ApiDbLoggerMiddleware implements NestMiddleware {
             method,
             url,
             status_code: res.statusCode,
-            duration: Date.now() - startTime,
-            request_body: JSON.stringify(body),
-            headers: JSON.stringify(headers),
+            response_time: Date.now() - startTime,
           },
         })
         .catch((error) => {

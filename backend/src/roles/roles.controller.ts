@@ -58,37 +58,53 @@ export class RolesController {
   async findOne(@Param('id') id: string): Promise<OutputRoleDto> {
     const role = await this.rolesService.findOne(id);
     const outputRole: OutputRoleDto = {
-      id: role.id.toString(),
+      id: role.role_id.toString(),
       name: role.name ?? null,
       description: role.description ?? null,
-      imageUrl: role.imageUrl ?? null,
       permissions: {},
     };
 
     const rolePermissions = role.permissions;
 
-    outputRole.permissions = rolePermissions.reduce<
-      Record<string, Array<{ id: string; name: string; label: string }>>
-    >((acc, permission) => {
-      // Handle both single permission object and array (Supabase type inference)
-      const perm = Array.isArray(permission.permission)
-        ? permission.permission[0]
-        : permission.permission;
+    // If permissions is a simple array of strings (JSONB), convert to expected format
+    if (Array.isArray(rolePermissions) && typeof rolePermissions[0] === 'string') {
+      outputRole.permissions = rolePermissions.reduce<
+        Record<string, Array<{ id: string; name: string; label: string }>>
+      >((acc, permName: string) => {
+        const prefix = permName.split(':')[0];
+        acc[prefix] ??= [];
+        acc[prefix].push({
+          id: permName,
+          name: permName,
+          label: permName,
+        });
+        return acc;
+      }, {});
+    } else if (Array.isArray(rolePermissions)) {
+      // Handle old format if it exists
+      outputRole.permissions = rolePermissions.reduce<
+        Record<string, Array<{ id: string; name: string; label: string }>>
+      >((acc: any, permission: any) => {
+        // Handle both single permission object and array (Supabase type inference)
+        const perm = Array.isArray(permission.permission)
+          ? permission.permission[0]
+          : permission.permission;
 
-      if (!perm) return acc;
+        if (!perm) return acc;
 
-      const prefix = perm.name.split(':')[0];
+        const prefix = perm.name.split(':')[0];
 
-      acc[prefix] ??= [];
+        acc[prefix] ??= [];
 
-      acc[prefix].push({
-        id: perm.id.toString(),
-        name: perm.name,
-        label: perm.label ?? '',
-      });
+        acc[prefix].push({
+          id: perm.id?.toString() || perm.name,
+          name: perm.name,
+          label: perm.label ?? perm.display_name ?? '',
+        });
 
-      return acc;
-    }, {});
+        return acc;
+      }, {});
+    }
 
     return outputRole;
   }

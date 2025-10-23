@@ -39,10 +39,6 @@ export class OutputUserDto {
   @IsOptional()
   roleId: string | null = null;
 
-  @ApiPropertyOptional({ description: 'Manager ID' })
-  @IsOptional()
-  managerId: string | null = null;
-
   @ApiPropertyOptional({
     description: 'Status (optional). Default: inactive',
     enum: UserStatusList,

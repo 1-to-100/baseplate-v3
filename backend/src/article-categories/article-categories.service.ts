@@ -31,7 +31,13 @@ export class ArticleCategoriesService {
           created_by: createArticleCategoryDto.createdBy,
         },
       });
-      return category as OutputArticleCategoryDto;
+      return {
+        id: category.article_category_id,
+        name: category.name,
+        subcategory: category.subcategory,
+        about: category.about,
+        icon: category.icon,
+      } as OutputArticleCategoryDto;
     } catch (error) {
       this.logger.error(`Error creating category: ${error}`);
       throw new ConflictException('Category cannot be created.');
@@ -43,7 +49,13 @@ export class ArticleCategoriesService {
       where: { customer_id: customerId },
     });
     this.logger.log(`Find all categories for customer ${customerId}`);
-    return categories as OutputArticleCategoryDto[];
+    return categories.map((cat) => ({
+      id: cat.article_category_id,
+      name: cat.name,
+      subcategory: cat.subcategory ?? null,
+      about: cat.about ?? null,
+      icon: cat.icon ?? null,
+    }));
   }
 
   async findAllSubcategories(customerId: string) {
@@ -90,10 +102,16 @@ export class ArticleCategoriesService {
         updateData.icon = updateArticleCategoryDto.icon;
 
       const category = await this.database.update('article_categories', {
-        where: { id, customer_id: customerId },
+        where: { article_category_id: id, customer_id: customerId },
         data: updateData,
       });
-      return category as OutputArticleCategoryDto;
+      return {
+        id: category.article_category_id,
+        name: category.name,
+        subcategory: category.subcategory,
+        about: category.about,
+        icon: category.icon,
+      } as OutputArticleCategoryDto;
     } catch (error) {
       this.logger.error(`Error updating category: ${error}`);
       throw new ConflictException('Category cannot be updated.');
@@ -105,7 +123,7 @@ export class ArticleCategoriesService {
       this.logger.log(`Delete category ${id} for customer ${customerId}`);
       await this.database.delete('article_categories', {
         where: {
-          id,
+          article_category_id: id,
           customer_id: customerId,
         },
       });
@@ -123,14 +141,20 @@ export class ArticleCategoriesService {
     try {
       this.logger.log(`Find category ${id} for customer ${customerId}`);
       const category = await this.database.findFirst('article_categories', {
-        where: { id, customer_id: customerId },
+        where: { article_category_id: id, customer_id: customerId },
       });
 
       if (!category) {
         throw new NotFoundException('Category not found');
       }
 
-      return category as OutputArticleCategoryDto;
+      return {
+        id: category.article_category_id,
+        name: category.name,
+        subcategory: category.subcategory,
+        about: category.about,
+        icon: category.icon,
+      } as OutputArticleCategoryDto;
     } catch (error) {
       this.logger.error(`Error finding category: ${error}`);
       if (error instanceof NotFoundException) {

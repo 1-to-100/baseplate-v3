@@ -26,7 +26,7 @@ export class SubscriptionSeederService {
     try {
       // Check if any of our subscription tiers already exist
       const existingSubscriptions = await this.database.findMany(
-        'subscriptions',
+        'subscription_types',
         {
           where: {
             name: {
@@ -145,7 +145,7 @@ export class SubscriptionSeederService {
 
     try {
       const deletedSubscriptions =
-        await this.database.deleteMany('subscriptions');
+        await this.database.deleteMany('subscription_types');
       this.logger.log(`Deleted ${deletedSubscriptions.count} subscriptions`);
     } catch (error) {
       this.logger.error('Error cleaning up subscriptions:', error);
@@ -154,7 +154,7 @@ export class SubscriptionSeederService {
   }
 
   async getSubscriptionByName(name: string) {
-    return this.database.findFirst('subscriptions', {
+    return this.database.findFirst('subscription_types', {
       where: { name },
     });
   }
@@ -162,7 +162,7 @@ export class SubscriptionSeederService {
   private async createSubscription(tier: SubscriptionTier) {
     this.logger.log(`Creating subscription: ${tier.name}`);
 
-    return this.database.upsert('subscriptions', {
+    return this.database.upsert('subscription_types', {
       where: { name: tier.name },
       update: {
         description: tier.description,

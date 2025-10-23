@@ -56,6 +56,7 @@ ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.managers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_one_time_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customer_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.taxonomies ENABLE ROW LEVEL SECURITY;
@@ -66,6 +67,7 @@ ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.api_logs ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- PART 3: Users Table Policies
@@ -389,6 +391,29 @@ CREATE POLICY audit_logs_insert_all ON public.audit_logs
   FOR INSERT TO authenticated
   WITH CHECK (true); -- System can always log
 
+-- API Logs: Read-only for admins, anyone can write (for middleware logging)
+CREATE POLICY api_logs_select_system_admin ON public.api_logs
+  FOR SELECT TO authenticated
+  USING (public.has_role('system_admin'));
+
+CREATE POLICY api_logs_insert_all ON public.api_logs
+  FOR INSERT
+  WITH CHECK (true); -- Allow all roles (authenticated, anon, service_role) to log
+
+-- User One Time Codes: Users can only access their own codes, system can create/update any
+CREATE POLICY user_one_time_codes_select_own ON public.user_one_time_codes
+  FOR SELECT TO authenticated
+  USING (user_id = public.get_current_user_id());
+
+CREATE POLICY user_one_time_codes_insert_all ON public.user_one_time_codes
+  FOR INSERT
+  WITH CHECK (true); -- Allow all roles to create codes (needed for registration/reset flows)
+
+CREATE POLICY user_one_time_codes_update_all ON public.user_one_time_codes
+  FOR UPDATE
+  USING (true)
+  WITH CHECK (true); -- Allow all roles to update codes (needed for verification flows)
+
 -- ============================================================================
 -- PART 9: Performance Indexes for RLS
 -- ============================================================================
@@ -398,6 +423,10 @@ CREATE INDEX IF NOT EXISTS idx_users_auth_user_id ON public.users(auth_user_id);
 CREATE INDEX IF NOT EXISTS idx_users_customer_id ON public.users(customer_id);
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON public.users(role_id);
 CREATE INDEX IF NOT EXISTS idx_roles_is_system_role ON public.roles(is_system_role);
+CREATE INDEX IF NOT EXISTS idx_user_one_time_codes_user_id ON public.user_one_time_codes(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_one_time_codes_code ON public.user_one_time_codes(code);
+CREATE INDEX IF NOT EXISTS idx_api_logs_user_id ON public.api_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON public.api_logs(created_at);
 
 -- ============================================================================
 -- MIGRATION COMPLETE

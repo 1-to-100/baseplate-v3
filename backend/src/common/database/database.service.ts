@@ -57,8 +57,13 @@ export class DatabaseService implements OnModuleInit {
     return this.client.from('managers');
   }
 
+  get subscription_types(): any {
+    return this.client.from('subscription_types');
+  }
+
   get subscriptions(): any {
-    return this.client.from('subscriptions');
+    // Legacy accessor - points to subscription_types now
+    return this.client.from('subscription_types');
   }
 
   get user_one_time_codes(): any {

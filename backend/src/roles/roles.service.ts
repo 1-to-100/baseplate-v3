@@ -13,38 +13,26 @@ import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
 import { UpdateRolePermissionsByNameDto } from '@/roles/dto/update-role-permissions-by-name.dto';
 
-// Type definitions for role entity and permissions
+// Type definitions for role entity
 export interface Role {
-  id: number;
+  role_id: string; // Changed from id
   name: string | null;
+  display_name: string | null; // Added
   description: string | null;
-  imageUrl: string | null;
+  is_system_role: boolean; // Changed from system_role
+  permissions: any; // JSONB array
   created_at?: string;
   updated_at?: string;
 }
 
 export interface Permission {
-  id: number;
+  permission_id: string; // Changed from id
   name: string;
-  label: string | null;
+  display_name: string; // Changed from label
   description: string | null;
 }
 
-export interface RolePermissionWithDetails {
-  permission_id: number;
-  permissions: Permission | Permission[];
-}
-
-export interface RoleWithPermissions extends Role {
-  permissions: Array<{
-    permission: Permission | Permission[];
-  }>;
-}
-
 export interface RoleWithDetails extends Role {
-  permissions: Array<{
-    permission: Permission | Permission[];
-  }>;
   _count: {
     users: number;
   };
@@ -59,7 +47,7 @@ export class RolesService {
     const { data: existingRole } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .eq('name', createRoleDto.name)
       .single();
 
@@ -67,11 +55,17 @@ export class RolesService {
       throw new ConflictException('Role with name already exists');
     }
 
-    // Create the role
+    // Create the role with JSONB permissions
     const { data: newRole, error } = await this.supabaseService
       .getClient()
       .from('roles')
-      .insert(createRoleDto)
+      .insert({
+        name: createRoleDto.name,
+        display_name: createRoleDto.name, // Default display_name to name
+        description: createRoleDto.description,
+        is_system_role: false, // Custom roles are never system roles
+        permissions: [], // Empty permissions array by default
+      })
       .select()
       .single();
 
@@ -90,7 +84,7 @@ export class RolesService {
       .getClient()
       .from('roles')
       .select('*')
-      .order('id', { ascending: false });
+      .order('role_id', { ascending: false }); // Changed from id
 
     // Add search filter if provided
     if (search) {
@@ -103,40 +97,18 @@ export class RolesService {
       throw new BadRequestException(`Failed to fetch roles: ${error.message}`);
     }
 
-    // For each role, get permissions and user count
+    // For each role, get user count (no need to get permissions from junction table anymore)
     const rolesWithDetails = await Promise.all(
       (roles || []).map(async (role: Role) => {
-        // Get role permissions with permission details
-        const { data: rolePermissions } = await this.supabaseService
-          .getClient()
-          .from('role_permissions')
-          .select(
-            `
-            permission_id,
-            permissions (
-              id,
-              name,
-              label,
-              description
-            )
-          `,
-          )
-          .eq('role_id', role.id);
-
         // Count users with this role
         const { count: userCount } = await this.supabaseService
           .getClient()
           .from('users')
           .select('*', { count: 'exact', head: true })
-          .eq('role_id', role.id);
+          .eq('role_id', role.role_id); // Changed from role_id to role.role_id
 
         return {
           ...role,
-          permissions: (rolePermissions || []).map(
-            (rp: RolePermissionWithDetails) => ({
-              permission: rp.permissions,
-            }),
-          ),
           _count: {
             users: userCount || 0,
           },
@@ -151,7 +123,7 @@ export class RolesService {
     const { data: roles, error } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('id, name')
+      .select('role_id, name') // Changed from id
       .order('name', { ascending: true });
 
     if (error) {
@@ -161,48 +133,25 @@ export class RolesService {
     }
 
     return (roles || []).map((role) => ({
-      id: role.id,
+      id: role.role_id, // Changed from id
       name: role.name ?? null,
     }));
   }
 
-  async findOne(id: string): Promise<RoleWithPermissions> {
+  async findOne(id: string): Promise<Role> {
     const { data: role, error } = await this.supabaseService
       .getClient()
       .from('roles')
       .select('*')
-      .eq('id', id)
+      .eq('role_id', id) // Changed from id
       .single();
 
     if (error || !role) {
       throw new NotFoundException('No role with given ID exists');
     }
 
-    // Get role permissions with permission details
-    const { data: rolePermissions } = await this.supabaseService
-      .getClient()
-      .from('role_permissions')
-      .select(
-        `
-        permission_id,
-        permissions (
-          id,
-          name,
-          label,
-          description
-        )
-      `,
-      )
-      .eq('role_id', id);
-
-    return {
-      ...(role as Role),
-      permissions: (rolePermissions || []).map(
-        (rp: RolePermissionWithDetails) => ({
-          permission: rp.permissions,
-        }),
-      ),
-    };
+    // Permissions are already in the role object as JSONB
+    return role as Role;
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
@@ -210,8 +159,8 @@ export class RolesService {
     const { data: existingRole, error: roleError } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('name')
-      .eq('id', id)
+      .select('name, is_system_role') // Changed from system_role
+      .eq('role_id', id) // Changed from id
       .single();
 
     if (roleError || !existingRole) {
@@ -219,7 +168,7 @@ export class RolesService {
     }
 
     // Protect system roles from modification
-    if (existingRole.name && isSystemRole(existingRole.name)) {
+    if (existingRole.is_system_role) {
       throw new ForbiddenException(
         `Cannot modify system role "${existingRole.name}". System roles are protected.`,
       );
@@ -229,7 +178,7 @@ export class RolesService {
       .getClient()
       .from('roles')
       .update(updateRoleDto)
-      .eq('id', id)
+      .eq('role_id', id) // Changed from id
       .select()
       .single();
 
@@ -242,20 +191,20 @@ export class RolesService {
     return updatedRole;
   }
 
-  // remove(id: string) {
-  //   return `This action removes a #${id} role`;
-  // }
-
+  /**
+   * Update role permissions using permission names
+   * Stores permissions as JSONB array in the role record
+   */
   async updateRolePermissionsByName(
     roleId: string,
     dto: UpdateRolePermissionsByNameDto,
   ) {
-    // Check if role exists and get its name
+    // Check if role exists and get its details
     const { data: role, error: roleError } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('name')
-      .eq('id', roleId)
+      .select('name, is_system_role') // Changed from system_role
+      .eq('role_id', roleId) // Changed from id
       .single();
 
     if (roleError || !role) {
@@ -263,19 +212,17 @@ export class RolesService {
     }
 
     // Protect system roles from permission modification
-    if (role.name && isSystemRole(role.name)) {
+    if (role.is_system_role) {
       throw new ForbiddenException(
         `Cannot modify permissions for system role "${role.name}". System roles are protected.`,
       );
     }
 
-    // Role existence already checked above
-
-    // Get all permissions by name
+    // Validate that all permission names exist
     const { data: permissions, error: permError } = await this.supabaseService
       .getClient()
       .from('permissions')
-      .select('id, name')
+      .select('permission_id, name') // Changed from id
       .in('name', dto.permissionNames);
 
     if (permError) {
@@ -296,33 +243,18 @@ export class RolesService {
       );
     }
 
-    // Clear existing permissions
-    const { error: deleteError } = await this.supabaseService
+    // Update the role's permissions JSONB field
+    const { error: updateError } = await this.supabaseService
       .getClient()
-      .from('role_permissions')
-      .delete()
-      .eq('role_id', roleId);
+      .from('roles')
+      .update({
+        permissions: dto.permissionNames, // Store as JSONB array
+      })
+      .eq('role_id', roleId); // Changed from id
 
-    if (deleteError) {
+    if (updateError) {
       throw new BadRequestException(
-        `Failed to clear existing permissions: ${deleteError.message}`,
-      );
-    }
-
-    // Add new permissions
-    const rolePermissionData = permissions.map((p: { id: number }) => ({
-      role_id: roleId,
-      permission_id: p.id,
-    }));
-
-    const { error: insertError } = await this.supabaseService
-      .getClient()
-      .from('role_permissions')
-      .insert(rolePermissionData);
-
-    if (insertError) {
-      throw new BadRequestException(
-        `Failed to add new permissions: ${insertError.message}`,
+        `Failed to update permissions: ${updateError.message}`,
       );
     }
 
@@ -330,5 +262,35 @@ export class RolesService {
       message: `Permissions updated for role ID ${roleId}`,
       count: permissions.length,
     };
+  }
+
+  /**
+   * Get permissions for a role
+   * Returns the permissions array from the JSONB field
+   */
+  async getRolePermissions(roleId: string): Promise<string[]> {
+    const { data: role, error } = await this.supabaseService
+      .getClient()
+      .from('roles')
+      .select('permissions')
+      .eq('role_id', roleId) // Changed from id
+      .single();
+
+    if (error || !role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    // Return permissions array from JSONB field
+    return Array.isArray(role.permissions) ? role.permissions : [];
+  }
+
+  /**
+   * Check if a role has a specific permission
+   */
+  async hasPermission(roleId: string, permissionName: string): Promise<boolean> {
+    const permissions = await this.getRolePermissions(roleId);
+    
+    // Check for wildcard or specific permission
+    return permissions.includes('*') || permissions.includes(permissionName);
   }
 }

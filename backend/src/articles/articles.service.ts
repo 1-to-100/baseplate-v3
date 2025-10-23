@@ -32,7 +32,7 @@ export class ArticlesService {
         subcategory: createArticleDto.subcategory,
         customer_id: createArticleDto.customerId,
         created_by: createArticleDto.createdBy,
-        status: createArticleDto.status,
+        status: createArticleDto.status as any, // Cast to any to avoid type issues
         content: createArticleDto.content,
         video_url: createArticleDto.videoUrl,
         views_number: 0, // Default value

@@ -8,13 +8,14 @@ import { SupabaseService } from '@/common/supabase/supabase.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import { SYSTEM_ROLES } from '@/common/constants/system-roles';
-import { UserWithRole } from '@/common/types/database.types';
+import { CustomerLifecycleStage } from '@/common/types/database.types';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
 import { ListCustomersOutputDto } from '@/customers/dto/list-customers-output.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateCustomerDto } from '@/customers/dto/update-customer.dto';
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
+import { parseUserName } from '@/common/helpers/schema-mappers';
 
 @Injectable()
 export class CustomersService {
@@ -27,10 +28,10 @@ export class CustomersService {
     const { data: roles } = await this.database
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
     
-    return roles?.map(role => role.id) || [];
+    return roles?.map(role => role.role_id) || [];
   }
 
   async create(createCustomerDto: CreateCustomerDto) {
@@ -38,7 +39,7 @@ export class CustomersService {
       createCustomerDto;
 
     const owner = await this.database.findUnique('users', {
-      where: { id: ownerId, deleted_at: null },
+      where: { user_id: ownerId, deleted_at: null },
     });
 
     await this.validateOwner(ownerId);
@@ -49,17 +50,18 @@ export class CustomersService {
     const customer = await this.database.create('customers', {
       data: {
         name,
-        email: owner!.email,
-        subscription_id: subscriptionId,
-        domain: getDomainFromEmail(owner!.email),
-        customer_success_id: customerSuccessId,
+        subscription_type_id: subscriptionId, // Changed from subscription_id
+        email_domain: getDomainFromEmail(owner!.email), // Changed from domain
+        manager_id: customerSuccessId,
         owner_id: ownerId,
+        lifecycle_stage: CustomerLifecycleStage.ONBOARDING, // Changed from status
+        active: true, // New field
       },
     });
 
     await this.database.update('users', {
-      where: { id: ownerId, deleted_at: null },
-      data: { customer_id: customer.id },
+      where: { user_id: ownerId, deleted_at: null },
+      data: { customer_id: customer.customer_id },
     });
 
     return customer;
@@ -80,19 +82,20 @@ export class CustomersService {
     } = listCustomersInput;
 
     const where: any = {
-      ...(id && { id: { in: id } }),
-      ...(subscriptionId && { subscription_id: { in: subscriptionId } }),
+      ...(id && { customer_id: { in: id } }), // Changed from id
+      ...(subscriptionId && { subscription_type_id: { in: subscriptionId } }), // Changed from subscription_id
       ...(managerId && { manager_id: { in: managerId } }),
       ...(customerSuccessId && {
-        customer_success_id: { in: customerSuccessId },
+        manager_id: { in: customerSuccessId },
       }),
+      // Map status to lifecycle_stage
       ...(status && {
-        status: { in: status },
+        lifecycle_stage: { in: status },
       }),
       ...(search && {
         or: [
           { name: { ilike: `%${search}%` } },
-          { email: { ilike: `%${search}%` } },
+          { email_domain: { ilike: `%${search}%` } },
         ],
       }),
     };
@@ -102,41 +105,50 @@ export class CustomersService {
       { page: page || 1, per_page: perPage || 10 },
       {
         where,
-        orderBy: [{ field: 'id', direction: 'desc' }],
+        orderBy: [{ field: 'customer_id', direction: 'desc' }], // Changed from id
       },
     );
 
     // For each customer, fetch related data
     const data = await Promise.all(
       paginateResult.data.map(async (customer: any) => {
-        // Get customer success user if exists
-        const customerSuccessUser = customer.customer_success_id
+        // Get owner user to fetch email
+        const ownerUser = customer.owner_id
           ? await this.database.findUnique('users', {
-              where: { id: customer.customer_success_id },
-              select: 'id, first_name, last_name, email',
+              where: { user_id: customer.owner_id },
+              select: 'user_id, email',
             })
           : null;
 
-        // Get subscription if exists
-        const subscription = customer.subscription_id
-          ? await this.database.findUnique('subscriptions', {
-              where: { id: customer.subscription_id },
-              select: 'id, name',
+        // Get customer success user if exists
+        const customerSuccessUser = customer.manager_id
+          ? await this.database.findUnique('users', {
+              where: { user_id: customer.manager_id },
+              select: 'user_id, full_name, email',
+            })
+          : null;
+
+        // Get subscription type if exists
+        const subscription = customer.subscription_type_id
+          ? await this.database.findUnique('subscription_types', {
+              where: { subscription_type_id: customer.subscription_type_id },
+              select: 'subscription_type_id, name',
             })
           : null;
 
         // Count users for this customer (excluding system roles, including users with no role)
+        const systemRoleIds = await this.getSystemRoleIds();
         const userCount = await this.database.count('users', {
           where: {
             AND: [
-              { customer_id: customer.id },
+              { customer_id: customer.customer_id },
               {
                 OR: [
                   { role_id: null },
                   {
                     role_id: {
                       not: {
-                        in: await this.getSystemRoleIds(),
+                        in: systemRoleIds,
                       },
                     },
                   },
@@ -146,19 +158,24 @@ export class CustomersService {
           },
         });
 
+        // Parse customer success user name
+        const csName = customerSuccessUser?.full_name 
+          ? parseUserName(customerSuccessUser.full_name)
+          : null;
+
         return {
-          id: customer.id,
+          id: customer.customer_id,
           name: customer.name,
-          email: customer.email,
-          status: customer.status,
+          email: ownerUser?.email || '',
+          status: customer.lifecycle_stage, // Map lifecycle_stage to status for API
           customerSuccess: customerSuccessUser
             ? {
-                id: customerSuccessUser.id,
-                name: `${customerSuccessUser.first_name ?? ''} ${customerSuccessUser.last_name ?? ''}`.trim(),
+                id: customerSuccessUser.user_id,
+                name: customerSuccessUser.full_name,
                 email: customerSuccessUser.email,
               }
             : null,
-          subscriptionId: subscription?.id,
+          subscriptionId: subscription?.subscription_type_id,
           subscriptionName: subscription?.name,
           numberOfUsers: userCount ?? 0,
         };
@@ -185,22 +202,28 @@ export class CustomersService {
     customerId: string | null,
   ): Promise<OutputTaxonomyDto[]> {
     const options: any = {
-      select: 'id, name',
+      select: 'customer_id, name', // Changed from id
     };
 
     if (customerId) {
-      options.where = { id: customerId };
+      options.where = { customer_id: customerId }; // Changed from id
     }
 
-    return await this.database.findMany('customers', options);
+    const customers = await this.database.findMany('customers', options);
+    
+    // Map to taxonomy format
+    return customers.map(c => ({
+      id: c.customer_id,
+      name: c.name,
+    }));
   }
 
   async findOne(id: string) {
     const customer = await this.database.findUnique('customers', {
-      where: { id },
+      where: { customer_id: id }, // Changed from id
       include: {
-        users: true, // This will include both CustomerSuccess and Owner
-        subscriptions: true,
+        users: true,
+        subscription_types: true, // Changed from subscriptions
       },
     });
 
@@ -214,49 +237,57 @@ export class CustomersService {
     });
 
     // Find customer success user
-    const customerSuccessUser = customer.customer_success_id
+    const customerSuccessUser = customer.manager_id
       ? await this.database.findUnique('users', {
-          where: { id: customer.customer_success_id },
-          select: 'id, first_name, last_name, email',
+          where: { user_id: customer.manager_id },
+          select: 'user_id, full_name, email',
         })
       : null;
 
     // Find owner user
     const ownerUser = customer.owner_id
       ? await this.database.findUnique('users', {
-          where: { id: customer.owner_id },
-          select: 'id, first_name, last_name',
+          where: { user_id: customer.owner_id },
+          select: 'user_id, full_name, email',
         })
       : null;
 
-    // Get subscription if exists
-    const subscription = customer.subscription_id
-      ? await this.database.findUnique('subscriptions', {
-          where: { id: customer.subscription_id },
-          select: 'id, name',
+    // Get subscription type if exists
+    const subscription = customer.subscription_type_id
+      ? await this.database.findUnique('subscription_types', {
+          where: { subscription_type_id: customer.subscription_type_id },
+          select: 'subscription_type_id, name',
         })
+      : null;
+
+    // Parse names
+    const csName = customerSuccessUser?.full_name 
+      ? parseUserName(customerSuccessUser.full_name)
+      : null;
+    const ownerName = ownerUser?.full_name 
+      ? parseUserName(ownerUser.full_name)
       : null;
 
     return {
-      id: customer.id,
+      id: customer.customer_id,
       name: customer.name,
-      email: customer.email,
-      status: customer.status,
-      customerSuccess: customerSuccessUser
+      email: ownerUser?.email || '',
+      status: customer.lifecycle_stage, // Map for API
+      customerSuccess: customerSuccessUser && csName
         ? {
-            id: customerSuccessUser.id,
-            name: `${customerSuccessUser.first_name ?? ''} ${customerSuccessUser.last_name ?? ''}`.trim(),
+            id: customerSuccessUser.user_id,
+            name: customerSuccessUser.full_name,
             email: customerSuccessUser.email,
           }
         : null,
-      owner: ownerUser
+      owner: ownerUser && ownerName
         ? {
-            id: ownerUser.id,
-            firstName: ownerUser.first_name,
-            lastName: ownerUser.last_name,
+            id: ownerUser.user_id,
+            firstName: ownerName.firstName,
+            lastName: ownerName.lastName,
           }
         : null,
-      subscriptionId: subscription?.id,
+      subscriptionId: subscription?.subscription_type_id,
       subscriptionName: subscription?.name,
       numberOfUsers: userCount,
     };
@@ -264,8 +295,9 @@ export class CustomersService {
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto) {
     const customer = await this.database.findUnique('customers', {
-      where: { id },
+      where: { customer_id: id }, // Changed from id
     });
+    
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
@@ -273,32 +305,31 @@ export class CustomersService {
     const { name, subscriptionId, ownerId } = updateCustomerDto;
     await this.validateSubscription(subscriptionId);
 
-    let ownerEmail = customer.email;
+    let ownerEmail: string | undefined;
     if (ownerId && ownerId !== customer.owner_id) {
       const owner = await this.database.findUnique('users', {
-        where: { id: ownerId, deleted_at: null },
+        where: { user_id: ownerId, deleted_at: null },
       });
       await this.validateOwner(ownerId);
       await this.validateCustomerOwner(
         owner!.email,
         ownerId,
         name || customer.name,
-        customer.id,
+        customer.customer_id,
       );
       ownerEmail = owner!.email;
       await this.database.update('users', {
-        where: { id: ownerId, deleted_at: null },
+        where: { user_id: ownerId, deleted_at: null },
         data: { customer_id: id },
       });
     }
 
-    // Convert camelCase DTO fields to snake_case for database
-    const updateData = {
-      name,
-      subscription_id: subscriptionId,
-      owner_id: ownerId,
-      email: ownerEmail,
-    };
+    // Build update data with proper field names
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (subscriptionId !== undefined) updateData.subscription_type_id = subscriptionId; // Changed from subscription_id
+    if (ownerId !== undefined) updateData.owner_id = ownerId;
+    if (ownerEmail !== undefined) updateData.email_domain = getDomainFromEmail(ownerEmail);
 
     // Remove undefined fields
     Object.keys(updateData).forEach(
@@ -306,7 +337,7 @@ export class CustomersService {
     );
 
     return this.database.update('customers', {
-      where: { id },
+      where: { customer_id: id }, // Changed from id
       data: updateData,
     });
   }
@@ -317,8 +348,8 @@ export class CustomersService {
     name: string,
     ignoreCustomerId?: string,
   ) {
-    const where = {
-      ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
+    const where: any = {
+      ...(ignoreCustomerId && { customer_id: { not: ignoreCustomerId } }), // Changed from id
       or: [{ name }, { email }, { owner_id: ownerId }],
     };
 
@@ -330,9 +361,9 @@ export class CustomersService {
       throw new ConflictException(
         `Customer with the same name already exists: ${name}`,
       );
-    } else if (existingCustomer && existingCustomer.email === email) {
+    } else if (existingCustomer && existingCustomer.email_domain === getDomainFromEmail(email)) {
       throw new ConflictException(
-        `Customer with the same email already exists: ${email}`,
+        `Customer with the same email domain already exists: ${getDomainFromEmail(email)}`,
       );
     } else if (existingCustomer && existingCustomer.owner_id === ownerId) {
       throw new ConflictException(
@@ -340,9 +371,9 @@ export class CustomersService {
       );
     }
 
-    const domainWhere = {
-      ...(ignoreCustomerId && { id: { not: ignoreCustomerId } }),
-      domain: getDomainFromEmail(email),
+    const domainWhere: any = {
+      ...(ignoreCustomerId && { customer_id: { not: ignoreCustomerId } }), // Changed from id
+      email_domain: getDomainFromEmail(email), // Changed from domain
     };
 
     const domainCustomer = await this.database.findFirst('customers', {
@@ -351,7 +382,7 @@ export class CustomersService {
 
     if (domainCustomer) {
       throw new ConflictException(
-        `Customer with the same domain already exists: ${domainCustomer.domain}`,
+        `Customer with the same domain already exists: ${domainCustomer.email_domain}`,
       );
     }
   }
@@ -359,9 +390,10 @@ export class CustomersService {
   private async validateSubscription(subscriptionId?: string) {
     if (!subscriptionId) return;
 
-    const subscriptionExists = await this.database.findUnique('subscriptions', {
-      where: { id: subscriptionId },
+    const subscriptionExists = await this.database.findUnique('subscription_types', {
+      where: { subscription_type_id: subscriptionId }, // Changed table and column
     });
+    
     if (!subscriptionExists) {
       throw new ConflictException(
         'Subscription with the given ID does not exist',
@@ -373,9 +405,9 @@ export class CustomersService {
     if (!managerId) return;
 
     const manager = await this.database.findUnique('users', {
-      where: { id: managerId, deleted_at: null },
+      where: { user_id: managerId, deleted_at: null },
       include: { role: true },
-    }) as UserWithRole;
+    });
 
     if (!manager) {
       throw new ConflictException(
@@ -383,14 +415,21 @@ export class CustomersService {
       );
     }
 
-    if (manager.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS) {
+    // Get the role to check if it's customer success
+    const role = manager.role_id 
+      ? await this.database.findUnique('roles', {
+          where: { role_id: manager.role_id },
+        })
+      : null;
+
+    if (role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS) {
       throw new ConflictException(
         'Manager user must have a customer success role',
       );
     }
 
     const findCustomer = await this.database.findFirst('customers', {
-      where: { customer_success_id: managerId },
+      where: { manager_id: managerId },
     });
 
     if (findCustomer) {
@@ -404,9 +443,9 @@ export class CustomersService {
     if (!ownerId) return;
 
     const owner = await this.database.findUnique('users', {
-      where: { id: ownerId, deleted_at: null },
+      where: { user_id: ownerId, deleted_at: null },
       include: { role: true },
-    }) as UserWithRole;
+    });
 
     if (!owner) {
       throw new ConflictException(`Owner user not found with ID: ${ownerId}`);
@@ -416,11 +455,20 @@ export class CustomersService {
       throw new ConflictException(
         'Owner email cannot be a public email domain',
       );
-    } else if (owner.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    }
+
+    // Get the role to check
+    const role = owner.role_id 
+      ? await this.database.findUnique('roles', {
+          where: { role_id: owner.role_id },
+        })
+      : null;
+
+    if (role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
       throw new ConflictException(
         'Owner user cannot be a system administrator. Please assign a different user as the owner.',
       );
-    } else if (owner.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
+    } else if (role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
       throw new ConflictException(
         'Owner user cannot have a customer success role. Please assign a different user as the owner.',
       );

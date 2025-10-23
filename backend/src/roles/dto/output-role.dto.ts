@@ -12,10 +12,6 @@ export class OutputRoleDto {
   @IsOptional()
   description: string | null = null;
 
-  @ApiPropertyOptional({ description: 'Image URL' })
-  @IsOptional()
-  imageUrl: string | null = null;
-
   @ApiProperty({
     description: 'Grouped permissions',
     type: 'object',

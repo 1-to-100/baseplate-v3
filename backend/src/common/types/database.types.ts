@@ -146,14 +146,23 @@ export interface User {
   full_name: string;
   avatar_url?: string | null;
   phone_number?: string | null;
-  customer_id: string;
+  customer_id?: string | null;
   role_id?: string | null;
   status: UserStatus;
+  email_verified?: boolean | null;
   last_login_at?: string | null;
   preferences?: any; // jsonb
   created_at: string;
   updated_at?: string | null;
   deleted_at?: string | null;
+}
+
+export interface UserOneTimeCode {
+  id: string;
+  user_id: string;
+  code: string;
+  is_used: boolean;
+  created_at: string;
 }
 
 export interface CustomerSubscription {
@@ -229,6 +238,8 @@ export interface ArticleCategory {
   name: string;
   slug: string;
   description?: string | null;
+  subcategory?: string | null;
+  about?: string | null;
   parent_id?: string | null;
   icon?: string | null;
   display_order: number;
@@ -245,10 +256,12 @@ export interface Article {
   slug: string;
   content?: string | null;
   summary?: string | null;
+  subcategory?: string | null;
   status: ArticleStatus;
   published_at?: string | null;
   video_url?: string | null;
   view_count: number;
+  views_number?: number | null;
   featured: boolean;
   metadata?: any; // jsonb
   created_by: string;
@@ -285,8 +298,19 @@ export interface Notification {
   metadata?: any; // jsonb
   read_at?: string | null;
   archived_at?: string | null;
+  sender_id?: string | null;
+  generated_by?: string | null;
   created_at: string;
   updated_at?: string | null;
+}
+
+// Action enum for audit logs
+export enum Action {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LOGIN = 'login',
+  LOGOUT = 'logout',
 }
 
 export interface AuditLog {
@@ -297,6 +321,18 @@ export interface AuditLog {
   entity_type: string;
   entity_id?: string | null;
   changes?: any; // jsonb
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+}
+
+export interface ApiLog {
+  id: string;
+  method?: string | null;
+  url?: string | null;
+  status_code?: number | null;
+  response_time?: number | null;
+  user_id?: string | null;
   ip_address?: string | null;
   user_agent?: string | null;
   created_at: string;
@@ -616,11 +652,13 @@ export interface SupabaseArrayResponse<T> {
 
 export type TableNames =
   | 'subscription_types'
+  | 'subscriptions'
   | 'roles'
   | 'permissions'
   | 'managers'
   | 'customers'
   | 'users'
+  | 'user_one_time_codes'
   | 'customer_subscriptions'
   | 'user_invitations'
   | 'taxonomies'
@@ -630,7 +668,8 @@ export type TableNames =
   | 'articles'
   | 'notification_templates'
   | 'notifications'
-  | 'audit_logs';
+  | 'audit_logs'
+  | 'api_logs';
 
 // Generic database record type
 export interface DatabaseRecord {
@@ -642,11 +681,13 @@ export interface DatabaseRecord {
 // Type mapping for table names to their interfaces
 export interface TableTypeMap {
   subscription_types: SubscriptionType;
+  subscriptions: SubscriptionType;
   roles: Role;
   permissions: Permission;
   managers: Manager;
   customers: Customer;
   users: User;
+  user_one_time_codes: UserOneTimeCode;
   customer_subscriptions: CustomerSubscription;
   user_invitations: UserInvitation;
   taxonomies: Taxonomy;
@@ -657,49 +698,9 @@ export interface TableTypeMap {
   notification_templates: NotificationTemplate;
   notifications: Notification;
   audit_logs: AuditLog;
+  api_logs: ApiLog;
 }
 
 // Utility type for getting table type by name
 export type TableType<T extends TableNames> = TableTypeMap[T];
 
-// ============================================================================
-// Legacy compatibility types (for gradual migration)
-// ============================================================================
-
-// Map old column names to new ones to aid migration
-export type LegacyUser = {
-  id: string; // maps to user_id
-  uid?: string | null; // maps to auth_user_id
-  first_name?: string | null; // combine with last_name to full_name
-  last_name?: string | null; // combine with first_name to full_name
-  avatar?: string | null; // maps to avatar_url
-  // ... rest same
-};
-
-export type LegacyCustomer = {
-  id: string; // maps to customer_id
-  domain: string; // maps to email_domain
-  subscription_id?: string | null; // maps to subscription_type_id
-  status: string; // maps to lifecycle_stage
-  // ... rest same
-};
-
-// Helper to convert legacy to new format
-export function migrateLegacyUser(legacy: LegacyUser): Partial<User> {
-  return {
-    user_id: legacy.id,
-    auth_user_id: legacy.uid,
-    full_name: `${legacy.first_name || ''} ${legacy.last_name || ''}`.trim(),
-    avatar_url: legacy.avatar,
-  };
-}
-
-export function migrateLegacyCustomer(
-  legacy: LegacyCustomer,
-): Partial<Customer> {
-  return {
-    customer_id: legacy.id,
-    email_domain: legacy.domain,
-    subscription_type_id: legacy.subscription_id,
-  };
-}

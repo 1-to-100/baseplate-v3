@@ -29,7 +29,7 @@ export class CleanupCommand {
       }
 
       this.logger.log(
-        `Found test customer: ${testCustomer.name} (ID: ${testCustomer.id})`,
+        `Found test customer: ${testCustomer.name} (ID: ${testCustomer.customer_id})`,
       );
 
       // Delete in correct order to respect foreign key constraints
@@ -39,7 +39,7 @@ export class CleanupCommand {
       const { data: notifications, error: notifError } =
         (await this.database.notifications
           .delete()
-          .eq('customer_id', testCustomer.id)) as {
+          .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
           error: any;
         };
@@ -58,7 +58,7 @@ export class CleanupCommand {
       const { data: templates, error: templateError } =
         (await this.database.notification_templates
           .delete()
-          .eq('customer_id', testCustomer.id)) as {
+          .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
           error: any;
         };
@@ -75,7 +75,7 @@ export class CleanupCommand {
       const { data: articles, error: articleError } =
         (await this.database.articles
           .delete()
-          .eq('customer_id', testCustomer.id)) as {
+          .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
           error: any;
         };
@@ -92,7 +92,7 @@ export class CleanupCommand {
       const { data: categories, error: categoryError } =
         (await this.database.article_categories
           .delete()
-          .eq('customer_id', testCustomer.id)) as {
+          .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
           error: any;
         };
@@ -110,7 +110,7 @@ export class CleanupCommand {
       const { data: allUsers, error: usersError } = await this.database.users
         .select('id, email')
         .or(
-          `customer_id.eq.${testCustomer.id},id.eq.${testCustomer.owner_id},email.ilike.%@testcustomer.com%`,
+          `customer_id.eq.${testCustomer.customer_id},id.eq.${testCustomer.owner_id},email.ilike.%@testcustomer.com%`,
         );
 
       if (usersError) {
@@ -128,7 +128,7 @@ export class CleanupCommand {
       // First, update all users to remove customerId reference
       const { error: updateError } = await this.database.users
         .update({ customer_id: null })
-        .eq('customer_id', testCustomer.id);
+        .eq('customer_id', testCustomer.customer_id);
 
       if (updateError) {
         this.logger.error('Error updating users:', updateError);
@@ -161,7 +161,7 @@ export class CleanupCommand {
       // Now delete the customer
       const { error: customerError } = await this.database.customers
         .delete()
-        .eq('id', testCustomer.id);
+        .eq('id', testCustomer.customer_id);
 
       if (customerError) {
         this.logger.error('Error deleting customer:', customerError);
@@ -191,7 +191,7 @@ export class CleanupCommand {
       if (testSubscription) {
         const { error: subError } = await this.database.subscriptions
           .delete()
-          .eq('id', testSubscription.id);
+          .eq('subscription_type_id', testSubscription.subscription_type_id);
 
         if (subError) {
           this.logger.error('Error deleting subscription:', subError);

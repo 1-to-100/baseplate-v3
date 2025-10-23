@@ -20,9 +20,4 @@ export class CreateRoleDto {
   @MinLength(3)
   @ApiProperty({ description: 'Role description' })
   description?: string;
-
-  @IsString()
-  @IsOptional()
-  @ApiProperty({ description: 'Image URL' })
-  imageUrl?: string;
 }

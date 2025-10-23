@@ -13,7 +13,7 @@ export type {
   Role,
   Permission,
   Manager,
-  Subscription,
+  SubscriptionType,
   Article,
   ArticleCategory,
   Notification,
@@ -30,5 +30,8 @@ export type {
   TableType,
 } from './database.types';
 
+// Re-export Subscription as alias for SubscriptionType
+export type { SubscriptionType as Subscription } from './database.types';
+
 // Re-export enums
-export { CustomerStatus, Action, NotificationType } from './database.types';
+export { CustomerLifecycleStage, Action, NotificationType, UserStatus, ArticleStatus, NotificationStatus } from './database.types';

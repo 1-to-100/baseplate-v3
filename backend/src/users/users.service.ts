@@ -7,10 +7,16 @@ import {
 import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
+import {
+  combineUserName,
+  parseUserName,
+  buildUserDbData,
+  parseUserFromDb,
+} from '@/common/helpers/schema-mappers';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
 import { SYSTEM_ROLES } from '@/common/constants/system-roles';
-import { UserWithRole } from '@/common/types/database.types';
-import { UserOrderByFields, UserStatus } from '@/common/constants/status';
+import { UserStatus, Role, CustomerLifecycleStage } from '@/common/types/database.types';
+import { UserOrderByFields } from '@/common/constants/status';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { CreateUserDto } from '@/users/dto/create-user.dto';
 import { CreateSystemUserDto } from '@/users/dto/create-system-user.dto';
@@ -23,20 +29,22 @@ import { SupabaseDecodedToken } from '@/auth/guards/supabase-auth/supabase-auth.
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
-import type { User, Customer, CustomerStatus } from '@/common/types';
 
 // Helper to convert database User to OutputUserDto with proper type handling
 function mapUserToDto(user: any): OutputUserDto {
   if (!user) return user;
 
+  // Parse full_name into firstName and lastName for DTO
+  const { firstName, lastName } = parseUserName(user.full_name || '');
+
   return {
-    id: user.id,
-    uid: user.uid,
+    id: user.user_id,
+    uid: user.auth_user_id,
     email: user.email,
     emailVerified: user.email_verified,
-    firstName: user.first_name,
-    lastName: user.last_name,
-    avatar: user.avatar,
+    firstName,
+    lastName,
+    avatar: user.avatar_url,
     phoneNumber: user.phone_number,
     customerId: user.customer_id,
     roleId: user.role_id,
@@ -50,18 +58,18 @@ function mapUserToDto(user: any): OutputUserDto {
     ...(user.customers && { customer: user.customers }),
     ...(user.role && {
       role: {
-        id: user.role.id,
+        id: user.role.role_id,
         name: user.role.name,
         description: user.role.description,
-        systemRole: user.role.system_role,
+        systemRole: user.role.is_system_role,
       },
     }),
     ...(user.roles && {
       role: {
-        id: user.roles.id,
+        id: user.roles.role_id,
         name: user.roles.name,
         description: user.roles.description,
-        systemRole: user.roles.system_role,
+        systemRole: user.roles.is_system_role,
       },
     }),
     ...(user.manager && { manager: user.manager }),
@@ -85,7 +93,7 @@ export class UsersService {
     const { data: role } = await this.database
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .eq('name', roleName)
       .single();
     
@@ -93,17 +101,17 @@ export class UsersService {
       throw new ConflictException(`Role ${roleName} not found`);
     }
     
-    return role.id;
+    return role.role_id;
   }
 
   private async getSystemRoleIds(): Promise<string[]> {
     const { data: roles } = await this.database
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
     
-    return roles?.map(role => role.id) || [];
+    return roles?.map(role => role.role_id) || [];
   }
 
   async create(
@@ -114,22 +122,22 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
-    let user: User | null = null;
+    let user: any = null;
 
     try {
       this.logger.log(`Create user with email ${createUserDto.email}`);
 
-      // Convert camelCase DTO fields to snake_case database fields
-      const userData = {
+      // Use helper to build database data with proper field names
+      const userData = buildUserDbData({
         email: createUserDto.email,
-        first_name: createUserDto.firstName,
-        last_name: createUserDto.lastName,
-        phone_number: createUserDto.phoneNumber,
-        customer_id: createUserDto.customerId,
-        role_id: createUserDto.roleId,
-        manager_id: createUserDto.managerId,
-        status: createUserDto.status || 'inactive',
-      };
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
+        phoneNumber: createUserDto.phoneNumber,
+        customerId: createUserDto.customerId,
+        roleId: createUserDto.roleId,
+        managerId: createUserDto.managerId,
+        status: createUserDto.status || UserStatus.INACTIVE,
+      });
 
       user = await this.database.create('users', {
         data: userData,
@@ -174,7 +182,7 @@ export class UsersService {
       );
     } else if (isCustomerSuccess && createSystemUserDto.customerId) {
       const customer = await this.database.findUnique('customers', {
-        where: { id: createSystemUserDto.customerId },
+        where: { customer_id: createSystemUserDto.customerId },
       });
       if (!customer) {
         throw new ConflictException('Customer not found');
@@ -188,20 +196,20 @@ export class UsersService {
     
     const roleId = await this.getRoleIdByName(roleName);
 
-    let user: User | null = null;
+    let user: any = null;
 
     try {
-      // Convert camelCase DTO fields to snake_case database fields
-      const userData = {
+      // Use helper to build database data
+      const userData = buildUserDbData({
         email: makeUser.email,
-        first_name: makeUser.firstName,
-        last_name: makeUser.lastName,
-        phone_number: makeUser.phoneNumber,
-        customer_id: makeUser.customerId,
-        role_id: roleId,
-        manager_id: makeUser.managerId,
-        status: makeUser.status || 'inactive',
-      };
+        firstName: makeUser.firstName,
+        lastName: makeUser.lastName,
+        phoneNumber: makeUser.phoneNumber,
+        customerId: makeUser.customerId,
+        roleId: roleId,
+        managerId: makeUser.managerId,
+        status: makeUser.status || UserStatus.INACTIVE,
+      });
 
       user = await this.database.create('users', {
         data: userData,
@@ -210,8 +218,8 @@ export class UsersService {
       // attach customer success to customer
       if (isCustomerSuccess && createSystemUserDto.customerId) {
         await this.database.update('customers', {
-          where: { id: createSystemUserDto.customerId },
-          data: { customer_success_id: user.id },
+          where: { customer_id: createSystemUserDto.customerId },
+          data: { manager_id: user.user_id },
         });
       }
     } catch (error) {
@@ -239,25 +247,26 @@ export class UsersService {
 
     if (inviteUserDto.customerId) {
       const customer = await this.database.findUnique('customers', {
-        where: { id: inviteUserDto.customerId },
+        where: { customer_id: inviteUserDto.customerId },
       });
       if (!customer) {
         throw new ConflictException('Customer not found');
       }
     }
 
-    // Convert camelCase DTO fields to snake_case database fields
-    const userData = {
+    // Use helper to build database data
+    const userData = buildUserDbData({
       email: inviteUserDto.email,
-      customer_id: inviteUserDto.customerId,
-      role_id: inviteUserDto.roleId,
-      manager_id: inviteUserDto.managerId,
-      status: 'inactive',
-    };
+      customerId: inviteUserDto.customerId,
+      roleId: inviteUserDto.roleId,
+      managerId: inviteUserDto.managerId,
+      status: UserStatus.INACTIVE,
+    });
 
     const user = await this.database.create('users', {
       data: userData,
     });
+    
     await this.sendInviteEmail(mapUserToDto(user));
     return mapUserToDto(user);
   }
@@ -327,7 +336,7 @@ export class UsersService {
     this.logger.debug(status);
     this.logger.debug(listUsersInput);
 
-    // Build where conditions using snake_case
+    // Build where conditions using snake_case database column names
     const where: any = {
       ...(roleId && { role_id: { in: roleId } }),
       ...(customerId && { customer_id: { in: customerId } }),
@@ -339,14 +348,10 @@ export class UsersService {
       ...(status && { status: { in: status } }),
       ...(search && {
         OR: [
-          { first_name: { contains: search } },
-          { last_name: { contains: search } },
+          { full_name: { contains: search } }, // Search in full_name now
           { email: { contains: search } },
         ],
       }),
-      // Exclude system roles only when roleId is not specified
-      // For now, we'll handle this in post-processing to avoid complex async queries
-      // TODO: Implement proper system role exclusion
       deleted_at: null,
     };
 
@@ -360,7 +365,7 @@ export class UsersService {
         orderBy: applyOrderByField,
         select: `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
       },
     );
@@ -404,12 +409,11 @@ export class UsersService {
       ...(status && { status: { in: status } }),
       ...(search && {
         OR: [
-          { first_name: { contains: search } },
-          { last_name: { contains: search } },
+          { full_name: { contains: search } }, // Search in full_name now
           { email: { contains: search } },
         ],
       }),
-      // Include only system roles (System Administrator and Customer Success)
+      // Include only system roles
       role_id: {
         in: await this.getSystemRoleIds(),
       },
@@ -426,7 +430,7 @@ export class UsersService {
         orderBy: applyOrderByField,
         select: `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
       },
     );
@@ -452,15 +456,15 @@ export class UsersService {
     customerId: string | null = null,
   ): Promise<OutputUserDto> {
     const where: any = customerId
-      ? { id, customer_id: customerId, deleted_at: null }
-      : { id, deleted_at: null };
+      ? { user_id: id, customer_id: customerId, deleted_at: null }
+      : { user_id: id, deleted_at: null };
 
     const user = await this.database.findFirst('users', {
       where,
       select: `
         *,
         roles!role_id(*),
-        customers!customer_id(id, name, owner_id),
+        customers!customer_id(customer_id, name, owner_id),
         managers!manager_id(*)
       `,
     });
@@ -471,19 +475,15 @@ export class UsersService {
 
     let userPermissions: string[] = [];
     if (user.role_id) {
-      const rolePermissions = await this.database.findMany('role_permissions', {
+      // Get permissions from role's JSONB field
+      const role = await this.database.findUnique('roles', {
         where: { role_id: user.role_id },
-        select: `
-          *,
-          permissions!permission_id(name)
-        `,
       });
-
-      userPermissions = rolePermissions
-        ? rolePermissions
-            .map((rp: any) => rp.permissions?.name?.split(':')[1] || '')
-            .filter(Boolean)
-        : [];
+      
+      if (role && role.permissions) {
+        // Parse permissions from JSONB array
+        userPermissions = Array.isArray(role.permissions) ? role.permissions : [];
+      }
     }
 
     return mapUserToDto({ ...user, permissions: userPermissions });
@@ -491,7 +491,7 @@ export class UsersService {
 
   async findOneSystemUser(id: string): Promise<OutputUserDto> {
     const where: any = {
-      id,
+      user_id: id,
       role_id: {
         in: await this.getSystemRoleIds(),
       },
@@ -503,7 +503,7 @@ export class UsersService {
       select: `
         *,
         roles!role_id(*),
-        customers!customer_id(id, name),
+        customers!customer_id(customer_id, name),
         managers!manager_id(*)
       `,
     });
@@ -524,37 +524,38 @@ export class UsersService {
       updateUserDto.email = undefined;
     }
 
-    const whereClause: any = { id, deleted_at: null };
+    const whereClause: any = { user_id: id, deleted_at: null };
     if (updateUserDto.customerId) {
       whereClause.customer_id = updateUserDto.customerId;
     }
+    
     const existingUser = await this.database.findFirst('users', {
       where: whereClause,
     });
 
-    if (existingUser && existingUser.role_id) {
-      const role = await this.database.findUnique('roles', {
-        where: { id: existingUser.role_id },
-      });
-      (existingUser as any).role = role;
-    }
-    const userWithRole = existingUser as UserWithRole;
-
     if (!existingUser) {
       throw new NotFoundException('No user with given ID exists');
+    }
+
+    // Get user role if exists
+    let userRole: Role | null = null;
+    if (existingUser.role_id) {
+      userRole = await this.database.findUnique('roles', {
+        where: { role_id: existingUser.role_id },
+      });
     }
 
     if (updatedBy && updateUserDto.status) {
       if (updatedBy.id === id) {
         throw new ConflictException('You cannot change your own status');
       } else if (
-        userWithRole.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR ||
-        userWithRole.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS
+        userRole?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR ||
+        userRole?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS
       ) {
         throw new ConflictException(
           'You cannot change status of system administrator or customer success user',
         );
-      } else if (!existingUser.uid) {
+      } else if (!existingUser.auth_user_id) {
         throw new ConflictException(
           'You cannot change status of user without Supabase UID',
         );
@@ -564,38 +565,31 @@ export class UsersService {
         updateUserDto.status === UserStatus.SUSPENDED &&
         existingUser.status == UserStatus.ACTIVE
       ) {
-        await this.supabaseService.banUser(existingUser.uid);
+        await this.supabaseService.banUser(existingUser.auth_user_id);
       } else if (
         updateUserDto.status === UserStatus.ACTIVE &&
         existingUser.status == UserStatus.SUSPENDED
       ) {
-        await this.supabaseService.unbanUser(existingUser.uid);
+        await this.supabaseService.unbanUser(existingUser.auth_user_id);
       }
     }
 
-    const updateWhereClause: any = { id };
+    const updateWhereClause: any = { user_id: id };
     if (updateUserDto.customerId) {
       updateWhereClause.customer_id = updateUserDto.customerId;
     }
 
-    // Convert camelCase DTO fields to snake_case database fields
-    const updateData: any = {};
-    if (updateUserDto.email !== undefined)
-      updateData.email = updateUserDto.email;
-    if (updateUserDto.firstName !== undefined)
-      updateData.first_name = updateUserDto.firstName;
-    if (updateUserDto.lastName !== undefined)
-      updateData.last_name = updateUserDto.lastName;
-    if (updateUserDto.phoneNumber !== undefined)
-      updateData.phone_number = updateUserDto.phoneNumber;
-    if (updateUserDto.customerId !== undefined)
-      updateData.customer_id = updateUserDto.customerId;
-    if (updateUserDto.roleId !== undefined)
-      updateData.role_id = updateUserDto.roleId;
-    if (updateUserDto.managerId !== undefined)
-      updateData.manager_id = updateUserDto.managerId;
-    if (updateUserDto.status !== undefined)
-      updateData.status = updateUserDto.status;
+    // Use helper to build update data with proper field names
+    const updateData = buildUserDbData({
+      email: updateUserDto.email,
+      firstName: updateUserDto.firstName,
+      lastName: updateUserDto.lastName,
+      phoneNumber: updateUserDto.phoneNumber,
+      customerId: updateUserDto.customerId,
+      roleId: updateUserDto.roleId,
+      managerId: updateUserDto.managerId,
+      status: updateUserDto.status,
+    });
 
     const user = await this.database.update('users', {
       where: updateWhereClause,
@@ -613,6 +607,7 @@ export class UsersService {
     if (updateSystemUserDto.email) {
       updateSystemUserDto.email = undefined;
     }
+    
     const existingUser = await this.findOneSystemUser(id);
     if (!existingUser) {
       throw new NotFoundException('No user with given ID exists');
@@ -639,7 +634,7 @@ export class UsersService {
         );
       } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
         const customer = await this.database.findUnique('customers', {
-          where: { id: updateSystemUserDto.customerId },
+          where: { customer_id: updateSystemUserDto.customerId },
         });
         if (!customer) {
           throw new ConflictException('Customer not found');
@@ -647,20 +642,16 @@ export class UsersService {
       }
     }
 
-    // Convert camelCase DTO fields to snake_case database fields
-    const updateData: any = {};
-    if (updateUser.firstName !== undefined)
-      updateData.first_name = updateUser.firstName;
-    if (updateUser.lastName !== undefined)
-      updateData.last_name = updateUser.lastName;
-    if (updateUser.phoneNumber !== undefined)
-      updateData.phone_number = updateUser.phoneNumber;
-    if (updateUser.customerId !== undefined)
-      updateData.customer_id = updateUser.customerId;
-    if (updateUser.roleId !== undefined) updateData.role_id = updateUser.roleId;
-    if (updateUser.managerId !== undefined)
-      updateData.manager_id = updateUser.managerId;
-    if (updateUser.status !== undefined) updateData.status = updateUser.status;
+    // Use helper to build update data
+    const updateData = buildUserDbData({
+      firstName: updateUser.firstName,
+      lastName: updateUser.lastName,
+      phoneNumber: updateUser.phoneNumber,
+      customerId: updateUser.customerId,
+      roleId: updateUser.roleId,
+      managerId: updateUser.managerId,
+      status: updateUser.status,
+    });
 
     // Update role_id based on system role
     if (systemRole) {
@@ -676,20 +667,20 @@ export class UsersService {
     }
 
     const user = await this.database.update('users', {
-      where: { id, deleted_at: null },
+      where: { user_id: id, deleted_at: null },
       data: updateData,
     });
 
     // attach customer success to customer
     if (isSuperadmin) {
       await this.database.updateMany('customers', {
-        where: { customer_success_id: id },
-        data: { customer_success_id: null },
+        where: { manager_id: id },
+        data: { manager_id: null },
       });
     } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
       await this.database.update('customers', {
-        where: { id: updateSystemUserDto.customerId },
-        data: { customer_success_id: user.id },
+        where: { customer_id: updateSystemUserDto.customerId },
+        data: { manager_id: user.user_id },
       });
     }
 
@@ -698,7 +689,7 @@ export class UsersService {
 
   async findByUid(uid: string): Promise<OutputUserDto | null> {
     const user = await this.database.findUnique('users', {
-      where: { uid },
+      where: { auth_user_id: uid }, // Changed from uid
       include: {
         role: true,
         customer: true,
@@ -709,7 +700,7 @@ export class UsersService {
 
   async createSupabaseUser(
     supabaseUser: SupabaseDecodedToken,
-    subscriptionId: number | null = null,
+    subscriptionId: string | null = null, // Changed from number
   ): Promise<OutputUserDto> {
     const existingUser = await this.findByUid(supabaseUser.uid);
     if (existingUser) {
@@ -731,22 +722,24 @@ export class UsersService {
 
     if (
       existingUserEmail &&
-      existingUserEmail.uid == null &&
+      existingUserEmail.auth_user_id == null &&
       supabaseUser.uid
     ) {
+      const userData = buildUserDbData({
+        authUserId: supabaseUser.uid,
+        status: UserStatus.ACTIVE,
+        firstName,
+        lastName,
+      });
+
       await this.database.update('users', {
-        where: { id: existingUserEmail.id },
-        data: {
-          uid: supabaseUser.uid,
-          status: UserStatus.ACTIVE,
-          first_name: firstName,
-          last_name: lastName,
-        },
+        where: { user_id: existingUserEmail.user_id },
+        data: userData,
       });
 
       // Refetch user with role relation
       const existingUserEmailUpdated = await this.database.findUnique('users', {
-        where: { id: existingUserEmail.id },
+        where: { user_id: existingUserEmail.user_id },
         include: {
           role: true,
           customer: true,
@@ -757,43 +750,44 @@ export class UsersService {
     }
 
     const existingCustomer = await this.database.findFirst('customers', {
-      where: { domain },
+      where: { email_domain: domain }, // Changed from domain
     });
 
-    const [newUser] = await Promise.all([
-      this.database.create('users', {
-        data: {
-          email,
-          first_name: firstName,
-          last_name: lastName,
-          avatar: supabaseUser.picture,
-          uid: supabaseUser.uid,
-          status: supabaseUser.uid ? UserStatus.ACTIVE : UserStatus.INACTIVE,
-          customer_id: existingCustomer?.id,
-        } as Partial<User>,
-      }),
-    ]);
+    const userData = buildUserDbData({
+      email,
+      firstName,
+      lastName,
+      avatar: supabaseUser.picture,
+      authUserId: supabaseUser.uid,
+      status: supabaseUser.uid ? UserStatus.ACTIVE : UserStatus.INACTIVE,
+      customerId: existingCustomer?.customer_id,
+    });
+
+    const newUser = await this.database.create('users', {
+      data: userData,
+    });
 
     if (!existingCustomer) {
       const newCustomer = await this.database.create('customers', {
         data: {
           name: domain,
-          email,
-          domain,
-          owner_id: newUser.id,
-          subscription_id: subscriptionId,
-        } as Partial<Customer>,
+          email_domain: domain, // Changed from domain
+          owner_id: newUser.user_id,
+          subscription_type_id: subscriptionId, // Changed from subscription_id
+          lifecycle_stage: CustomerLifecycleStage.ONBOARDING, // Changed from status
+          active: true,
+        },
       });
 
       await this.database.update('users', {
-        where: { id: newUser.id },
-        data: { customer_id: newCustomer.id },
+        where: { user_id: newUser.user_id },
+        data: { customer_id: newCustomer.customer_id },
       });
     }
 
     // Refetch user with role relation
     const userWithRole = await this.database.findUnique('users', {
-      where: { id: newUser.id },
+      where: { user_id: newUser.user_id },
       include: {
         role: true,
         customer: true,
@@ -812,7 +806,7 @@ export class UsersService {
     if (foundUser) {
       if (
         foundUser.status === UserStatus.ACTIVE ||
-        foundUser.uid ||
+        foundUser.auth_user_id ||
         foundUser.email_verified
       ) {
         throw new ConflictException('Please use forgot password flow');
@@ -871,23 +865,24 @@ export class UsersService {
         },
       },
     });
+    
     if (!existing_code) {
       return false;
     }
 
-    const id = existing_code.id;
     await this.database.update('user_one_time_codes', {
-      where: { id },
+      where: { id: existing_code.id },
       data: { is_used: true },
     });
 
     await this.database.update('users', {
-      where: { id: existing_code.user_id },
+      where: { user_id: existing_code.user_id },
       data: {
         email_verified: true,
-        status: 'active' as CustomerStatus,
+        status: UserStatus.ACTIVE,
       },
     });
+    
     return true;
   }
 
@@ -907,11 +902,12 @@ export class UsersService {
 
     if (orderByField === 'name') {
       return [
-        { field: 'first_name', direction: applyOrderDirection },
-        { field: 'last_name', direction: applyOrderDirection },
+        { field: 'full_name', direction: applyOrderDirection }, // Changed from first_name/last_name
       ];
     } else if (orderByField === 'createdAt') {
       return [{ field: 'created_at', direction: applyOrderDirection }];
+    } else if (orderByField === 'id') {
+      return [{ field: 'user_id', direction: applyOrderDirection }]; // Changed from id
     } else {
       return [{ field: orderByField, direction: applyOrderDirection }];
     }
@@ -966,29 +962,31 @@ export class UsersService {
     customerId: string | null = null,
   ): Promise<OutputUserDto> {
     const where: any = customerId
-      ? { id, customer_id: customerId, deleted_at: null }
-      : { id, deleted_at: null };
+      ? { user_id: id, customer_id: customerId, deleted_at: null }
+      : { user_id: id, deleted_at: null };
 
     const user = await this.database.findFirst('users', {
       where,
     });
 
-    if (user && user.role_id) {
-      const role = await this.database.findUnique('roles', {
-        where: { id: user.role_id },
-      });
-      (user as any).role = role;
-    }
-    const userWithRole = user as UserWithRole;
-
     if (!user) {
       throw new NotFoundException(
         'No user with given ID exists or user is already deleted',
       );
-    } else if (
-      userWithRole &&
-      (userWithRole.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR ||
-        userWithRole.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS)
+    }
+
+    // Get user role
+    let userRole: Role | null = null;
+    if (user.role_id) {
+      userRole = await this.database.findUnique('roles', {
+        where: { role_id: user.role_id },
+      });
+    }
+
+    if (
+      userRole &&
+      (userRole.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR ||
+        userRole.name === SYSTEM_ROLES.CUSTOMER_SUCCESS)
     ) {
       throw new ConflictException(
         'Not supported operation for system administrator or customer success user',
@@ -997,7 +995,7 @@ export class UsersService {
 
     if (user.customer_id) {
       const customer = await this.database.findFirst('customers', {
-        where: { owner_id: user.id },
+        where: { owner_id: user.user_id },
       });
       if (customer) {
         throw new ConflictException(
@@ -1006,9 +1004,9 @@ export class UsersService {
       }
     }
 
-    if (userWithRole.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
+    if (userRole?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
       const customerWithSuccess = await this.database.findFirst('customers', {
-        where: { customer_success_id: user.id },
+        where: { manager_id: user.user_id },
       });
       if (customerWithSuccess) {
         throw new ConflictException(
@@ -1019,7 +1017,7 @@ export class UsersService {
 
     const deletedAt = new Date();
     const updatedUser = await this.database.update('users', {
-      where: { id },
+      where: { user_id: id },
       data: {
         email: `__deleted__${user.email}`,
         deleted_at: deletedAt.toISOString(),
@@ -1052,7 +1050,7 @@ export class UsersService {
 
   async isUserDeleted(uid: string): Promise<boolean> {
     const count = await this.database.count('users', {
-      where: { uid, deleted_at: { not: null } },
+      where: { auth_user_id: uid, deleted_at: { not: null } }, // Changed from uid
     });
     return count > 0;
   }

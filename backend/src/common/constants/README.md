@@ -45,12 +45,12 @@ await supabaseService
 import { isSystemRole, isSystemRoleId, isCustomRoleId } from '@/common/constants/system-roles';
 
 // Check if a role name is a system role
-if (isSystemRole('System Administrator')) {
+if (isSystemRole('system_admin')) {
   // true
 }
 
 // Check if a role name is a system role
-if (isSystemRole('Customer Success')) {
+if (isSystemRole('customer_success')) {
   // true
 }
 ```
@@ -67,10 +67,15 @@ if (isSystemRole('Customer Success')) {
 
 ### `SYSTEM_ROLES`
 
-Object containing all system role names as constants:
-- `SYSTEM_ROLES.SYSTEM_ADMINISTRATOR` = 'System Administrator'
-- `SYSTEM_ROLES.CUSTOMER_SUCCESS` = 'Customer Success'
-- `SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR` = 'Customer Administrator'
+Object containing all system role names as constants (matching the `name` column in the database):
+- `SYSTEM_ROLES.SYSTEM_ADMINISTRATOR` = 'system_admin'
+- `SYSTEM_ROLES.CUSTOMER_SUCCESS` = 'customer_success'
+- `SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR` = 'customer_admin'
+
+**Note**: These are the database role names. The `display_name` column in the database contains the human-readable versions:
+- 'System Administrator'
+- 'Customer Success'
+- 'Customer Administrator'
 
 ### `SYSTEM_ROLE_NAMES`
 

@@ -7,9 +7,9 @@
  */
 
 export const SYSTEM_ROLES = {
-  SYSTEM_ADMINISTRATOR: 'System Administrator',
-  CUSTOMER_SUCCESS: 'Customer Success',
-  CUSTOMER_ADMINISTRATOR: 'Customer Administrator',
+  SYSTEM_ADMINISTRATOR: 'system_admin',
+  CUSTOMER_SUCCESS: 'customer_success',
+  CUSTOMER_ADMINISTRATOR: 'customer_admin',
 } as const;
 
 /**

@@ -18,15 +18,19 @@ export class ManagersService {
 
   async create(createManagerDto: CreateManagerDto) {
     const existingManager = await this.database.findFirst('managers', {
-      where: { name: createManagerDto.name },
+      where: { email: createManagerDto.email },
     });
 
     if (existingManager) {
-      throw new ConflictException('Manager with the same name already exists');
+      throw new ConflictException('Manager with the same email already exists');
     }
 
     return this.database.create('managers', {
-      data: createManagerDto,
+      data: {
+        email: createManagerDto.email,
+        full_name: createManagerDto.name,
+        active: true,
+      },
     });
   }
 
@@ -39,7 +43,7 @@ export class ManagersService {
     const { data: role } = await this.database
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
       .single();
     
@@ -48,13 +52,13 @@ export class ManagersService {
     }
 
     const usersManagers = await this.database.findMany('users', {
-      where: { role_id: role.id },
-      select: 'id, email, first_name, last_name',
+      where: { role_id: role.role_id },
+      select: 'user_id, email, full_name',
     });
 
     return usersManagers.map((manager) => ({
-      id: manager.id,
-      name: `${manager.first_name ?? ''} ${manager.last_name ?? ''}`.trim(),
+      id: manager.user_id,
+      name: manager.full_name,
       email: manager.email,
     })) as OutputManagerDto[];
   }
@@ -64,7 +68,7 @@ export class ManagersService {
     const { data: role } = await this.database
       .getClient()
       .from('roles')
-      .select('id')
+      .select('role_id')
       .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
       .single();
     
@@ -73,7 +77,7 @@ export class ManagersService {
     }
 
     const manager = await this.database.findFirst('users', {
-      where: { id, role_id: role.id },
+      where: { user_id: id, role_id: role.role_id },
     });
     if (!manager) {
       throw new NotFoundException('No manager with given ID exists');
@@ -83,14 +87,17 @@ export class ManagersService {
 
   update(id: string, updateManagerDto: UpdateManagerDto) {
     return this.database.update('managers', {
-      where: { id },
-      data: updateManagerDto,
+      where: { manager_id: id },
+      data: {
+        email: updateManagerDto.email,
+        full_name: updateManagerDto.name,
+      },
     });
   }
 
   async remove(id: string) {
     try {
-      return await this.database.delete('managers', { where: { id } });
+      return await this.database.delete('managers', { where: { manager_id: id } });
     } catch (error) {
       this.logger.error(error);
       throw new ConflictException('Manager can not be deleted');

@@ -222,7 +222,7 @@ create table public.users (
   full_name text not null,
   avatar_url text,
   phone_number text,
-  customer_id uuid not null,
+  customer_id uuid,
   role_id uuid,
   status UserStatus not null default 'inactive',
   last_login_at timestamptz,
@@ -233,13 +233,25 @@ create table public.users (
 );
 
 comment on table public.users is 
-  'Users within customer organizations';
+  'Users within customer organizations. customer_id can be NULL for system-level admins and during the initial creation of customer owners (circular reference handling).';
 
 -- Add foreign key from customers to users (circular reference)
 alter table public.customers
   add constraint customers_owner_id_fkey
   foreign key (owner_id) references public.users(user_id)
   on delete set null;
+
+-- User one-time codes table (for email verification, password reset, etc.)
+create table public.user_one_time_codes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  code text not null,
+  is_used boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.user_one_time_codes is 
+  'One-time codes for user verification and authentication flows';
 
 -- Customer subscriptions table (references customers and subscription types)
 create table public.customer_subscriptions (
@@ -341,6 +353,8 @@ create table public.article_categories (
   name text not null,
   slug text not null,
   description text,
+  subcategory text,
+  about text,
   parent_id uuid,
   icon text,
   display_order integer not null default 0,
@@ -363,6 +377,7 @@ create table public.articles (
   slug text not null,
   content text,
   summary text,
+  subcategory text,
   status ArticleStatus not null default 'draft',
   published_at timestamptz,
   video_url text,
@@ -413,12 +428,16 @@ create table public.notifications (
   metadata jsonb,
   read_at timestamptz,
   archived_at timestamptz,
+  sender_id uuid,
+  generated_by text,
   created_at timestamptz not null default now(),
   updated_at timestamptz
 );
 
 comment on table public.notifications is 
   'User notifications';
+comment on column public.notifications.read_at is 
+  'Indicator of read status: NULL = unread, NOT NULL = read. Timestamp tracks when notification was read.';
 
 -- Audit log table (references users and customers)
 create table public.audit_logs (
@@ -436,6 +455,22 @@ create table public.audit_logs (
 
 comment on table public.audit_logs is 
   'Audit trail for system actions';
+
+-- API log table (for API request tracking)
+create table public.api_logs (
+  id uuid primary key default gen_random_uuid(),
+  method text,
+  url text,
+  status_code integer,
+  response_time integer,
+  user_id uuid,
+  ip_address text,
+  user_agent text,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.api_logs is 
+  'API request logging for monitoring and debugging';
 
 -- =============================================================================
 -- FOREIGN KEY CONSTRAINTS
@@ -470,6 +505,12 @@ alter table public.users
   add constraint users_role_id_fkey
   foreign key (role_id) references public.roles(role_id)
   on delete set null;
+
+-- User one-time codes foreign keys
+alter table public.user_one_time_codes
+  add constraint user_one_time_codes_user_id_fkey
+  foreign key (user_id) references public.users(user_id)
+  on delete cascade;
 
 -- Customer subscriptions foreign keys
 alter table public.customer_subscriptions
@@ -587,6 +628,12 @@ alter table public.audit_logs
   foreign key (user_id) references public.users(user_id)
   on delete set null;
 
+-- API logs foreign keys
+alter table public.api_logs
+  add constraint api_logs_user_id_fkey
+  foreign key (user_id) references public.users(user_id)
+  on delete set null;
+
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
@@ -619,6 +666,11 @@ create index idx_users_email on public.users(email);
 create index idx_users_auth_user_id on public.users(auth_user_id);
 create index idx_users_deleted_at on public.users(deleted_at);
 create index idx_users_last_login_at on public.users(last_login_at);
+
+-- User one-time codes indexes
+create index idx_user_one_time_codes_user_id on public.user_one_time_codes(user_id);
+create index idx_user_one_time_codes_code on public.user_one_time_codes(code);
+create index idx_user_one_time_codes_is_used on public.user_one_time_codes(is_used);
 
 -- Customer subscriptions indexes
 create index idx_customer_subscriptions_customer_id on public.customer_subscriptions(customer_id);
@@ -680,6 +732,12 @@ create index idx_audit_logs_entity_type on public.audit_logs(entity_type);
 create index idx_audit_logs_entity_id on public.audit_logs(entity_id);
 create index idx_audit_logs_created_at on public.audit_logs(created_at);
 create index idx_audit_logs_action on public.audit_logs(action);
+
+-- API logs indexes
+create index idx_api_logs_user_id on public.api_logs(user_id);
+create index idx_api_logs_created_at on public.api_logs(created_at);
+create index idx_api_logs_status_code on public.api_logs(status_code);
+create index idx_api_logs_method on public.api_logs(method);
 
 -- =============================================================================
 -- TRIGGERS FOR UPDATED_AT FIELDS
@@ -898,6 +956,35 @@ where edt.is_active = true;
 
 comment on view public.extension_data_enriched is 
   'Convenience view showing extension data with field type definitions. Use data_id and table_being_extended to join to the appropriate table (users or customers).';
+
+-- =============================================================================
+-- GRANT PERMISSIONS
+-- =============================================================================
+-- Grant necessary permissions to authenticated and anon roles
+-- Note: service_role already has superuser access
+
+-- Grant usage on schema
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+
+-- Grant all privileges on all tables to service_role (for backend operations)
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
+
+-- Grant select/insert/update/delete to authenticated users (RLS will control access)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- Grant limited access to anon users (for public operations like registration)
+GRANT SELECT, INSERT, UPDATE ON public.user_one_time_codes TO anon;
+GRANT INSERT ON public.api_logs TO anon;
+GRANT INSERT ON public.users TO anon;
+GRANT SELECT ON public.roles TO anon;
+GRANT SELECT ON public.subscription_types TO anon;
+
+-- Make sure future tables also get these permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 
 -- =============================================================================
 -- END OF SCHEMA

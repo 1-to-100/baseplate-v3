@@ -61,36 +61,36 @@ export class SeedCommand {
       const owner = await this.createOwner();
 
       // Create customer
-      const customer = await this.createCustomer(owner.id, subscription!.id);
+      const customer = await this.createCustomer(owner.id, subscription!.subscription_type_id);
 
       // Create customer success user
-      const customerSuccess = await this.createCustomerSuccess(customer.id);
+      const customerSuccess = await this.createCustomerSuccess(customer.customer_id);
 
       // Create regular users
-      const users = await this.createUsers(customer.id);
+      const users = await this.createUsers(customer.customer_id);
 
       // Create article categories
       const categories = await this.createArticleCategories(
-        customer.id,
+        customer.customer_id,
         users[0].id,
       );
 
       // Create articles (documents) - created by customer owner
       const articles = await this.createArticles(
-        customer.id,
+        customer.customer_id,
         owner.id,
         categories,
       );
 
       // Create notifications
-      await this.createNotifications(customer.id, users);
+      await this.createNotifications(customer.customer_id, users);
 
       // Create notification templates
-      const templates = await this.createNotificationTemplates(customer.id);
+      const templates = await this.createNotificationTemplates(customer.customer_id);
 
       this.logger.log('Test data seeding completed successfully!');
       this.logger.log(
-        `Created customer: ${customer.name} (ID: ${customer.id})`,
+        `Created customer: ${customer.name} (ID: ${customer.customer_id})`,
       );
       this.logger.log(`Created ${users.length} users`);
       this.logger.log(`Created ${categories.length} article categories`);
