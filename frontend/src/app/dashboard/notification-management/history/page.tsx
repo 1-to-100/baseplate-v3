@@ -423,23 +423,23 @@ export default function Page(): React.JSX.Element {
                                 wordBreak: "break-all",
                                 fontWeight: 500,
                                 backgroundColor: notification?.type?.includes(
-                                  "IN_APP"
+                                  "in_app"
                                 )
                                   ? colorScheme === "dark"
                                     ? "rgba(79, 70, 229, 0.2)"
                                     : "#E0E7FF"
-                                  : notification?.type?.includes("EMAIL")
+                                  : notification?.type?.includes("email")
                                   ? colorScheme === "dark"
                                     ? "rgba(22, 163, 74, 0.2)"
                                     : "#DCFCE7"
                                   : colorScheme === "dark"
                                   ? "rgba(107, 114, 128, 0.2)"
                                   : "#F3F4F6",
-                                color: notification?.type?.includes("IN_APP")
+                                color: notification?.type?.includes("in_app")
                                   ? colorScheme === "dark"
                                     ? "#818CF8"
                                     : "#4F46E5"
-                                  : notification?.type?.includes("EMAIL")
+                                  : notification?.type?.includes("email")
                                   ? colorScheme === "dark"
                                     ? "#4ADE80"
                                     : "#16A34A"
@@ -451,9 +451,9 @@ export default function Page(): React.JSX.Element {
                                 display: "inline-block",
                               }}
                             >
-                              {notification.type?.includes("IN_APP")
+                              {notification.type?.includes("in_app")
                                 ? "In-App"
-                                : notification.type?.includes("EMAIL")
+                                : notification.type?.includes("email")
                                 ? "Email"
                                 : notification.type?.[0] || ""}
                             </Box>

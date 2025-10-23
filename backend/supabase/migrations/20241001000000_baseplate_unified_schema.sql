@@ -80,15 +80,12 @@ comment on type InvitationStatus is
 
 -- Notification type enum
 create type NotificationType as enum (
-  'system',      -- System-generated notification
-  'user',        -- User-to-user notification
-  'marketing',   -- Marketing notification
-  'security',    -- Security-related notification
-  'billing'      -- Billing-related notification
+  'email',       -- Email notification
+  'in_app'       -- In-app notification
 );
 
 comment on type NotificationType is 
-  'Enum defining notification type categories';
+  'Enum defining notification delivery types';
 
 -- Notification status enum
 create type NotificationStatus as enum (
@@ -403,7 +400,7 @@ create table public.notification_templates (
   name text not null,
   subject text,
   body text not null,
-  notification_type NotificationType not null,
+  type NotificationType not null,
   channel text not null,
   variables jsonb,
   is_active boolean not null default true,
@@ -417,18 +414,16 @@ comment on table public.notification_templates is
 
 -- Notifications table (references users, customers, templates)
 create table public.notifications (
-  notification_id uuid primary key default gen_random_uuid(),
-  customer_id uuid not null,
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid,
   user_id uuid not null,
   template_id uuid,
-  notification_type NotificationType not null,
-  status NotificationStatus not null default 'unread',
-  subject text,
-  body text not null,
+  type NotificationType not null,
+  title text,
+  message text not null,
   channel text,
   metadata jsonb,
   read_at timestamptz,
-  archived_at timestamptz,
   sender_id uuid,
   generated_by text,
   created_at timestamptz not null default now(),
@@ -721,15 +716,15 @@ create index idx_articles_featured on public.articles(featured) where featured =
 
 -- Notification templates indexes
 create index idx_notification_templates_customer_id on public.notification_templates(customer_id);
-create index idx_notification_templates_notification_type on public.notification_templates(notification_type);
+create index idx_notification_templates_type on public.notification_templates(type);
 create index idx_notification_templates_is_active on public.notification_templates(is_active);
 create index idx_notification_templates_deleted_at on public.notification_templates(deleted_at);
 
 -- Notifications indexes
 create index idx_notifications_customer_id on public.notifications(customer_id);
 create index idx_notifications_user_id on public.notifications(user_id);
-create index idx_notifications_status on public.notifications(status);
-create index idx_notifications_notification_type on public.notifications(notification_type);
+create index idx_notifications_read_at on public.notifications(read_at);
+create index idx_notifications_type on public.notifications(type);
 create index idx_notifications_created_at on public.notifications(created_at);
 
 -- Audit logs indexes

@@ -463,9 +463,9 @@ export class UsersService {
       where,
       select: `
         *,
-        role:roles!role_id(*),
-        customer:customers!customer_id(customer_id, name, owner_id),
-        manager:managers!manager_id(manager_id, email, full_name)
+        roles!role_id(*),
+        customers!customer_id(customer_id, name, owner_id),
+        managers!manager_id(*)
       `,
     });
 
@@ -502,9 +502,9 @@ export class UsersService {
       where,
       select: `
         *,
-        role:roles!role_id(*),
-        customer:customers!customer_id(customer_id, name),
-        manager:managers!manager_id(manager_id, email, full_name)
+        roles!role_id(*),
+        customers!customer_id(customer_id, name),
+        managers!manager_id(*)
       `,
     });
 
@@ -702,100 +702,142 @@ export class UsersService {
     supabaseUser: SupabaseDecodedToken,
     subscriptionId: string | null = null, // Changed from number
   ): Promise<OutputUserDto> {
-    const existingUser = await this.findByUid(supabaseUser.uid);
-    if (existingUser) {
-      return existingUser;
-    }
+    try {
+      const existingUser = await this.findByUid(supabaseUser.uid);
+      if (existingUser) {
+        this.logger.log(`User with UID ${supabaseUser.uid} already exists`);
+        return existingUser;
+      }
 
-    const [firstName, ...lastNameParts] = supabaseUser.name?.split(' ') || [];
-    const lastName = lastNameParts ? lastNameParts.join(' ') : '';
-    const email = supabaseUser.email!;
-    const domain = getDomainFromEmail(email);
+      const [firstName, ...lastNameParts] = supabaseUser.name?.split(' ') || [];
+      const lastName = lastNameParts ? lastNameParts.join(' ') : '';
+      const email = supabaseUser.email!;
+      const domain = getDomainFromEmail(email);
 
-    if (!domain) throw new ConflictException('Invalid email domain');
-    if (isPublicEmailDomain(domain))
-      throw new ConflictException('Public email domains are not allowed');
+      if (!domain) throw new ConflictException('Invalid email domain');
+      if (isPublicEmailDomain(domain))
+        throw new ConflictException('Public email domains are not allowed');
 
-    const existingUserEmail = await this.database.findUnique('users', {
-      where: { email },
-    });
-
-    if (
-      existingUserEmail &&
-      existingUserEmail.auth_user_id == null &&
-      supabaseUser.uid
-    ) {
-      const userData = buildUserDbData({
-        authUserId: supabaseUser.uid,
-        status: UserStatus.ACTIVE,
-        firstName,
-        lastName,
+      const existingUserEmail = await this.database.findUnique('users', {
+        where: { email },
       });
 
-      await this.database.update('users', {
-        where: { user_id: existingUserEmail.user_id },
+      if (
+        existingUserEmail &&
+        existingUserEmail.auth_user_id == null &&
+        supabaseUser.uid
+      ) {
+        const userData = buildUserDbData({
+          authUserId: supabaseUser.uid,
+          status: UserStatus.ACTIVE,
+          firstName,
+          lastName,
+        });
+
+        await this.database.update('users', {
+          where: { user_id: existingUserEmail.user_id },
+          data: userData,
+        });
+
+        // Refetch user with role relation
+        const existingUserEmailUpdated = await this.database.findUnique('users', {
+          where: { user_id: existingUserEmail.user_id },
+          include: {
+            role: true,
+            customer: true,
+          },
+        });
+
+        return mapUserToDto(existingUserEmailUpdated!);
+      }
+
+      // Check if user with this email and auth_user_id already exists
+      if (existingUserEmail && existingUserEmail.auth_user_id === supabaseUser.uid) {
+        this.logger.log(`User with email ${email} and UID ${supabaseUser.uid} already exists`);
+        const userWithRole = await this.database.findUnique('users', {
+          where: { user_id: existingUserEmail.user_id },
+          include: {
+            role: true,
+            customer: true,
+          },
+        });
+        return mapUserToDto(userWithRole!);
+      }
+
+      const existingCustomer = await this.database.findFirst('customers', {
+        where: { email_domain: domain }, // Changed from domain
+      });
+
+      const userData = buildUserDbData({
+        email,
+        firstName,
+        lastName,
+        avatar: supabaseUser.picture,
+        authUserId: supabaseUser.uid,
+        status: supabaseUser.uid ? UserStatus.ACTIVE : UserStatus.INACTIVE,
+        customerId: existingCustomer?.customer_id,
+      });
+
+      const newUser = await this.database.create('users', {
         data: userData,
       });
 
+      if (!existingCustomer) {
+        // This is the first user from this domain - assign customer_admin role
+        const customerAdminRoleId = await this.getRoleIdByName(
+          SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
+        );
+
+        const newCustomer = await this.database.create('customers', {
+          data: {
+            name: domain,
+            email_domain: domain, // Changed from domain
+            owner_id: newUser.user_id,
+            subscription_type_id: subscriptionId, // Changed from subscription_id
+            lifecycle_stage: CustomerLifecycleStage.ONBOARDING, // Changed from status
+            active: true,
+          },
+        });
+
+        await this.database.update('users', {
+          where: { user_id: newUser.user_id },
+          data: {
+            customer_id: newCustomer.customer_id,
+            role_id: customerAdminRoleId, // Assign customer_admin role
+          },
+        });
+
+        this.logger.log(
+          `Created new customer ${domain} and assigned customer_admin role to user ${email}`,
+        );
+      }
+
       // Refetch user with role relation
-      const existingUserEmailUpdated = await this.database.findUnique('users', {
-        where: { user_id: existingUserEmail.user_id },
+      const userWithRole = await this.database.findUnique('users', {
+        where: { user_id: newUser.user_id },
         include: {
           role: true,
           customer: true,
         },
       });
 
-      return mapUserToDto(existingUserEmailUpdated!);
+      await this.sendInviteEmail(mapUserToDto(userWithRole || newUser));
+      return mapUserToDto(userWithRole || newUser);
+    } catch (error) {
+      // Handle duplicate key errors gracefully
+      if (error.code === '23505') {
+        this.logger.warn(
+          `Duplicate key error for user ${supabaseUser.email} (UID: ${supabaseUser.uid}). User may already exist.`,
+        );
+        // Try to fetch and return the existing user
+        const existingUser = await this.findByUid(supabaseUser.uid);
+        if (existingUser) {
+          return existingUser;
+        }
+      }
+      this.logger.error('Create users failed:', error);
+      throw error;
     }
-
-    const existingCustomer = await this.database.findFirst('customers', {
-      where: { email_domain: domain }, // Changed from domain
-    });
-
-    const userData = buildUserDbData({
-      email,
-      firstName,
-      lastName,
-      avatar: supabaseUser.picture,
-      authUserId: supabaseUser.uid,
-      status: supabaseUser.uid ? UserStatus.ACTIVE : UserStatus.INACTIVE,
-      customerId: existingCustomer?.customer_id,
-    });
-
-    const newUser = await this.database.create('users', {
-      data: userData,
-    });
-
-    if (!existingCustomer) {
-      const newCustomer = await this.database.create('customers', {
-        data: {
-          name: domain,
-          email_domain: domain, // Changed from domain
-          owner_id: newUser.user_id,
-          subscription_type_id: subscriptionId, // Changed from subscription_id
-          lifecycle_stage: CustomerLifecycleStage.ONBOARDING, // Changed from status
-          active: true,
-        },
-      });
-
-      await this.database.update('users', {
-        where: { user_id: newUser.user_id },
-        data: { customer_id: newCustomer.customer_id },
-      });
-    }
-
-    // Refetch user with role relation
-    const userWithRole = await this.database.findUnique('users', {
-      where: { user_id: newUser.user_id },
-      include: {
-        role: true,
-        customer: true,
-      },
-    });
-
-    await this.sendInviteEmail(mapUserToDto(userWithRole || newUser));
-    return mapUserToDto(userWithRole || newUser);
   }
 
   async sendInviteEmail(user: OutputUserDto) {

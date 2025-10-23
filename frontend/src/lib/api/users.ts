@@ -34,8 +34,8 @@ export interface GetUsersParams {
   search?: string;
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
-  roleId?: number[];
-  customerId?: number[];
+  roleId?: string[];
+  customerId?: string[];
   statusId?: string[];
   hasCustomer?: boolean;
 }

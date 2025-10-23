@@ -435,7 +435,7 @@ docker compose up</code></pre>
       {
         title: 'Welcome to Test Customer Platform',
         message: 'Welcome! Your account has been set up successfully.',
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -443,7 +443,7 @@ docker compose up</code></pre>
       {
         title: 'New Feature Available',
         message: 'Check out our new document management features.',
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -452,7 +452,7 @@ docker compose up</code></pre>
         title: 'System Maintenance Scheduled',
         message:
           'We will be performing scheduled maintenance on Sunday at 2 AM.',
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -460,7 +460,7 @@ docker compose up</code></pre>
       {
         title: 'Security Alert',
         message: 'Your account has been accessed from a new device.',
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         channel: this.getRandomNotificationType(),
         customerId,
         generatedBy: 'system (seed)',
@@ -480,7 +480,7 @@ docker compose up</code></pre>
       await this.notificationsService.create({
         title: 'Personal Welcome',
         message: `Welcome ${user.firstName}! We're excited to have you on board.`,
-        type: NotificationTypes.IN_APP,
+        type: NotificationTypes.in_app,
         channel: randomType,
         customerId,
         userId: user.id,
@@ -493,7 +493,7 @@ docker compose up</code></pre>
           title: 'Profile Update Reminder',
           message:
             'Please complete your profile information to get the most out of our platform.',
-          type: NotificationTypes.IN_APP,
+          type: NotificationTypes.in_app,
           channel: this.getRandomNotificationType(),
           customerId,
           userId: user.id,
@@ -502,7 +502,7 @@ docker compose up</code></pre>
         {
           title: 'New Article Published',
           message: 'A new article has been published in your area of interest.',
-          type: NotificationTypes.IN_APP,
+          type: NotificationTypes.in_app,
           channel: this.getRandomNotificationType(),
           customerId,
           userId: user.id,

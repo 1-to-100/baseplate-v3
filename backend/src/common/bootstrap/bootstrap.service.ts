@@ -73,19 +73,15 @@ export class BootstrapService implements OnModuleInit {
       } else {
         // Create user in Supabase Auth
         const { data: authData, error: authError } =
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           await this.supabaseService.admin.createUser({
             email: 'admin@system.local',
             password: 'Admin@123456',
             email_confirm: true,
           });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (authError || !authData?.user) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           throw new Error(`Failed to create auth user: ${authError?.message}`);
         }
-        
         authUserId = authData.user.id;
       }
 
@@ -94,6 +90,7 @@ export class BootstrapService implements OnModuleInit {
         .from('users')
         .insert({
           email: 'admin@system.local',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           auth_user_id: authUserId,
           full_name: 'System Administrator',
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

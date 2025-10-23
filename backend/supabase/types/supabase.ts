@@ -635,7 +635,7 @@ export type Database = {
     Enums: {
       Action: 'manage' | 'create' | 'read' | 'update' | 'delete';
       CustomerStatus: 'active' | 'inactive' | 'suspended';
-      NotificationType: 'EMAIL' | 'IN_APP';
+      NotificationType: 'email' | 'in_app';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1075,7 +1075,7 @@ export const Constants = {
     Enums: {
       Action: ['manage', 'create', 'read', 'update', 'delete'],
       CustomerStatus: ['active', 'inactive', 'suspended'],
-      NotificationType: ['EMAIL', 'IN_APP'],
+      NotificationType: ['email', 'in_app'],
     },
   },
   storage: {

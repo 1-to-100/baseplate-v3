@@ -116,10 +116,7 @@ export const columnNameMap: Record<string, Record<string, string>> = {
     'views_number': 'view_count',
   },
   notifications: {
-    'id': 'notification_id',
-    'type': 'notification_type',
-    'title': 'subject',
-    'message': 'body',
+    // Using simplified schema - no mappings needed
   },
   notification_templates: {
     'id': 'template_id',

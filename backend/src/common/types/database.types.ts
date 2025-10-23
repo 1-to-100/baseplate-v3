@@ -148,7 +148,6 @@ export interface User {
   phone_number?: string | null;
   customer_id?: string | null;
   role_id?: string | null;
-  manager_id?: string | null;
   status: UserStatus;
   email_verified?: boolean | null;
   last_login_at?: string | null;
@@ -277,7 +276,7 @@ export interface NotificationTemplate {
   name: string;
   subject?: string | null;
   body: string;
-  notification_type: NotificationType;
+  type: NotificationType;
   channel: string;
   variables?: any; // jsonb
   is_active: boolean;
@@ -287,18 +286,16 @@ export interface NotificationTemplate {
 }
 
 export interface Notification {
-  notification_id: string;
-  customer_id: string;
+  id: string;
+  customer_id?: string | null;
   user_id: string;
   template_id?: string | null;
-  notification_type: NotificationType;
-  status: NotificationStatus;
-  subject?: string | null;
-  body: string;
+  type: NotificationType;
+  title?: string | null;
+  message: string;
   channel?: string | null;
   metadata?: any; // jsonb
   read_at?: string | null;
-  archived_at?: string | null;
   sender_id?: string | null;
   generated_by?: string | null;
   created_at: string;
@@ -588,8 +585,8 @@ export interface ArticleFilters {
 export interface NotificationFilters {
   user_id?: string | string[];
   customer_id?: string | string[];
-  notification_type?: NotificationType | NotificationType[];
-  status?: NotificationStatus | NotificationStatus[];
+  type?: NotificationType | NotificationType[];
+  read_at?: string | null; // null = unread, not null = read
   channel?: string | string[];
 }
 

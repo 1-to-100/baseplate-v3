@@ -26,8 +26,8 @@ interface FilterProps {
   onOpen?: () => void;
   onFilter?: (filters: {
     statusId: string[];
-    customerId: number[];
-    roleId: number[];
+    customerId: string[];
+    roleId: string[];
   }) => void;
   onFilterCustomers?: (filters: {
     customerSuccessId: number[];
@@ -53,8 +53,8 @@ const Filter = ({
 }: FilterProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters?.statusId || []);
-  const [selectedCustomerIds, setSelectedCustomerIds] = useState<number[]>([]);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [selectedManagerIds, setSelectedManagerIds] = useState<number[]>(initialFilters?.customerSuccessId || []);
   const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<number[]>(initialFilters?.subscriptionId || []);
   const [activeCategory, setActiveCategory] = useState<string | null>(users && users?.length > 0 ? "Status" : "Manager");
@@ -154,7 +154,7 @@ const Filter = ({
     );
   };
 
-  const handleCustomerChange = (customerId: number) => {
+  const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerIds((prev) =>
       prev.includes(customerId)
         ? prev.filter((c) => c !== customerId)
@@ -162,7 +162,7 @@ const Filter = ({
     );
   };
 
-  const handleRoleChange = (roleId: number) => {
+  const handleRoleChange = (roleId: string) => {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId)
         ? prev.filter((r) => r !== roleId)

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -97,7 +96,6 @@ export class TemplatesController {
   async createTemplate(
     @User() user: OutputUserDto,
     @Body() createTemplateDto: CreateTemplateDto,
-    @CustomerId() customerId?: string,
   ): Promise<NotificationTemplateDto> {
     if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
@@ -105,24 +103,7 @@ export class TemplatesController {
       );
     }
 
-    // Determine the customer_id for the template
-    let templateCustomerId: string | undefined = undefined;
-    
-    if (isCustomerSuccess(user) && !isSystemAdministrator(user)) {
-      // Customer success users must create templates for their own customer
-      if (!user.customerId) {
-        throw new BadRequestException(
-          'Customer success user must have a customerId',
-        );
-      }
-      templateCustomerId = user.customerId;
-    } else if (isSystemAdministrator(user)) {
-      // System admins can create system-wide templates (undefined/null) 
-      // or customer-specific templates (if customerId provided)
-      templateCustomerId = customerId;
-    }
-
-    return this.templatesService.createTemplate(createTemplateDto, templateCustomerId);
+    return this.templatesService.createTemplate(createTemplateDto);
   }
 
   @Patch(':id')

@@ -75,7 +75,7 @@ export default function Page(): React.JSX.Element {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
     statusId: string[];
-    customerId: number[];
+    customerId: string[];
     roleFilter?: string;
   }>({
     statusId: [],
@@ -344,7 +344,7 @@ export default function Page(): React.JSX.Element {
 
   const handleFilter = (filters: {
     statusId: string[];
-    customerId: number[];
+    customerId: string[];
     roleFilter?: string;
   }) => {
     setFilters(filters);

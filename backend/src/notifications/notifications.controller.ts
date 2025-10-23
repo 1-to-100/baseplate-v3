@@ -112,7 +112,7 @@ export class NotificationsController {
     @Query() listNotificationsInputDto: ListNotificationsInputDto,
   ) {
     return this.notificationsService.findAll(
-      +user.id,
+      user.id,
       listNotificationsInputDto,
     );
   }
@@ -198,12 +198,12 @@ export class NotificationsController {
     description: 'The notification record',
     type: NotificationDto,
   })
-  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'id', type: String })
   async findOneNotification(
     @User() user: OutputUserDto,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
   ) {
-    return this.notificationsService.findOne(+user.id, +id);
+    return this.notificationsService.findOne(user.id, id);
   }
 
   @Patch('/read-all')
@@ -234,7 +234,7 @@ export class NotificationsController {
     description: 'Mark notification as read',
     type: NotificationDto,
   })
-  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'id', type: String })
   async markAsRead(
     @User() user: OutputUserDto,
     @Param('id') id: string,
@@ -256,9 +256,9 @@ export class NotificationsController {
         ids: {
           type: 'array',
           items: {
-            type: 'number',
+            type: 'string',
           },
-          example: [1, 2, 3],
+          example: ['550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001'],
         },
       },
     },

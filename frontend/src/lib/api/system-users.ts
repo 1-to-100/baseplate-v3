@@ -33,7 +33,7 @@ export interface GetUsersParams {
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
   roleFilter?: string;
-  customerId?: number[];
+  customerId?: string[];
   statusId?: string[];
 }
 

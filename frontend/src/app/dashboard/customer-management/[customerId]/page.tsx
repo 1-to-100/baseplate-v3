@@ -140,7 +140,7 @@ const Customer: React.FC = () => {
         search: debouncedSearchValue || undefined,
         orderBy: sortColumn || undefined,
         orderDirection: sortDirection,
-        customerId: customerId ? [Number(customerId)] : undefined,
+        customerId: customerId ? [customerId] : undefined,
       });
       return {
         ...response,
