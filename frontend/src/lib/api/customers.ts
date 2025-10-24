@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { apiFetch } from "./api-fetch";
-import { Customer } from "@/contexts/auth/types";
+import { Customer, TaxonomyItem } from "@/contexts/auth/types";
 
 interface GetCustomersParams {
   page?: number;
@@ -45,8 +45,8 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
   });
 }
 
-export async function getCustomers(): Promise<Customer[]> {
-  return apiFetch<Customer[]>(`${config.site.apiUrl}/taxonomies/customers`, {
+export async function getCustomers(): Promise<TaxonomyItem[]> {
+  return apiFetch<TaxonomyItem[]>(`${config.site.apiUrl}/taxonomies/customers`, {
     method: "GET",
     headers: {
       accept: "*/*",

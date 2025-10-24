@@ -1,14 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { Autocomplete, FormControl, Typography } from "@mui/joy";
+import { Autocomplete, FormControl } from "@mui/joy";
 import { useQuery } from "@tanstack/react-query";
 import { getCustomers } from "@/lib/api/customers";
 import { useEffect } from 'react';
 import { useState } from 'react';
 
 export function CustomerSelect(): React.JSX.Element {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   const { data: customers } = useQuery({
     queryKey: ["customers"],
@@ -18,8 +18,7 @@ export function CustomerSelect(): React.JSX.Element {
   useEffect(() => {
     const storedCustomerId = localStorage.getItem('selectedCustomerId');
     if (storedCustomerId) {
-      const numericId = parseInt(storedCustomerId, 10);
-      setSelectedCustomerId(numericId);
+      setSelectedCustomerId(storedCustomerId);
     }
   }, []);
 
@@ -51,7 +50,7 @@ export function CustomerSelect(): React.JSX.Element {
         onChange={(_, newValue) => {
           if (newValue) {
             setSelectedCustomerId(newValue.id);
-            localStorage.setItem('selectedCustomerId', newValue.id.toString());
+            localStorage.setItem('selectedCustomerId', newValue.id);
           } else {
             setSelectedCustomerId(null);
             localStorage.removeItem('selectedCustomerId');

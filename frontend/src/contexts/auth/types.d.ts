@@ -56,7 +56,7 @@ export interface Role {
 }
 
 export interface Customer {
-  id: number;
+  customer_id: string;
   name: string;
   email: string;
   subscriptionId: number;
@@ -180,3 +180,8 @@ export interface NotificationType {
 export type SystemRole =  "customer_success" | "system_admin";
 
 export type Status = "active" | "inactive" | "suspended";
+
+export type TaxonomyItem = {
+  id: string;
+  name: string;
+}
