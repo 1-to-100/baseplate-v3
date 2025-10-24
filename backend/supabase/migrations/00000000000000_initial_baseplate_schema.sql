@@ -1148,6 +1148,34 @@ CREATE POLICY users_delete_customer_admin ON public.users
     customer_id = (SELECT public.current_customer_id())
   );
 
+-- Customer Success policies
+CREATE POLICY users_select_customer_success ON public.users
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY users_insert_customer_success ON public.users
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY users_update_customer_success ON public.users
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY users_delete_customer_success ON public.users
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
 -- =============================================================================
 -- RLS POLICIES: CUSTOMERS TABLE
 -- =============================================================================
@@ -1186,6 +1214,22 @@ CREATE POLICY customers_update_customer_admin ON public.customers
 CREATE POLICY customers_delete_system_admin ON public.customers
   FOR DELETE TO authenticated
   USING ((SELECT public.has_role('system_admin')));
+
+-- Customer Success policies
+CREATE POLICY customers_select_customer_success ON public.customers
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY customers_update_customer_success ON public.customers
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
 
 -- =============================================================================
 -- RLS POLICIES: ROLES & PERMISSIONS TABLES
@@ -1273,6 +1317,34 @@ CREATE POLICY article_categories_delete_customer ON public.article_categories
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
+-- Customer Success policies
+CREATE POLICY article_categories_select_customer_success ON public.article_categories
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY article_categories_insert_customer_success ON public.article_categories
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY article_categories_update_customer_success ON public.article_categories
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY article_categories_delete_customer_success ON public.article_categories
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
 CREATE POLICY articles_select_all ON public.articles
   FOR SELECT TO authenticated
   USING (
@@ -1303,6 +1375,34 @@ CREATE POLICY articles_delete_customer ON public.articles
   USING (
     customer_id = (SELECT public.current_customer_id()) AND
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
+  );
+
+-- Customer Success policies
+CREATE POLICY articles_select_customer_success ON public.articles
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY articles_insert_customer_success ON public.articles
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY articles_update_customer_success ON public.articles
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY articles_delete_customer_success ON public.articles
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
 -- =============================================================================
@@ -1342,6 +1442,35 @@ CREATE POLICY notification_templates_delete_admin ON public.notification_templat
     ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
   );
 
+-- Customer Success policies
+CREATE POLICY notification_templates_select_customer_success ON public.notification_templates
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids()) OR
+    customer_id IS NULL  -- Global templates
+  );
+
+CREATE POLICY notification_templates_insert_customer_success ON public.notification_templates
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY notification_templates_update_customer_success ON public.notification_templates
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY notification_templates_delete_customer_success ON public.notification_templates
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
 CREATE POLICY notifications_select_own ON public.notifications
   FOR SELECT TO authenticated
   USING (
@@ -1357,6 +1486,28 @@ CREATE POLICY notifications_update_own ON public.notifications
   FOR UPDATE TO authenticated
   USING (user_id = (SELECT public.current_user_id()))
   WITH CHECK (user_id = (SELECT public.current_user_id()));
+
+-- Customer Success policies
+CREATE POLICY notifications_select_customer_success ON public.notifications
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY notifications_update_customer_success ON public.notifications
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY notifications_delete_customer_success ON public.notifications
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
 
 -- =============================================================================
 -- RLS POLICIES: OTHER TABLES
@@ -1419,6 +1570,34 @@ CREATE POLICY customer_subscriptions_delete_system_admin ON public.customer_subs
   FOR DELETE TO authenticated
   USING ((SELECT public.has_role('system_admin')));
 
+-- Customer Success policies
+CREATE POLICY customer_subscriptions_select_customer_success ON public.customer_subscriptions
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY customer_subscriptions_insert_customer_success ON public.customer_subscriptions
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY customer_subscriptions_update_customer_success ON public.customer_subscriptions
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY customer_subscriptions_delete_customer_success ON public.customer_subscriptions
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
 CREATE POLICY user_invitations_select ON public.user_invitations
   FOR SELECT TO authenticated
   USING (
@@ -1451,6 +1630,34 @@ CREATE POLICY user_invitations_delete ON public.user_invitations
     (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
+-- Customer Success policies
+CREATE POLICY user_invitations_select_customer_success ON public.user_invitations
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY user_invitations_insert_customer_success ON public.user_invitations
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY user_invitations_update_customer_success ON public.user_invitations
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY user_invitations_delete_customer_success ON public.user_invitations
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
 CREATE POLICY taxonomies_select ON public.taxonomies
   FOR SELECT TO authenticated
   USING (
@@ -1481,6 +1688,34 @@ CREATE POLICY taxonomies_delete ON public.taxonomies
   USING (
     (SELECT public.has_role('system_admin')) OR
     (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
+  );
+
+-- Customer Success policies
+CREATE POLICY taxonomies_select_customer_success ON public.taxonomies
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY taxonomies_insert_customer_success ON public.taxonomies
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY taxonomies_update_customer_success ON public.taxonomies
+  FOR UPDATE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  )
+  WITH CHECK (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
+
+CREATE POLICY taxonomies_delete_customer_success ON public.taxonomies
+  FOR DELETE TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
 CREATE POLICY extension_data_types_select_all ON public.extension_data_types
@@ -1524,6 +1759,13 @@ CREATE POLICY audit_logs_select_system_admin ON public.audit_logs
 CREATE POLICY audit_logs_insert_all ON public.audit_logs
   FOR INSERT TO authenticated
   WITH CHECK (true);
+
+-- Customer Success policies
+CREATE POLICY audit_logs_select_customer_success ON public.audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    customer_id IN (SELECT public.get_accessible_customer_ids())
+  );
 
 CREATE POLICY api_logs_select_system_admin ON public.api_logs
   FOR SELECT TO authenticated
@@ -1730,7 +1972,28 @@ COMMENT ON SCHEMA public IS
    
    Utility Functions:
    - get_current_user() → Get full user record
-   - is_manager() → Check if user is a Customer Success manager';
+   - is_manager() → Check if user is a Customer Success manager
+   
+   RLS Policy Paradigms:
+   1. System Tables (subscription_types, roles, permissions, managers)
+      - Viewable by all authenticated users
+      - Editable only by system_admin
+      
+   2. Customer Tables (customers, users, subscriptions, articles, etc.)
+      - Viewable/Editable by system_admin (all customers)
+      - Viewable/Editable by customer_success (assigned customers only via manager_id)
+      - Viewable/Editable by customer_admin (own customer only)
+      - Viewable by users (own customer, limited access)
+      
+   3. User Tables (notifications, user_one_time_codes)
+      - Viewable/Editable by system_admin (all)
+      - Viewable/Editable by customer_success (users in assigned customers)
+      - Viewable/Editable by customer_admin (users in own customer)
+      - Viewable/Editable by user (own records only)
+      
+   4. Role-Specific Tables
+      - Access determined by role_id foreign key
+      - Not currently implemented in schema';
 
 -- =============================================================================
 -- MIGRATION COMPLETE
