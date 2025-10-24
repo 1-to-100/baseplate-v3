@@ -1092,60 +1092,60 @@ ALTER TABLE public.api_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY users_select_system_admin ON public.users
   FOR SELECT TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY users_select_customer_admin ON public.users
   FOR SELECT TO authenticated
   USING (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 CREATE POLICY users_select_self ON public.users
   FOR SELECT TO authenticated
-  USING (user_id = public.current_user_id());
+  USING (user_id = (SELECT public.current_user_id()));
 
 CREATE POLICY users_insert_system_admin ON public.users
   FOR INSERT TO authenticated
-  WITH CHECK (public.has_role('system_admin'));
+  WITH CHECK ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY users_insert_customer_admin ON public.users
   FOR INSERT TO authenticated
   WITH CHECK (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 CREATE POLICY users_update_system_admin ON public.users
   FOR UPDATE TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY users_update_customer_admin ON public.users
   FOR UPDATE TO authenticated
   USING (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   )
   WITH CHECK (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 CREATE POLICY users_update_self ON public.users
   FOR UPDATE TO authenticated
-  USING (user_id = public.current_user_id())
-  WITH CHECK (user_id = public.current_user_id());
+  USING (user_id = (SELECT public.current_user_id()))
+  WITH CHECK (user_id = (SELECT public.current_user_id()));
 
 CREATE POLICY users_delete_system_admin ON public.users
   FOR DELETE TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY users_delete_customer_admin ON public.users
   FOR DELETE TO authenticated
   USING (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 -- =============================================================================
@@ -1154,38 +1154,38 @@ CREATE POLICY users_delete_customer_admin ON public.users
 
 CREATE POLICY customers_select_system_admin ON public.customers
   FOR SELECT TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY customers_select_customer_admin ON public.customers
   FOR SELECT TO authenticated
   USING (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 CREATE POLICY customers_insert_system_admin ON public.customers
   FOR INSERT TO authenticated
-  WITH CHECK (public.has_role('system_admin'));
+  WITH CHECK ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY customers_update_system_admin ON public.customers
   FOR UPDATE TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY customers_update_customer_admin ON public.customers
   FOR UPDATE TO authenticated
   USING (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   )
   WITH CHECK (
-    public.has_role('customer_admin') AND
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('customer_admin')) AND
+    customer_id = (SELECT public.current_customer_id())
   );
 
 CREATE POLICY customers_delete_system_admin ON public.customers
   FOR DELETE TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 -- =============================================================================
 -- RLS POLICIES: ROLES & PERMISSIONS TABLES
@@ -1195,14 +1195,28 @@ CREATE POLICY roles_select_all ON public.roles
   FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY roles_modify_system_admin ON public.roles
-  FOR ALL TO authenticated
+CREATE POLICY roles_insert_system_admin ON public.roles
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT public.has_role('system_admin')) AND
+    NOT is_system_role
+  );
+
+CREATE POLICY roles_update_system_admin ON public.roles
+  FOR UPDATE TO authenticated
   USING (
-    public.has_role('system_admin') AND
+    (SELECT public.has_role('system_admin')) AND
     NOT is_system_role
   )
   WITH CHECK (
-    public.has_role('system_admin') AND
+    (SELECT public.has_role('system_admin')) AND
+    NOT is_system_role
+  );
+
+CREATE POLICY roles_delete_system_admin ON public.roles
+  FOR DELETE TO authenticated
+  USING (
+    (SELECT public.has_role('system_admin')) AND
     NOT is_system_role
   );
 
@@ -1210,10 +1224,18 @@ CREATE POLICY permissions_select_all ON public.permissions
   FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY permissions_modify_system_admin ON public.permissions
-  FOR ALL TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+CREATE POLICY permissions_insert_system_admin ON public.permissions
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY permissions_update_system_admin ON public.permissions
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY permissions_delete_system_admin ON public.permissions
+  FOR DELETE TO authenticated
+  USING ((SELECT public.has_role('system_admin')));
 
 -- =============================================================================
 -- RLS POLICIES: ARTICLES & CATEGORIES
@@ -1222,37 +1244,65 @@ CREATE POLICY permissions_modify_system_admin ON public.permissions
 CREATE POLICY article_categories_select_all ON public.article_categories
   FOR SELECT TO authenticated
   USING (
-    customer_id = public.current_customer_id() OR
-    public.has_role('system_admin')
+    customer_id = (SELECT public.current_customer_id()) OR
+    (SELECT public.has_role('system_admin'))
   );
 
-CREATE POLICY article_categories_modify_customer ON public.article_categories
-  FOR ALL TO authenticated
+CREATE POLICY article_categories_insert_customer ON public.article_categories
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
+  );
+
+CREATE POLICY article_categories_update_customer ON public.article_categories
+  FOR UPDATE TO authenticated
   USING (
-    customer_id = public.current_customer_id() AND
-    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   )
   WITH CHECK (
-    customer_id = public.current_customer_id() AND
-    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
+  );
+
+CREATE POLICY article_categories_delete_customer ON public.article_categories
+  FOR DELETE TO authenticated
+  USING (
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
 CREATE POLICY articles_select_all ON public.articles
   FOR SELECT TO authenticated
   USING (
-    customer_id = public.current_customer_id() OR
-    public.has_role('system_admin')
+    customer_id = (SELECT public.current_customer_id()) OR
+    (SELECT public.has_role('system_admin'))
   );
 
-CREATE POLICY articles_modify_customer ON public.articles
-  FOR ALL TO authenticated
+CREATE POLICY articles_insert_customer ON public.articles
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
+  );
+
+CREATE POLICY articles_update_customer ON public.articles
+  FOR UPDATE TO authenticated
   USING (
-    customer_id = public.current_customer_id() AND
-    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   )
   WITH CHECK (
-    customer_id = public.current_customer_id() AND
-    (public.has_role('customer_admin') OR public.has_permission('help_articles:manage'))
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
+  );
+
+CREATE POLICY articles_delete_customer ON public.articles
+  FOR DELETE TO authenticated
+  USING (
+    customer_id = (SELECT public.current_customer_id()) AND
+    ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
 -- =============================================================================
@@ -1263,26 +1313,40 @@ CREATE POLICY notification_templates_select_customer ON public.notification_temp
   FOR SELECT TO authenticated
   USING (
     customer_id IS NULL OR
-    customer_id = public.current_customer_id() OR
-    public.has_role('system_admin')
+    customer_id = (SELECT public.current_customer_id()) OR
+    (SELECT public.has_role('system_admin'))
   );
 
-CREATE POLICY notification_templates_modify_admin ON public.notification_templates
-  FOR ALL TO authenticated
+CREATE POLICY notification_templates_insert_admin ON public.notification_templates
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT public.has_role('system_admin')) OR
+    ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
+  );
+
+CREATE POLICY notification_templates_update_admin ON public.notification_templates
+  FOR UPDATE TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    (public.has_role('customer_admin') AND customer_id = public.current_customer_id())
+    (SELECT public.has_role('system_admin')) OR
+    ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
   )
   WITH CHECK (
-    public.has_role('system_admin') OR
-    (public.has_role('customer_admin') AND customer_id = public.current_customer_id())
+    (SELECT public.has_role('system_admin')) OR
+    ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
+  );
+
+CREATE POLICY notification_templates_delete_admin ON public.notification_templates
+  FOR DELETE TO authenticated
+  USING (
+    (SELECT public.has_role('system_admin')) OR
+    ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
   );
 
 CREATE POLICY notifications_select_own ON public.notifications
   FOR SELECT TO authenticated
   USING (
-    user_id = public.current_user_id() OR
-    public.has_role('system_admin')
+    user_id = (SELECT public.current_user_id()) OR
+    (SELECT public.has_role('system_admin'))
   );
 
 CREATE POLICY notifications_insert_system ON public.notifications
@@ -1291,8 +1355,8 @@ CREATE POLICY notifications_insert_system ON public.notifications
 
 CREATE POLICY notifications_update_own ON public.notifications
   FOR UPDATE TO authenticated
-  USING (user_id = public.current_user_id())
-  WITH CHECK (user_id = public.current_user_id());
+  USING (user_id = (SELECT public.current_user_id()))
+  WITH CHECK (user_id = (SELECT public.current_user_id()));
 
 -- =============================================================================
 -- RLS POLICIES: OTHER TABLES
@@ -1302,85 +1366,160 @@ CREATE POLICY subscription_types_select_all ON public.subscription_types
   FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY subscription_types_modify_system_admin ON public.subscription_types
-  FOR ALL TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+CREATE POLICY subscription_types_insert_system_admin ON public.subscription_types
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.has_role('system_admin')));
 
-CREATE POLICY managers_all_system_admin ON public.managers
-  FOR ALL TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+CREATE POLICY subscription_types_update_system_admin ON public.subscription_types
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY subscription_types_delete_system_admin ON public.subscription_types
+  FOR DELETE TO authenticated
+  USING ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY managers_select_system_admin ON public.managers
+  FOR SELECT TO authenticated
+  USING (
+    (SELECT public.has_role('system_admin')) OR
+    auth_user_id = auth.uid()
+  );
+
+CREATE POLICY managers_insert_system_admin ON public.managers
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY managers_update_system_admin ON public.managers
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY managers_delete_system_admin ON public.managers
+  FOR DELETE TO authenticated
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY customer_subscriptions_select ON public.customer_subscriptions
   FOR SELECT TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id())
+    (SELECT public.has_role('system_admin')) OR
+    customer_id = (SELECT public.current_customer_id())
   );
 
-CREATE POLICY customer_subscriptions_modify_system_admin ON public.customer_subscriptions
-  FOR ALL TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+CREATE POLICY customer_subscriptions_insert_system_admin ON public.customer_subscriptions
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY customer_subscriptions_update_system_admin ON public.customer_subscriptions
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY customer_subscriptions_delete_system_admin ON public.customer_subscriptions
+  FOR DELETE TO authenticated
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY user_invitations_select ON public.user_invitations
   FOR SELECT TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
-CREATE POLICY user_invitations_modify ON public.user_invitations
-  FOR ALL TO authenticated
+CREATE POLICY user_invitations_insert ON public.user_invitations
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
+  );
+
+CREATE POLICY user_invitations_update ON public.user_invitations
+  FOR UPDATE TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   )
   WITH CHECK (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
+  );
+
+CREATE POLICY user_invitations_delete ON public.user_invitations
+  FOR DELETE TO authenticated
+  USING (
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
 CREATE POLICY taxonomies_select ON public.taxonomies
   FOR SELECT TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    customer_id = public.current_customer_id()
+    (SELECT public.has_role('system_admin')) OR
+    customer_id = (SELECT public.current_customer_id())
   );
 
-CREATE POLICY taxonomies_modify ON public.taxonomies
-  FOR ALL TO authenticated
+CREATE POLICY taxonomies_insert ON public.taxonomies
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
+  );
+
+CREATE POLICY taxonomies_update ON public.taxonomies
+  FOR UPDATE TO authenticated
   USING (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   )
   WITH CHECK (
-    public.has_role('system_admin') OR
-    (customer_id = public.current_customer_id() AND public.has_role('customer_admin'))
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
+  );
+
+CREATE POLICY taxonomies_delete ON public.taxonomies
+  FOR DELETE TO authenticated
+  USING (
+    (SELECT public.has_role('system_admin')) OR
+    (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
 CREATE POLICY extension_data_types_select_all ON public.extension_data_types
   FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY extension_data_types_modify_system_admin ON public.extension_data_types
-  FOR ALL TO authenticated
-  USING (public.has_role('system_admin'))
-  WITH CHECK (public.has_role('system_admin'));
+CREATE POLICY extension_data_types_insert_system_admin ON public.extension_data_types
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY extension_data_types_update_system_admin ON public.extension_data_types
+  FOR UPDATE TO authenticated
+  USING ((SELECT public.has_role('system_admin')))
+  WITH CHECK ((SELECT public.has_role('system_admin')));
+
+CREATE POLICY extension_data_types_delete_system_admin ON public.extension_data_types
+  FOR DELETE TO authenticated
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY extension_data_select ON public.extension_data
   FOR SELECT TO authenticated
   USING (true);
 
-CREATE POLICY extension_data_modify ON public.extension_data
-  FOR ALL TO authenticated
+CREATE POLICY extension_data_insert ON public.extension_data
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY extension_data_update ON public.extension_data
+  FOR UPDATE TO authenticated
   USING (true)
   WITH CHECK (true);
 
+CREATE POLICY extension_data_delete ON public.extension_data
+  FOR DELETE TO authenticated
+  USING (true);
+
 CREATE POLICY audit_logs_select_system_admin ON public.audit_logs
   FOR SELECT TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY audit_logs_insert_all ON public.audit_logs
   FOR INSERT TO authenticated
@@ -1388,22 +1527,22 @@ CREATE POLICY audit_logs_insert_all ON public.audit_logs
 
 CREATE POLICY api_logs_select_system_admin ON public.api_logs
   FOR SELECT TO authenticated
-  USING (public.has_role('system_admin'));
+  USING ((SELECT public.has_role('system_admin')));
 
 CREATE POLICY api_logs_insert_all ON public.api_logs
-  FOR INSERT
+  FOR INSERT TO authenticated
   WITH CHECK (true);
 
 CREATE POLICY user_one_time_codes_select_own ON public.user_one_time_codes
   FOR SELECT TO authenticated
-  USING (user_id = public.current_user_id());
+  USING (user_id = (SELECT public.current_user_id()));
 
 CREATE POLICY user_one_time_codes_insert_all ON public.user_one_time_codes
-  FOR INSERT
+  FOR INSERT TO authenticated
   WITH CHECK (true);
 
 CREATE POLICY user_one_time_codes_update_all ON public.user_one_time_codes
-  FOR UPDATE
+  FOR UPDATE TO authenticated
   USING (true)
   WITH CHECK (true);
 
@@ -1559,64 +1698,9 @@ INSERT INTO public.roles (name, display_name, description, is_system_role, permi
   ('customer_user', 'Customer User', 'Standard user access', true, '["customer:read", "customer:write"]'::jsonb),
   ('customer_viewer', 'Customer Viewer', 'Read-only access', true, '["customer:read"]'::jsonb);
 
--- Insert subscription types
-INSERT INTO public.subscription_types (
-  name,
-  description,
-  active,
-  is_default,
-  max_users,
-  max_contacts,
-  created_at,
-  updated_at
-)
-VALUES
-  (
-    'Free',
-    'Perfect for individuals and small teams getting started',
-    true,
-    true,
-    3,
-    100,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Starter',
-    'Great for growing teams that need more resources',
-    true,
-    false,
-    10,
-    1000,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Professional',
-    'For established teams that need comprehensive features',
-    true,
-    false,
-    50,
-    10000,
-    NOW(),
-    NOW()
-  ),
-  (
-    'Enterprise',
-    'For large organizations with custom requirements',
-    true,
-    false,
-    NULL,
-    NULL,
-    NOW(),
-    NOW()
-  )
-ON CONFLICT (name) DO UPDATE SET
-  description = EXCLUDED.description,
-  active = EXCLUDED.active,
-  max_users = EXCLUDED.max_users,
-  max_contacts = EXCLUDED.max_contacts,
-  updated_at = NOW();
+-- Insert default subscription type
+INSERT INTO public.subscription_types (name, description, active, is_default, max_users, max_contacts) VALUES
+  ('free', 'Free tier with basic features', true, true, 3, 100);
 
 -- =============================================================================
 -- SCHEMA DOCUMENTATION
