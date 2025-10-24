@@ -269,7 +269,7 @@ export default function AddRoleModal({
 
       if (permissionNames.length > 0) {
         const permissionsPayload: AddRolePermissionsPayload = {
-          id: roleData ? roleData.id : role.id,
+          id: roleData ? roleData.role_id : role.role_id,
           permissionNames,
         };
         await addRolePermissions(permissionsPayload);

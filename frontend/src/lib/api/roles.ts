@@ -67,7 +67,7 @@ interface PermissionsByModule {
     });
   }
   
-  export async function getRoleById(id: number): Promise<Role> {
+  export async function getRoleById(id: string): Promise<Role> {
     return apiFetch<Role>(`${config.site.apiUrl}/roles/${id}`, {
       method: "GET",
     });

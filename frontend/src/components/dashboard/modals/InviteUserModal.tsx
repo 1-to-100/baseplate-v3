@@ -157,7 +157,7 @@ export default function InviteUser({
 
     setIsLoading(true);
     try {
-      const roleId = roles?.find((role) => role.name === selectedRole)?.id;
+      const roleId = roles?.find((role) => role.display_name === selectedRole)?.role_id;
       const customerId = customers?.find(
         (customer) => customer.name === selectedCustomer
       )?.id;
@@ -248,8 +248,8 @@ export default function InviteUser({
             placeholder="Select role"
           >
             {roles?.map((role) => (
-              <Option key={role.id} value={role.name}>
-                {role.name.slice(0, 45)}
+              <Option key={role.role_id} value={role.display_name}>
+                {role.display_name?.slice(0, 45) || ""}
               </Option>
             ))}
           </Select>

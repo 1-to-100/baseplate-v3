@@ -116,7 +116,7 @@ export default function AddEditSystemUser({
         lastName: userData.lastName || "",
         email: userData.email || "",
         customer: userData.customer?.name || "",
-        systemRole: userData.role?.name === 'system_admin' ? 'system_admin' : 'customer_success',
+        systemRole: userData.role?.display_name === 'System Administrator' ? 'system_admin' : 'customer_success',
       });
       setAvatarPreview(userData.avatar || null);
       setIsActive(userData.status === "active");

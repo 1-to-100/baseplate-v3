@@ -547,7 +547,7 @@ const Filter = ({
                               }}
                             >
                               <Checkbox
-                                checked={selectedCustomerIds.includes(customer.id)}
+                                checked={selectedCustomerIds.includes(customer.id.toString())}
                                 onChange={() => handleCustomerChange(customer.id)}
                                 sx={{
                                   transform: { xs: "scale(0.9)", sm: "scale(1)" },
@@ -578,7 +578,7 @@ const Filter = ({
                         <Stack spacing={1}>
                           {roles?.map((role) => (
                             <Box
-                              key={role.id}
+                              key={role.role_id}
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
@@ -586,8 +586,8 @@ const Filter = ({
                               }}
                             >
                               <Checkbox
-                                checked={selectedRoleIds.includes(role.id)}
-                                onChange={() => handleRoleChange(role.id)}
+                                checked={selectedRoleIds.includes(role.role_id)}
+                                onChange={() => handleRoleChange(role.role_id)}
                                 sx={{
                                   transform: { xs: "scale(0.9)", sm: "scale(1)" },
                                 }}
@@ -599,7 +599,7 @@ const Filter = ({
                                   color: "var(--joy-palette-text-primary)",
                                 }}
                               >
-                                {role.name}
+                                {role.display_name}
                               </Typography>
                             </Box>
                           ))}

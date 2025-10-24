@@ -44,8 +44,9 @@ export interface ApiUser {
 }
 
 export interface Role {
-  id: number;
+  role_id: string;
   name: string;
+  display_name: string;
   description: string | null;
   systemRole?: boolean;
   permissions: PermissionsByModule;

@@ -15,7 +15,15 @@ import { useState, useEffect } from "react";
 import { Popper } from "@mui/base/Popper";
 import AddRoleModal from "../modals/AddRoleModal";
 import type { ColorPaletteProp, VariantProp } from "@mui/joy";
-import  { Role  } from "@/contexts/auth/types";
+import { Role } from "@/contexts/auth/types";
+
+interface PermissionsByModule {
+  [moduleName: string]: Array<{
+    id: string;
+    name: string;
+    label: string;
+  }>;
+}
 
 
 interface RoleSettingsProps {
@@ -132,9 +140,9 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
     >
       {roles.map((role: Role) => (
         <Card
-          key={role.id}
+          key={role.role_id}
           variant="outlined"
-          onClick={() => handleCardClick(role.id)}
+          onClick={() => handleCardClick(role.role_id)}
           sx={{
             p: "16px",
             borderRadius: "8px",
@@ -160,9 +168,9 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
                 fontWeight: "bold",
                 fontSize: "16px",
               }}
-              {...getAvatarProps(role.name)}
+              {...getAvatarProps(role.display_name)}
             >
-              {role.name
+              {role.display_name
                 .split(" ")
                 .slice(0, 2)
                 .map((n) => n[0]?.toUpperCase() || "")
@@ -184,7 +192,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
                   overflow: "hidden"
                 }}
               >
-                {role.name.slice(0, 50)}
+                {role.display_name.slice(0, 50)}
               </Typography>
               <Typography
                 level="body-xs"
@@ -200,7 +208,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
             </Box>
             <IconButton
               size="sm"
-              onClick={(event) => handleMenuOpen(event, role.id)}
+              onClick={(event) => handleMenuOpen(event, role.role_id)}
             >
               <DotsThree
                 weight="bold"
@@ -209,7 +217,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
               />
             </IconButton>
             <Popper
-              open={activeRoleId === role.id.toString() && Boolean(anchorEl)}
+              open={activeRoleId === role.role_id.toString() && Boolean(anchorEl)}
               anchorEl={anchorEl}
               placement="bottom-start"
               style={{
@@ -223,7 +231,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
               <Box
                 onMouseDown={(event) => {
                   event.preventDefault();
-                  handleEditRole(role.id);
+                  handleEditRole(role.role_id);
                 }}
                 sx={menuItemStyle}
               >

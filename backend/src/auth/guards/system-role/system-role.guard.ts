@@ -52,8 +52,8 @@ export class SystemRoleGuard implements CanActivate {
     const { data: userRole, error } = await this.supabaseService
       .getClient()
       .from('roles')
-      .select('id, name, description, system_role')
-      .eq('id', user.roleId)
+      .select('role_id, name, description, is_system_role')
+      .eq('role_id', user.roleId)
       .single();
 
     if (error || !userRole) {

@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -67,7 +66,10 @@ export class RolesController {
     const rolePermissions = role.permissions;
 
     // If permissions is a simple array of strings (JSONB), convert to expected format
-    if (Array.isArray(rolePermissions) && typeof rolePermissions[0] === 'string') {
+    if (
+      Array.isArray(rolePermissions) &&
+      typeof rolePermissions[0] === 'string'
+    ) {
       outputRole.permissions = rolePermissions.reduce<
         Record<string, Array<{ id: string; name: string; label: string }>>
       >((acc, permName: string) => {

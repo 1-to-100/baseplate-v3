@@ -55,7 +55,7 @@ export class PermissionGuard implements CanActivate {
         .getClient()
         .from('roles')
         .select('name')
-        .eq('id', effectiveUser.roleId)
+        .eq('role_id', effectiveUser.roleId)
         .single();
 
       if (userRole?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
@@ -69,7 +69,7 @@ export class PermissionGuard implements CanActivate {
         .getClient()
         .from('roles')
         .select('name')
-        .eq('id', effectiveUser.roleId)
+        .eq('role_id', effectiveUser.roleId)
         .single();
 
       if (userRole?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
@@ -118,7 +118,7 @@ export class PermissionGuard implements CanActivate {
       .from('roles')
       .select(
         `
-        id,
+        role_id,
         name,
         permissions:role_permissions(
           permission:permissions(
@@ -127,7 +127,7 @@ export class PermissionGuard implements CanActivate {
         )
       `,
       )
-      .eq('id', effectiveUser.roleId)
+      .eq('role_id', effectiveUser.roleId)
       .single();
 
     if (error || !userRoleData) {

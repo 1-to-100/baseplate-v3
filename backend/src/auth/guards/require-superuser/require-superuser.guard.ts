@@ -47,7 +47,7 @@ export class RequireSuperuserGuard implements CanActivate {
       .getClient()
       .from('roles')
       .select('name')
-      .eq('id', user.roleId)
+      .eq('role_id', user.roleId)
       .single();
 
     if (error || !userRole) {

@@ -103,7 +103,7 @@ const SystemAdminSettings: React.FC = () => {
   const queryClient = useQueryClient();
   const { debouncedSearchValue } = useGlobalSearch();
   const params = useParams();
-  const roleId = params.roleId;
+  const roleId = params.roleId as string;
 
   const rowsPerPage = 10;
 
@@ -117,7 +117,7 @@ const SystemAdminSettings: React.FC = () => {
       if (!roleId) {
         throw new Error("Role ID is missing");
       }
-      return getRoleById(Number(roleId));
+      return getRoleById(roleId);
     },
     enabled: !!roleId,
   });
@@ -134,7 +134,7 @@ const SystemAdminSettings: React.FC = () => {
 
   const transformUser = (apiUser: ApiUser): ApiUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.id === apiUser.roleId);
+    const role = roles?.find((r) => r.role_id == apiUser.roleId);
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
@@ -171,7 +171,7 @@ const SystemAdminSettings: React.FC = () => {
         search: debouncedSearchValue || undefined,
         orderBy: sortColumn || undefined,
         orderDirection: sortDirection,
-        roleId: roleId ? [Number(roleId)] : undefined,
+        roleId: roleId ? [Array.isArray(roleId) ? roleId[0] || '' : roleId].filter(Boolean) : undefined,
       });
       return {
         ...response,
@@ -1331,7 +1331,7 @@ const SystemAdminSettings: React.FC = () => {
       <AddRoleModal
         open={openEditRoleModal}
         onClose={handleCloseEditRoleModal}
-        roleId={roleData?.id}
+        roleId={roleData?.role_id}
         onRoleCreated={handleRoleEdited}
       />
 
