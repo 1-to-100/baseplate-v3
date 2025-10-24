@@ -26,7 +26,7 @@ export interface ApiUser {
   email: string;
   customerId?: number;
   customer?: Customer;
-  roleId?: number;
+  roleId?: string;
   role?: Role;
   persona?: string;
   status: string;
@@ -134,7 +134,7 @@ export interface SystemUser {
   email: string;
   customerId?: number;
   customer?: Customer;
-  roleId?: number;
+  roleId?: string;
   role?: Role;
   persona?: string;
   status: string;

@@ -18,7 +18,7 @@ interface PermissionsByModule {
   }
   
   interface AddRolePermissionsPayload {
-    id: number;
+    id: string;
     permissionNames: string[];
   }
 
@@ -73,7 +73,7 @@ interface PermissionsByModule {
     });
   }
 
-  export async function editRole(roleId: number, payload: CreateRolePayload): Promise<Role> {
+  export async function editRole(roleId: string, payload: CreateRolePayload): Promise<Role> {
     return apiFetch<Role>(`${config.site.apiUrl}/roles/${roleId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),

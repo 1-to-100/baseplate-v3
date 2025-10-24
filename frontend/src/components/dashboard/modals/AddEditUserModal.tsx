@@ -95,7 +95,7 @@ export default function AddEditUser({
 
   const roleOptions = useMemo(() => {
     if (userData?.roleId) {
-      const userRole = roles?.find((role) => role.role_id === String(userData?.roleId));
+      const userRole = roles?.find((role) => role.role_id === userData?.roleId);
       return userRole?.display_name ? [userRole.display_name] : [];
     }
 
@@ -330,10 +330,10 @@ export default function AddEditUser({
     return customer ? customer.id : 0;
   };
 
-  const getRoleId = (roleName: string): number => {
-    if (!roles) return 0;
+  const getRoleId = (roleName: string): string | undefined => {
+    if (!roles) return undefined;
     const role = roles.find((r) => r.display_name === roleName);
-    return role ? role.role_id : 0;
+    return role?.role_id;
   };
 
   const handleSave = async () => {

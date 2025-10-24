@@ -43,7 +43,7 @@ interface CreateRolePayload {
 }
 
 interface AddRolePermissionsPayload {
-  id: number;
+  id: string;
   permissionNames: string[];
 }
 
@@ -65,7 +65,7 @@ interface AddRoleModalProps {
   open: boolean;
   onClose: () => void;
   onRoleCreated?: () => void;
-  roleId?: number;
+  roleId?: string;
 }
 
 export default function AddRoleModal({

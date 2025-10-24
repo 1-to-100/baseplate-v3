@@ -548,7 +548,7 @@ const Filter = ({
                             >
                               <Checkbox
                                 checked={selectedCustomerIds.includes(customer.id.toString())}
-                                onChange={() => handleCustomerChange(customer.id)}
+                                onChange={() => handleCustomerChange(customer.id.toString())}
                                 sx={{
                                   transform: { xs: "scale(0.9)", sm: "scale(1)" },
                                 }}

@@ -289,7 +289,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
       <AddRoleModal
         open={openEditRoleModal}
         onClose={handleCloseEditRoleModal}
-        roleId={selectedRoleId ? Number(selectedRoleId) : undefined}
+        roleId={selectedRoleId ?? undefined}
         onRoleCreated={fetchRoles}
       />
     </Box>

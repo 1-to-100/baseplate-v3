@@ -14,7 +14,7 @@ interface CreateUserPayload {
   firstName: string;
   lastName: string;
   customerId?: number;
-  roleId?: number;
+  roleId?: string;
   managerId?: number;
   status?: 'active' | 'inactive' | 'suspended';
 }
@@ -56,13 +56,13 @@ interface GetUsersResponse {
 interface InviteUserPayload {
   email: string;
   customerId: number;
-  roleId: number;
+  roleId: string;
 }
 
 interface InviteMultipleUsersPayload {
   emails: string[];
   customerId: number;
-  roleId: number;
+  roleId: string;
 }
 
 export async function validateEmail(email: string): Promise<boolean> {
