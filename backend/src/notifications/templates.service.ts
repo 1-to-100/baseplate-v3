@@ -34,7 +34,7 @@ export class TemplatesService {
         .select(
           `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
         )
         .is('deleted_at', null);
@@ -98,7 +98,7 @@ export class TemplatesService {
           .select(
             `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
           )
           .eq('id', id)
@@ -151,7 +151,7 @@ export class TemplatesService {
           .select(
             `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
           )
           .single();
@@ -236,7 +236,7 @@ export class TemplatesService {
           .select(
             `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
           )
           .single();
@@ -285,7 +285,7 @@ export class TemplatesService {
         .select(
           `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
         )
         .eq('id', id)
@@ -316,7 +316,7 @@ export class TemplatesService {
           .select(
             `
           *,
-          customers!customer_id(id, name, owner_id)
+          customers!customer_id(customer_id, name, owner_id)
         `,
           )
           .single();
@@ -469,7 +469,7 @@ export class TemplatesService {
       customerId: template.customer_id,
       Customer: template.customers
         ? {
-            id: template.customers.id,
+            id: template.customers.customer_id,
             name: template.customers.name,
             ownerId: template.customers.owner_id,
           }
