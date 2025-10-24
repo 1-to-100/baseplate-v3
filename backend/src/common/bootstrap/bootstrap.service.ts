@@ -62,13 +62,16 @@ export class BootstrapService implements OnModuleInit {
 
       // Check if auth user already exists
       let authUserId: string;
-      const { data: existingAuthUsers } = await this.supabaseService.admin.listUsers();
+      const { data: existingAuthUsers } =
+        await this.supabaseService.admin.listUsers();
       const existingAuthUser = existingAuthUsers?.users?.find(
         (u: any) => u.email === 'admin@system.local',
       );
 
       if (existingAuthUser) {
-        this.logger.log('Auth user already exists, will create database record');
+        this.logger.log(
+          'Auth user already exists, will create database record',
+        );
         authUserId = existingAuthUser.id;
       } else {
         // Create user in Supabase Auth
@@ -90,7 +93,7 @@ export class BootstrapService implements OnModuleInit {
         .from('users')
         .insert({
           email: 'admin@system.local',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
           auth_user_id: authUserId,
           full_name: 'System Administrator',
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

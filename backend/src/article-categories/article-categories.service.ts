@@ -8,6 +8,7 @@ import { DatabaseService } from '@/common/database/database.service';
 import { ArticleCategoryDto } from '@/article-categories/dto/article-category.dto';
 import { OutputArticleCategoryDto } from '@/article-categories/dto/output-article-category.dto';
 import { UpdateArticleCategoryDto } from '@/article-categories/dto/update-article-category.dto';
+import { generateSlug } from '@/common/helpers/string-helpers';
 
 @Injectable()
 export class ArticleCategoriesService {
@@ -24,6 +25,7 @@ export class ArticleCategoriesService {
       const category = await this.database.create('article_categories', {
         data: {
           name: createArticleCategoryDto.name,
+          slug: generateSlug(createArticleCategoryDto.name),
           subcategory: createArticleCategoryDto.subcategory,
           about: createArticleCategoryDto.about,
           icon: createArticleCategoryDto.icon,
@@ -92,8 +94,10 @@ export class ArticleCategoriesService {
 
       // Convert camelCase to snake_case for database fields
       const updateData: any = {};
-      if (updateArticleCategoryDto.name !== undefined)
+      if (updateArticleCategoryDto.name !== undefined) {
         updateData.name = updateArticleCategoryDto.name;
+        updateData.slug = generateSlug(updateArticleCategoryDto.name);
+      }
       if (updateArticleCategoryDto.subcategory !== undefined)
         updateData.subcategory = updateArticleCategoryDto.subcategory;
       if (updateArticleCategoryDto.about !== undefined)

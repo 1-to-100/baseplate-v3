@@ -29,9 +29,12 @@ export class CustomersService {
       .getClient()
       .from('roles')
       .select('role_id')
-      .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
-    
-    return roles?.map(role => role.role_id) || [];
+      .in('name', [
+        SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
+        SYSTEM_ROLES.CUSTOMER_SUCCESS,
+      ]);
+
+    return roles?.map((role) => role.role_id) || [];
   }
 
   async create(createCustomerDto: CreateCustomerDto) {
@@ -159,7 +162,7 @@ export class CustomersService {
         });
 
         // Parse customer success user name
-        const csName = customerSuccessUser?.full_name 
+        const csName = customerSuccessUser?.full_name
           ? parseUserName(customerSuccessUser.full_name)
           : null;
 
@@ -210,9 +213,9 @@ export class CustomersService {
     }
 
     const customers = await this.database.findMany('customers', options);
-    
+
     // Map to taxonomy format
-    return customers.map(c => ({
+    return customers.map((c) => ({
       id: c.customer_id,
       name: c.name,
     }));
@@ -261,10 +264,10 @@ export class CustomersService {
       : null;
 
     // Parse names
-    const csName = customerSuccessUser?.full_name 
+    const csName = customerSuccessUser?.full_name
       ? parseUserName(customerSuccessUser.full_name)
       : null;
-    const ownerName = ownerUser?.full_name 
+    const ownerName = ownerUser?.full_name
       ? parseUserName(ownerUser.full_name)
       : null;
 
@@ -273,20 +276,22 @@ export class CustomersService {
       name: customer.name,
       email: ownerUser?.email || '',
       status: customer.lifecycle_stage, // Map for API
-      customerSuccess: customerSuccessUser && csName
-        ? {
-            id: customerSuccessUser.user_id,
-            name: customerSuccessUser.full_name,
-            email: customerSuccessUser.email,
-          }
-        : null,
-      owner: ownerUser && ownerName
-        ? {
-            id: ownerUser.user_id,
-            firstName: ownerName.firstName,
-            lastName: ownerName.lastName,
-          }
-        : null,
+      customerSuccess:
+        customerSuccessUser && csName
+          ? {
+              id: customerSuccessUser.user_id,
+              name: customerSuccessUser.full_name,
+              email: customerSuccessUser.email,
+            }
+          : null,
+      owner:
+        ownerUser && ownerName
+          ? {
+              id: ownerUser.user_id,
+              firstName: ownerName.firstName,
+              lastName: ownerName.lastName,
+            }
+          : null,
       subscriptionId: subscription?.subscription_type_id,
       subscriptionName: subscription?.name,
       numberOfUsers: userCount,
@@ -297,7 +302,7 @@ export class CustomersService {
     const customer = await this.database.findUnique('customers', {
       where: { customer_id: id }, // Changed from id
     });
-    
+
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
@@ -327,9 +332,11 @@ export class CustomersService {
     // Build update data with proper field names
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
-    if (subscriptionId !== undefined) updateData.subscription_type_id = subscriptionId; // Changed from subscription_id
+    if (subscriptionId !== undefined)
+      updateData.subscription_type_id = subscriptionId; // Changed from subscription_id
     if (ownerId !== undefined) updateData.owner_id = ownerId;
-    if (ownerEmail !== undefined) updateData.email_domain = getDomainFromEmail(ownerEmail);
+    if (ownerEmail !== undefined)
+      updateData.email_domain = getDomainFromEmail(ownerEmail);
 
     // Remove undefined fields
     Object.keys(updateData).forEach(
@@ -361,7 +368,10 @@ export class CustomersService {
       throw new ConflictException(
         `Customer with the same name already exists: ${name}`,
       );
-    } else if (existingCustomer && existingCustomer.email_domain === getDomainFromEmail(email)) {
+    } else if (
+      existingCustomer &&
+      existingCustomer.email_domain === getDomainFromEmail(email)
+    ) {
       throw new ConflictException(
         `Customer with the same email domain already exists: ${getDomainFromEmail(email)}`,
       );
@@ -390,10 +400,13 @@ export class CustomersService {
   private async validateSubscription(subscriptionId?: string) {
     if (!subscriptionId) return;
 
-    const subscriptionExists = await this.database.findUnique('subscription_types', {
-      where: { subscription_type_id: subscriptionId }, // Changed table and column
-    });
-    
+    const subscriptionExists = await this.database.findUnique(
+      'subscription_types',
+      {
+        where: { subscription_type_id: subscriptionId }, // Changed table and column
+      },
+    );
+
     if (!subscriptionExists) {
       throw new ConflictException(
         'Subscription with the given ID does not exist',
@@ -416,7 +429,7 @@ export class CustomersService {
     }
 
     // Get the role to check if it's customer success
-    const role = manager.role_id 
+    const role = manager.role_id
       ? await this.database.findUnique('roles', {
           where: { role_id: manager.role_id },
         })
@@ -458,7 +471,7 @@ export class CustomersService {
     }
 
     // Get the role to check
-    const role = owner.role_id 
+    const role = owner.role_id
       ? await this.database.findUnique('roles', {
           where: { role_id: owner.role_id },
         })

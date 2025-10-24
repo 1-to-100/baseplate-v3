@@ -26,7 +26,7 @@ export class RegisterService {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .from('roles')
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      .select('id')
+      .select('role_id')
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .eq('name', roleName)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -37,7 +37,7 @@ export class RegisterService {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-    return role.id;
+    return role.role_id;
   }
 
   async register(registerDto: RegisterDto) {
@@ -89,7 +89,6 @@ export class RegisterService {
           .from('customers')
           .insert({
             name: domain,
-            email,
             email_domain: domain,
             owner_id: newUser.id,
           })
@@ -107,13 +106,13 @@ export class RegisterService {
         .from('users')
         .update({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          customer_id: newCustomer.id,
+          customer_id: newCustomer.customer_id,
           role_id: await this.getRoleIdByName(
             SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
             adminClient,
           ),
         })
-        .eq('id', newUser.id);
+        .eq('user_id', newUser.id);
 
       if (updateUserError) {
         throw new ConflictException(
