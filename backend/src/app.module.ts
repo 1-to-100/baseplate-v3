@@ -15,6 +15,8 @@ import { RegisterModule } from '@/register/register.module';
 import { ArticleCategoriesModule } from '@/article-categories/article-categories.module';
 import { ArticlesModule } from '@/articles/articles.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
+import { CustomerSuccessOwnedCustomersModule } from '@/customer-success-owned-customers/customer-success-owned-customers.module';
+import { TeamsModule } from '@/teams/teams.module';
 import { SupabaseModule } from '@/common/supabase/supabase.module';
 import { validate } from '@/common/config/config.validation';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
@@ -44,6 +46,8 @@ import { BootstrapService } from '@/common/bootstrap/bootstrap.service';
     ArticleCategoriesModule,
     ArticlesModule,
     NotificationsModule,
+    CustomerSuccessOwnedCustomersModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService, FrontendPathsService],

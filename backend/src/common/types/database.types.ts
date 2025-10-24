@@ -184,6 +184,62 @@ export interface CustomerSubscription {
   updated_at?: string | null;
 }
 
+export interface Team {
+  team_id: string;
+  customer_id: string;
+  manager_id?: string | null;
+  team_name: string;
+  description?: string | null;
+  is_primary: boolean;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface TeamMember {
+  team_member_id: string;
+  team_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface CustomerSuccessOwnedCustomer {
+  customer_success_owned_customer_id: string;
+  user_id: string;
+  customer_id: string;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface Subscription {
+  subscription_id: string;
+  customer_id: string;
+  stripe_subscription_id: string;
+  stripe_status: StripeSubscriptionStatus;
+  currency?: string | null;
+  description?: string | null;
+  collection_method?: string | null;
+  current_period_start?: string | null;
+  current_period_end?: string | null;
+  trial_start?: string | null;
+  trial_end?: string | null;
+  cancel_at_period_end: boolean;
+  canceled_at?: string | null;
+  default_payment_method?: string | null;
+  latest_invoice?: string | null;
+  stripe_metadata?: any; // jsonb
+  stripe_raw_data?: any; // jsonb
+  last_synced_at?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface RolePermission {
+  role_id: string;
+  permission_id: string;
+  created_at: string;
+}
+
 export interface UserInvitation {
   invitation_id: string;
   email: string;
@@ -361,11 +417,31 @@ export interface CustomerWithRelations extends Customer {
   notifications?: Notification[];
   notification_templates?: NotificationTemplate[];
   taxonomies?: Taxonomy[];
-  subscriptions?: CustomerSubscription[];
+  customer_subscriptions?: CustomerSubscription[];
+  subscriptions?: Subscription[];
+  teams?: Team[];
+  customer_success_owned_customers?: CustomerSuccessOwnedCustomer[];
+}
+
+export interface TeamWithRelations extends Team {
+  customer?: Customer | null;
+  manager?: User | null;
+  team_members?: TeamMember[];
+}
+
+export interface TeamMemberWithRelations extends TeamMember {
+  team?: Team | null;
+  user?: User | null;
+}
+
+export interface SubscriptionWithRelations extends Subscription {
+  customer?: Customer | null;
 }
 
 export interface RoleWithRelations extends Role {
   users?: User[];
+  role_permissions?: RolePermission[];
+  permission_details?: Permission[];
 }
 
 export interface ManagerWithRelations extends Manager {
@@ -548,6 +624,44 @@ export type UpdateNotificationInput = Partial<
 
 export type CreateAuditLogInput = Omit<AuditLog, 'audit_log_id' | 'created_at'>;
 
+export type CreateTeamInput = Omit<
+  Team,
+  'team_id' | 'created_at' | 'updated_at'
+>;
+
+export type UpdateTeamInput = Partial<
+  Omit<Team, 'team_id' | 'created_at' | 'updated_at'>
+>;
+
+export type CreateTeamMemberInput = Omit<
+  TeamMember,
+  'team_member_id' | 'created_at' | 'updated_at'
+>;
+
+export type UpdateTeamMemberInput = Partial<
+  Omit<TeamMember, 'team_member_id' | 'created_at' | 'updated_at'>
+>;
+
+export type CreateCustomerSuccessOwnedCustomerInput = Omit<
+  CustomerSuccessOwnedCustomer,
+  'customer_success_owned_customer_id' | 'created_at' | 'updated_at'
+>;
+
+export type UpdateCustomerSuccessOwnedCustomerInput = Partial<
+  Omit<CustomerSuccessOwnedCustomer, 'customer_success_owned_customer_id' | 'created_at' | 'updated_at'>
+>;
+
+export type CreateSubscriptionInput = Omit<
+  Subscription,
+  'subscription_id' | 'created_at' | 'updated_at'
+>;
+
+export type UpdateSubscriptionInput = Partial<
+  Omit<Subscription, 'subscription_id' | 'created_at' | 'updated_at'>
+>;
+
+export type CreateRolePermissionInput = Omit<RolePermission, 'created_at'>;
+
 // ============================================================================
 // Query filter types for common filtering patterns
 // ============================================================================
@@ -670,7 +784,11 @@ export type TableNames =
   | 'notification_templates'
   | 'notifications'
   | 'audit_logs'
-  | 'api_logs';
+  | 'api_logs'
+  | 'teams'
+  | 'team_members'
+  | 'customer_success_owned_customers'
+  | 'role_permissions';
 
 // Generic database record type
 export interface DatabaseRecord {
@@ -682,7 +800,7 @@ export interface DatabaseRecord {
 // Type mapping for table names to their interfaces
 export interface TableTypeMap {
   subscription_types: SubscriptionType;
-  subscriptions: SubscriptionType;
+  subscriptions: Subscription;
   roles: Role;
   permissions: Permission;
   managers: Manager;
@@ -700,6 +818,10 @@ export interface TableTypeMap {
   notifications: Notification;
   audit_logs: AuditLog;
   api_logs: ApiLog;
+  teams: Team;
+  team_members: TeamMember;
+  customer_success_owned_customers: CustomerSuccessOwnedCustomer;
+  role_permissions: RolePermission;
 }
 
 // Utility type for getting table type by name

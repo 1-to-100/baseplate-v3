@@ -678,17 +678,30 @@ export class UsersService {
       data: updateData,
     });
 
-    // attach customer success to customer
+    // attach customer success to customer using new customer_success_owned_customers table
     if (isSuperadmin) {
-      await this.database.updateMany('customers', {
-        where: { manager_id: id },
-        data: { manager_id: null },
+      // Remove all customer success assignments for this user
+      await this.database.deleteMany('customer_success_owned_customers', {
+        where: { user_id: id },
       });
     } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
-      await this.database.update('customers', {
-        where: { customer_id: updateSystemUserDto.customerId },
-        data: { manager_id: user.user_id },
+      // Check if assignment already exists
+      const existingAssignment = await this.database.findFirst('customer_success_owned_customers', {
+        where: { 
+          user_id: user.user_id,
+          customer_id: updateSystemUserDto.customerId 
+        },
       });
+
+      // Create assignment if it doesn't exist
+      if (!existingAssignment) {
+        await this.database.create('customer_success_owned_customers', {
+          data: {
+            user_id: user.user_id,
+            customer_id: updateSystemUserDto.customerId,
+          },
+        });
+      }
     }
 
     return mapUserToDto(user);

@@ -441,15 +441,9 @@ export class CustomersService {
       );
     }
 
-    const findCustomer = await this.database.findFirst('customers', {
-      where: { manager_id: managerId },
-    });
-
-    if (findCustomer) {
-      throw new ConflictException(
-        `Manager user with ID ${managerId} is already assigned to a customer: ${findCustomer.name}`,
-      );
-    }
+    // Note: With the new customer_success_owned_customers table,
+    // CS reps can be assigned to multiple customers, so we no longer
+    // need to check for existing assignments and throw an error
   }
 
   private async validateOwner(ownerId?: string) {
