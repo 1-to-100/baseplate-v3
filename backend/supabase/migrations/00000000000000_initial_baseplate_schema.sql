@@ -827,22 +827,6 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 COMMENT ON FUNCTION public.current_customer_id() IS 
   'Returns the customer_id for the current authenticated user';
 
--- Check if current user is system admin
-CREATE OR REPLACE FUNCTION public.is_system_admin()
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.users u
-    JOIN public.roles r ON u.role_id = r.role_id
-    WHERE u.auth_user_id = auth.uid()
-    AND r.name = 'system_admin'
-    AND r.is_system_role = true
-  );
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
-
-COMMENT ON FUNCTION public.is_system_admin() IS 
-  'Returns true if current user has system_admin role';
-
 -- Check if user has specific permission
 CREATE OR REPLACE FUNCTION public.has_permission(permission_name text)
 RETURNS boolean AS $$
@@ -909,7 +893,7 @@ CREATE OR REPLACE FUNCTION public.get_accessible_customer_ids()
 RETURNS SETOF uuid AS $$
 BEGIN
   -- System admins can access all customers
-  IF (SELECT public.is_system_admin()) THEN
+  IF (SELECT public.has_system_role('system_admin')) THEN
     RETURN QUERY SELECT customer_id FROM public.customers WHERE active = true;
   
   -- Customer Success users can access their assigned customers
@@ -1486,6 +1470,24 @@ COMMENT ON VIEW public.extension_data_enriched IS
   'Convenience view showing extension data with field type definitions';
 
 -- =============================================================================
+-- RLS POLICIES: VIEWS
+-- =============================================================================
+
+-- Enable RLS on views
+ALTER VIEW public.active_customers SET (security_invoker = on);
+ALTER VIEW public.active_users SET (security_invoker = on);
+ALTER VIEW public.extension_data_enriched SET (security_invoker = on);
+
+COMMENT ON VIEW public.active_customers IS 
+  'Convenience view showing active customers with subscription type and owner details. Access restricted to system administrators via RLS.';
+
+COMMENT ON VIEW public.active_users IS 
+  'Convenience view showing active users with customer and role details. Access restricted to system administrators via RLS.';
+
+COMMENT ON VIEW public.extension_data_enriched IS 
+  'Convenience view showing extension data with field type definitions. Access restricted to system administrators via RLS.';
+
+-- =============================================================================
 -- GRANT PERMISSIONS
 -- =============================================================================
 
@@ -1497,6 +1499,16 @@ GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- Revoke access to admin-only views from authenticated users
+REVOKE ALL ON public.active_customers FROM authenticated;
+REVOKE ALL ON public.active_users FROM authenticated;
+REVOKE ALL ON public.extension_data_enriched FROM authenticated;
+
+-- Grant view access only to service_role (used by backend with system admin checks)
+GRANT SELECT ON public.active_customers TO service_role;
+GRANT SELECT ON public.active_users TO service_role;
+GRANT SELECT ON public.extension_data_enriched TO service_role;
 
 GRANT SELECT, INSERT, UPDATE ON public.user_one_time_codes TO anon;
 GRANT INSERT ON public.api_logs TO anon;
@@ -1510,7 +1522,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 -- Grant execute permissions on helper functions
 GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.current_customer_id() TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION public.is_system_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_permission(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_user_role_id() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_role(text) TO authenticated;
@@ -1617,7 +1628,6 @@ COMMENT ON SCHEMA public IS
    Core Helper Functions:
    - current_user_id() → Get current user UUID
    - current_customer_id() → Get current user''s customer UUID
-   - is_system_admin() → Check if user is system administrator
    - has_permission(text) → Check for specific permission
    
    Role & Permission Functions:
