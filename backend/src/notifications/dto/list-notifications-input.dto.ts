@@ -2,6 +2,7 @@ import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import {
   NotificationType,
+  NotificationTypeList,
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
@@ -10,7 +11,7 @@ export class ListNotificationsInputDto extends OmitType(PaginatedInputDto, [
   'search',
 ] as const) {
   @IsOptional()
-  @IsEnum(NotificationTypes)
+  @IsEnum(NotificationTypeList)
   @ApiProperty({
     description: 'Type of the notification',
     enum: NotificationTypes,

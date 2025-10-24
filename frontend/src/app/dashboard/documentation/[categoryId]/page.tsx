@@ -30,7 +30,7 @@ import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Star as StarIcon } from "@phosphor-icons/react/dist/ssr/Star";
 import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
 import { useCallback, useState, useEffect } from "react";
-import AddEditUser from "@/components/dashboard/modals/AddEditUser";
+import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -485,7 +485,7 @@ const CategoryInfo: React.FC = () => {
                   >
                     Add article
                   </Button>
-                  <AddEditUser
+                  <AddEditUserModal
                     open={openAddUserModal}
                     onClose={handleCloseAddUserModal}
                   />

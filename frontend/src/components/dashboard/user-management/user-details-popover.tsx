@@ -16,7 +16,7 @@ import {Warning as Warning} from "@phosphor-icons/react/dist/ssr/Warning";
 import DeleteDeactivateUserModal from "../modals/DeleteItemModal";
 import ResetPasswordUserModal from "../modals/ResetPasswordUserModal";
 import SuspendUserModal from "../modals/SuspendUserModal";
-import AddEditUser from "../modals/AddEditUser";
+import AddEditUserModal from "../modals/AddEditUserModal";
 import {Popper} from "@mui/base/Popper";
 import {ArrowRight as ArrowRightIcon} from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import {useColorScheme} from "@mui/joy/styles";
@@ -670,7 +670,7 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
         onConfirm={handleConfirmSuspend}
       />
 
-      <AddEditUser
+      <AddEditUserModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         userId={userData?.id}

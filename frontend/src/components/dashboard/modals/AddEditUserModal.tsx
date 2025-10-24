@@ -95,7 +95,7 @@ export default function AddEditUser({
 
   const roleOptions = useMemo(() => {
     if (userData?.roleId) {
-      const userRole = roles?.find((role) => role.role_id === Number(userData?.roleId));
+      const userRole = roles?.find((role) => role.role_id === String(userData?.roleId));
       return userRole?.display_name ? [userRole.display_name] : [];
     }
 

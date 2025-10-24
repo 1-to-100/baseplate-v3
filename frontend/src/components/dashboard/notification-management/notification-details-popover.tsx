@@ -15,7 +15,7 @@ import DeleteItemModal from "../modals/DeleteItemModal";
 import { Popper } from "@mui/base/Popper";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getNotificationById, deleteNotification } from "@/lib/api/notifications";
-import AddEditNotification from "../modals/AddEditNotification";
+import AddEditNotificationModal from "../modals/AddEditNotificationModal";
 import { ApiNotification } from "@/contexts/auth/types";
 import CircularProgress from "@mui/joy/CircularProgress";
 import { useColorScheme } from "@mui/joy/styles";
@@ -314,7 +314,7 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
         description="Are you sure you want to delete this notification?"
       />
 
-      <AddEditNotification
+      <AddEditNotificationModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         notificationToEditId={notificationId}

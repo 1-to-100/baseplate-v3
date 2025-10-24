@@ -21,7 +21,7 @@ export class CreateNotificationDto {
   })
   customerId?: string;
 
-  @IsEnum(NotificationTypeList, { each: true })
+  @IsEnum(NotificationTypeList)
   @ApiProperty({
     description: 'Type of the notification',
     enum: NotificationTypes,

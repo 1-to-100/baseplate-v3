@@ -9,6 +9,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   NotificationType,
+  NotificationTypeList,
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
@@ -20,7 +21,7 @@ import {
 
 export class ListAdminNotificationsInputDto extends PaginatedInputDto {
   @IsOptional()
-  @IsEnum(NotificationTypes)
+  @IsEnum(NotificationTypeList)
   @ApiProperty({
     description: 'Type of the notification',
     enum: NotificationTypes,

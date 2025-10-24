@@ -4,13 +4,14 @@ import { Transform } from 'class-transformer';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
 import {
   NotificationType,
+  NotificationTypeList,
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
 import {
   eachNotificationChannelTransformer,
   eachNotificationTypeTransformer,
 } from '@/notifications/helpers/class-transform-helpers';
-import { NotificationChannel } from '@/notifications/constants/notification-channel';
+import { NotificationChannel, NotificationChannelList } from '@/notifications/constants/notification-channel';
 
 export class ListTemplatesInputDto extends PaginatedInputDto {
   @IsOptional()
@@ -23,7 +24,7 @@ export class ListTemplatesInputDto extends PaginatedInputDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(NotificationTypes, { each: true })
+  @IsEnum(NotificationTypeList, { each: true })
   @ApiProperty({
     description: 'Types of the notification',
     enum: NotificationTypes,
@@ -37,7 +38,7 @@ export class ListTemplatesInputDto extends PaginatedInputDto {
 
   @IsOptional()
   @IsArray()
-  @IsEnum(NotificationChannel, { each: true })
+  @IsEnum(NotificationChannelList, { each: true })
   @ApiProperty({
     description: 'Notification channels',
     enum: NotificationChannel,

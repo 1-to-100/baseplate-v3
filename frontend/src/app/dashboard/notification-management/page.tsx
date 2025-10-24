@@ -19,7 +19,7 @@ import { ArrowsDownUp as SortIcon } from "@phosphor-icons/react/dist/ssr/ArrowsD
 import { config } from "@/config";
 import DeleteItemModal from "@/components/dashboard/modals/DeleteItemModal";
 import { useState, useCallback, useEffect, useRef } from "react";
-import AddEditNotification from "@/components/dashboard/modals/AddEditNotification";
+import AddEditNotificationModal from "@/components/dashboard/modals/AddEditNotificationModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import { Popper } from "@mui/base/Popper";
 import SearchInput from "@/components/dashboard/layout/search-input";
@@ -30,7 +30,7 @@ import {
 } from "../../../lib/api/notifications";
 import { ApiNotification } from "@/contexts/auth/types";
 import CircularProgress from "@mui/joy/CircularProgress";
-import SendNotifications from "@/components/dashboard/modals/SendNotifications";
+import SendNotificationsModal from "@/components/dashboard/modals/SendNotificationsModal";
 import { useRouter } from "next/navigation";
 import { paths } from "@/paths";
 import NotificationDetailsPopover from "@/components/dashboard/notification-management/notification-details-popover";
@@ -927,13 +927,13 @@ export default function Page(): React.JSX.Element {
         ref={popoverRef}
       />
 
-      <AddEditNotification
+      <AddEditNotificationModal
         open={openAddNotificationModal}
         onClose={handleCloseAddNotificationModal}
         notificationToEditId={notificationToEditId}
       />
 
-      <SendNotifications
+      <SendNotificationsModal
         open={openSentNotificationsModal}
         onClose={handleCloseSentNotificationsModal}
         selectedNotificationId={selectedNotification?.id ?? 0}

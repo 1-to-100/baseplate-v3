@@ -42,7 +42,7 @@ import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
 import { X as X } from "@phosphor-icons/react/dist/ssr/X";
 import { useCallback, useState, useEffect } from "react";
 import UserDetailsPopover from "@/components/dashboard/user-management/user-details-popover";
-import AddEditUser from "@/components/dashboard/modals/AddEditUser";
+import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import InviteUser from "@/components/dashboard/modals/InviteUserModal";
@@ -134,7 +134,7 @@ const SystemAdminSettings: React.FC = () => {
 
   const transformUser = (apiUser: ApiUser): ApiUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.role_id == apiUser.roleId);
+    const role = roles?.find((r) => r.role_id === String(apiUser.roleId));
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
@@ -639,7 +639,7 @@ const SystemAdminSettings: React.FC = () => {
                   >
                     Add user
                   </Button>
-                  <AddEditUser
+                  <AddEditUserModal
                     open={openAddUserModal}
                     onClose={handleCloseAddUserModal}
                   />
@@ -1320,13 +1320,13 @@ const SystemAdminSettings: React.FC = () => {
         description="Are you sure you want to delete this role?"
       />
 
-      <AddEditUser
+      <AddEditUserModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         userId={userToEditId}
       />
 
-      <AddEditUser open={openAddUserModal} onClose={handleCloseAddUserModal} />
+      <AddEditUserModal open={openAddUserModal} onClose={handleCloseAddUserModal} />
 
       <AddRoleModal
         open={openEditRoleModal}

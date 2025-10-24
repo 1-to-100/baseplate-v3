@@ -12,7 +12,7 @@ import {
   NotificationTypeList,
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
-import { NotificationChannel } from '@/notifications/constants/notification-channel';
+import { NotificationChannel, NotificationChannelList } from '@/notifications/constants/notification-channel';
 
 export class CreateTemplateDto {
   @MinLength(3)
@@ -54,7 +54,7 @@ export class CreateTemplateDto {
   type: NotificationType[];
 
   @IsString()
-  @IsEnum(NotificationChannel, { each: true })
+  @IsEnum(NotificationChannelList)
   @ApiProperty({
     description: 'Notification channel',
     enum: NotificationChannel,

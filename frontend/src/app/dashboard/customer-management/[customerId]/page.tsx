@@ -40,7 +40,7 @@ import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
 import { X as X } from "@phosphor-icons/react/dist/ssr/X";
 import { useCallback, useState, useEffect } from "react";
 import UserDetailsPopover from "@/components/dashboard/user-management/user-details-popover";
-import AddEditUser from "@/components/dashboard/modals/AddEditUser";
+import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import InviteUser from "@/components/dashboard/modals/InviteUserModal";
@@ -616,7 +616,7 @@ const Customer: React.FC = () => {
                   >
                     Add user
                   </Button>
-                  <AddEditUser
+                  <AddEditUserModal
                     open={openAddUserModal}
                     onClose={handleCloseAddUserModal}
                   />
@@ -1290,13 +1290,13 @@ const Customer: React.FC = () => {
         description="Are you sure you want to delete this customer?"
       />
 
-      <AddEditUser
+      <AddEditUserModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         userId={userToEditId}
       />
 
-      <AddEditUser open={openAddUserModal} onClose={handleCloseAddUserModal} />
+      <AddEditUserModal open={openAddUserModal} onClose={handleCloseAddUserModal} />
 
       <AddEditCustomerModal
         open={openEditRoleModal}

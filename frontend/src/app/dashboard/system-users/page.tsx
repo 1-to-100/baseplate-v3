@@ -32,7 +32,7 @@ import {ApiUser, SystemUser} from "@/contexts/auth/types";
 import { useGlobalSearch } from "@/hooks/use-global-search";
 import CircularProgress from "@mui/joy/CircularProgress";
 import {ColorPaletteProp, VariantProp} from "@mui/joy";
-import AddEditSystemUser from "@/components/dashboard/modals/AddEditSystemUser";
+import AddEditSystemUserModal from "@/components/dashboard/modals/AddEditSystemUserModal";
 import {useUserInfo} from "@/hooks/use-user-info";
 import {useImpersonation} from "@/contexts/impersonation-context";
 import {ArrowRight as ArrowRightIcon} from "@phosphor-icons/react/dist/ssr/ArrowRight";
@@ -101,7 +101,7 @@ export default function Page(): React.JSX.Element {
 
   const transformUser = (apiUser: SystemUser): SystemUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.role_id == apiUser.roleId);
+    const role = roles?.find((r) => r.role_id === String(apiUser.roleId));
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
@@ -998,13 +998,13 @@ export default function Page(): React.JSX.Element {
         userId={selectedUser?.id ?? 0}
       />
 
-      <AddEditSystemUser
+      <AddEditSystemUserModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         userId={userToEditId}
       />
 
-      <AddEditSystemUser
+      <AddEditSystemUserModal
         open={openAddUserModal}
         onClose={handleCloseAddUserModal}
       />

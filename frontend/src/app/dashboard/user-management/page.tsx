@@ -24,7 +24,7 @@ import { config } from "@/config";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import UserDetailsPopover from "@/components/dashboard/user-management/user-details-popover";
 import { useState, useCallback, useEffect } from "react";
-import AddEditUser from "@/components/dashboard/modals/AddEditUser";
+import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import Filter from "@/components/dashboard/filter";
 import { Popper } from "@mui/base/Popper";
@@ -115,7 +115,7 @@ export default function Page(): React.JSX.Element {
 
   const transformUser = (apiUser: ApiUser): ApiUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.role_id == apiUser.roleId);
+    const role = roles?.find((r) => r.role_id === String(apiUser.roleId));
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
@@ -1188,13 +1188,13 @@ export default function Page(): React.JSX.Element {
         userId={selectedUser?.id ?? 0}
       />
 
-      <AddEditUser
+      <AddEditUserModal
         open={openEditModal}
         onClose={handleCloseEditModal}
         userId={userToEditId}
       />
 
-      <AddEditUser open={openAddUserModal} onClose={handleCloseAddUserModal} />
+      <AddEditUserModal open={openAddUserModal} onClose={handleCloseAddUserModal} />
 
       <InviteUserModal
         open={openInviteModal}

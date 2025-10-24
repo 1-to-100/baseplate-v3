@@ -43,11 +43,14 @@ export enum InvitationStatus {
 }
 
 export enum NotificationType {
-  SYSTEM = 'system',
-  USER = 'user',
-  MARKETING = 'marketing',
-  SECURITY = 'security',
-  BILLING = 'billing',
+  EMAIL = 'email',
+  IN_APP = 'in_app',
+  // todo: adjust logic to use these values
+  // SYSTEM = 'system',
+  // USER = 'user',
+  // MARKETING = 'marketing',
+  // SECURITY = 'security',
+  // BILLING = 'billing',
 }
 
 export enum NotificationStatus {
