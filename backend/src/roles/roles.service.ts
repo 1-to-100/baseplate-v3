@@ -7,7 +7,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '@/common/supabase/supabase.service';
-import { isSystemRole } from '@/common/constants/system-roles';
 import { CreateRoleDto } from '@/roles/dto/create-role.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
 import { UpdateRoleDto } from '@/roles/dto/update-role.dto';
@@ -287,9 +286,12 @@ export class RolesService {
   /**
    * Check if a role has a specific permission
    */
-  async hasPermission(roleId: string, permissionName: string): Promise<boolean> {
+  async hasPermission(
+    roleId: string,
+    permissionName: string,
+  ): Promise<boolean> {
     const permissions = await this.getRolePermissions(roleId);
-    
+
     // Check for wildcard or specific permission
     return permissions.includes('*') || permissions.includes(permissionName);
   }

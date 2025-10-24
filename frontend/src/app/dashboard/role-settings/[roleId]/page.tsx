@@ -429,7 +429,7 @@ const SystemAdminSettings: React.FC = () => {
               level="h1"
               sx={{ wordBreak: "break-word" }}
             >
-              {roleData?.name}
+              {roleData?.display_name}
             </Typography>
           </Stack>
           <Stack
@@ -478,7 +478,7 @@ const SystemAdminSettings: React.FC = () => {
           <BreadcrumbsItem href={paths.dashboard.roleSettings.list}>
             Role Settings
           </BreadcrumbsItem>
-          <BreadcrumbsItem type="end">{roleData?.name}</BreadcrumbsItem>
+          <BreadcrumbsItem type="end">{roleData?.display_name}</BreadcrumbsItem>
         </Breadcrumbs>
       </Stack>
 

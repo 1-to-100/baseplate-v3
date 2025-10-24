@@ -59,6 +59,7 @@ export class RolesController {
     const outputRole: OutputRoleDto = {
       id: role.role_id.toString(),
       name: role.name ?? null,
+      display_name: role.display_name ?? null,
       description: role.description ?? null,
       permissions: {},
     };
