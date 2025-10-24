@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
@@ -9,8 +9,8 @@ import {
   UserStatusType,
 } from '@/common/constants/status';
 import {
-  eachNumberTransformer,
   eachUserStatusTransformer,
+  eachStringTransformer,
   toBoolean,
 } from '@/common/helpers/class-transform-helpers';
 
@@ -18,12 +18,14 @@ export class ListUsersInputDto extends PaginatedInputDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  @Transform(eachStringTransformer)
   @ApiPropertyOptional({ description: 'Role IDs', type: [String] })
   roleId?: string[];
 
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  @Transform(eachStringTransformer)
   @ApiPropertyOptional({ description: 'Customer IDs', type: [String] })
   customerId?: string[];
 

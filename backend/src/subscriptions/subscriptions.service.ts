@@ -6,8 +6,8 @@ export class SubscriptionsService {
   constructor(private readonly database: DatabaseService) {}
 
   async getForTaxonomy() {
-    return this.database.findMany('subscriptions', {
-      select: 'id, name, description',
+    return this.database.findMany('subscription_types', {
+      select: 'subscription_type_id, name, description',
     });
   }
 }

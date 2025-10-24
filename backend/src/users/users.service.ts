@@ -8,14 +8,16 @@ import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { getDomainFromEmail } from '@/common/helpers/string-helpers';
 import {
-  combineUserName,
   parseUserName,
   buildUserDbData,
-  parseUserFromDb,
 } from '@/common/helpers/schema-mappers';
 import { UserSystemRoles } from '@/common/constants/user-system-roles';
 import { SYSTEM_ROLES } from '@/common/constants/system-roles';
-import { UserStatus, Role, CustomerLifecycleStage } from '@/common/types/database.types';
+import {
+  UserStatus,
+  Role,
+  CustomerLifecycleStage,
+} from '@/common/types/database.types';
 import { UserOrderByFields } from '@/common/constants/status';
 import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { CreateUserDto } from '@/users/dto/create-user.dto';
@@ -96,11 +98,11 @@ export class UsersService {
       .select('role_id')
       .eq('name', roleName)
       .single();
-    
+
     if (!role) {
       throw new ConflictException(`Role ${roleName} not found`);
     }
-    
+
     return role.role_id;
   }
 
@@ -109,9 +111,12 @@ export class UsersService {
       .getClient()
       .from('roles')
       .select('role_id')
-      .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
-    
-    return roles?.map(role => role.role_id) || [];
+      .in('name', [
+        SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
+        SYSTEM_ROLES.CUSTOMER_SUCCESS,
+      ]);
+
+    return roles?.map((role) => role.role_id) || [];
   }
 
   async create(
@@ -193,7 +198,7 @@ export class UsersService {
     const roleName = isSuperadmin
       ? SYSTEM_ROLES.SYSTEM_ADMINISTRATOR
       : SYSTEM_ROLES.CUSTOMER_SUCCESS;
-    
+
     const roleId = await this.getRoleIdByName(roleName);
 
     let user: any = null;
@@ -266,7 +271,7 @@ export class UsersService {
     const user = await this.database.create('users', {
       data: userData,
     });
-    
+
     await this.sendInviteEmail(mapUserToDto(user));
     return mapUserToDto(user);
   }
@@ -479,10 +484,12 @@ export class UsersService {
       const role = await this.database.findUnique('roles', {
         where: { role_id: user.role_id },
       });
-      
+
       if (role && role.permissions) {
         // Parse permissions from JSONB array
-        userPermissions = Array.isArray(role.permissions) ? role.permissions : [];
+        userPermissions = Array.isArray(role.permissions)
+          ? role.permissions
+          : [];
       }
     }
 
@@ -528,7 +535,7 @@ export class UsersService {
     if (updateUserDto.customerId) {
       whereClause.customer_id = updateUserDto.customerId;
     }
-    
+
     const existingUser = await this.database.findFirst('users', {
       where: whereClause,
     });
@@ -607,7 +614,7 @@ export class UsersService {
     if (updateSystemUserDto.email) {
       updateSystemUserDto.email = undefined;
     }
-    
+
     const existingUser = await this.findOneSystemUser(id);
     if (!existingUser) {
       throw new NotFoundException('No user with given ID exists');
@@ -740,20 +747,28 @@ export class UsersService {
         });
 
         // Refetch user with role relation
-        const existingUserEmailUpdated = await this.database.findUnique('users', {
-          where: { user_id: existingUserEmail.user_id },
-          include: {
-            role: true,
-            customer: true,
+        const existingUserEmailUpdated = await this.database.findUnique(
+          'users',
+          {
+            where: { user_id: existingUserEmail.user_id },
+            include: {
+              role: true,
+              customer: true,
+            },
           },
-        });
+        );
 
         return mapUserToDto(existingUserEmailUpdated!);
       }
 
       // Check if user with this email and auth_user_id already exists
-      if (existingUserEmail && existingUserEmail.auth_user_id === supabaseUser.uid) {
-        this.logger.log(`User with email ${email} and UID ${supabaseUser.uid} already exists`);
+      if (
+        existingUserEmail &&
+        existingUserEmail.auth_user_id === supabaseUser.uid
+      ) {
+        this.logger.log(
+          `User with email ${email} and UID ${supabaseUser.uid} already exists`,
+        );
         const userWithRole = await this.database.findUnique('users', {
           where: { user_id: existingUserEmail.user_id },
           include: {
@@ -907,7 +922,7 @@ export class UsersService {
         },
       },
     });
-    
+
     if (!existing_code) {
       return false;
     }
@@ -924,7 +939,7 @@ export class UsersService {
         status: UserStatus.ACTIVE,
       },
     });
-    
+
     return true;
   }
 

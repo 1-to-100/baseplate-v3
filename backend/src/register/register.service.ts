@@ -62,7 +62,7 @@ export class RegisterService {
     const { data: existingCustomer, error: customerError } = await adminClient
       .from('customers')
       .select('*')
-      .eq('domain', domain)
+      .eq('email_domain', domain)
       .single();
 
     if (customerError && customerError.code !== 'PGRST116') {
@@ -77,7 +77,7 @@ export class RegisterService {
         firstName,
         lastName,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        customerId: existingCustomer?.id,
+        customerId: existingCustomer?.customer_id,
       },
       true,
     );
@@ -90,7 +90,7 @@ export class RegisterService {
           .insert({
             name: domain,
             email,
-            domain,
+            email_domain: domain,
             owner_id: newUser.id,
           })
           .select()
