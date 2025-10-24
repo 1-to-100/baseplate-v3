@@ -24,7 +24,7 @@ interface NotificationDetailsPopoverProps {
   open: boolean;
   onClose: () => void;
   anchorEl: HTMLElement | null;
-  notificationId: number;
+  notificationId: string;
 }
 
 const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetailsPopoverProps>(({
@@ -105,7 +105,7 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
     color: "var(--joy-palette-text-primary)",
   };
 
-  if (!open || !anchorEl || notificationId <= 0) {
+  if (!open || !anchorEl || !notificationId) {
     return null;
   }
 

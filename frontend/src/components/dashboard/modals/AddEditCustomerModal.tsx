@@ -37,7 +37,7 @@ interface HttpError {
 interface AddEditCustomerProps {
   open: boolean;
   onClose: () => void;
-  customerId?: number | null;
+  customerId?: string | null;
 }
 
 interface FormErrors {
@@ -63,10 +63,10 @@ export default function AddEditCustomer({
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
-    customerSuccessId: number | null;
-    subscriptionId: number | null;
+    customerSuccessId: string | null;
+    subscriptionId: string | null;
     status: string;
-    ownerId: number | null;
+    ownerId: string | null;
   }>({
     name: "",
     email: "",

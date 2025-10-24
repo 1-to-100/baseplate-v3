@@ -36,7 +36,7 @@ interface HttpError {
 interface AddEditUserProps {
   open: boolean;
   onClose: () => void;
-  userId?: number | null;
+  userId?: string | null;
 }
 
 interface FormErrors {
@@ -324,10 +324,10 @@ export default function AddEditUser({
     setShowDeleteConfirmation(false);
   };
 
-  const getCustomerId = (customerName: string): number => {
-    if (!customers) return 0;
+  const getCustomerId = (customerName: string): string => {
+    if (!customers) return "";
     const customer = customers.find((c) => c.name === customerName);
-    return customer ? customer.id : 0;
+    return customer ? customer.id : "";
   };
 
   const getRoleId = (roleName: string): string | undefined => {
@@ -351,7 +351,7 @@ export default function AddEditUser({
           ? getCustomerId(formData.customer)
           : undefined,
         roleId: formData.role ? getRoleId(formData.role) : undefined,
-        managerId: formData.manager ? parseInt(formData.manager) : undefined,
+        managerId: formData.manager || undefined,
         additionalEmails: additionalEmails.filter((email) => email.trim()),
       };
 

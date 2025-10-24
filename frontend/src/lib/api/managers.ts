@@ -2,10 +2,8 @@ import { apiFetch } from "./api-fetch";
 import {config} from "@/config";
 
 export interface Manager {
-  id: number;
+  id: string;
   name: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export async function getManagers(): Promise<Manager[]> {

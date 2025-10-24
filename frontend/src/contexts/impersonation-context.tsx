@@ -3,8 +3,8 @@
 import * as React from "react";
 
 interface ImpersonationContextValue {
-  impersonatedUserId: number | null;
-  setImpersonatedUserId: (userId: number | null) => void;
+  impersonatedUserId: string | null;
+  setImpersonatedUserId: (userId: string | null) => void;
   isImpersonating: boolean;
 }
 
@@ -20,22 +20,22 @@ export function ImpersonationProvider({
   children,
 }: ImpersonationProviderProps): React.JSX.Element {
   const [impersonatedUserId, setImpersonatedUserId] = React.useState<
-    number | null
+    string | null
   >(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("impersonatedUserId");
-      return stored ? parseInt(stored, 10) : null;
+      return stored || null;
     }
     return null;
   });
 
   const handleSetImpersonatedUserId = React.useCallback(
-    (userId: number | null) => {
+    (userId: string | null) => {
       setImpersonatedUserId(userId);
 
       if (typeof window !== "undefined") {
         if (userId) {
-          localStorage.setItem("impersonatedUserId", userId.toString());
+          localStorage.setItem("impersonatedUserId", userId);
         } else {
           localStorage.removeItem("impersonatedUserId");
         }

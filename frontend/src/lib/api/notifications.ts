@@ -36,8 +36,8 @@ export interface CreateNotificationRequest {
 }
 
 export interface SendNotificationRequest {
-  customerId: number;
-  userIds: number[];
+  customerId: string;
+  userIds: string[];
 }
 
 export interface GetNotificationHistoryParams {
@@ -46,8 +46,8 @@ export interface GetNotificationHistoryParams {
   search?: string;
   type?: string;
   channel?: string[];
-  customer?: number;
-  user?: number;
+  customer?: string;
+  user?: string;
   orderBy?: string;
   orderDirection?: string;
 }
@@ -104,7 +104,7 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
   });
 }
 
-export async function markNotificationAsRead(id: number): Promise<void> {
+export async function markNotificationAsRead(id: string): Promise<void> {
   return apiFetch<void>(`${config.site.apiUrl}/notifications/${id}`, {
     method: 'PATCH',
   });
@@ -136,26 +136,26 @@ export async function createNotification(data: CreateNotificationRequest): Promi
   });
 }
 
-export async function getNotificationById(id: number): Promise<ApiNotification> {
+export async function getNotificationById(id: string): Promise<ApiNotification> {
   return apiFetch<ApiNotification>(`${config.site.apiUrl}/notification/templates/${id}`, {
     method: 'GET',
   });
 }
 
-export async function deleteNotification(id: number): Promise<void> {
+export async function deleteNotification(id: string): Promise<void> {
   return apiFetch<void>(`${config.site.apiUrl}/notification/templates/${id}`, {
     method: 'DELETE',
   });
 }
 
-export async function editNotification(id: number, data: CreateNotificationRequest): Promise<void> {
+export async function editNotification(id: string, data: CreateNotificationRequest): Promise<void> {
   return apiFetch<void>(`${config.site.apiUrl}/notification/templates/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
 
-export async function sendNotification(data: SendNotificationRequest, notificationTemplateId: number): Promise<void> {
+export async function sendNotification(data: SendNotificationRequest, notificationTemplateId: string): Promise<void> {
   return apiFetch<void>(`${config.site.apiUrl}/notification/templates/send/${notificationTemplateId}`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -182,8 +182,8 @@ export async function getNotificationsHistory(params: GetNotificationHistoryPara
       query.append('channel', channel);
     });
   }
-  if (params.customer) query.set('customer', params.customer.toString());
-  if (params.user) query.set('user', params.user.toString());
+  if (params.customer) query.set('customer', params.customer);
+  if (params.user) query.set('user', params.user);
   if (params.orderBy) query.set('orderBy', params.orderBy);
   if (params.orderDirection) query.set('orderDirection', params.orderDirection);
   

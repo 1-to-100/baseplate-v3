@@ -32,8 +32,8 @@ export default function Page(): React.JSX.Element {
   const [filters, setFilters] = useState<{
     type: string[];
     channel: string[];
-    customer: number[];
-    user: number[];
+    customer: string[];
+    user: string[];
   }>({
     type: [],
     channel: [],
@@ -111,8 +111,8 @@ export default function Page(): React.JSX.Element {
   const handleFilter = (filters: {
     type: string[];
     channel: string[];
-    customer: number[];
-    user: number[];
+    customer: string[];
+    user: string[];
   }) => {
     setFilters(filters);
     setCurrentPage(1);

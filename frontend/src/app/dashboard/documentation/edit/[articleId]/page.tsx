@@ -33,7 +33,7 @@ type ArticleStatus = "draft" | "published";
 
 interface ArticlePayload {
   title: string;
-  articleCategoryId: number;
+  articleCategoryId: string;
   subcategory: string;
   status: ArticleStatus;
   content: string;
@@ -75,7 +75,7 @@ const EditArticlePage = () => {
       if (!articleId) {
         throw new Error("Article ID is missing");
       }
-      return getArticleById(Number(articleId));
+      return getArticleById(String(articleId));
     },
     enabled: !!articleId,
   });
@@ -127,7 +127,7 @@ const EditArticlePage = () => {
   };
 
   const editArticleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ArticlePayload }) =>
+    mutationFn: ({ id, data }: { id: string; data: ArticlePayload }) =>
       editArticle(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -155,14 +155,14 @@ const EditArticlePage = () => {
 
     const payload: ArticlePayload = {
       title,
-      articleCategoryId: Number(selectedCategory),
+      articleCategoryId: selectedCategory,
       subcategory: selectedSubcategory,
       status: "draft",
       content,
       videoUrl: videoLink,
     };
 
-    editArticleMutation.mutate({ id: Number(articleId), data: payload });
+    editArticleMutation.mutate({ id: String(articleId), data: payload });
   };
 
   const handlePublish = async () => {
@@ -175,14 +175,14 @@ const EditArticlePage = () => {
 
     const payload: ArticlePayload = {
       title,
-      articleCategoryId: Number(selectedCategory),
+      articleCategoryId: selectedCategory,
       subcategory: selectedSubcategory,
       status: "published",
       content,
       videoUrl: videoLink,
     };
 
-    editArticleMutation.mutate({ id: Number(articleId), data: payload });
+    editArticleMutation.mutate({ id: String(articleId), data: payload });
   };
 
   return (

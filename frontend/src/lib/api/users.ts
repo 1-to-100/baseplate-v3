@@ -13,14 +13,14 @@ interface CreateUserPayload {
   email: string;
   firstName: string;
   lastName: string;
-  customerId?: number;
+  customerId?: string;
   roleId?: string;
-  managerId?: number;
+  managerId?: string;
   status?: 'active' | 'inactive' | 'suspended';
 }
 
 interface UpdateUserPayload extends Partial<CreateUserPayload> {
-  id: number;
+  id: string;
 }
 
 interface EditUserInfoPayload extends Partial<CreateUserPayload> {
@@ -55,13 +55,13 @@ interface GetUsersResponse {
 
 interface InviteUserPayload {
   email: string;
-  customerId: number;
+  customerId: string;
   roleId: string;
 }
 
 interface InviteMultipleUsersPayload {
   emails: string[];
-  customerId: number;
+  customerId: string;
   roleId: string;
 }
 
@@ -155,10 +155,10 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   if (params.orderDirection) query.set('orderDirection', params.orderDirection);
   
   if (params.roleId && params.roleId.length > 0) {
-    params.roleId.forEach(id => query.append('roleId', id.toString()));
+    params.roleId.forEach(id => query.append('roleId', id));
   }
   if (params.customerId && params.customerId.length > 0) {
-    params.customerId.forEach(id => query.append('customerId', id.toString()));
+    params.customerId.forEach(id => query.append('customerId', id));
   }
   if (params.statusId && params.statusId.length > 0) {
     params.statusId.forEach(status => query.append('status', status));
@@ -172,7 +172,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   });
 }
 
-export async function getUserById(id: number): Promise<ApiUser> {
+export async function getUserById(id: string): Promise<ApiUser> {
   return apiFetch<ApiUser>(`${config.site.apiUrl}/users/${id}`, {
     method: 'GET',
   });
@@ -191,7 +191,7 @@ export async function editUserInfo(payload: EditUserInfoPayload): Promise<ApiUse
   });
 }
 
-export async function deleteUser(id: number): Promise<ApiUser> {
+export async function deleteUser(id: string): Promise<ApiUser> {
   return apiFetch<ApiUser>(`${config.site.apiUrl}/users/${id}`, {
     method: 'DELETE',
   });

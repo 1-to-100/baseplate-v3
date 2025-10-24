@@ -14,17 +14,17 @@ export interface UserContextValue {
 }
 
 export interface ApiUser {
-  managerId: number;
+  managerId: string;
   manager?: {
-    id: number;
+    id: string;
     name: string;
   };
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   name: string;
   email: string;
-  customerId?: number;
+  customerId?: string;
   customer?: Customer;
   roleId?: string;
   role?: Role;
@@ -59,32 +59,32 @@ export interface Customer {
   customer_id: string;
   name: string;
   email: string;
-  subscriptionId: number;
-  managerId: number;
-  customerSuccessId: number;
-  ownerId: number;
+  subscriptionId: string;
+  managerId: string;
+  customerSuccessId: string;
+  ownerId: string;
   numberOfUsers?: number;
   status: string;
   subscriptionName: string;
   manager: {
-    id: number;
+    id: string;
     name: string;
     email: string;
   };
   customerSuccess?: {
-    id: number;
+    id: string;
     name: string;
     email: string;
   };
   owner: {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
   };
 }
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   subcategory: string;
   about: string;
@@ -94,16 +94,16 @@ export interface Category {
   };
   updatedAt: string;
   Creator: {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
   };
 }
 
 export interface Article {
-  id: number;
+  id: string;
   title: string;
-  articleCategoryId: number;
+  articleCategoryId: string;
   subcategory: string;
   status: string;
   content: string;
@@ -111,28 +111,28 @@ export interface Article {
   updatedAt: string;
   viewsNumber: number;
   Creator: {
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
   };
   Category: {
-    id: number;
+    id: string;
     name: string;
   };
 }
 
 export interface SystemUser {
-  managerId: number;
+  managerId: string;
   manager?: {
-    id: number;
+    id: string;
     name: string;
   };
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   name: string;
   email: string;
-  customerId?: number;
+  customerId?: string;
   customer?: Customer;
   roleId?: string;
   role?: Role;
@@ -152,7 +152,7 @@ export interface SystemUser {
 }
 
 export interface ApiNotification {
-  id: number;
+  id: string;
   title: string;
   message: string;
   comment: string;
@@ -161,13 +161,13 @@ export interface ApiNotification {
   channel: string;
   type: string;
   User?: {
-    id: number;
+    id: string;
     email: string;
     firstName: string;
     lastName: string;
   };
   Customer?: { 
-    id: number;
+    id: string;
     name: string;
   };
 }

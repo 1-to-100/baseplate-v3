@@ -46,20 +46,20 @@ const metadata = {
 } satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [openEditCustomerModal, setOpenEditCustomerModal] = useState(false);
   const [openAddCustomerModal, setopenAddCustomerModal] = useState(false);
-  const [customerToEditId, setCustomerToEditId] = useState<number | null>(null);
+  const [customerToEditId, setCustomerToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof Customer | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
-    customerSuccessId: number[];
-    subscriptionId: number[];
+    customerSuccessId: string[];
+    subscriptionId: string[];
     statusId: string[];
   }>({
     customerSuccessId: [],
@@ -105,7 +105,7 @@ export default function Page(): React.JSX.Element {
         data: response.data.map((customer) => ({
           ...customer,
           numberOfUsers: customer.numberOfUsers || 0,
-          subscriptionId: customer.subscriptionId || 0,
+          subscriptionId: customer.subscriptionId || "",
           status: customer.status || "inactive",
           email: customer.email || "",
         })),
@@ -130,11 +130,11 @@ export default function Page(): React.JSX.Element {
     };
   }, [anchorEl]);
 
-  const handleRowCheckboxChange = (userId: number) => {
+  const handleRowCheckboxChange = (customerId: string) => {
     setSelectedRows((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+      prev.includes(customerId)
+        ? prev.filter((id) => id !== customerId)
+        : [...prev, customerId]
     );
   };
 
@@ -143,7 +143,7 @@ export default function Page(): React.JSX.Element {
   ) => {
     if (!hasResults) return;
     if (event.target.checked) {
-      setSelectedRows(customers.map((customer) => customer.id));
+      setSelectedRows(customers.map((customer) => customer.customer_id));
     } else {
       setSelectedRows([]);
     }
@@ -156,7 +156,7 @@ export default function Page(): React.JSX.Element {
     }
   };
 
-  const handleDeleteRow = useCallback((customerId: number) => {
+  const handleDeleteRow = useCallback((customerId: string) => {
     setRowsToDelete([customerId]);
     setOpenDeleteModal(true);
   }, []);
@@ -196,20 +196,20 @@ export default function Page(): React.JSX.Element {
 
   const handleOpenDetail = async (
     event: React.MouseEvent<HTMLElement>,
-    customerId: number
+    customerId: string
   ) => {
     event.preventDefault();
     event.stopPropagation();
     router.push(
-      paths.dashboard.customerManagement.details(customerId.toString())
+      paths.dashboard.customerManagement.details(customerId)
     );
     handleMenuClose();
     handleCloseFilter();
   };
 
-  const handleEdit = async (userId: number) => {
+  const handleEdit = async (customerId: string) => {
     try {
-      setCustomerToEditId(userId);
+      setCustomerToEditId(customerId);
       handleCloseFilter();
       setOpenEditCustomerModal(true);
     } catch (err) {
@@ -239,8 +239,8 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleFilter = (filters: {
-    customerSuccessId: number[];
-    subscriptionId: number[];
+    customerSuccessId: string[];
+    subscriptionId: string[];
     statusId: string[];
   }) => {
     setFilters(filters);
@@ -257,7 +257,7 @@ export default function Page(): React.JSX.Element {
 
   const customersToDelete = rowsToDelete
     .map((customerId) => {
-      const customer = customers.find((u) => u.id === customerId);
+      const customer = customers.find((u) => u.customer_id === customerId);
       return customer ? customer.name : undefined;
     })
     .filter((name): name is string => name !== undefined);
@@ -590,18 +590,18 @@ export default function Page(): React.JSX.Element {
                   ) : (
                     customers.map((customer, index) => (
                       <tr
-                        key={customer.id}
+                        key={customer.customer_id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          handleOpenDetail(event, customer.id);
+                          handleOpenDetail(event, customer.customer_id);
                         }}
                       >
                         <td>
                           <Checkbox
-                            checked={selectedRows.includes(customer.id)}
+                            checked={selectedRows.includes(customer.customer_id)}
                             onChange={(event) => {
                               event.stopPropagation();
-                              handleRowCheckboxChange(customer.id)
+                              handleRowCheckboxChange(customer.customer_id)
                             }}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -750,7 +750,7 @@ export default function Page(): React.JSX.Element {
                             <Box
                               onMouseDown={(event) => {
                                 event.preventDefault();
-                                handleEdit(customer.id);
+                                handleEdit(customer.customer_id);
                               }}
                               sx={menuItemStyle}
                             >
@@ -763,7 +763,7 @@ export default function Page(): React.JSX.Element {
                             <Box
                               onMouseDown={(event) => {
                                 event.preventDefault();
-                                handleOpenDetail(event, customer.id);
+                                handleOpenDetail(event, customer.customer_id);
                               }}
                               sx={menuItemStyle}
                             >

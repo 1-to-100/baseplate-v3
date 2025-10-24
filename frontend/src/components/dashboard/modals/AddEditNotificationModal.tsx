@@ -29,7 +29,7 @@ interface HttpError {
 interface AddEditUserProps {
   open: boolean;
   onClose: () => void;
-  notificationToEditId?: number | null;
+  notificationToEditId?: string | null;
 }
 
 interface FormErrors {

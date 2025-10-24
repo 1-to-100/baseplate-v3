@@ -57,7 +57,7 @@ import { DotsThreeVertical as DotsIcon } from "@phosphor-icons/react/dist/ssr/Do
 import AddEditCustomerModal from "@/components/dashboard/modals/AddEditCustomerModal";
 
 const Customer: React.FC = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
@@ -72,14 +72,14 @@ const Customer: React.FC = () => {
   );
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openAddUserModal, setOpenAddUserModal] = useState(false);
   const [openEditRoleModal, setOpenEditRoleModal] = useState(false);
   const [openResetPasswordModal, setOpenResetPasswordModal] = useState(false);
   const [userToResetPassword, setUserToResetPassword] =
     useState<ApiUser | null>(null);
-  const [userToEditId, setUserToEditId] = useState<number | null>(null);
+  const [userToEditId, setUserToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof ApiUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,10 +98,11 @@ const Customer: React.FC = () => {
   } = useQuery({
     queryKey: ["customer", customerId],
     queryFn: () => {
-      if (!customerId) {
+      const id = Array.isArray(customerId) ? customerId[0] : customerId;
+      if (!id) {
         throw new Error("Customer ID is missing");
       }
-      return getCustomerById(Number(customerId));
+      return getCustomerById(id);
     },
     enabled: !!customerId,
   });
@@ -201,7 +202,7 @@ const Customer: React.FC = () => {
 
   const handleOpenDetail = async (
     event: React.MouseEvent<HTMLElement>,
-    userId: number
+    userId: string
   ) => {
     event.preventDefault();
     event.persist();
@@ -222,7 +223,7 @@ const Customer: React.FC = () => {
     setPopoverAnchorEl(null);
   };
 
-  const handleEdit = (userId: number) => {
+  const handleEdit = (userId: string) => {
     setUserToEditId(userId);
     setOpenEditModal(true);
     handleMenuClose();
@@ -237,7 +238,7 @@ const Customer: React.FC = () => {
     setOpenEditRoleModal(true);
   };
 
-  const handleResetPassword = (userId: number) => {
+  const handleResetPassword = (userId: string) => {
     const user = users.find((u) => u.id === userId);
     if (user) {
       setUserToResetPassword(user);
@@ -246,7 +247,7 @@ const Customer: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleDeleteRow = useCallback((userId: number) => {
+  const handleDeleteRow = useCallback((userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   }, []);
@@ -282,7 +283,7 @@ const Customer: React.FC = () => {
     setOpenEditRoleModal(false);
   };
 
-  const handleRowCheckboxChange = (userId: number) => {
+  const handleRowCheckboxChange = (userId: string) => {
     setSelectedRows((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -1301,7 +1302,7 @@ const Customer: React.FC = () => {
       <AddEditCustomerModal
         open={openEditRoleModal}
         onClose={handleCloseEditRoleModal}
-        customerId={customerData?.id}
+        customerId={customerData?.customer_id}
       />
 
       <ResetPasswordUser
@@ -1318,7 +1319,7 @@ const Customer: React.FC = () => {
         open={Boolean(popoverAnchorEl)}
         onClose={handleClosePopover}
         anchorEl={popoverAnchorEl}
-        userId={selectedUser?.id ?? 0}
+        userId={selectedUser?.id ?? ""}
       />
     </Box>
   );

@@ -46,10 +46,10 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
   const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
-  const categoryToDeleteRef = useRef<number | null>(null);
-  const [pendingEditId, setPendingEditId] = useState<number | null>(null);
+  const categoryToDeleteRef = useRef<string | null>(null);
+  const [pendingEditId, setPendingEditId] = useState<string | null>(null);
  
 
   useEffect(() => {
@@ -65,7 +65,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
     };
   }, [anchorEl]);
 
-  const handleCardClick = async (categoryId: number) => {
+  const handleCardClick = async (categoryId: string) => {
     try {
       router.push(paths.dashboard.documentation.details(categoryId.toString()));
     } catch (error) {
@@ -75,7 +75,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
 
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
-    categoryId: number
+    categoryId: string
   ) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
@@ -87,7 +87,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
     setSelectedCategoryId(null);
   };
 
-  const handleEditCategory = (categoryId: number) => {
+  const handleEditCategory = (categoryId: string) => {
     setPendingEditId(categoryId);
     handleMenuClose();
   };
@@ -100,7 +100,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
     }
   }, [pendingEditId]);
 
-  const handleDeleteCategoryModalOpen = (categoryId: number) => {
+  const handleDeleteCategoryModalOpen = (categoryId: string) => {
     categoryToDeleteRef.current = categoryId;
     setSelectedCategoryId(categoryId);
     setOpenDeleteCategoryModal(true);
@@ -119,7 +119,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
   };
 
   const deleteCategoryMutation = useMutation({
-    mutationFn: (id: number) => {
+    mutationFn: (id: string) => {
       return deleteCategory(id);
     },
     onSuccess: () => {
@@ -138,7 +138,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
     },
   });
 
-  const handleDeleteCategory = async (categoryId: number) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     if (categoryId) {
       deleteCategoryMutation.mutate(categoryId);
     }

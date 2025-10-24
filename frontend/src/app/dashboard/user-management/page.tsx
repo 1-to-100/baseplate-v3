@@ -60,14 +60,14 @@ const metadata = {
 } satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [anchorEl, setAnchorPopper] = useState<null | HTMLElement>(null);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openDeactivateModal, setOpenDeactivateModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [popoverAnchorEl, setPopoverAnchorEl] = useState<null | HTMLElement>(
     null
@@ -75,7 +75,7 @@ export default function Page(): React.JSX.Element {
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openAddUserModal, setOpenAddUserModal] = useState(false);
-  const [userToEditId, setUserToEditId] = useState<number | null>(null);
+  const [userToEditId, setUserToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof ApiUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -184,7 +184,7 @@ export default function Page(): React.JSX.Element {
 
   // useEffect(() => {}, [popoverAnchorEl, selectedUser]);
 
-  const handleRowCheckboxChange = (userId: number) => {
+  const handleRowCheckboxChange = (userId: string) => {
     setSelectedRows((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -233,17 +233,17 @@ export default function Page(): React.JSX.Element {
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = (userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   };
 
-  const handleDeleteRow = useCallback((userId: number) => {
+  const handleDeleteRow = useCallback((userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   }, []);
 
-  const handleDeactivate = async (userId: number) => {
+  const handleDeactivate = async (userId: string) => {
     setSelectedRows([userId]);
     setOpenDeactivateModal(true)
   };
@@ -269,7 +269,7 @@ export default function Page(): React.JSX.Element {
     setSelectedRows([]);
   };
 
-  const handleActivate = async (userId: number) => {
+  const handleActivate = async (userId: string) => {
     try {
       await updateUser({ id: userId, status: 'active' });
       toast.success('User activated successfully');
@@ -340,7 +340,7 @@ export default function Page(): React.JSX.Element {
 
   const handleOpenDetail = async (
     event: React.MouseEvent<HTMLElement>,
-    userId: number
+    userId: string
   ) => {
     event.preventDefault();
     event.persist();
@@ -357,7 +357,7 @@ export default function Page(): React.JSX.Element {
     handleMenuClose();
   };
 
-  const handleEdit = async (userId: number) => {
+  const handleEdit = async (userId: string) => {
     try {
       setUserToEditId(userId);
       setOpenEditModal(true);
@@ -480,7 +480,7 @@ export default function Page(): React.JSX.Element {
     queryClient.invalidateQueries({ queryKey: ["users"] });
   };
 
-  const handleImpersonateUser = (userId: number) => {
+  const handleImpersonateUser = (userId: string) => {
     setImpersonatedUserId(userId);
     handleMenuClose();
     window.location.reload();
@@ -1185,7 +1185,7 @@ export default function Page(): React.JSX.Element {
         open={Boolean(popoverAnchorEl)}
         onClose={handleClosePopover}
         anchorEl={popoverAnchorEl}
-        userId={selectedUser?.id ?? 0}
+        userId={selectedUser?.id ?? ""}
       />
 
       <AddEditUserModal

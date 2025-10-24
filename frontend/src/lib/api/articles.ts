@@ -4,7 +4,7 @@ import {config} from "@/config";
 
 interface CreateArticlePayload {
   title?: string;
-  articleCategoryId?: number;
+  articleCategoryId?: string;
   subcategory?: string;
   status?: string;
   content?: string;
@@ -17,7 +17,7 @@ export interface GetArticlesParams {
     search?: string;
     orderBy?: string;
     orderDirection?: 'asc' | 'desc';
-    categoryId?: number[];
+    categoryId?: string[];
     statusId?: string[];
   }
 
@@ -44,7 +44,7 @@ export async function getArticlesList(params: GetArticlesParams = {}): Promise<G
     if (params.orderDirection) query.set('orderDirection', params.orderDirection);
     
     if (params.categoryId && params.categoryId.length > 0) {
-      params.categoryId.forEach(id => query.append('categoryId', id.toString()));
+      params.categoryId.forEach(id => query.append('categoryId', id));
     }
     
     if (params.statusId && params.statusId.length > 0) {
@@ -65,20 +65,20 @@ export async function createArticle(
   });
 }
 
-export async function getArticleById(id: number): Promise<Article> {
+export async function getArticleById(id: string): Promise<Article> {
   return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${id}`, {
     method: "GET",
   });
 }
 
-export async function deleteArticle(id: number): Promise<Article> {
+export async function deleteArticle(id: string): Promise<Article> {
   return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function editArticle(
-  articleId: number,
+  articleId: string,
   payload: CreateArticlePayload
 ): Promise<Article> {
   return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${articleId}`, {

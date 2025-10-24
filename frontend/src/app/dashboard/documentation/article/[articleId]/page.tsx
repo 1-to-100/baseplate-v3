@@ -36,7 +36,7 @@ const ArticlePageDetails = () => {
       if (!articleId) {
         throw new Error("Article ID is missing");
       }
-      return getArticleById(Number(articleId));
+      return getArticleById(String(articleId));
     },
     enabled: !!articleId,
   });
@@ -51,7 +51,7 @@ const ArticlePageDetails = () => {
       if (!articleData?.Category.id) {
         throw new Error("Category ID is missing");
       }
-      return getCategoryById(Number(articleData?.Category.id));
+      return getCategoryById(String(articleData?.Category.id));
     },
     enabled: !!articleData?.Category.id,
   });

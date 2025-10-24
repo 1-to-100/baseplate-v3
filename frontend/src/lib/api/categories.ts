@@ -3,7 +3,7 @@ import { Category } from "@/contexts/auth/types";
 import {config} from "@/config";
 
 export interface ModulePermission {
-  id: number;
+  id: string;
   name: string;
   label: string;
 }
@@ -20,7 +20,7 @@ interface PermissionsByModule {
   }
   
   interface AddRolePermissionsPayload {
-    id: number;
+    id: string;
     permissionNames: string[];
   }
 
@@ -78,21 +78,21 @@ interface PermissionsByModule {
   }
  
   
-  export async function getCategoryById(id: number): Promise<Category> {
-    return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
-      method: "GET",
-    });
-  }
+export async function getCategoryById(id: string): Promise<Category> {
+  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
+    method: "GET",
+  });
+}
 
-  export async function deleteCategory(id: number): Promise<Category> {
-    return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
-      method: "DELETE",
-    });
-  }
+export async function deleteCategory(id: string): Promise<Category> {
+  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
+    method: "DELETE",
+  });
+}
 
-  export async function editCategory(categoryId: number, payload: CreateCategoryPayload): Promise<Category> {
-    return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${categoryId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    });
-  }
+export async function editCategory(categoryId: string, payload: CreateCategoryPayload): Promise<Category> {
+  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${categoryId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}

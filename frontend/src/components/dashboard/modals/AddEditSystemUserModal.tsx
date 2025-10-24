@@ -43,7 +43,7 @@ interface HttpError {
 interface AddEditSystemUserProps {
   open: boolean;
   onClose: () => void;
-  userId?: number | null;
+  userId?: string | null;
 }
 
 interface FormErrors {
@@ -271,10 +271,10 @@ export default function AddEditSystemUser({
     setShowDeleteConfirmation(false);
   };
 
-  const getCustomerId = (customerName: string): number => {
-    if (!customers) return 0;
+  const getCustomerId = (customerName: string): string => {
+    if (!customers) return "";
     const customer = customers.find((c) => c.name === customerName);
-    return customer ? customer.id : 0;
+    return customer ? customer.id : "";
   };
 
   const handleSystemRoleChange = (newValue: string) => {

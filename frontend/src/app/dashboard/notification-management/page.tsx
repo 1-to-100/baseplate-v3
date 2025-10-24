@@ -51,23 +51,23 @@ const metadata = {
 export default function Page(): React.JSX.Element {
   const { colorScheme } = useColorScheme();
   const { debouncedSearchValue } = useGlobalSearch();
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [anchorEl, setAnchorPopper] = useState<null | HTMLElement>(null);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [popoverAnchorEl, setPopoverAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedNotification, setSelectedNotification] = useState<ApiNotification | null>(null);
   const [openAddNotificationModal, setOpenAddNotificationModal] = useState(false);
-  const [notificationToEditId, setNotificationToEditId] = useState<number | null>(null);
+  const [notificationToEditId, setNotificationToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof ApiNotification | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [openSentNotificationsModal, setOpenSentNotificationsModal] = useState(false);
   const [addUserAnchorEl, setAddUserAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedNotificationId, setSelectedNotificationId] = useState<number | null>(null);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -125,7 +125,7 @@ export default function Page(): React.JSX.Element {
 
   // useEffect(() => {}, [popoverAnchorEl, selectedNotification]);
 
-  const handleRowCheckboxChange = (userId: number) => {
+  const handleRowCheckboxChange = (userId: string) => {
     setSelectedRows((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -168,12 +168,12 @@ export default function Page(): React.JSX.Element {
     }
   };
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = (userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   };
 
-  const handleDeleteRow = useCallback((userId: number) => {
+  const handleDeleteRow = useCallback((userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   }, []);
@@ -220,18 +220,18 @@ export default function Page(): React.JSX.Element {
 
   const handleOpenDetail = async (
     event: React.MouseEvent<HTMLElement>,
-    notificationId: number
+    notificationId: string
   ) => {
     event.preventDefault();
     event.persist();
     const targetElement = event.currentTarget;
-    setSelectedNotificationId(notificationId);
+    setSelectedNotificationId(notificationId as string);
     setPopoverAnchorEl(targetElement);
     handleCloseFilter();
     handleMenuClose();
   };
 
-  const handleEdit = async (userId: number) => {
+  const handleEdit = async (userId: string) => {
     try {
       setNotificationToEditId(userId);
       setOpenAddNotificationModal(true);
@@ -923,7 +923,7 @@ export default function Page(): React.JSX.Element {
           setSelectedNotificationId(null);
         }}
         anchorEl={popoverAnchorEl}
-        notificationId={selectedNotificationId || 0}
+        notificationId={selectedNotificationId || ""}
         ref={popoverRef}
       />
 
@@ -936,7 +936,7 @@ export default function Page(): React.JSX.Element {
       <SendNotificationsModal
         open={openSentNotificationsModal}
         onClose={handleCloseSentNotificationsModal}
-        selectedNotificationId={selectedNotification?.id ?? 0}
+        selectedNotificationId={selectedNotification?.id ?? ""}
       />
     </Box>
   );

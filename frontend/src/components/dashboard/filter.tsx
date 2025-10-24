@@ -30,13 +30,13 @@ interface FilterProps {
     roleId: string[];
   }) => void;
   onFilterCustomers?: (filters: {
-    customerSuccessId: number[];
-    subscriptionId: number[];
+    customerSuccessId: string[];
+    subscriptionId: string[];
     statusId: string[];
   }) => void;
   initialFilters?: {
-    customerSuccessId: number[];
-    subscriptionId: number[];
+    customerSuccessId: string[];
+    subscriptionId: string[];
     statusId: string[];
   };
 }
@@ -55,8 +55,8 @@ const Filter = ({
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters?.statusId || []);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
-  const [selectedManagerIds, setSelectedManagerIds] = useState<number[]>(initialFilters?.customerSuccessId || []);
-  const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<number[]>(initialFilters?.subscriptionId || []);
+  const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>(initialFilters?.customerSuccessId || []);
+  const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<string[]>(initialFilters?.subscriptionId || []);
   const [activeCategory, setActiveCategory] = useState<string | null>(users && users?.length > 0 ? "Status" : "Manager");
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -170,7 +170,7 @@ const Filter = ({
     );
   };
 
-  const handleManagerChange = (managerId: number) => {
+  const handleManagerChange = (managerId: string) => {
     setSelectedManagerIds((prev) =>
       prev.includes(managerId)
         ? prev.filter((m) => m !== managerId)
@@ -178,7 +178,7 @@ const Filter = ({
     );
   };
 
-  const handleSubscriptionChange = (subscriptionId: number) => {
+  const handleSubscriptionChange = (subscriptionId: string) => {
     setSelectedSubscriptionIds((prev) =>
       prev.includes(subscriptionId)
         ? prev.filter((s) => s !== subscriptionId)
@@ -547,8 +547,8 @@ const Filter = ({
                               }}
                             >
                               <Checkbox
-                                checked={selectedCustomerIds.includes(customer.id.toString())}
-                                onChange={() => handleCustomerChange(customer.id.toString())}
+                                checked={selectedCustomerIds.includes(customer.id)}
+                                onChange={() => handleCustomerChange(customer.id)}
                                 sx={{
                                   transform: { xs: "scale(0.9)", sm: "scale(1)" },
                                 }}

@@ -110,7 +110,7 @@ const AddArticlePage = () => {
 
     const payload = {
       title,
-      articleCategoryId: Number(selectedCategory),
+      articleCategoryId: selectedCategory,
       subcategory: selectedSubcategory,
       status: "draft",
       content,
@@ -130,7 +130,7 @@ const AddArticlePage = () => {
 
     const payload = {
       title,
-      articleCategoryId: Number(selectedCategory),
+      articleCategoryId: selectedCategory,
       subcategory: selectedSubcategory,
       status: "published",
       content,

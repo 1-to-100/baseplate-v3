@@ -21,8 +21,8 @@ interface NotificationFilterProps {
   onFilter: (filters: {
     type: string[];
     channel: string[];
-    user: number[];
-    customer: number[];
+    user: string[];
+    customer: string[];
   }) => void;
   onClose: () => void;
   open: boolean;
@@ -38,8 +38,8 @@ export default function NotificationFilter({
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
   const [selectedChannels, setSelectedChannels] = React.useState<string[]>([]);
-  const [selectedUserIds, setSelectedUserIds] = React.useState<number[]>([]);
-  const [selectedCustomerIds, setSelectedCustomerIds] = React.useState<number[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
+  const [selectedCustomerIds, setSelectedCustomerIds] = React.useState<string[]>([]);
   const [activeCategory, setActiveCategory] = React.useState<string | null>("Type");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -95,7 +95,7 @@ export default function NotificationFilter({
     );
   };
 
-  const handleUserToggle = (userId: number) => {
+  const handleUserToggle = (userId: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(userId)
         ? prev.filter((u) => u !== userId)
@@ -103,7 +103,7 @@ export default function NotificationFilter({
     );
   };
 
-  const handleCustomerToggle = (customerId: number) => {
+  const handleCustomerToggle = (customerId: string) => {
     setSelectedCustomerIds((prev) =>
       prev.includes(customerId)
         ? prev.filter((c) => c !== customerId)

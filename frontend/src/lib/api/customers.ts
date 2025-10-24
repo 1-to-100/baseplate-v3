@@ -8,8 +8,8 @@ interface GetCustomersParams {
   search?: string;
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
-  managerId?: number[];
-  subscriptionId?: number[];
+  managerId?: string[];
+  subscriptionId?: string[];
   statusId?: string[];
 }
 
@@ -29,13 +29,13 @@ interface GetCustomersResponse {
 interface CreateCustomerPayload {
   name: string;
   email: string;
-  subscriptionId?: number;
-  managerId?: number;
-  ownerId?: number;
+  subscriptionId?: string;
+  managerId?: string;
+  ownerId?: string;
 }
 
 interface UpdateCustomerPayload extends Partial<CreateCustomerPayload> {
-  id: number;
+  id: string;
 }
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
@@ -54,8 +54,8 @@ export async function getCustomers(): Promise<TaxonomyItem[]> {
   });
 }
 
-export async function getSubscriptions(): Promise<Customer[]> {
-  return apiFetch<Customer[]>(`${config.site.apiUrl}/taxonomies/subscriptions`, {
+export async function getSubscriptions(): Promise<TaxonomyItem[]> {
+  return apiFetch<TaxonomyItem[]>(`${config.site.apiUrl}/taxonomies/subscriptions`, {
     method: "GET",
     headers: {
       accept: "*/*",
@@ -72,10 +72,10 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
   if (params.orderDirection) query.set('orderDirection', params.orderDirection);
 
   if (params.managerId && params.managerId.length > 0) {
-    params.managerId.forEach(id => query.append('customerSuccessId', id.toString()));
+    params.managerId.forEach(id => query.append('customerSuccessId', id));
   }
   if (params.subscriptionId && params.subscriptionId.length > 0) {
-    params.subscriptionId.forEach(id => query.append('subscriptionId', id.toString()));
+    params.subscriptionId.forEach(id => query.append('subscriptionId', id));
   }
   if (params.statusId && params.statusId.length > 0) {
     params.statusId.forEach(status => query.append('status', status));
@@ -86,7 +86,7 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
   });
 }
 
-export async function getCustomerById(id: number): Promise<Customer> {
+export async function getCustomerById(id: string): Promise<Customer> {
   return apiFetch<Customer>(`${config.site.apiUrl}/customers/${id}`, {
     method: 'GET',
   });
@@ -99,7 +99,7 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
   });
 }
 
-export async function deleteCustomer(id: number): Promise<Customer> {
+export async function deleteCustomer(id: string): Promise<Customer> {
   return apiFetch<Customer>(`${config.site.apiUrl}/customers/${id}`, {
     method: 'DELETE',
   });

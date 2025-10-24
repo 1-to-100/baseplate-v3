@@ -53,7 +53,7 @@ interface HttpError {
 }
 
 const CategoryInfo: React.FC = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [addUserAnchorEl, setAddUserAnchorEl] = useState<null | HTMLElement>(
     null
@@ -61,11 +61,11 @@ const CategoryInfo: React.FC = () => {
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openAddUserModal, setOpenAddUserModal] = useState(false);
   const [openEditRoleModal, setOpenEditRoleModal] = useState(false);
-  const [userToEditId, setUserToEditId] = useState<number | null>(null);
+  const [userToEditId, setUserToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof Article | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,7 +90,7 @@ const CategoryInfo: React.FC = () => {
       if (!categoryId) {
         throw new Error("Category ID is missing");
       }
-      return getCategoryById(Number(categoryId));
+      return getCategoryById(String(categoryId));
     },
     enabled: !!categoryId,
   });
@@ -111,7 +111,7 @@ const CategoryInfo: React.FC = () => {
         search: debouncedSearchValue || undefined,
         orderBy: sortColumn || undefined,
         orderDirection: sortDirection,
-        categoryId: categoryId ? [Number(categoryId)] : undefined,
+        categoryId: categoryId ? [String(categoryId)] : undefined,
       });
       return {
         ...response,
@@ -159,7 +159,7 @@ const CategoryInfo: React.FC = () => {
     setMenuRowIndex(null);
   };
 
-  const handleEdit = (articleId: number) => {
+  const handleEdit = (articleId: string) => {
     setUserToEditId(articleId);
     setOpenEditModal(true);
     handleMenuClose();
@@ -169,7 +169,7 @@ const CategoryInfo: React.FC = () => {
     router.push("/dashboard/documentation/add");
   };
 
-  const handleDeleteRow = useCallback((articleId: number) => {
+  const handleDeleteRow = useCallback((articleId: string) => {
     setRowsToDelete([articleId]);
     setOpenDeleteModal(true);
   }, []);
@@ -182,7 +182,7 @@ const CategoryInfo: React.FC = () => {
   };
 
   const deleteArticleMutation = useMutation({
-    mutationFn: (id: number) => deleteArticle(id),
+    mutationFn: (id: string) => deleteArticle(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["articles"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -213,7 +213,7 @@ const CategoryInfo: React.FC = () => {
     setOpenAddUserModal(false);
   };
 
-  const handleRowCheckboxChange = (articleId: number) => {
+  const handleRowCheckboxChange = (articleId: string) => {
     setSelectedRows((prev) =>
       prev.includes(articleId)
         ? prev.filter((id) => id !== articleId)
@@ -245,7 +245,7 @@ const CategoryInfo: React.FC = () => {
   };
 
   const editArticleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { status: "draft" | "published" } }) => editArticle(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { status: "draft" | "published" } }) => editArticle(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["articles"] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
@@ -261,10 +261,10 @@ const CategoryInfo: React.FC = () => {
     },
   });
 
-  const handleSaveDraft = async (articleId: number) => {
+  const handleSaveDraft = async (articleId: string) => {
     editArticleMutation.mutate({ 
       id: articleId, 
-      data: { status: "draft" } 
+      data: { status: "draft" }
     });
   };
 

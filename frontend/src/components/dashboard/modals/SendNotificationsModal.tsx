@@ -34,7 +34,7 @@ interface HttpError {
 interface SendNotificationsProps {
   open: boolean;
   onClose: () => void;
-  selectedNotificationId: number;
+  selectedNotificationId: string;
 }
 
 export default function SendNotifications({ open, onClose, selectedNotificationId }: SendNotificationsProps) {
@@ -61,7 +61,7 @@ export default function SendNotifications({ open, onClose, selectedNotificationI
   });
   const users = usersData?.data || [];
 
-  const handleSend = async (selectedNotificationId: number) => {
+  const handleSend = async (selectedNotificationId: string) => {
     let hasError = false;
     const newError: { customer?: string; user?: string; type?: string } = {};
     if (selectedType === "users" && selectedUser.length === 0) {
@@ -77,8 +77,8 @@ export default function SendNotifications({ open, onClose, selectedNotificationI
       try {
         onClose();
         await sendNotification({
-          customerId: selectedCustomer.length > 0 ? parseInt(selectedCustomer[0] ?? "0", 10) : 0,
-          userIds: selectedUser.map(id => parseInt(id, 10)),
+          customerId: selectedCustomer.length > 0 ? selectedCustomer[0] ?? "" : "",
+          userIds: selectedUser,
         }, selectedNotificationId);
         toast.success("Notifications have been sent successfully.");
         queryClient.invalidateQueries({ queryKey: ["notifications"] });

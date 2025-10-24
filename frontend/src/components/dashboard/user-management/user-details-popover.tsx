@@ -30,7 +30,7 @@ interface UserDetailsPopoverProps {
   open: boolean;
   onClose: () => void;
   anchorEl: HTMLElement | null;
-  userId: number;
+  userId: string;
 }
 
 const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({

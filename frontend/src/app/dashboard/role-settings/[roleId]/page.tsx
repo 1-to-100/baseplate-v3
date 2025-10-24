@@ -73,7 +73,7 @@ interface Module {
 }
 
 const SystemAdminSettings: React.FC = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
@@ -88,14 +88,14 @@ const SystemAdminSettings: React.FC = () => {
   );
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [rowsToDelete, setRowsToDelete] = useState<number[]>([]);
+  const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openAddUserModal, setOpenAddUserModal] = useState(false);
   const [openEditRoleModal, setOpenEditRoleModal] = useState(false);
   const [openResetPasswordModal, setOpenResetPasswordModal] = useState(false);
   const [userToResetPassword, setUserToResetPassword] =
     useState<ApiUser | null>(null);
-  const [userToEditId, setUserToEditId] = useState<number | null>(null);
+  const [userToEditId, setUserToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof ApiUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -247,7 +247,7 @@ const SystemAdminSettings: React.FC = () => {
 
   const handleOpenDetail = async (
     event: React.MouseEvent<HTMLElement>,
-    userId: number
+    userId: string
   ) => {
     event.preventDefault();
     event.persist();
@@ -268,7 +268,7 @@ const SystemAdminSettings: React.FC = () => {
     setPopoverAnchorEl(null);
   };
 
-  const handleEdit = (userId: number) => {
+  const handleEdit = (userId: string) => {
     setUserToEditId(userId);
     setOpenEditModal(true);
     handleMenuClose();
@@ -283,7 +283,7 @@ const SystemAdminSettings: React.FC = () => {
     setOpenEditRoleModal(true);
   };
 
-  const handleResetPassword = (userId: number) => {
+  const handleResetPassword = (userId: string) => {
     const user = users.find((u) => u.id === userId);
     if (user) {
       setUserToResetPassword(user);
@@ -292,7 +292,7 @@ const SystemAdminSettings: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleDeleteRow = useCallback((userId: number) => {
+  const handleDeleteRow = useCallback((userId: string) => {
     setRowsToDelete([userId]);
     setOpenDeleteModal(true);
   }, []);
@@ -331,7 +331,7 @@ const SystemAdminSettings: React.FC = () => {
     }
   };
 
-  const handleRowCheckboxChange = (userId: number) => {
+  const handleRowCheckboxChange = (userId: string) => {
     setSelectedRows((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -1349,7 +1349,7 @@ const SystemAdminSettings: React.FC = () => {
         open={Boolean(popoverAnchorEl)}
         onClose={handleClosePopover}
         anchorEl={popoverAnchorEl}
-        userId={selectedUser?.id ?? 0}
+        userId={selectedUser?.id ?? ""}
       />
     </Box>
   );

@@ -43,7 +43,7 @@ interface HttpError {
 interface AddEditCategoryProps {
   open: boolean;
   onClose: () => void;
-  categoryId?: number;
+  categoryId?: string;
   fetchCategories: () => void;
 }
 
@@ -177,7 +177,7 @@ export default function AddEditCategory({
   });
 
   const editCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CategoryFormData }) => editCategory(id, data),
+    mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) => editCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });

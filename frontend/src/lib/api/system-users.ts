@@ -8,20 +8,20 @@ interface CreateUserPayload {
   email: string;
   firstName: string;
   lastName: string;
-  customerId?: number;
+  customerId?: string;
   status?: 'active' | 'inactive';
   systemRole: string;
 }
 
 interface UpdateUserPayload extends Partial<CreateUserPayload> {
-  id: number;
+  id: string;
 }
 
 interface EditUserInfoPayload extends Partial<CreateUserPayload> {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
-  customerId?: number;
+  customerId?: string;
   status?: 'active' | 'inactive';
   systemRole: string;
 }
@@ -83,7 +83,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
   
   if (params.roleFilter) query.set('roleFilter', params.roleFilter);
   if (params.customerId && params.customerId.length > 0) {
-    params.customerId.forEach(id => query.append('customerId', id.toString()));
+    params.customerId.forEach(id => query.append('customerId', id));
   }
   if (params.statusId && params.statusId.length > 0) {
     params.statusId.forEach(status => query.append('status', status));
@@ -94,7 +94,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
   });
 }
 
-export async function getSystemUserById(id: number): Promise<SystemUser> {
+export async function getSystemUserById(id: string): Promise<SystemUser> {
   return apiFetch<SystemUser>(`${config.site.apiUrl}/system-users/${id}`, {
     method: 'GET',
   });
