@@ -14,7 +14,6 @@ import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response
 import { ApiConflictResponse, ApiOkResponse } from '@nestjs/swagger';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { User } from '@/common/decorators/user.decorator';
-import { Permissions } from '@/common/decorators/permissions.decorator';
 import { CustomerId } from '@/common/decorators/customer-id.decorator';
 import { DynamicAuthGuard } from '@/auth/guards/dynamic-auth/dynamic-auth.guard';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
@@ -77,7 +76,6 @@ export class SystemUsersController {
   @ApiConflictResponse({
     description: 'Error creating user with provided data',
   })
-  @Permissions('UserManagement:createUser')
   async create(
     @User() user: OutputUserDto,
     @Body() createSystemUserDto: CreateSystemUserDto,

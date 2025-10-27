@@ -7,9 +7,14 @@ import { UsersService } from '@/users/users.service';
 import { RoleMigrationService } from '@/users/services/role-migration.service';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
 import { SupabaseService } from '@/common/supabase/supabase.service';
+import { CustomerSuccessOwnedCustomersModule } from '@/customer-success-owned-customers/customer-success-owned-customers.module';
 
 @Module({
-  imports: [DatabaseModule, forwardRef(() => RolesModule)],
+  imports: [
+    DatabaseModule,
+    forwardRef(() => RolesModule),
+    CustomerSuccessOwnedCustomersModule,
+  ],
   controllers: [UsersController, SystemUsersController],
   providers: [
     UsersService,

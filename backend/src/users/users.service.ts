@@ -31,6 +31,7 @@ import { SupabaseDecodedToken } from '@/auth/guards/supabase-auth/supabase-auth.
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { SupabaseService } from '@/common/supabase/supabase.service';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
+import { CustomerSuccessOwnedCustomersService } from '@/customer-success-owned-customers/customer-success-owned-customers.service';
 
 // Helper to convert database User to OutputUserDto with proper type handling
 function mapUserToDto(user: any): OutputUserDto {
@@ -89,6 +90,7 @@ export class UsersService {
     private readonly database: DatabaseService,
     private readonly supabaseService: SupabaseService,
     private readonly frontendPathsService: FrontendPathsService,
+    private readonly csOwnedCustomersService: CustomerSuccessOwnedCustomersService,
   ) {}
 
   private async getRoleIdByName(roleName: string): Promise<string> {
@@ -169,6 +171,8 @@ export class UsersService {
     createSystemUserDto: CreateSystemUserDto,
     skipInvite: boolean = false,
   ): Promise<OutputUserDto> {
+    console.log('createSystemUserDto', createSystemUserDto);
+
     if (await this.emailExists({ email: createSystemUserDto.email })) {
       throw new ConflictException('User with this email already exists');
     }
@@ -220,11 +224,12 @@ export class UsersService {
         data: userData,
       });
 
-      // attach customer success to customer
+      // attach customer success to customer using new customer_success_owned_customers table
       if (isCustomerSuccess && createSystemUserDto.customerId) {
-        await this.database.update('customers', {
-          where: { customer_id: createSystemUserDto.customerId },
-          data: { manager_id: user.user_id },
+        // Create assignment in the new table
+        await this.csOwnedCustomersService.create({
+          user_id: user.user_id,
+          customer_id: createSystemUserDto.customerId,
         });
       }
     } catch (error) {
@@ -308,6 +313,8 @@ export class UsersService {
     const user = await this.database.findFirst('users', {
       where: { email: checkUserExistsDto.email },
     });
+
+    console.log('user', user);
     return !!user;
   }
 
@@ -686,12 +693,15 @@ export class UsersService {
       });
     } else if (isCustomerSuccess && updateSystemUserDto.customerId) {
       // Check if assignment already exists
-      const existingAssignment = await this.database.findFirst('customer_success_owned_customers', {
-        where: { 
-          user_id: user.user_id,
-          customer_id: updateSystemUserDto.customerId 
+      const existingAssignment = await this.database.findFirst(
+        'customer_success_owned_customers',
+        {
+          where: {
+            user_id: user.user_id,
+            customer_id: updateSystemUserDto.customerId,
+          },
         },
-      });
+      );
 
       // Create assignment if it doesn't exist
       if (!existingAssignment) {
@@ -1075,12 +1085,12 @@ export class UsersService {
     }
 
     if (userRole?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS) {
-      const customerWithSuccess = await this.database.findFirst('customers', {
-        where: { manager_id: user.user_id },
-      });
-      if (customerWithSuccess) {
+      // Check if user has any customer success assignments in the new table
+      const csAssignments =
+        await this.csOwnedCustomersService.getCustomersByCSRep(user.user_id);
+      if (csAssignments && csAssignments.length > 0) {
         throw new ConflictException(
-          'Cannot delete user who is a customer success manager',
+          'Cannot delete user who is a customer success manager. Please remove all customer assignments first.',
         );
       }
     }

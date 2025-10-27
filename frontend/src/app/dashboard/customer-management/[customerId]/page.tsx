@@ -1231,8 +1231,8 @@ const Customer: React.FC = () => {
                 fontWeight="300"
                 sx={{ color: "var(--joy-palette-text-primary)" }}
               >
-                {customerData?.customerSuccess?.name.slice(0, 45)} <br />
-                {customerData?.customerSuccess?.email.slice(0, 45)}
+                {customerData?.customerSuccess?.name?.slice(0, 45)} <br />
+                {customerData?.customerSuccess?.email?.slice(0, 45)}
               </Typography>
             </Stack>
             
@@ -1302,7 +1302,7 @@ const Customer: React.FC = () => {
       <AddEditCustomerModal
         open={openEditRoleModal}
         onClose={handleCloseEditRoleModal}
-        customerId={customerData?.customer_id}
+        customerId={customerData?.id}
       />
 
       <ResetPasswordUser
