@@ -143,7 +143,7 @@ export default function Page(): React.JSX.Element {
   ) => {
     if (!hasResults) return;
     if (event.target.checked) {
-      setSelectedRows(customers.map((customer) => customer.customer_id));
+      setSelectedRows(customers.map((customer) => customer.id));
     } else {
       setSelectedRows([]);
     }
@@ -257,7 +257,7 @@ export default function Page(): React.JSX.Element {
 
   const customersToDelete = rowsToDelete
     .map((customerId) => {
-      const customer = customers.find((u) => u.customer_id === customerId);
+      const customer = customers.find((el) => el.id === customerId);
       return customer ? customer.name : undefined;
     })
     .filter((name): name is string => name !== undefined);
@@ -590,18 +590,18 @@ export default function Page(): React.JSX.Element {
                   ) : (
                     customers.map((customer, index) => (
                       <tr
-                        key={customer.customer_id}
+                        key={customer.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          handleOpenDetail(event, customer.customer_id);
+                          handleOpenDetail(event, customer.id);
                         }}
                       >
                         <td>
                           <Checkbox
-                            checked={selectedRows.includes(customer.customer_id)}
+                            checked={selectedRows.includes(customer.id)}
                             onChange={(event) => {
                               event.stopPropagation();
-                              handleRowCheckboxChange(customer.customer_id)
+                              handleRowCheckboxChange(customer.id)
                             }}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -750,7 +750,7 @@ export default function Page(): React.JSX.Element {
                             <Box
                               onMouseDown={(event) => {
                                 event.preventDefault();
-                                handleEdit(customer.customer_id);
+                                handleEdit(customer.id);
                               }}
                               sx={menuItemStyle}
                             >
@@ -763,7 +763,7 @@ export default function Page(): React.JSX.Element {
                             <Box
                               onMouseDown={(event) => {
                                 event.preventDefault();
-                                handleOpenDetail(event, customer.customer_id);
+                                handleOpenDetail(event, customer.id);
                               }}
                               sx={menuItemStyle}
                             >

@@ -56,7 +56,7 @@ export interface Role {
 }
 
 export interface Customer {
-  customer_id: string;
+  id: string;
   name: string;
   email: string;
   subscriptionId: string;
