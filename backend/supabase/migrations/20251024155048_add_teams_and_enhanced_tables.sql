@@ -246,19 +246,19 @@ alter table public.role_permissions enable row level security;
 -- System Admin: Full access
 create policy teams_select_system_admin on public.teams
   for select to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy teams_insert_system_admin on public.teams
   for insert to authenticated
-  with check (public.is_system_admin());
+  with check ((SELECT public.has_role('system_admin')));
 
 create policy teams_update_system_admin on public.teams
   for update to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy teams_delete_system_admin on public.teams
   for delete to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 -- Customer Success: Access to assigned customers
 create policy teams_select_customer_success on public.teams
@@ -289,28 +289,28 @@ create policy teams_delete_customer_success on public.teams
 create policy teams_select_customer_admin on public.teams
   for select to authenticated
   using (
-    public.is_customer_admin() and 
+    (SELECT public.has_role('customer_admin')) and 
     customer_id = public.current_customer_id()
   );
 
 create policy teams_insert_customer_admin on public.teams
   for insert to authenticated
   with check (
-    public.is_customer_admin() and 
+    (SELECT public.has_role('customer_admin')) and 
     customer_id = public.current_customer_id()
   );
 
 create policy teams_update_customer_admin on public.teams
   for update to authenticated
   using (
-    public.is_customer_admin() and 
+    (SELECT public.has_role('customer_admin')) and 
     customer_id = public.current_customer_id()
   );
 
 create policy teams_delete_customer_admin on public.teams
   for delete to authenticated
   using (
-    public.is_customer_admin() and 
+    (SELECT public.has_role('customer_admin')) and 
     customer_id = public.current_customer_id()
   );
 
@@ -321,19 +321,19 @@ create policy teams_delete_customer_admin on public.teams
 -- System Admin: Full access
 create policy team_members_select_system_admin on public.team_members
   for select to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy team_members_insert_system_admin on public.team_members
   for insert to authenticated
-  with check (public.is_system_admin());
+  with check ((SELECT public.has_role('system_admin')));
 
 create policy team_members_update_system_admin on public.team_members
   for update to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy team_members_delete_system_admin on public.team_members
   for delete to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 -- Customer Success: Access via team's customer
 create policy team_members_select_customer_success on public.team_members
@@ -376,7 +376,7 @@ create policy team_members_delete_customer_success on public.team_members
 create policy team_members_select_customer_admin on public.team_members
   for select to authenticated
   using (
-    public.is_customer_admin() and
+    (SELECT public.has_role('customer_admin')) and
     team_id in (
       select team_id from public.teams 
       where customer_id = public.current_customer_id()
@@ -386,7 +386,7 @@ create policy team_members_select_customer_admin on public.team_members
 create policy team_members_insert_customer_admin on public.team_members
   for insert to authenticated
   with check (
-    public.is_customer_admin() and
+    (SELECT public.has_role('customer_admin')) and
     team_id in (
       select team_id from public.teams 
       where customer_id = public.current_customer_id()
@@ -396,7 +396,7 @@ create policy team_members_insert_customer_admin on public.team_members
 create policy team_members_update_customer_admin on public.team_members
   for update to authenticated
   using (
-    public.is_customer_admin() and
+    (SELECT public.has_role('customer_admin')) and
     team_id in (
       select team_id from public.teams 
       where customer_id = public.current_customer_id()
@@ -406,7 +406,7 @@ create policy team_members_update_customer_admin on public.team_members
 create policy team_members_delete_customer_admin on public.team_members
   for delete to authenticated
   using (
-    public.is_customer_admin() and
+    (SELECT public.has_role('customer_admin')) and
     team_id in (
       select team_id from public.teams 
       where customer_id = public.current_customer_id()
@@ -427,25 +427,25 @@ create policy team_members_select_self on public.team_members
 -- System Admin: Full access
 create policy cs_owned_customers_select_system_admin on public.customer_success_owned_customers
   for select to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy cs_owned_customers_insert_system_admin on public.customer_success_owned_customers
   for insert to authenticated
-  with check (public.is_system_admin());
+  with check ((SELECT public.has_role('system_admin')));
 
 create policy cs_owned_customers_update_system_admin on public.customer_success_owned_customers
   for update to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy cs_owned_customers_delete_system_admin on public.customer_success_owned_customers
   for delete to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 -- Customer Success: View their own assignments
 create policy cs_owned_customers_select_self on public.customer_success_owned_customers
   for select to authenticated
   using (
-    public.is_customer_success() and
+    (SELECT public.has_system_role('customer_success')) and
     user_id = public.current_user_id()
   );
 
@@ -456,19 +456,19 @@ create policy cs_owned_customers_select_self on public.customer_success_owned_cu
 -- System Admin: Full access
 create policy subscriptions_select_system_admin on public.subscriptions
   for select to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy subscriptions_insert_system_admin on public.subscriptions
   for insert to authenticated
-  with check (public.is_system_admin());
+  with check ((SELECT public.has_role('system_admin')));
 
 create policy subscriptions_update_system_admin on public.subscriptions
   for update to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 create policy subscriptions_delete_system_admin on public.subscriptions
   for delete to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 -- Customer Success: Access to assigned customers
 create policy subscriptions_select_customer_success on public.subscriptions
@@ -499,7 +499,7 @@ create policy subscriptions_delete_customer_success on public.subscriptions
 create policy subscriptions_select_customer_admin on public.subscriptions
   for select to authenticated
   using (
-    public.is_customer_admin() and 
+    (SELECT public.has_role('customer_admin')) and 
     customer_id = public.current_customer_id()
   );
 
@@ -515,11 +515,11 @@ create policy role_permissions_select_all on public.role_permissions
 -- System Admin: Full management
 create policy role_permissions_insert_system_admin on public.role_permissions
   for insert to authenticated
-  with check (public.is_system_admin());
+  with check ((SELECT public.has_role('system_admin')));
 
 create policy role_permissions_delete_system_admin on public.role_permissions
   for delete to authenticated
-  using (public.is_system_admin());
+  using ((SELECT public.has_role('system_admin')));
 
 -- =============================================================================
 -- HELPER FUNCTION UPDATES
@@ -534,12 +534,12 @@ stable
 as $$
 begin
   -- System admins can access all customers
-  if public.is_system_admin() then
+  if (SELECT public.has_role('system_admin')) then
     return query select c.customer_id from public.customers c;
   end if;
 
   -- Customer success can access customers they own via customer_success_owned_customers
-  if public.is_customer_success() then
+  if (SELECT public.has_system_role('customer_success')) then
     return query 
       select csoc.customer_id 
       from public.customer_success_owned_customers csoc
