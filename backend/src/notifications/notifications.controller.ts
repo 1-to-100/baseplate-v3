@@ -4,7 +4,6 @@ import {
   Body,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   UseGuards,
   ForbiddenException,
@@ -30,6 +29,7 @@ import {
   isSystemAdministrator,
   isCustomerSuccess,
 } from '@/common/utils/user-role-helpers';
+import { UserStatus } from '@/common/types/database.types';
 
 @Controller('notifications')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard)
@@ -83,7 +83,7 @@ export class NotificationsController {
 
       if (!foundUser || foundUser.customer_id !== customerId) {
         throw new BadRequestException('User not linked to the customer');
-      } else if (foundUser.status !== 'active') {
+      } else if (foundUser.status !== UserStatus.ACTIVE) {
         throw new BadRequestException('User is not active');
       }
     }
@@ -235,10 +235,7 @@ export class NotificationsController {
     type: NotificationDto,
   })
   @ApiParam({ name: 'id', type: String })
-  async markAsRead(
-    @User() user: OutputUserDto,
-    @Param('id') id: string,
-  ) {
+  async markAsRead(@User() user: OutputUserDto, @Param('id') id: string) {
     try {
       await this.notificationsService.markAsRead(user.id, id);
     } catch (error) {
@@ -258,7 +255,10 @@ export class NotificationsController {
           items: {
             type: 'string',
           },
-          example: ['550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001'],
+          example: [
+            '550e8400-e29b-41d4-a716-446655440000',
+            '550e8400-e29b-41d4-a716-446655440001',
+          ],
         },
       },
     },

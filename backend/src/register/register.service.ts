@@ -21,22 +21,20 @@ export class RegisterService {
     roleName: string,
     adminClient: any,
   ): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const { data: role, error: roleError } = await adminClient
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       .from('roles')
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       .select('role_id')
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       .eq('name', roleName)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       .single();
 
     if (roleError || !role) {
       throw new Error(`Role ${roleName} not found`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     return role.role_id;
   }
 
@@ -76,7 +74,7 @@ export class RegisterService {
         email,
         firstName,
         lastName,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
         customerId: existingCustomer?.customer_id,
       },
       true,
@@ -105,7 +103,6 @@ export class RegisterService {
       const { error: updateUserError } = await adminClient
         .from('users')
         .update({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           customer_id: newCustomer.customer_id,
           role_id: await this.getRoleIdByName(
             SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
@@ -123,7 +120,7 @@ export class RegisterService {
 
     // Sign up in Supabase
     // await this.signUpInSupabase(registerDto);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
     const { error } = await this.supabaseService.auth.signUp({
       email: registerDto.email,
       password: registerDto.password,
@@ -140,7 +137,6 @@ export class RegisterService {
 
     if (error) {
       throw new ConflictException(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to sign up in Supabase: ${error?.message}`,
       );
     }

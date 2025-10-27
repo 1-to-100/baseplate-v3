@@ -60,15 +60,17 @@ export class ArticleCategoriesService {
     }));
   }
 
-  async findAllSubcategories(customerId: string) {
+  async findAllSubcategories(customerId: string): Promise<string[]> {
     // Using raw Supabase client for distinct query as it's not supported in our CRUD wrapper
-    const { data: categories, error } = await this.database
+    const { data, error } = await this.database
       .getClient()
       .from('article_categories')
       .select('subcategory')
       .eq('customer_id', customerId)
       .not('subcategory', 'is', null)
       .order('subcategory', { ascending: true });
+
+    const categories = data as Array<{ subcategory: string | null }> | null;
 
     if (error) {
       throw new ConflictException('Failed to fetch subcategories');
@@ -79,7 +81,7 @@ export class ArticleCategoriesService {
     const uniqueSubcategories = [
       ...new Set(categories?.map((cat) => cat.subcategory).filter(Boolean)),
     ];
-    return uniqueSubcategories;
+    return uniqueSubcategories as string[];
   }
 
   async update(
@@ -93,7 +95,13 @@ export class ArticleCategoriesService {
       );
 
       // Convert camelCase to snake_case for database fields
-      const updateData: any = {};
+      const updateData: {
+        name?: string;
+        slug?: string;
+        subcategory?: string | null;
+        about?: string | null;
+        icon?: string | null;
+      } = {};
       if (updateArticleCategoryDto.name !== undefined) {
         updateData.name = updateArticleCategoryDto.name;
         updateData.slug = generateSlug(updateArticleCategoryDto.name);

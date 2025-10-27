@@ -37,19 +37,19 @@ export class SupabaseService implements OnModuleInit {
     return this.supabase;
   }
 
-  get admin(): any {
+  get admin() {
     return this.getClient().auth.admin;
   }
 
-  get auth(): any {
+  get auth() {
     return this.getClient().auth;
   }
 
-  get storage(): any {
+  get storage() {
     return this.getClient().storage;
   }
 
-  get functions(): any {
+  get functions() {
     return this.getClient().functions;
   }
 
@@ -73,9 +73,10 @@ export class SupabaseService implements OnModuleInit {
   }
 
   async banUser(uuid: string): Promise<void> {
-    const { error: banError } = await this.admin.updateUserById(uuid, {
+    const result = await this.admin.updateUserById(uuid, {
       ban_duration: '876000h', // 100 years
     });
+    const banError = result.error as { message: string } | null;
 
     if (banError) {
       throw new Error(`Failed to ban user: ${banError.message}`);
@@ -83,9 +84,10 @@ export class SupabaseService implements OnModuleInit {
   }
 
   async unbanUser(uuid: string): Promise<void> {
-    const { error: unbanError } = await this.admin.updateUserById(uuid, {
+    const result = await this.admin.updateUserById(uuid, {
       ban_duration: 'none',
     });
+    const unbanError = result.error as { message: string } | null;
 
     if (unbanError) {
       throw new Error(`Failed to unban user: ${unbanError.message}`);

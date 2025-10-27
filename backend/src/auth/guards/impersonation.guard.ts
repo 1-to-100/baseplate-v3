@@ -27,7 +27,12 @@ export class ImpersonationGuard implements CanActivate {
     const impersonateUserIdHeader = request.headers['x-impersonate-user-id'];
     const impersonateUserId = impersonateUserIdHeader;
 
-    if (impersonateUserId && !impersonateUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    if (
+      impersonateUserId &&
+      !impersonateUserId.match(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      )
+    ) {
       throw new ForbiddenException('Impersonate user id must be a valid UUID');
     }
 

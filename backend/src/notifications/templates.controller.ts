@@ -212,7 +212,11 @@ export class TemplatesController {
         );
       }
 
-      if (foundUsers.some((user) => user.status !== UserStatus.ACTIVE)) {
+      if (
+        foundUsers.some(
+          (foundUser) => String(foundUser.status) !== UserStatus.ACTIVE,
+        )
+      ) {
         throw new ForbiddenException('One or more users are not active');
       }
 

@@ -87,26 +87,49 @@ export class RolesController {
       // Handle old format if it exists
       outputRole.permissions = rolePermissions.reduce<
         Record<string, Array<{ id: string; name: string; label: string }>>
-      >((acc: any, permission: any) => {
-        // Handle both single permission object and array (Supabase type inference)
-        const perm = Array.isArray(permission.permission)
-          ? permission.permission[0]
-          : permission.permission;
+      >(
+        (
+          acc: Record<
+            string,
+            Array<{ id: string; name: string; label: string }>
+          >,
+          permission: {
+            permission:
+              | {
+                  id?: string;
+                  name: string;
+                  label?: string;
+                  display_name?: string;
+                }
+              | Array<{
+                  id?: string;
+                  name: string;
+                  label?: string;
+                  display_name?: string;
+                }>;
+          },
+        ) => {
+          // Handle both single permission object and array (Supabase type inference)
+          const perm = Array.isArray(permission.permission)
+            ? permission.permission[0]
+            : permission.permission;
 
-        if (!perm) return acc;
+          if (!perm) return acc;
 
-        const prefix = perm.name.split(':')[0];
+          const prefix = perm.name.split(':')[0];
 
-        acc[prefix] ??= [];
+          acc[prefix] ??= [];
 
-        acc[prefix].push({
-          id: perm.id?.toString() || perm.name,
-          name: perm.name,
-          label: perm.label ?? perm.display_name ?? '',
-        });
+          acc[prefix].push({
+            id: perm.id?.toString() || perm.name,
+            name: perm.name,
+            label: perm.label ?? perm.display_name ?? '',
+          });
 
-        return acc;
-      }, {});
+          return acc;
+        },
+        {},
+      );
     }
 
     return outputRole;

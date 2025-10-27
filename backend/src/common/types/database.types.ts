@@ -495,7 +495,10 @@ export type CreateExtensionDataTypeInput = Omit<
 >;
 
 export type UpdateExtensionDataTypeInput = Partial<
-  Omit<ExtensionDataType, 'extension_data_type_id' | 'created_at' | 'updated_at'>
+  Omit<
+    ExtensionDataType,
+    'extension_data_type_id' | 'created_at' | 'updated_at'
+  >
 >;
 
 export type CreateExtensionDataInput = Omit<
@@ -704,4 +707,3 @@ export interface TableTypeMap {
 
 // Utility type for getting table type by name
 export type TableType<T extends TableNames> = TableTypeMap[T];
-

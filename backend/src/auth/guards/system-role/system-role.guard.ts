@@ -49,12 +49,19 @@ export class SystemRoleGuard implements CanActivate {
     }
 
     // Get user's role information
-    const { data: userRole, error } = await this.supabaseService
+    const { data, error } = await this.supabaseService
       .getClient()
       .from('roles')
       .select('role_id, name, description, is_system_role')
       .eq('role_id', user.roleId)
       .single();
+
+    const userRole = data as {
+      role_id: string;
+      name: string;
+      description: string | null;
+      is_system_role: boolean;
+    } | null;
 
     if (error || !userRole) {
       throw new ForbiddenException('Access denied: role not found');

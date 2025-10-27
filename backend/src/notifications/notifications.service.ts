@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
+import { TableType } from '@/common/types';
+import { WhereClause } from '@/common/utils/supabase-crud.util';
 
 import { CreateNotificationDto } from '@/notifications/dto/create-notification.dto';
 import { ListNotificationsInputDto } from '@/notifications/dto/list-notifications-input.dto';
@@ -27,7 +29,7 @@ export class NotificationsService {
       senderId?: string;
       generatedBy?: string;
     },
-  ) {
+  ): Promise<TableType<'notifications'> | undefined> {
     this.logger.log('Creating notification');
 
     const { userId, customerId } = createNotification;
@@ -92,7 +94,9 @@ export class NotificationsService {
           });
       }, 100);
 
-      return createdNotifications?.at(-1);
+      return (createdNotifications as TableType<'notifications'>[] | null)?.at(
+        -1,
+      );
     } else if (userId) {
       const notificationData = {
         user_id: createNotification.userId,
@@ -109,7 +113,7 @@ export class NotificationsService {
       };
 
       const notification = await this.database.create('notifications', {
-        data: notificationData as any,
+        data: notificationData as Partial<TableType<'notifications'>>,
       });
 
       await Promise.all([
@@ -150,7 +154,7 @@ export class NotificationsService {
     this.logger.log('Finding all notifications');
     const { perPage, page, type, isRead, channel } = listNotificationsInputDto;
 
-    const whereClause: any = {
+    const whereClause: WhereClause = {
       user_id: userId,
     };
 
@@ -221,7 +225,7 @@ export class NotificationsService {
       search,
     } = inputDto;
 
-    const whereClause: any = {};
+    const whereClause: WhereClause = {};
 
     if (userId) whereClause.user_id = { in: userId };
     if (customerId) whereClause.customer_id = { in: customerId };

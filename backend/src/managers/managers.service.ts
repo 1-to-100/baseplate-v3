@@ -46,7 +46,7 @@ export class ManagersService {
       .select('role_id')
       .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
       .single();
-    
+
     if (!role) {
       throw new Error('Customer Success role not found');
     }
@@ -71,7 +71,7 @@ export class ManagersService {
       .select('role_id')
       .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
       .single();
-    
+
     if (!role) {
       throw new Error('Customer Success role not found');
     }
@@ -97,7 +97,9 @@ export class ManagersService {
 
   async remove(id: string) {
     try {
-      return await this.database.delete('managers', { where: { manager_id: id } });
+      return await this.database.delete('managers', {
+        where: { manager_id: id },
+      });
     } catch (error) {
       this.logger.error(error);
       throw new ConflictException('Manager can not be deleted');
