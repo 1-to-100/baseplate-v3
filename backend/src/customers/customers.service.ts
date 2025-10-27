@@ -161,11 +161,6 @@ export class CustomersService {
           },
         });
 
-        // Parse customer success user name
-        const csName = customerSuccessUser?.full_name
-          ? parseUserName(customerSuccessUser.full_name)
-          : null;
-
         return {
           id: customer.customer_id,
           name: customer.name,

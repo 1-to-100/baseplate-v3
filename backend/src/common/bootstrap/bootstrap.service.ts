@@ -43,7 +43,7 @@ export class BootstrapService implements OnModuleInit {
       const { count, error: countError } = await adminClient
         .from('users')
         .select('*', { count: 'exact', head: true })
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
         .eq('role_id', systemAdminRole?.role_id);
 
       if (countError) {
@@ -62,10 +62,13 @@ export class BootstrapService implements OnModuleInit {
 
       // Check if auth user already exists
       let authUserId: string;
-      const { data: existingAuthUsers } =
+      const existingAuthUsersResult =
         await this.supabaseService.admin.listUsers();
+      const existingAuthUsers = existingAuthUsersResult.data as {
+        users?: Array<{ email: string; id: string }>;
+      };
       const existingAuthUser = existingAuthUsers?.users?.find(
-        (u: any) => u.email === 'admin@system.local',
+        (u) => u.email === 'admin@system.local',
       );
 
       if (existingAuthUser) {
@@ -75,12 +78,15 @@ export class BootstrapService implements OnModuleInit {
         authUserId = existingAuthUser.id;
       } else {
         // Create user in Supabase Auth
-        const { data: authData, error: authError } =
-          await this.supabaseService.admin.createUser({
-            email: 'admin@system.local',
-            password: 'Admin@123456',
-            email_confirm: true,
-          });
+        const authResult = await this.supabaseService.admin.createUser({
+          email: 'admin@system.local',
+          password: 'Admin@123456',
+          email_confirm: true,
+        });
+        const authData = authResult.data as {
+          user?: { id: string };
+        };
+        const authError = authResult.error as { message: string } | null;
 
         if (authError || !authData?.user) {
           throw new Error(`Failed to create auth user: ${authError?.message}`);
@@ -96,7 +102,7 @@ export class BootstrapService implements OnModuleInit {
 
           auth_user_id: authUserId,
           full_name: 'System Administrator',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
           role_id: systemAdminRole?.role_id,
           status: 'active',
           customer_id: null, // System-level admin

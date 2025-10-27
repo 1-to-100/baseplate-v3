@@ -1,9 +1,6 @@
 /**
  * CRUD Operation Utilities for Supabase Client
  * Provides interface for common database operations
- *
- * Uses pragmatic typing approach: type-safe API with controlled any types
- * for Supabase's complex internal query builder types.
  */
 
 import {
@@ -38,6 +35,8 @@ type WhereValue =
       lt?: string | number;
       lte?: string | number;
       not?: string | number | null | { in?: (string | number)[] };
+      ilike?: string; // Case-insensitive LIKE pattern matching
+      like?: string; // Case-sensitive LIKE pattern matching
     };
 
 // Where clause type - covers most common query patterns
@@ -608,7 +607,7 @@ export class SupabaseCRUD {
             'in' in value
           ) {
             // Handle not.in operator: field.not.in.(value1,value2)
-            query = query.not(field, 'in', (value.in as (string | number)[]));
+            query = query.not(field, 'in', value.in as (string | number)[]);
           } else {
             query = query.neq(field, value);
           }

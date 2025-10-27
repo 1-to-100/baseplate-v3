@@ -9,8 +9,6 @@ export class ApiDbLoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const method: string = req.method;
     const url: string = req.url;
-    const body: unknown = req.body;
-    const headers: unknown = req.headers;
     const startTime = Date.now();
 
     res.on('finish', () => {

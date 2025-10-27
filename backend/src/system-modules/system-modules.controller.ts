@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
 import { SystemModulesService } from '@/system-modules/system-modules.service';
 import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
@@ -17,10 +17,7 @@ export class SystemModulesController {
   }
 
   @Get('seed')
-  async seed(
-    @Query('removeCustomers') removeCustomers?: boolean,
-    @Query('resetRoles') resetRoles?: boolean,
-  ) {
+  seed() {
     // TODO: Migrate this method to use DatabaseService
     console.log(
       '⚠️ Seed endpoint temporarily disabled during Supabase migration',

@@ -66,28 +66,15 @@ describe('TemplatesService', () => {
 
   describe('findAll', () => {
     it('should return a paginated list of notification templates', async () => {
-      const mockTemplates = [
-        {
-          id: 1,
-          title: 'Test Template 1',
-          message: 'Message 1',
-          type: ['in_app'],
-          comment: null,
-          channel: 'email',
-          customerId: null,
-          Customer: null,
-          createdAt: new Date(),
-          deletedAt: null,
-        },
-      ];
-
       // Mock the count query
       jest
         .spyOn(databaseService.notification_templates, 'select')
         .mockReturnValueOnce({
           ...databaseService.notification_templates,
           is: jest.fn().mockResolvedValue({ count: 1 }),
-        } as any);
+        } as unknown as ReturnType<
+          typeof databaseService.notification_templates.select
+        >);
 
       // Mock the data query
       const mockQuery = {
@@ -114,7 +101,11 @@ describe('TemplatesService', () => {
 
       jest
         .spyOn(databaseService.notification_templates, 'select')
-        .mockReturnValueOnce(mockQuery as any);
+        .mockReturnValueOnce(
+          mockQuery as unknown as ReturnType<
+            typeof databaseService.notification_templates.select
+          >,
+        );
 
       const query = { page: 1, perPage: 10 };
       const result = await service.findAll(query);

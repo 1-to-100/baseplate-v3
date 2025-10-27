@@ -11,7 +11,10 @@ import {
   eachNotificationChannelTransformer,
   eachNotificationTypeTransformer,
 } from '@/notifications/helpers/class-transform-helpers';
-import { NotificationChannel, NotificationChannelList } from '@/notifications/constants/notification-channel';
+import {
+  NotificationChannel,
+  NotificationChannelList,
+} from '@/notifications/constants/notification-channel';
 
 export class ListTemplatesInputDto extends PaginatedInputDto {
   @IsOptional()

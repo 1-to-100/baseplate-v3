@@ -34,4 +34,11 @@ export type {
 export type { SubscriptionType as Subscription } from './database.types';
 
 // Re-export enums
-export { CustomerLifecycleStage, Action, NotificationType, UserStatus, ArticleStatus, NotificationStatus } from './database.types';
+export {
+  CustomerLifecycleStage,
+  Action,
+  NotificationType,
+  UserStatus,
+  ArticleStatus,
+  NotificationStatus,
+} from './database.types';

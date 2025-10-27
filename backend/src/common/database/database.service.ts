@@ -32,61 +32,61 @@ export class DatabaseService implements OnModuleInit {
     return this.client;
   }
 
-  // Database table accessors
-  get users(): any {
+  // Database table accessors - using ReturnType to preserve Supabase's type inference
+  get users() {
     return this.client.from('users');
   }
 
-  get customers(): any {
+  get customers() {
     return this.client.from('customers');
   }
 
-  get roles(): any {
+  get roles() {
     return this.client.from('roles');
   }
 
-  get permissions(): any {
+  get permissions() {
     return this.client.from('permissions');
   }
 
-  get role_permissions(): any {
+  get role_permissions() {
     return this.client.from('role_permissions');
   }
 
-  get managers(): any {
+  get managers() {
     return this.client.from('managers');
   }
 
-  get subscription_types(): any {
+  get subscription_types() {
     return this.client.from('subscription_types');
   }
 
-  get subscriptions(): any {
+  get subscriptions() {
     // Legacy accessor - points to subscription_types now
     return this.client.from('subscription_types');
   }
 
-  get user_one_time_codes(): any {
+  get user_one_time_codes() {
     return this.client.from('user_one_time_codes');
   }
 
-  get api_logs(): any {
+  get api_logs() {
     return this.client.from('api_logs');
   }
 
-  get article_categories(): any {
+  get article_categories() {
     return this.client.from('article_categories');
   }
 
-  get articles(): any {
+  get articles() {
     return this.client.from('articles');
   }
 
-  get notifications(): any {
+  get notifications() {
     return this.client.from('notifications');
   }
 
-  get notification_templates(): any {
+  get notification_templates() {
     return this.client.from('notification_templates');
   }
 
@@ -254,20 +254,23 @@ export class DatabaseService implements OnModuleInit {
   /**
    * Execute RPC (Remote Procedure Call) functions
    */
-  async rpc(functionName: string, params?: Record<string, any>) {
+  async rpc<T = unknown>(
+    functionName: string,
+    params?: Record<string, unknown>,
+  ): Promise<T> {
     const { data, error } = await this.client.rpc(functionName, params);
     if (error) {
       handleSupabaseError(error, `RPC ${functionName}`);
     }
-    return data;
+    return data as T;
   }
 
   /**
    * Execute raw SQL queries (if needed for migration compatibility)
    * Note: This requires creating a PostgreSQL function that executes raw SQL
    */
-  async rawQuery(sql: string, params?: any[]) {
-    return this.rpc('execute_raw_query', {
+  async rawQuery<T = unknown>(sql: string, params?: unknown[]): Promise<T> {
+    return this.rpc<T>('execute_raw_query', {
       query: sql,
       parameters: params,
     });
@@ -301,7 +304,9 @@ export class DatabaseService implements OnModuleInit {
   /**
    * Helper method to exclude soft-deleted records (for raw queries)
    */
-  withoutDeleted<T>(query: T): T {
-    return (query as any).is('deleted_at', null);
+  withoutDeleted<T extends { is: (column: string, value: unknown) => T }>(
+    query: T,
+  ): T {
+    return query.is('deleted_at', null);
   }
 }

@@ -61,10 +61,15 @@ export class SeedCommand {
       const owner = await this.createOwner();
 
       // Create customer
-      const customer = await this.createCustomer(owner.id, subscription!.subscription_type_id);
+      const customer = await this.createCustomer(
+        owner.id,
+        subscription!.subscription_type_id,
+      );
 
       // Create customer success user
-      const customerSuccess = await this.createCustomerSuccess(customer.customer_id);
+      const customerSuccess = await this.createCustomerSuccess(
+        customer.customer_id,
+      );
 
       // Create regular users
       const users = await this.createUsers(customer.customer_id);
@@ -86,7 +91,9 @@ export class SeedCommand {
       await this.createNotifications(customer.customer_id, users);
 
       // Create notification templates
-      const templates = await this.createNotificationTemplates(customer.customer_id);
+      const templates = await this.createNotificationTemplates(
+        customer.customer_id,
+      );
 
       this.logger.log('Test data seeding completed successfully!');
       this.logger.log(
@@ -420,7 +427,7 @@ docker compose up</code></pre>
       articles.push(article);
     }
 
-    return articles;
+    return articles as unknown[];
   }
 
   private async createNotifications(
@@ -429,8 +436,6 @@ docker compose up</code></pre>
   ) {
     this.logger.log('Creating notifications...');
 
-    // Define notification types and their corresponding channels
-    const notificationTypes = ['info', 'alert', 'warning', 'article'];
     const notificationTemplates = [
       {
         title: 'Welcome to Test Customer Platform',
@@ -588,6 +593,6 @@ docker compose up</code></pre>
     this.logger.log(
       `Created ${createdTemplates.length} notification templates`,
     );
-    return createdTemplates;
+    return createdTemplates as unknown[];
   }
 }
