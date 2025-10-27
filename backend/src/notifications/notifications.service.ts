@@ -154,30 +154,59 @@ export class NotificationsService {
     this.logger.log('Finding all notifications');
     const { perPage, page, type, isRead, channel } = listNotificationsInputDto;
 
-    const whereClause: WhereClause = {
-      user_id: userId,
-    };
+    const pageNum = page || 1;
+    const perPageNum = perPage || 10;
+    const offset = (pageNum - 1) * perPageNum;
 
-    if (type) whereClause.type = type;
+    // Build query using Supabase client for array filtering support
+    let query = this.database.getClient()
+      .from('notifications')
+      .select(`
+        *,
+        users!user_id(user_id, email, full_name),
+        customers!customer_id(customer_id, name)
+      `, { count: 'exact' })
+      .eq('user_id', userId);
+
+    // Filter by type using array contains operator
+    if (type) {
+      query = query.contains('type', [type]);
+    }
+
     // Use read_at as source of truth: null = unread, not null = read
     if (isRead !== undefined) {
-      whereClause.read_at = isRead ? { not: null } : null;
+      if (isRead) {
+        query = query.not('read_at', 'is', null);
+      } else {
+        query = query.is('read_at', null);
+      }
     }
-    if (channel) whereClause.channel = channel;
 
-    const paginatedResult = await this.database.paginate(
-      'notifications',
-      { page: page || 1, per_page: perPage || 10 },
-      {
-        where: whereClause,
-        select: `
-          *,
-          users!user_id(user_id, email, full_name),
-          customers!customer_id(customer_id, name)
-        `,
-        orderBy: [{ field: 'created_at', direction: 'desc' }],
+    if (channel) {
+      query = query.eq('channel', channel);
+    }
+
+    // Apply ordering and pagination
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + perPageNum - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      this.logger.error('Error fetching notifications:', error);
+      throw new Error(`Failed to fetch notifications: ${error.message}`);
+    }
+
+    const paginatedResult = {
+      data: data || [],
+      meta: {
+        total: count || 0,
+        page: pageNum,
+        per_page: perPageNum,
+        total_pages: Math.ceil((count || 0) / perPageNum),
       },
-    );
+    };
 
     // Transform the data to match expected DTO format
     const transformedData = paginatedResult.data.map((notification) => ({
@@ -225,40 +254,73 @@ export class NotificationsService {
       search,
     } = inputDto;
 
-    const whereClause: WhereClause = {};
+    const pageNum = page || 1;
+    const perPageNum = perPage || 10;
+    const offset = (pageNum - 1) * perPageNum;
 
-    if (userId) whereClause.user_id = { in: userId };
-    if (customerId) whereClause.customer_id = { in: customerId };
-    if (senderId) whereClause.sender_id = { in: senderId };
-    if (type) whereClause.type = type;
+    // Build query using Supabase client for array filtering support
+    let query = this.database.getClient()
+      .from('notifications')
+      .select(`
+        *,
+        sender:users!sender_id(user_id, email, full_name),
+        users!user_id(user_id, email, full_name),
+        customers!customer_id(customer_id, name)
+      `, { count: 'exact' });
+
+    if (userId) {
+      query = query.in('user_id', userId);
+    }
+    if (customerId) {
+      query = query.in('customer_id', customerId);
+    }
+    if (senderId) {
+      query = query.in('sender_id', senderId);
+    }
+    // Filter by type using array contains operator
+    if (type) {
+      query = query.contains('type', type);
+    }
     // Use read_at as source of truth: null = unread, not null = read
     if (isRead !== undefined) {
-      whereClause.read_at = isRead ? { not: null } : null;
+      if (isRead) {
+        query = query.not('read_at', 'is', null);
+      } else {
+        query = query.is('read_at', null);
+      }
     }
-    if (channel) whereClause.channel = { in: channel };
+    if (channel) {
+      query = query.in('channel', channel);
+    }
 
+    // Handle search with OR conditions
     if (search) {
-      whereClause.OR = [
-        { title: { ilike: `%${search}%` } },
-        { message: { ilike: `%${search}%` } },
-        { generated_by: { ilike: `%${search}%` } },
-      ];
+      query = query.or(
+        `title.ilike.%${search}%,message.ilike.%${search}%,generated_by.ilike.%${search}%`
+      );
     }
 
-    const paginatedResult = await this.database.paginate(
-      'notifications',
-      { page: page || 1, per_page: perPage || 10 },
-      {
-        where: whereClause,
-        select: `
-          *,
-          sender:users!sender_id(user_id, email, full_name),
-          users!user_id(user_id, email, full_name),
-          customers!customer_id(customer_id, name)
-        `,
-        orderBy: [{ field: 'created_at', direction: 'desc' }],
+    // Apply ordering and pagination
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + perPageNum - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      this.logger.error('Error fetching admin notifications:', error);
+      throw new Error(`Failed to fetch admin notifications: ${error.message}`);
+    }
+
+    const paginatedResult = {
+      data: data || [],
+      meta: {
+        total: count || 0,
+        page: pageNum,
+        per_page: perPageNum,
+        total_pages: Math.ceil((count || 0) / perPageNum),
       },
-    );
+    };
 
     // Transform the data to match expected DTO format
     const transformedData = paginatedResult.data.map((notification) => ({
@@ -339,7 +401,7 @@ export class NotificationsService {
     if (
       !notification.userId ||
       !notification.customerId ||
-      notification.type !== NotificationTypes.in_app
+      !notification.type.includes(NotificationTypes.in_app)
     ) {
       return;
     }

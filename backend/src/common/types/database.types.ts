@@ -332,10 +332,10 @@ export interface Article {
 export interface NotificationTemplate {
   template_id: string;
   customer_id?: string | null;
-  name: string;
-  subject?: string | null;
-  body: string;
-  type: NotificationType;
+  title: string;
+  message: string;
+  comment?: string | null;
+  type: NotificationType[];
   channel: string;
   variables?: any; // jsonb
   is_active: boolean;
@@ -349,7 +349,7 @@ export interface Notification {
   customer_id?: string | null;
   user_id: string;
   template_id?: string | null;
-  type: NotificationType;
+  type: NotificationType[];
   title?: string | null;
   message: string;
   channel?: string | null;

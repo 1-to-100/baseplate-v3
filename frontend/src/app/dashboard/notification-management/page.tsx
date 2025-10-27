@@ -22,7 +22,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import AddEditNotificationModal from "@/components/dashboard/modals/AddEditNotificationModal";
 import Pagination from "@/components/dashboard/layout/pagination";
 import { Popper } from "@mui/base/Popper";
-import SearchInput from "@/components/dashboard/layout/search-input";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getNotificationTemplates,

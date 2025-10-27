@@ -818,44 +818,44 @@ export type Database = {
       };
       notification_templates: {
         Row: {
-          body: string;
+          message: string;
+          title: string;
+          comment: string | null;
           channel: string;
           created_at: string;
           customer_id: string | null;
           deleted_at: string | null;
           is_active: boolean;
-          name: string;
-          subject: string | null;
           template_id: string;
-          type: Database['public']['Enums']['notificationtype'];
+          type: Database['public']['Enums']['notificationtype'][];
           updated_at: string | null;
           variables: Json | null;
         };
         Insert: {
-          body: string;
+          message: string;
+          title: string;
+          comment?: string | null;
           channel: string;
           created_at?: string;
           customer_id?: string | null;
           deleted_at?: string | null;
           is_active?: boolean;
-          name: string;
-          subject?: string | null;
           template_id?: string;
-          type: Database['public']['Enums']['notificationtype'];
+          type: Database['public']['Enums']['notificationtype'][];
           updated_at?: string | null;
           variables?: Json | null;
         };
         Update: {
-          body?: string;
+          message?: string;
+          title?: string;
+          comment?: string | null;
           channel?: string;
           created_at?: string;
           customer_id?: string | null;
           deleted_at?: string | null;
           is_active?: boolean;
-          name?: string;
-          subject?: string | null;
           template_id?: string;
-          type?: Database['public']['Enums']['notificationtype'];
+          type?: Database['public']['Enums']['notificationtype'][];
           updated_at?: string | null;
           variables?: Json | null;
         };
@@ -896,7 +896,7 @@ export type Database = {
           sender_id: string | null;
           template_id: string | null;
           title: string | null;
-          type: Database['public']['Enums']['notificationtype'];
+          type: Database['public']['Enums']['notificationtype'][];
           updated_at: string | null;
           user_id: string;
         };
@@ -912,7 +912,7 @@ export type Database = {
           sender_id?: string | null;
           template_id?: string | null;
           title?: string | null;
-          type: Database['public']['Enums']['notificationtype'];
+          type: Database['public']['Enums']['notificationtype'][];
           updated_at?: string | null;
           user_id: string;
         };
@@ -928,7 +928,7 @@ export type Database = {
           sender_id?: string | null;
           template_id?: string | null;
           title?: string | null;
-          type?: Database['public']['Enums']['notificationtype'];
+          type?: Database['public']['Enums']['notificationtype'][];
           updated_at?: string | null;
           user_id?: string;
         };

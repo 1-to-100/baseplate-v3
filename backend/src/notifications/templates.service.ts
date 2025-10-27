@@ -423,24 +423,21 @@ export class TemplatesService {
       }
 
       // Send notifications to each user using the NotificationsService
-      // For each notification type in the template, create a notification
       const notificationPromises: Promise<any>[] = [];
 
       for (const userId of targetUserIds) {
-        for (const notificationType of template.type) {
-          notificationPromises.push(
-            this.notificationService.create({
-              userId,
-              customerId:
-                template.customerId || sendTemplateInputDto.customerId,
-              type: notificationType,
-              title: template.title,
-              message: template.message,
-              templateId: template.id,
-              channel: template.channel,
-            }),
-          );
-        }
+        notificationPromises.push(
+          this.notificationService.create({
+            userId,
+            customerId:
+              template.customerId || sendTemplateInputDto.customerId,
+            type: template.type,
+            title: template.title,
+            message: template.message,
+            templateId: template.id,
+            channel: template.channel,
+          }),
+        );
       }
 
       await Promise.all(notificationPromises);
