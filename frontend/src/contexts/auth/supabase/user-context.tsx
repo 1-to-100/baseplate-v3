@@ -124,7 +124,7 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     return () => {
       subscription?.unsubscribe();
     };
-  }, [router, supabaseClient, syncUser, isInvite]);
+  }, [router, supabaseClient, syncUser, isInvite, isUpdatePassword]);
 
   return <UserContext.Provider value={{ ...state }}>{children}</UserContext.Provider>;
 }

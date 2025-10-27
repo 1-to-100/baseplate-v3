@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
@@ -61,6 +61,14 @@ const Filter = ({
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+    setActiveCategory("Status");
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
   useEffect(() => {
     if (initialFilters) {
       setSelectedStatuses(initialFilters.statusId);
@@ -85,7 +93,7 @@ const Filter = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [anchorEl]);
+  }, [anchorEl, handleClose]);
 
   useEffect(() => {
     const handleCloseFilter = () => {
@@ -131,14 +139,6 @@ const Filter = ({
     setAnchorEl(event.currentTarget);
     if (onOpen) {
       onOpen();
-    }
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-    setActiveCategory("Status");
-    if (onClose) {
-      onClose();
     }
   };
 

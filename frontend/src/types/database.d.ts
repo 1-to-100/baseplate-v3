@@ -81,8 +81,8 @@ export interface Subscription {
   canceled_at?: string | null;
   default_payment_method?: string | null;
   latest_invoice?: string | null;
-  stripe_metadata?: Record<string, any>;
-  stripe_raw_data?: Record<string, any>;
+  stripe_metadata?: Record<string, unknown>;
+  stripe_raw_data?: Record<string, unknown>;
   last_synced_at?: string | null;
   created_at: string;
   updated_at?: string | null;
