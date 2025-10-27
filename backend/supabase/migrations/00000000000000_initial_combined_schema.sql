@@ -1,4 +1,7 @@
 -- =============================================================================
+-- BASEPLATE V2 - COMPLETE INITIAL SCHEMA
+-- Combined from all migrations into a single initial migration
+-- =============================================================================
 
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
@@ -9,7 +12,6 @@ create extension if not exists "pgcrypto";
 -- =============================================================================
 
 -- Stripe subscription status enum
--- Maps directly to Stripe's subscription status values
 create type StripeSubscriptionStatus as enum (
   'incomplete',           -- Initial payment attempt failed
   'incomplete_expired',   -- First invoice not paid within 23 hours (terminal)
@@ -25,8 +27,6 @@ comment on type StripeSubscriptionStatus is
   'Enum defining Stripe subscription status values (maps directly to Stripe API)';
 
 -- Customer lifecycle stage enum
--- We use this for internal customer tracking in the system
-
 create type CustomerLifecycleStage as enum (
   'onboarding',   -- Initial setup and configuration
   'active',       -- Fully onboarded and using product
@@ -93,7 +93,6 @@ comment on type ArticleStatus is
   'Enum defining article status values';
 
 -- Extension field type enum
--- Defines the data types for extension fields
 create type ExtensionFieldType as enum (
   'text',        -- Text field
   'number',      -- Numeric field
@@ -112,8 +111,7 @@ comment on type ExtensionFieldType is
 -- CORE TABLES
 -- =============================================================================
 
--- Subscription types table (independent)
--- Defines the types of subscriptions available in the system
+-- Subscription types table
 create table public.subscription_types (
   subscription_type_id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -132,7 +130,7 @@ create table public.subscription_types (
 comment on table public.subscription_types is 
   'Defines subscription types/tiers available in the system';
 
--- Roles table (independent)
+-- Roles table
 create table public.roles (
   role_id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -147,7 +145,7 @@ create table public.roles (
 comment on table public.roles is 
   'Defines user roles and their permissions';
 
--- Permissions table (independent)
+-- Permissions table
 create table public.permissions (
   permission_id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -158,8 +156,7 @@ create table public.permissions (
 comment on table public.permissions is 
   'Defines all available permissions in the system';
 
--- Managers table (independent)
--- System users who manage customers
+-- Managers table
 create table public.managers (
   manager_id uuid primary key default gen_random_uuid(),
   auth_user_id uuid,
@@ -173,7 +170,7 @@ create table public.managers (
 comment on table public.managers is 
   'System-level managers (customer success, account managers)';
 
--- Customers table (independent initially, circular with users)
+-- Customers table
 create table public.customers (
   customer_id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -194,7 +191,7 @@ create table public.customers (
 comment on table public.customers is 
   'Customer organizations in the multi-tenant system';
 
--- Users table (references customers and roles)
+-- Users table
 create table public.users (
   user_id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique,
@@ -222,7 +219,7 @@ alter table public.customers
   foreign key (owner_id) references public.users(user_id)
   on delete set null;
 
--- User one-time codes table (for email verification, password reset, etc.)
+-- User one-time codes table
 create table public.user_one_time_codes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null,
@@ -234,7 +231,7 @@ create table public.user_one_time_codes (
 comment on table public.user_one_time_codes is 
   'One-time codes for user verification and authentication flows';
 
--- Customer subscriptions table (references customers and subscription types)
+-- Customer subscriptions table
 create table public.customer_subscriptions (
   customer_subscription_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
@@ -254,7 +251,7 @@ create table public.customer_subscriptions (
 comment on table public.customer_subscriptions is 
   'Tracks customer subscription status and Stripe integration';
 
--- User invitations table (references customers, users, roles)
+-- User invitations table
 create table public.user_invitations (
   invitation_id uuid primary key default gen_random_uuid(),
   email text not null,
@@ -272,7 +269,7 @@ create table public.user_invitations (
 comment on table public.user_invitations is 
   'Tracks user invitation status';
 
--- Taxonomies table (references customers)
+-- Taxonomies table
 create table public.taxonomies (
   taxonomy_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
@@ -290,7 +287,7 @@ create table public.taxonomies (
 comment on table public.taxonomies is 
   'Hierarchical categorization system for customers';
 
--- Extension data types table (defines custom fields)
+-- Extension data types table
 create table public.extension_data_types (
   extension_data_type_id uuid primary key default gen_random_uuid(),
   table_being_extended text not null,
@@ -312,7 +309,7 @@ create table public.extension_data_types (
 comment on table public.extension_data_types is 
   'Defines custom field types that can be added to core tables';
 
--- Extension data table (stores custom field values)
+-- Extension data table
 create table public.extension_data (
   extension_data_id uuid primary key default gen_random_uuid(),
   extension_data_type_id uuid not null,
@@ -327,7 +324,7 @@ create table public.extension_data (
 comment on table public.extension_data is 
   'Stores values for custom fields defined in extension_data_types';
 
--- Article categories table (references customers and users)
+-- Article categories table
 create table public.article_categories (
   article_category_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
@@ -349,7 +346,7 @@ create table public.article_categories (
 comment on table public.article_categories is 
   'Categories for organizing help articles';
 
--- Articles table (references article categories, customers, and users)
+-- Articles table
 create table public.articles (
   article_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
@@ -376,15 +373,15 @@ create table public.articles (
 comment on table public.articles is 
   'Help articles and documentation';
 
--- Notification templates table (references customers)
+-- Notification templates table (with combined changes from all migrations)
 create table public.notification_templates (
   template_id uuid primary key default gen_random_uuid(),
   customer_id uuid,
-  name text not null,
-  subject text,
-  body text not null,
-  type NotificationType not null,
+  title text not null,
+  message text not null,
+  type NotificationType[] not null,
   channel text not null,
+  comment text,
   variables jsonb,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -394,14 +391,22 @@ create table public.notification_templates (
 
 comment on table public.notification_templates is 
   'Templates for notifications';
+comment on column public.notification_templates.title is 
+  'Title of the notification template';
+comment on column public.notification_templates.message is 
+  'Message content of the notification template';
+comment on column public.notification_templates.type is 
+  'Array of notification types (email, in_app) for this template';
+comment on column public.notification_templates.comment is 
+  'Optional comment or notes about the notification template';
 
--- Notifications table (references users, customers, templates)
+-- Notifications table (with combined changes from all migrations)
 create table public.notifications (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid,
   user_id uuid not null,
   template_id uuid,
-  type NotificationType not null,
+  type NotificationType[] not null,
   title text,
   message text not null,
   channel text,
@@ -417,8 +422,10 @@ comment on table public.notifications is
   'User notifications';
 comment on column public.notifications.read_at is 
   'Indicator of read status: NULL = unread, NOT NULL = read. Timestamp tracks when notification was read.';
+comment on column public.notifications.type is 
+  'Array of notification types (email, in_app) for this notification';
 
--- Audit log table (references users and customers)
+-- Audit log table
 create table public.audit_logs (
   audit_log_id uuid primary key default gen_random_uuid(),
   customer_id uuid,
@@ -435,7 +442,7 @@ create table public.audit_logs (
 comment on table public.audit_logs is 
   'Audit trail for system actions';
 
--- API log table (for API request tracking)
+-- API log table
 create table public.api_logs (
   id uuid primary key default gen_random_uuid(),
   method text,
@@ -451,17 +458,101 @@ create table public.api_logs (
 comment on table public.api_logs is 
   'API request logging for monitoring and debugging';
 
+-- Teams table
+create table public.teams (
+  team_id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null,
+  manager_id uuid,
+  team_name text not null,
+  description text,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz,
+  
+  constraint teams_customer_team_name_unique unique(customer_id, team_name)
+);
+
+comment on table public.teams is 
+  'Teams/departments within customer organizations. Replaces direct manager concept.';
+comment on column public.teams.manager_id is 
+  'Team manager/lead user';
+comment on column public.teams.is_primary is 
+  'Indicates if this is the primary/default team for the customer';
+
+-- Team members table
+create table public.team_members (
+  team_member_id uuid primary key default gen_random_uuid(),
+  team_id uuid not null,
+  user_id uuid not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz,
+  
+  constraint team_members_team_user_unique unique(team_id, user_id)
+);
+
+comment on table public.team_members is 
+  'Junction table for users-to-teams many-to-many relationship';
+
+-- Customer success owned customers table
+create table public.customer_success_owned_customers (
+  customer_success_owned_customer_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  customer_id uuid not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz,
+  
+  constraint customer_success_owned_customers_unique unique(user_id, customer_id)
+);
+
+comment on table public.customer_success_owned_customers is 
+  'Maps customer success representatives to customers they manage. Enables CS reps to access multiple customer accounts.';
+
+-- Subscriptions table (enhanced)
+create table public.subscriptions (
+  subscription_id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null,
+  stripe_subscription_id text unique not null,
+  stripe_status StripeSubscriptionStatus not null,
+  currency text,
+  description text,
+  collection_method text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  trial_start timestamptz,
+  trial_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  canceled_at timestamptz,
+  default_payment_method text,
+  latest_invoice text,
+  stripe_metadata jsonb,
+  stripe_raw_data jsonb,
+  last_synced_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+
+comment on table public.subscriptions is 
+  'Enhanced Stripe subscription tracking with full metadata. Synced from Stripe webhooks.';
+comment on column public.subscriptions.stripe_raw_data is 
+  'Full Stripe subscription object for reference';
+comment on column public.subscriptions.stripe_metadata is 
+  'Stripe subscription metadata';
+
+-- Role permissions table
+create table public.role_permissions (
+  role_id uuid not null,
+  permission_id uuid not null,
+  created_at timestamptz not null default now(),
+  
+  primary key (role_id, permission_id)
+);
+
+comment on table public.role_permissions is 
+  'Junction table for many-to-many role-permission mapping. Replaces JSONB permissions array.';
+
 -- =============================================================================
 -- FOREIGN KEY CONSTRAINTS
 -- =============================================================================
-
--- Subscription types (no foreign keys)
-
--- Roles (no foreign keys)
-
--- Permissions (no foreign keys)
-
--- Managers (no foreign keys initially, can add auth integration later)
 
 -- Customers foreign keys
 alter table public.customers
@@ -533,8 +624,6 @@ alter table public.taxonomies
   add constraint taxonomies_parent_id_fkey
   foreign key (parent_id) references public.taxonomies(taxonomy_id)
   on delete cascade;
-
--- Extension data types (no foreign keys, table_being_extended is text reference)
 
 -- Extension data foreign keys
 alter table public.extension_data
@@ -617,6 +706,56 @@ alter table public.api_logs
   add constraint api_logs_user_id_fkey
   foreign key (user_id) references public.users(user_id)
   on delete set null;
+
+-- Teams foreign keys
+alter table public.teams
+  add constraint teams_customer_id_fkey 
+  foreign key (customer_id) references public.customers(customer_id) 
+  on delete cascade;
+
+alter table public.teams
+  add constraint teams_manager_id_fkey 
+  foreign key (manager_id) references public.users(user_id) 
+  on delete set null;
+
+-- Team members foreign keys
+alter table public.team_members
+  add constraint team_members_team_id_fkey 
+  foreign key (team_id) references public.teams(team_id) 
+  on delete cascade;
+
+alter table public.team_members
+  add constraint team_members_user_id_fkey 
+  foreign key (user_id) references public.users(user_id) 
+  on delete cascade;
+
+-- Customer success owned customers foreign keys
+alter table public.customer_success_owned_customers
+  add constraint customer_success_owned_customers_user_id_fkey 
+  foreign key (user_id) references public.users(user_id) 
+  on delete cascade;
+
+alter table public.customer_success_owned_customers
+  add constraint customer_success_owned_customers_customer_id_fkey 
+  foreign key (customer_id) references public.customers(customer_id) 
+  on delete cascade;
+
+-- Subscriptions foreign keys
+alter table public.subscriptions
+  add constraint subscriptions_customer_id_fkey 
+  foreign key (customer_id) references public.customers(customer_id) 
+  on delete cascade;
+
+-- Role permissions foreign keys
+alter table public.role_permissions
+  add constraint role_permissions_role_id_fkey 
+  foreign key (role_id) references public.roles(role_id) 
+  on delete cascade;
+
+alter table public.role_permissions
+  add constraint role_permissions_permission_id_fkey 
+  foreign key (permission_id) references public.permissions(permission_id) 
+  on delete cascade;
 
 -- =============================================================================
 -- INDEXES
@@ -701,7 +840,6 @@ create index idx_articles_featured on public.articles(featured) where featured =
 
 -- Notification templates indexes
 create index idx_notification_templates_customer_id on public.notification_templates(customer_id);
-create index idx_notification_templates_type on public.notification_templates(type);
 create index idx_notification_templates_is_active on public.notification_templates(is_active);
 create index idx_notification_templates_deleted_at on public.notification_templates(deleted_at);
 
@@ -709,7 +847,6 @@ create index idx_notification_templates_deleted_at on public.notification_templa
 create index idx_notifications_customer_id on public.notifications(customer_id);
 create index idx_notifications_user_id on public.notifications(user_id);
 create index idx_notifications_read_at on public.notifications(read_at);
-create index idx_notifications_type on public.notifications(type);
 create index idx_notifications_created_at on public.notifications(created_at);
 
 -- Audit logs indexes
@@ -725,6 +862,26 @@ create index idx_api_logs_user_id on public.api_logs(user_id);
 create index idx_api_logs_created_at on public.api_logs(created_at);
 create index idx_api_logs_status_code on public.api_logs(status_code);
 create index idx_api_logs_method on public.api_logs(method);
+
+-- Teams indexes
+create index idx_teams_customer_id on public.teams(customer_id);
+create index idx_teams_manager_id on public.teams(manager_id);
+create index idx_teams_is_primary on public.teams(customer_id, is_primary) where is_primary = true;
+
+-- Team members indexes
+create index idx_team_members_team_id on public.team_members(team_id);
+create index idx_team_members_user_id on public.team_members(user_id);
+
+-- Customer success owned customers indexes
+create index idx_cs_owned_customers_user_id on public.customer_success_owned_customers(user_id);
+create index idx_cs_owned_customers_customer_id on public.customer_success_owned_customers(customer_id);
+
+-- Subscriptions indexes
+create index idx_subscriptions_customer_id on public.subscriptions(customer_id);
+create index idx_subscriptions_stripe_subscription_id on public.subscriptions(stripe_subscription_id);
+create index idx_subscriptions_stripe_status on public.subscriptions(stripe_status);
+create index idx_subscriptions_current_period_end on public.subscriptions(current_period_end);
+create index idx_subscriptions_last_synced_at on public.subscriptions(last_synced_at);
 
 -- =============================================================================
 -- TRIGGERS FOR UPDATED_AT FIELDS
@@ -797,6 +954,22 @@ create trigger update_notification_templates_updated_at
 
 create trigger update_notifications_updated_at
   before update on public.notifications
+  for each row execute function public.update_updated_at_column();
+
+create trigger update_teams_updated_at
+  before update on public.teams
+  for each row execute function public.update_updated_at_column();
+
+create trigger update_team_members_updated_at
+  before update on public.team_members
+  for each row execute function public.update_updated_at_column();
+
+create trigger update_customer_success_owned_customers_updated_at
+  before update on public.customer_success_owned_customers
+  for each row execute function public.update_updated_at_column();
+
+create trigger update_subscriptions_updated_at
+  before update on public.subscriptions
   for each row execute function public.update_updated_at_column();
 
 -- =============================================================================
@@ -888,40 +1061,38 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 COMMENT ON FUNCTION public.has_system_role(text) IS 
   'Returns true if current user has the specified system role (must be marked as system role)';
 
--- Get customer IDs accessible by Customer Success user
+-- Get customer IDs accessible by user (updated version with customer_success_owned_customers)
 CREATE OR REPLACE FUNCTION public.get_accessible_customer_ids()
-RETURNS SETOF uuid AS $$
+RETURNS TABLE(customer_id uuid)
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
 BEGIN
   -- System admins can access all customers
-  IF (SELECT public.has_system_role('system_admin')) THEN
-    RETURN QUERY SELECT customer_id FROM public.customers WHERE active = true;
-  
-  -- Customer Success users can access their assigned customers
-  ELSIF (SELECT public.has_system_role('customer_success')) THEN
-    RETURN QUERY 
-      SELECT DISTINCT c.customer_id
-      FROM public.customers c
-      WHERE c.manager_id IN (
-        SELECT m.manager_id
-        FROM public.managers m
-        WHERE m.auth_user_id = auth.uid()
-        AND m.active = true
-      )
-      AND c.active = true;
-  
-  -- Customer admins and users can access their own customer
-  ELSIF (SELECT public.current_customer_id()) IS NOT NULL THEN
-    RETURN QUERY SELECT public.current_customer_id();
-  
-  -- No access
-  ELSE
-    RETURN;
+  IF (SELECT public.has_role('system_admin')) THEN
+    RETURN QUERY SELECT c.customer_id FROM public.customers c;
   END IF;
+
+  -- Customer success can access customers they own via customer_success_owned_customers
+  IF (SELECT public.has_system_role('customer_success')) THEN
+    RETURN QUERY 
+      SELECT csoc.customer_id 
+      FROM public.customer_success_owned_customers csoc
+      WHERE csoc.user_id = public.current_user_id();
+  END IF;
+
+  -- Regular users can only access their own customer
+  RETURN QUERY 
+    SELECT u.customer_id 
+    FROM public.users u 
+    WHERE u.user_id = public.current_user_id() 
+      AND u.customer_id IS NOT NULL;
 END;
-$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+$$;
 
 COMMENT ON FUNCTION public.get_accessible_customer_ids() IS 
-  'Returns a set of customer_ids accessible by the current user based on their role';
+  'Returns customer IDs that the current user can access. Updated to use customer_success_owned_customers table.';
 
 -- Check if user belongs to a specific customer
 CREATE OR REPLACE FUNCTION public.user_belongs_to_customer(check_customer_id uuid)
@@ -1085,6 +1256,11 @@ ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.api_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customer_success_owned_customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
 
 -- =============================================================================
 -- RLS POLICIES: USERS TABLE
@@ -1148,7 +1324,6 @@ CREATE POLICY users_delete_customer_admin ON public.users
     customer_id = (SELECT public.current_customer_id())
   );
 
--- Customer Success policies
 CREATE POLICY users_select_customer_success ON public.users
   FOR SELECT TO authenticated
   USING (
@@ -1215,7 +1390,6 @@ CREATE POLICY customers_delete_system_admin ON public.customers
   FOR DELETE TO authenticated
   USING ((SELECT public.has_role('system_admin')));
 
--- Customer Success policies
 CREATE POLICY customers_select_customer_success ON public.customers
   FOR SELECT TO authenticated
   USING (
@@ -1317,7 +1491,6 @@ CREATE POLICY article_categories_delete_customer ON public.article_categories
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
--- Customer Success policies
 CREATE POLICY article_categories_select_customer_success ON public.article_categories
   FOR SELECT TO authenticated
   USING (
@@ -1377,7 +1550,6 @@ CREATE POLICY articles_delete_customer ON public.articles
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
--- Customer Success policies
 CREATE POLICY articles_select_customer_success ON public.articles
   FOR SELECT TO authenticated
   USING (
@@ -1442,12 +1614,11 @@ CREATE POLICY notification_templates_delete_admin ON public.notification_templat
     ((SELECT public.has_role('customer_admin')) AND customer_id = (SELECT public.current_customer_id()))
   );
 
--- Customer Success policies
 CREATE POLICY notification_templates_select_customer_success ON public.notification_templates
   FOR SELECT TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids()) OR
-    customer_id IS NULL  -- Global templates
+    customer_id IS NULL
   );
 
 CREATE POLICY notification_templates_insert_customer_success ON public.notification_templates
@@ -1487,7 +1658,6 @@ CREATE POLICY notifications_update_own ON public.notifications
   USING (user_id = (SELECT public.current_user_id()))
   WITH CHECK (user_id = (SELECT public.current_user_id()));
 
--- Customer Success policies
 CREATE POLICY notifications_select_customer_success ON public.notifications
   FOR SELECT TO authenticated
   USING (
@@ -1570,7 +1740,6 @@ CREATE POLICY customer_subscriptions_delete_system_admin ON public.customer_subs
   FOR DELETE TO authenticated
   USING ((SELECT public.has_role('system_admin')));
 
--- Customer Success policies
 CREATE POLICY customer_subscriptions_select_customer_success ON public.customer_subscriptions
   FOR SELECT TO authenticated
   USING (
@@ -1630,7 +1799,6 @@ CREATE POLICY user_invitations_delete ON public.user_invitations
     (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
--- Customer Success policies
 CREATE POLICY user_invitations_select_customer_success ON public.user_invitations
   FOR SELECT TO authenticated
   USING (
@@ -1690,7 +1858,6 @@ CREATE POLICY taxonomies_delete ON public.taxonomies
     (customer_id = (SELECT public.current_customer_id()) AND (SELECT public.has_role('customer_admin')))
   );
 
--- Customer Success policies
 CREATE POLICY taxonomies_select_customer_success ON public.taxonomies
   FOR SELECT TO authenticated
   USING (
@@ -1760,7 +1927,6 @@ CREATE POLICY audit_logs_insert_all ON public.audit_logs
   FOR INSERT TO authenticated
   WITH CHECK (true);
 
--- Customer Success policies
 CREATE POLICY audit_logs_select_customer_success ON public.audit_logs
   FOR SELECT TO authenticated
   USING (
@@ -1787,6 +1953,274 @@ CREATE POLICY user_one_time_codes_update_all ON public.user_one_time_codes
   FOR UPDATE TO authenticated
   USING (true)
   WITH CHECK (true);
+
+-- =============================================================================
+-- RLS POLICIES - Teams
+-- =============================================================================
+
+create policy teams_select_system_admin on public.teams
+  for select to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy teams_insert_system_admin on public.teams
+  for insert to authenticated
+  with check ((SELECT public.has_role('system_admin')));
+
+create policy teams_update_system_admin on public.teams
+  for update to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy teams_delete_system_admin on public.teams
+  for delete to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy teams_select_customer_success on public.teams
+  for select to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy teams_insert_customer_success on public.teams
+  for insert to authenticated
+  with check (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy teams_update_customer_success on public.teams
+  for update to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy teams_delete_customer_success on public.teams
+  for delete to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy teams_select_customer_admin on public.teams
+  for select to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and 
+    customer_id = public.current_customer_id()
+  );
+
+create policy teams_insert_customer_admin on public.teams
+  for insert to authenticated
+  with check (
+    (SELECT public.has_role('customer_admin')) and 
+    customer_id = public.current_customer_id()
+  );
+
+create policy teams_update_customer_admin on public.teams
+  for update to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and 
+    customer_id = public.current_customer_id()
+  );
+
+create policy teams_delete_customer_admin on public.teams
+  for delete to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and 
+    customer_id = public.current_customer_id()
+  );
+
+-- =============================================================================
+-- RLS POLICIES - Team Members
+-- =============================================================================
+
+create policy team_members_select_system_admin on public.team_members
+  for select to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy team_members_insert_system_admin on public.team_members
+  for insert to authenticated
+  with check ((SELECT public.has_role('system_admin')));
+
+create policy team_members_update_system_admin on public.team_members
+  for update to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy team_members_delete_system_admin on public.team_members
+  for delete to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy team_members_select_customer_success on public.team_members
+  for select to authenticated
+  using (
+    team_id in (
+      select team_id from public.teams 
+      where customer_id in (select public.get_accessible_customer_ids())
+    )
+  );
+
+create policy team_members_insert_customer_success on public.team_members
+  for insert to authenticated
+  with check (
+    team_id in (
+      select team_id from public.teams 
+      where customer_id in (select public.get_accessible_customer_ids())
+    )
+  );
+
+create policy team_members_update_customer_success on public.team_members
+  for update to authenticated
+  using (
+    team_id in (
+      select team_id from public.teams 
+      where customer_id in (select public.get_accessible_customer_ids())
+    )
+  );
+
+create policy team_members_delete_customer_success on public.team_members
+  for delete to authenticated
+  using (
+    team_id in (
+      select team_id from public.teams 
+      where customer_id in (select public.get_accessible_customer_ids())
+    )
+  );
+
+create policy team_members_select_customer_admin on public.team_members
+  for select to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and
+    team_id in (
+      select team_id from public.teams 
+      where customer_id = public.current_customer_id()
+    )
+  );
+
+create policy team_members_insert_customer_admin on public.team_members
+  for insert to authenticated
+  with check (
+    (SELECT public.has_role('customer_admin')) and
+    team_id in (
+      select team_id from public.teams 
+      where customer_id = public.current_customer_id()
+    )
+  );
+
+create policy team_members_update_customer_admin on public.team_members
+  for update to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and
+    team_id in (
+      select team_id from public.teams 
+      where customer_id = public.current_customer_id()
+    )
+  );
+
+create policy team_members_delete_customer_admin on public.team_members
+  for delete to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and
+    team_id in (
+      select team_id from public.teams 
+      where customer_id = public.current_customer_id()
+    )
+  );
+
+create policy team_members_select_self on public.team_members
+  for select to authenticated
+  using (
+    user_id = public.current_user_id()
+  );
+
+-- =============================================================================
+-- RLS POLICIES - Customer Success Owned Customers
+-- =============================================================================
+
+create policy cs_owned_customers_select_system_admin on public.customer_success_owned_customers
+  for select to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy cs_owned_customers_insert_system_admin on public.customer_success_owned_customers
+  for insert to authenticated
+  with check ((SELECT public.has_role('system_admin')));
+
+create policy cs_owned_customers_update_system_admin on public.customer_success_owned_customers
+  for update to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy cs_owned_customers_delete_system_admin on public.customer_success_owned_customers
+  for delete to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy cs_owned_customers_select_self on public.customer_success_owned_customers
+  for select to authenticated
+  using (
+    (SELECT public.has_system_role('customer_success')) and
+    user_id = public.current_user_id()
+  );
+
+-- =============================================================================
+-- RLS POLICIES - Subscriptions
+-- =============================================================================
+
+create policy subscriptions_select_system_admin on public.subscriptions
+  for select to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy subscriptions_insert_system_admin on public.subscriptions
+  for insert to authenticated
+  with check ((SELECT public.has_role('system_admin')));
+
+create policy subscriptions_update_system_admin on public.subscriptions
+  for update to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy subscriptions_delete_system_admin on public.subscriptions
+  for delete to authenticated
+  using ((SELECT public.has_role('system_admin')));
+
+create policy subscriptions_select_customer_success on public.subscriptions
+  for select to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy subscriptions_insert_customer_success on public.subscriptions
+  for insert to authenticated
+  with check (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy subscriptions_update_customer_success on public.subscriptions
+  for update to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy subscriptions_delete_customer_success on public.subscriptions
+  for delete to authenticated
+  using (
+    customer_id in (select public.get_accessible_customer_ids())
+  );
+
+create policy subscriptions_select_customer_admin on public.subscriptions
+  for select to authenticated
+  using (
+    (SELECT public.has_role('customer_admin')) and 
+    customer_id = public.current_customer_id()
+  );
+
+-- =============================================================================
+-- RLS POLICIES - Role Permissions
+-- =============================================================================
+
+create policy role_permissions_select_all on public.role_permissions
+  for select to authenticated
+  using (true);
+
+create policy role_permissions_insert_system_admin on public.role_permissions
+  for insert to authenticated
+  with check ((SELECT public.has_role('system_admin')));
+
+create policy role_permissions_delete_system_admin on public.role_permissions
+  for delete to authenticated
+  using ((SELECT public.has_role('system_admin')));
 
 -- =============================================================================
 -- VIEWS
@@ -1854,19 +2288,9 @@ COMMENT ON VIEW public.extension_data_enriched IS
 -- RLS POLICIES: VIEWS
 -- =============================================================================
 
--- Enable RLS on views
 ALTER VIEW public.active_customers SET (security_invoker = on);
 ALTER VIEW public.active_users SET (security_invoker = on);
 ALTER VIEW public.extension_data_enriched SET (security_invoker = on);
-
-COMMENT ON VIEW public.active_customers IS 
-  'Convenience view showing active customers with subscription type and owner details. Access restricted to system administrators via RLS.';
-
-COMMENT ON VIEW public.active_users IS 
-  'Convenience view showing active users with customer and role details. Access restricted to system administrators via RLS.';
-
-COMMENT ON VIEW public.extension_data_enriched IS 
-  'Convenience view showing extension data with field type definitions. Access restricted to system administrators via RLS.';
 
 -- =============================================================================
 -- GRANT PERMISSIONS
@@ -1881,12 +2305,10 @@ GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
--- Revoke access to admin-only views from authenticated users
 REVOKE ALL ON public.active_customers FROM authenticated;
 REVOKE ALL ON public.active_users FROM authenticated;
 REVOKE ALL ON public.extension_data_enriched FROM authenticated;
 
--- Grant view access only to service_role (used by backend with system admin checks)
 GRANT SELECT ON public.active_customers TO service_role;
 GRANT SELECT ON public.active_users TO service_role;
 GRANT SELECT ON public.extension_data_enriched TO service_role;
@@ -1900,7 +2322,6 @@ GRANT SELECT ON public.subscription_types TO anon;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 
--- Grant execute permissions on helper functions
 GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.current_customer_id() TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.has_permission(text) TO authenticated;
@@ -1921,7 +2342,6 @@ GRANT EXECUTE ON FUNCTION public.is_customer_owner() TO authenticated;
 -- SEED DATA
 -- =============================================================================
 
--- Insert default permissions
 INSERT INTO public.permissions (name, display_name, description) VALUES
   ('*', 'All Permissions', 'Full system access'),
   ('customer:*', 'All Customer Permissions', 'Full access within customer'),
@@ -1932,7 +2352,6 @@ INSERT INTO public.permissions (name, display_name, description) VALUES
   ('help_articles:manage', 'Manage Help Articles', 'Create, edit, and delete help articles'),
   ('notifications:manage', 'Manage Notifications', 'Create and send notifications');
 
--- Insert default system roles
 INSERT INTO public.roles (name, display_name, description, is_system_role, permissions) VALUES
   ('system_admin', 'System Administrator', 'Full system access', true, '["*"]'::jsonb),
   ('customer_success', 'Customer Success', 'Full access within mapped customers', true, '["customer:*"]'::jsonb),
@@ -1940,60 +2359,8 @@ INSERT INTO public.roles (name, display_name, description, is_system_role, permi
   ('customer_user', 'Customer User', 'Standard user access', true, '["customer:read", "customer:write"]'::jsonb),
   ('customer_viewer', 'Customer Viewer', 'Read-only access', true, '["customer:read"]'::jsonb);
 
--- Insert default subscription type
 INSERT INTO public.subscription_types (name, description, active, is_default, max_users, max_contacts) VALUES
   ('free', 'Free tier with basic features', true, true, 3, 100);
-
--- =============================================================================
--- SCHEMA DOCUMENTATION
--- =============================================================================
-
-COMMENT ON SCHEMA public IS 
-  'Complete Baseplate schema with tables, indexes, triggers, RLS policies, and helper functions
-   
-   Core Helper Functions:
-   - current_user_id() → Get current user UUID
-   - current_customer_id() → Get current user''s customer UUID
-   - has_permission(text) → Check for specific permission
-   
-   Role & Permission Functions:
-   - get_user_role_id() → Get current user''s role UUID
-   - has_role(text) → Check if user has specific role (any role)
-   - has_system_role(text) → Check if user has specific system role
-   - has_any_permission(text[]) → Check for any of multiple permissions
-   - has_all_permissions(text[]) → Check for all of multiple permissions
-   - get_user_roles() → Get user''s complete role information
-   
-   Customer Access Functions:
-   - get_accessible_customer_ids() → Get customer IDs accessible by user
-   - user_belongs_to_customer(uuid) → Check customer membership
-   - get_customer_owner_id(uuid) → Get customer owner
-   - is_customer_owner() → Check if user owns their customer
-   
-   Utility Functions:
-   - get_current_user() → Get full user record
-   - is_manager() → Check if user is a Customer Success manager
-   
-   RLS Policy Paradigms:
-   1. System Tables (subscription_types, roles, permissions, managers)
-      - Viewable by all authenticated users
-      - Editable only by system_admin
-      
-   2. Customer Tables (customers, users, subscriptions, articles, etc.)
-      - Viewable/Editable by system_admin (all customers)
-      - Viewable/Editable by customer_success (assigned customers only via manager_id)
-      - Viewable/Editable by customer_admin (own customer only)
-      - Viewable by users (own customer, limited access)
-      
-   3. User Tables (notifications, user_one_time_codes)
-      - Viewable/Editable by system_admin (all)
-      - Viewable/Editable by customer_success (users in assigned customers)
-      - Viewable/Editable by customer_admin (users in own customer)
-      - Viewable/Editable by user (own records only)
-      
-   4. Role-Specific Tables
-      - Access determined by role_id foreign key
-      - Not currently implemented in schema';
 
 -- =============================================================================
 -- MIGRATION COMPLETE
