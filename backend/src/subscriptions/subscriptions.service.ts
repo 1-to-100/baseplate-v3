@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '@/common/database/database.service';
-import type { Subscription, CreateSubscriptionInput, UpdateSubscriptionInput } from '@/common/types/database.types';
+import type {
+  Subscription,
+  CreateSubscriptionInput,
+  UpdateSubscriptionInput,
+} from '@/common/types/database.types';
 
 @Injectable()
 export class SubscriptionsService {
@@ -33,10 +37,12 @@ export class SubscriptionsService {
           select: 'customer_id, name, email_domain',
         },
       },
-      orderBy: {
-        field: 'created_at',
-        direction: 'desc',
-      },
+      orderBy: [
+        {
+          field: 'created_at',
+          direction: 'desc',
+        },
+      ],
     });
 
     return subscriptions;
@@ -65,7 +71,9 @@ export class SubscriptionsService {
   /**
    * Get a subscription by Stripe subscription ID
    */
-  async findByStripeId(stripeSubscriptionId: string): Promise<Subscription | null> {
+  async findByStripeId(
+    stripeSubscriptionId: string,
+  ): Promise<Subscription | null> {
     const subscription = await this.database.findFirst('subscriptions', {
       where: { stripe_subscription_id: stripeSubscriptionId },
     });
@@ -90,14 +98,18 @@ export class SubscriptionsService {
   /**
    * Create a subscription (typically synced from Stripe)
    */
-  async createSubscription(data: CreateSubscriptionInput): Promise<Subscription> {
+  async createSubscription(
+    data: CreateSubscriptionInput,
+  ): Promise<Subscription> {
     // Validate customer exists
     const customer = await this.database.findUnique('customers', {
       where: { customer_id: data.customer_id },
     });
 
     if (!customer) {
-      throw new NotFoundException(`Customer with ID ${data.customer_id} not found`);
+      throw new NotFoundException(
+        `Customer with ID ${data.customer_id} not found`,
+      );
     }
 
     const subscription = await this.database.create('subscriptions', {
@@ -113,10 +125,16 @@ export class SubscriptionsService {
   /**
    * Update a subscription (typically synced from Stripe)
    */
-  async updateSubscription(id: string, data: UpdateSubscriptionInput): Promise<Subscription> {
-    const existingSubscription = await this.database.findUnique('subscriptions', {
-      where: { subscription_id: id },
-    });
+  async updateSubscription(
+    id: string,
+    data: UpdateSubscriptionInput,
+  ): Promise<Subscription> {
+    const existingSubscription = await this.database.findUnique(
+      'subscriptions',
+      {
+        where: { subscription_id: id },
+      },
+    );
 
     if (!existingSubscription) {
       throw new NotFoundException(`Subscription with ID ${id} not found`);
@@ -138,13 +156,14 @@ export class SubscriptionsService {
    */
   async updateByStripeId(
     stripeSubscriptionId: string,
-    data: UpdateSubscriptionInput
+    data: UpdateSubscriptionInput,
   ): Promise<Subscription> {
-    const existingSubscription = await this.findByStripeId(stripeSubscriptionId);
+    const existingSubscription =
+      await this.findByStripeId(stripeSubscriptionId);
 
     if (!existingSubscription) {
       throw new NotFoundException(
-        `Subscription with Stripe ID ${stripeSubscriptionId} not found`
+        `Subscription with Stripe ID ${stripeSubscriptionId} not found`,
       );
     }
 
@@ -174,7 +193,7 @@ export class SubscriptionsService {
    */
   async syncFromStripe(stripeSubscriptionData: any): Promise<Subscription> {
     const stripeSubscriptionId = stripeSubscriptionData.id;
-    
+
     // Check if subscription already exists
     const existing = await this.findByStripeId(stripeSubscriptionId);
 
@@ -185,10 +204,14 @@ export class SubscriptionsService {
       description: stripeSubscriptionData.description,
       collection_method: stripeSubscriptionData.collection_method,
       current_period_start: stripeSubscriptionData.current_period_start
-        ? new Date(stripeSubscriptionData.current_period_start * 1000).toISOString()
+        ? new Date(
+            stripeSubscriptionData.current_period_start * 1000,
+          ).toISOString()
         : null,
       current_period_end: stripeSubscriptionData.current_period_end
-        ? new Date(stripeSubscriptionData.current_period_end * 1000).toISOString()
+        ? new Date(
+            stripeSubscriptionData.current_period_end * 1000,
+          ).toISOString()
         : null,
       trial_start: stripeSubscriptionData.trial_start
         ? new Date(stripeSubscriptionData.trial_start * 1000).toISOString()
@@ -196,7 +219,8 @@ export class SubscriptionsService {
       trial_end: stripeSubscriptionData.trial_end
         ? new Date(stripeSubscriptionData.trial_end * 1000).toISOString()
         : null,
-      cancel_at_period_end: stripeSubscriptionData.cancel_at_period_end || false,
+      cancel_at_period_end:
+        stripeSubscriptionData.cancel_at_period_end || false,
       canceled_at: stripeSubscriptionData.canceled_at
         ? new Date(stripeSubscriptionData.canceled_at * 1000).toISOString()
         : null,
@@ -207,14 +231,19 @@ export class SubscriptionsService {
     };
 
     if (existing) {
-      return this.updateSubscription(existing.subscription_id, subscriptionData);
+      return this.updateSubscription(
+        existing.subscription_id,
+        subscriptionData,
+      );
     } else {
       // For new subscriptions, we need customer_id
       // This should be in metadata or we need to look up by Stripe customer ID
       const customerId = stripeSubscriptionData.metadata?.customer_id;
-      
+
       if (!customerId) {
-        throw new Error('customer_id not found in Stripe subscription metadata');
+        throw new Error(
+          'customer_id not found in Stripe subscription metadata',
+        );
       }
 
       return this.createSubscription({

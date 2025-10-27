@@ -1,9 +1,16 @@
-import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+  IsEnum,
+} from 'class-validator';
+import { StripeSubscriptionStatus } from '@/common/types/database.types';
 
 export class UpdateSubscriptionDto {
-  @IsString()
+  @IsEnum(StripeSubscriptionStatus)
   @IsOptional()
-  stripe_status?: string;
+  stripe_status?: StripeSubscriptionStatus;
 
   @IsString()
   @IsOptional()
@@ -57,4 +64,3 @@ export class UpdateSubscriptionDto {
   @IsOptional()
   stripe_raw_data?: Record<string, any>;
 }
-

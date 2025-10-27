@@ -183,24 +183,19 @@ export class CleanupCommand {
       deletedCount += allUsers.length;
       this.logger.log(`Hard deleted ${allUsers.length} users`);
 
-      // 8. Clean up test subscription only (keep other subscriptions)
-      const testSubscription = await this.database.findFirst('subscriptions', {
-        where: { name: 'Test Subscription' },
+      // 8. Clean up test customer subscriptions
+      const testSubscriptions = await this.database.findMany('subscriptions', {
+        where: { customer_id: testCustomer.customer_id },
       });
 
-      if (testSubscription) {
-        const { error: subError } = await this.database.subscriptions
-          .delete()
-          .eq('subscription_type_id', testSubscription.subscription_type_id);
-
-        if (subError) {
-          this.logger.error('Error deleting subscription:', subError);
-        } else {
-          deletedCount += 1;
-          this.logger.log(
-            `Deleted test subscription: ${testSubscription.name}`,
-          );
-        }
+      for (const subscription of testSubscriptions) {
+        await this.database.delete('subscriptions', {
+          where: { subscription_id: subscription.subscription_id },
+        });
+        deletedCount += 1;
+        this.logger.log(
+          `Deleted test customer subscription: ${subscription.stripe_subscription_id}`,
+        );
       }
 
       this.logger.log(

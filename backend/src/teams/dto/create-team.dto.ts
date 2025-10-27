@@ -1,4 +1,11 @@
-import { IsString, IsUUID, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateTeamDto {
   @IsString()
@@ -21,6 +28,6 @@ export class CreateTeamDto {
 
   @IsBoolean()
   @IsOptional()
-  is_primary?: boolean;
+  @Transform(({ value }) => value ?? false)
+  is_primary?: boolean = false;
 }
-

@@ -10,14 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TeamsService } from './teams.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth/jwt-auth.guard';
+import { SupabaseAuthGuard } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 
 @Controller('teams')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(SupabaseAuthGuard, PermissionGuard)
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
@@ -48,7 +48,12 @@ export class TeamsController {
   @Post()
   @Permissions('customer:write')
   async create(@Body() createTeamDto: CreateTeamDto) {
-    return this.teamsService.create(createTeamDto);
+    // Ensure is_primary has a default value
+    const teamData = {
+      ...createTeamDto,
+      is_primary: createTeamDto.is_primary ?? false,
+    };
+    return this.teamsService.create(teamData);
   }
 
   /**
@@ -82,4 +87,3 @@ export class TeamsController {
     return this.teamsService.setPrimaryTeam(id);
   }
 }
-

@@ -1,4 +1,13 @@
-import { IsString, IsUUID, IsNotEmpty, IsOptional, IsBoolean, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsObject,
+  IsEnum,
+} from 'class-validator';
+import { StripeSubscriptionStatus } from '@/common/types/database.types';
 
 export class CreateSubscriptionDto {
   @IsString()
@@ -10,9 +19,9 @@ export class CreateSubscriptionDto {
   @IsNotEmpty()
   stripe_subscription_id: string;
 
-  @IsString()
+  @IsEnum(StripeSubscriptionStatus)
   @IsNotEmpty()
-  stripe_status: string;
+  stripe_status: StripeSubscriptionStatus;
 
   @IsString()
   @IsOptional()
@@ -66,4 +75,3 @@ export class CreateSubscriptionDto {
   @IsOptional()
   stripe_raw_data?: Record<string, any>;
 }
-

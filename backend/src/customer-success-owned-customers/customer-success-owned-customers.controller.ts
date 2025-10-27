@@ -9,22 +9,22 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CustomerSuccessOwnedCustomersService } from './customer-success-owned-customers.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth/jwt-auth.guard';
+import { SupabaseAuthGuard } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import type { CreateCustomerSuccessOwnedCustomerInput } from '@/common/types/database.types';
 
 @Controller('customer-success-owned-customers')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(SupabaseAuthGuard, PermissionGuard)
 export class CustomerSuccessOwnedCustomersController {
   constructor(
-    private readonly csOwnedCustomersService: CustomerSuccessOwnedCustomersService
+    private readonly csOwnedCustomersService: CustomerSuccessOwnedCustomersService,
   ) {}
 
   /**
    * GET /customer-success-owned-customers
    * Get all CS rep assignments, optionally filtered by userId or customerId
-   * 
+   *
    * Query params:
    * - userId: Filter by CS rep user ID
    * - customerId: Filter by customer ID
@@ -41,7 +41,7 @@ export class CustomerSuccessOwnedCustomersController {
   /**
    * GET /customer-success-owned-customers/check
    * Check if a CS rep is assigned to a customer
-   * 
+   *
    * Query params:
    * - userId: CS rep user ID
    * - customerId: Customer ID
@@ -52,7 +52,10 @@ export class CustomerSuccessOwnedCustomersController {
     @Query('userId') userId: string,
     @Query('customerId') customerId: string,
   ) {
-    const isAssigned = await this.csOwnedCustomersService.isAssigned(userId, customerId);
+    const isAssigned = await this.csOwnedCustomersService.isAssigned(
+      userId,
+      customerId,
+    );
     return { isAssigned };
   }
 
@@ -90,7 +93,7 @@ export class CustomerSuccessOwnedCustomersController {
   /**
    * DELETE /customer-success-owned-customers
    * Remove assignment by userId and customerId (query params)
-   * 
+   *
    * Query params:
    * - userId: CS rep user ID
    * - customerId: Customer ID
@@ -101,8 +104,10 @@ export class CustomerSuccessOwnedCustomersController {
     @Query('userId') userId: string,
     @Query('customerId') customerId: string,
   ) {
-    await this.csOwnedCustomersService.removeByUserAndCustomer(userId, customerId);
+    await this.csOwnedCustomersService.removeByUserAndCustomer(
+      userId,
+      customerId,
+    );
     return { message: 'Assignment removed successfully' };
   }
 }
-

@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { SupabaseCRUD } from '@/common/utils/supabase-crud.util';
-import type { Team, CreateTeamInput, UpdateTeamInput } from '@/common/types/database.types';
+import type {
+  Team,
+  CreateTeamInput,
+  UpdateTeamInput,
+} from '@/common/types/database.types';
 
 @Injectable()
 export class TeamsService {
@@ -22,10 +30,12 @@ export class TeamsService {
           select: 'user_id, full_name, email, avatar_url',
         },
       },
-      orderBy: {
-        field: 'team_name',
-        direction: 'asc',
-      },
+      orderBy: [
+        {
+          field: 'team_name',
+          direction: 'asc',
+        },
+      ],
     });
 
     return teams;
@@ -77,7 +87,7 @@ export class TeamsService {
 
     if (existingTeam) {
       throw new ConflictException(
-        `Team with name "${data.team_name}" already exists for this customer`
+        `Team with name "${data.team_name}" already exists for this customer`,
       );
     }
 
@@ -116,7 +126,7 @@ export class TeamsService {
 
       if (duplicateTeam) {
         throw new ConflictException(
-          `Team with name "${data.team_name}" already exists for this customer`
+          `Team with name "${data.team_name}" already exists for this customer`,
         );
       }
     }
@@ -206,7 +216,10 @@ export class TeamsService {
   /**
    * Validate that manager is a user in the customer
    */
-  private async validateManager(managerId: string, customerId: string): Promise<void> {
+  private async validateManager(
+    managerId: string,
+    customerId: string,
+  ): Promise<void> {
     const user = await this.database.findUnique('users', {
       where: { user_id: managerId, deleted_at: null },
     });
@@ -217,9 +230,8 @@ export class TeamsService {
 
     if (user.customer_id !== customerId) {
       throw new ConflictException(
-        'Team manager must be a user within the same customer organization'
+        'Team manager must be a user within the same customer organization',
       );
     }
   }
 }
-

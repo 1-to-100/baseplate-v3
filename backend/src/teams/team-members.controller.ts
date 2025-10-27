@@ -9,13 +9,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TeamMembersService } from './team-members.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth/jwt-auth.guard';
+import { SupabaseAuthGuard } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 
 @Controller('team-members')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(SupabaseAuthGuard, PermissionGuard)
 export class TeamMembersController {
   constructor(private readonly teamMembersService: TeamMembersService) {}
 
@@ -88,4 +88,3 @@ export class TeamMembersController {
     return { message: 'Team member removed successfully' };
   }
 }
-

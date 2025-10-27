@@ -24,6 +24,7 @@ import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
     DynamicAuthGuard,
     ImpersonationGuard,
     PermissionGuard,
+    UsersModule, // Export UsersModule so UsersService is available to guards
   ],
 })
 export class AuthModule {}

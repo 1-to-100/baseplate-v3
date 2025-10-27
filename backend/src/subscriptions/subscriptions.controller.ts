@@ -10,14 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth/jwt-auth.guard';
+import { SupabaseAuthGuard } from '@/auth/guards/supabase-auth/supabase-auth.guard';
 import { PermissionGuard } from '@/auth/guards/permission/permission.guard';
 import { Permissions } from '@/common/decorators/permissions.decorator';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 
 @Controller('subscriptions')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(SupabaseAuthGuard, PermissionGuard)
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
@@ -66,9 +66,14 @@ export class SubscriptionsController {
    * Create a new subscription (typically called from Stripe webhook)
    */
   @Post()
-  @Permissions('*')  // System-level operation
+  @Permissions('*') // System-level operation
   async create(@Body() createSubscriptionDto: CreateSubscriptionDto) {
-    return this.subscriptionsService.createSubscription(createSubscriptionDto);
+    // Ensure cancel_at_period_end has a default value
+    const subscriptionData = {
+      ...createSubscriptionDto,
+      cancel_at_period_end: createSubscriptionDto.cancel_at_period_end ?? false,
+    };
+    return this.subscriptionsService.createSubscription(subscriptionData);
   }
 
   /**
@@ -76,12 +81,15 @@ export class SubscriptionsController {
    * Update a subscription
    */
   @Patch(':id')
-  @Permissions('*')  // System-level operation
+  @Permissions('*') // System-level operation
   async update(
     @Param('id') id: string,
     @Body() updateSubscriptionDto: UpdateSubscriptionDto,
   ) {
-    return this.subscriptionsService.updateSubscription(id, updateSubscriptionDto);
+    return this.subscriptionsService.updateSubscription(
+      id,
+      updateSubscriptionDto,
+    );
   }
 
   /**
@@ -89,10 +97,9 @@ export class SubscriptionsController {
    * Delete a subscription
    */
   @Delete(':id')
-  @Permissions('*')  // System-level operation
+  @Permissions('*') // System-level operation
   async remove(@Param('id') id: string) {
     await this.subscriptionsService.deleteSubscription(id);
     return { message: 'Subscription deleted successfully' };
   }
 }
-

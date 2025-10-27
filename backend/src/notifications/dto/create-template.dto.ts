@@ -12,7 +12,10 @@ import {
   NotificationTypeList,
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
-import { NotificationChannel, NotificationChannelList } from '@/notifications/constants/notification-channel';
+import {
+  NotificationChannel,
+  NotificationChannelList,
+} from '@/notifications/constants/notification-channel';
 
 export class CreateTemplateDto {
   @MinLength(3)
