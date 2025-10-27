@@ -12,6 +12,7 @@ import { FrontendPathsService } from '@/common/helpers/frontend-paths.service';
 import { SubscriptionSeederService } from './services/subscription-seeder.service';
 import { SeedCommand } from './commands/seed.command';
 import { CleanupCommand } from './commands/cleanup.command';
+import { CustomerSuccessOwnedCustomersModule } from '@/customer-success-owned-customers/customer-success-owned-customers.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CleanupCommand } from './commands/cleanup.command';
     }),
     SupabaseModule,
     DatabaseModule,
+    CustomerSuccessOwnedCustomersModule,
   ],
   providers: [
     UsersService,

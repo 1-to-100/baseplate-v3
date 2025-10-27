@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCustomerDto {
@@ -12,9 +12,15 @@ export class CreateCustomerDto {
   @ApiProperty({ description: 'Subscription ID', required: true })
   subscriptionId: string;
 
-  @IsString()
-  @ApiProperty({ description: 'Customer Manager ID', required: false })
-  customerSuccessId?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ApiProperty({ 
+    description: 'Customer Success User IDs (array)', 
+    required: false,
+    type: [String]
+  })
+  customerSuccessIds?: string[];
 
   @IsString()
   @ApiProperty({ description: 'Owner User ID', required: true })

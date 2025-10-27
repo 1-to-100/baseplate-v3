@@ -95,4 +95,51 @@ export class CustomersController {
     }
     return this.customersService.remove(+id);
   }
+
+  @Get(':id/customer-success')
+  getCustomerSuccessUsers(
+    @Param('id') id: string,
+    @User() user: OutputUserDto,
+  ) {
+    if (!isSystemAdministrator(user)) {
+      throw new ForbiddenException('You have no access to customers.');
+    }
+    return this.customersService.getCustomerSuccessUsers(id);
+  }
+
+  @Post(':id/customer-success/:userId')
+  addCustomerSuccessUser(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @User() user: OutputUserDto,
+  ) {
+    if (!isSystemAdministrator(user)) {
+      throw new ForbiddenException('You have no access to customers.');
+    }
+    return this.customersService.addCustomerSuccessUser(id, userId);
+  }
+
+  @Delete(':id/customer-success/:userId')
+  removeCustomerSuccessUser(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @User() user: OutputUserDto,
+  ) {
+    if (!isSystemAdministrator(user)) {
+      throw new ForbiddenException('You have no access to customers.');
+    }
+    return this.customersService.removeCustomerSuccessUser(id, userId);
+  }
+
+  @Patch(':id/customer-success')
+  updateCustomerSuccessUsers(
+    @Param('id') id: string,
+    @Body() body: { userIds: string[] },
+    @User() user: OutputUserDto,
+  ) {
+    if (!isSystemAdministrator(user)) {
+      throw new ForbiddenException('You have no access to customers.');
+    }
+    return this.customersService.updateCustomerSuccessUsers(id, body.userIds);
+  }
 }

@@ -7,9 +7,10 @@ import { SubscriptionsService } from '@/subscriptions/subscriptions.service';
 import { UsersModule } from '@/users/users.module';
 import { TaxonomiesService } from '@/taxonomies/taxonomies.service';
 import { TaxonomiesController } from '@/taxonomies/taxonomies.controller';
+import { CustomerSuccessOwnedCustomersModule } from '@/customer-success-owned-customers/customer-success-owned-customers.module';
 
 @Module({
-  imports: [DatabaseModule, UsersModule],
+  imports: [DatabaseModule, UsersModule, CustomerSuccessOwnedCustomersModule],
   controllers: [TaxonomiesController],
   providers: [
     TaxonomiesService,

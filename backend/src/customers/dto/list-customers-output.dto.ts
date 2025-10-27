@@ -28,8 +28,19 @@ export class ListCustomersOutputDto extends PaginatedInputDto {
   subscriptionName?: string;
 
   @IsOptional()
-  @ApiPropertyOptional({ description: 'Manager Fields' })
-  customerSuccess: { id: string; name: string; email: string | null } | null =
+  @ApiPropertyOptional({ 
+    description: 'Customer Success Users',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        email: { type: 'string', nullable: true },
+      },
+    },
+  })
+  customerSuccess: { id: string; name: string; email: string | null }[] | null =
     null;
 
   // @IsOptional()
