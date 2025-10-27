@@ -1,8 +1,6 @@
 import {z} from 'zod';
 import * as React from 'react';
 import {FC} from 'react';
-import {Auth} from 'firebase/auth';
-import {getFirebaseAuth} from '@/lib/auth/firebase/client';
 import {Controller, useForm} from 'react-hook-form';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
@@ -27,7 +25,6 @@ type PermissionsFormValues = z.infer<typeof permissionsFormSchema>;
 export const PermissionsForm: FC<PermissionsFormProps> = ({permissions}) => {
 
     const [isPending, setIsPending] = React.useState<boolean>(false);
-    const [firebaseAuth] = React.useState<Auth>(getFirebaseAuth());
 
     const {
         control,
@@ -52,9 +49,6 @@ export const PermissionsForm: FC<PermissionsFormProps> = ({permissions}) => {
                         permissions: permissionArray,
                     }),
                 })
-
-                // this will refresh the token
-                firebaseAuth?.currentUser?.getIdToken(true)
             } catch (err) {
                 console.error(err);
                 // console.error('magic link sign in error', err);

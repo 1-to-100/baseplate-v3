@@ -21,15 +21,6 @@ export const paths = {
       resetPassword: '/auth/cognito/reset-password',
       updatePassword: '/auth/cognito/update-password',
     },
-    firebase: {
-      signIn: '/auth/firebase/sign-in',
-      signUp: '/auth/firebase/sign-up',
-      sso: '/auth/firebase/sso',
-      signInComplete: '/auth/firebase/sign-in-complete',
-      resetPassword: '/auth/firebase/reset-password',
-      recoveryLinkSent: '/auth/firebase/recovery-link-sent',
-      updatePassword: '/auth/firebase/update-password',
-    },
     supabase: {
       callback: { implicit: '/auth/supabase/callback/implicit', pkce: '/auth/supabase/callback/pkce' },
       signIn: '/auth/supabase/sign-in',

@@ -1,4 +1,3 @@
-import { getAuth } from "firebase/auth";
 import { AuthStrategy } from "@/lib/auth/strategy";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 import { config } from "@/config";
@@ -10,17 +9,6 @@ interface CustomError extends Error {
 export async function getAccessToken(
   strategy: keyof typeof AuthStrategy
 ): Promise<string> {
-  if (strategy === AuthStrategy.FIREBASE) {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user) {
-      throw new Error("Current user is not authenticated with Firebase");
-    }
-
-    return user.getIdToken();
-  }
-
   if (strategy === AuthStrategy.SUPABASE) {
     const supabaseClient = createSupabaseClient();
     const session = await supabaseClient.auth.getSession();

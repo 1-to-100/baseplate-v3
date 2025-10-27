@@ -45,10 +45,6 @@ export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | nul
           router.replace(paths.auth.cognito.signIn);
           return;
         }
-        case AuthStrategy.FIREBASE: {
-          router.replace(paths.auth.firebase.signIn);
-          return;
-        }
         case AuthStrategy.SUPABASE: {
           router.replace(paths.auth.supabase.signIn);
           return;

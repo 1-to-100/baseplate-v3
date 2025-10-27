@@ -22,7 +22,6 @@ import { Popup, PopupContent } from "@/components/core/popup";
 import { Auth0SignOut } from "./auth0-sign-out";
 import { CognitoSignOut } from "./cognito-sign-out";
 import { CustomSignOut } from "./custom-sign-out";
-import { FirebaseSignOut } from "./firebase-sign-out";
 import { SupabaseSignOut } from "./supabase-sign-out";
 import { Divider } from "@mui/material";
 
@@ -109,9 +108,6 @@ export function UserPopover({
             ) : null}{" "}
             {config.auth.strategy === AuthStrategy.COGNITO ? (
               <CognitoSignOut />
-            ) : null}
-            {config.auth.strategy === AuthStrategy.FIREBASE ? (
-              <FirebaseSignOut />
             ) : null}
             {config.auth.strategy === AuthStrategy.SUPABASE ? (
               <SupabaseSignOut />

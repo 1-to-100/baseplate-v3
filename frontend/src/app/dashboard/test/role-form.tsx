@@ -1,8 +1,6 @@
 import {z} from 'zod';
 import * as React from 'react';
 import {FC} from 'react';
-import {Auth} from 'firebase/auth';
-import {getFirebaseAuth} from '@/lib/auth/firebase/client';
 import {Controller, useForm} from 'react-hook-form';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
@@ -28,7 +26,6 @@ type RoleFormValues = z.infer<typeof roleFormSchema>;
 export const RoleForm: FC<RoleFormProps> = ({role}) => {
 
     const [isPending, setIsPending] = React.useState<boolean>(false);
-    const [firebaseAuth] = React.useState<Auth>(getFirebaseAuth());
 
     const {
         control,
@@ -58,9 +55,6 @@ export const RoleForm: FC<RoleFormProps> = ({role}) => {
                 //     toast.error(error.message);
                 //     return;
                 // }
-
-                // this will refresh the token
-                firebaseAuth?.currentUser?.getIdToken(true)
             } catch (err) {
                 console.error(err);
                 alert('Error setting role');
