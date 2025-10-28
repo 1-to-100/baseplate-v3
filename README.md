@@ -142,12 +142,13 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 ### ✅ Google OAuth
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project
+2. Navigate to Projects -> Create a new project
    1. Go to project finder - as of this writing in the top navigation under organization name
    2. Create a new project using the “New Project” link
    3. Navigate to the project
-4. Complete the wizard to setup the OAUth basics
-5. Activate the “Create OAUth Client"
+4. Search for "Google Auth Platform"
+5. Complete the wizard to setup the OAUth basics
+6. Activate the “Create OAUth Client"
    1. Select Web Application for application type
    2. Hit Add URI for your authorized redirect URIs - you can get this from Supabase under Project Settings -> Authentication -> Google -> Callback URL (for OAuth)
    3. Note that if you’re running this in testing mode, please do, you’ll need to go to “Audience” in your application and add a Test User for the application
