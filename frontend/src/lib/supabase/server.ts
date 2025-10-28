@@ -11,14 +11,6 @@ export function createClient(
   cookieStore: ReturnType<typeof cookies>
 ): SupabaseClient {
   return createServerClient(config.supabase.url!, config.supabase.anonKey!, {
-    cookieOptions: {
-      name: "sb",
-      path: "/",
-      sameSite: "lax", // Required for OAuth redirects to work properly
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true, // CRITICAL: Prevents XSS attacks from accessing cookies
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    },
     cookies: {
       async get(name: string) {
         const store = await cookieStore;
@@ -27,7 +19,17 @@ export function createClient(
       async set(name: string, value: string, options: CookieOptions) {
         try {
           const store = await cookieStore;
-          store.set({ name, value, ...options });
+          // Enhance security: Ensure sameSite and secure flags are set
+          // while preserving Supabase's httpOnly decisions per cookie
+          const secureOptions: CookieOptions = {
+            ...options,
+            path: options.path || '/',
+            sameSite: options.sameSite || 'lax', // CSRF protection
+            secure: options.secure ?? (process.env.NODE_ENV === 'production'), // HTTPS in production
+            // Note: httpOnly is NOT forced here - Supabase sets it per cookie type
+            // Auth tokens get httpOnly=true, but client-accessible cookies need httpOnly=false
+          };
+          store.set({ name, value, ...secureOptions });
         } catch (error) {
           // The `set` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing
@@ -37,7 +39,13 @@ export function createClient(
       async remove(name: string, options: CookieOptions) {
         try {
           const store = await cookieStore;
-          store.set({ name, value: "", ...options });
+          const secureOptions: CookieOptions = {
+            ...options,
+            path: options.path || '/',
+            sameSite: options.sameSite || 'lax',
+            secure: options.secure ?? (process.env.NODE_ENV === 'production'),
+          };
+          store.set({ name, value: "", ...secureOptions });
         } catch (error) {
           // The `delete` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing

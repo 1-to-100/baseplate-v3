@@ -14,14 +14,6 @@ export async function updateSession(request: NextRequest) {
     config.supabase.url!,
     config.supabase.anonKey!,
     {
-      cookieOptions: {
-        name: "sb",
-        path: "/",
-        sameSite: "lax", // Required for OAuth redirects to work properly
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true, // CRITICAL: Prevents XSS attacks from accessing cookies
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      },
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -31,9 +23,17 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request,
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Enhance security: Ensure sameSite and secure flags are set
+            const secureOptions: CookieOptions = {
+              ...options,
+              path: options.path || '/',
+              sameSite: options.sameSite || 'lax', // CSRF protection
+              secure: options.secure ?? (process.env.NODE_ENV === 'production'), // HTTPS in production
+              // Note: httpOnly is NOT forced here - Supabase sets it per cookie type
+            };
+            supabaseResponse.cookies.set(name, value, secureOptions);
+          });
         },
       },
     }
