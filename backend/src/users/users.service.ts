@@ -171,8 +171,6 @@ export class UsersService {
     createSystemUserDto: CreateSystemUserDto,
     skipInvite: boolean = false,
   ): Promise<OutputUserDto> {
-    console.log('createSystemUserDto', createSystemUserDto);
-
     if (await this.emailExists({ email: createSystemUserDto.email })) {
       throw new ConflictException('User with this email already exists');
     }
@@ -314,7 +312,6 @@ export class UsersService {
       where: { email: checkUserExistsDto.email },
     });
 
-    console.log('user', user);
     return !!user;
   }
 

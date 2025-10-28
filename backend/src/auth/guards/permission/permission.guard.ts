@@ -20,15 +20,12 @@ export class PermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    console.log('[[[[PERMISSION GUARD]]]]');
-
     const allowedPermissions = this.reflector.getAllAndOverride<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
     // if no permissions are required, allow access
-    console.log('allowedPermissions', allowedPermissions);
     if (!allowedPermissions || allowedPermissions.length === 0) {
       return true;
     }
@@ -98,11 +95,6 @@ export class PermissionGuard implements CanActivate {
       .eq('id', effectiveUser.customerId!)
       .single();
 
-    console.log('======================');
-    console.log(customer);
-    console.log(effectiveUser);
-    console.log('======================');
-
     // allow customer owner to access its endpoints
     if (customer && effectiveUser.id == customer.owner_id) {
       return true;
@@ -160,7 +152,6 @@ export class PermissionGuard implements CanActivate {
       );
     }
 
-    console.log('effectiveUser', effectiveUser);
     return true;
   }
 }

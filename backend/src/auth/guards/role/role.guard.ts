@@ -12,7 +12,6 @@ export class RoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean | Promise<boolean> {
-    console.log('[[[[ROLE GUARD]]]]');
     const request = context
       .switchToHttp()
       .getRequest<{ user: { [key: string]: any } }>();
@@ -39,7 +38,6 @@ export class RoleGuard implements CanActivate {
       );
     }
 
-    console.log('user', user);
     return true;
   }
 }

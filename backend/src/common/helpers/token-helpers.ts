@@ -11,7 +11,7 @@ export function getProviderFromToken(
       return 'supabase';
     }
   } catch (error) {
-    console.log('error', error);
+    // Token parsing failed, return null silently
     return null;
   }
 

@@ -41,6 +41,8 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-enum-comparison': 'off',
       // Custom security rules
       'custom/no-raw-sql': 'error',
+      'custom/no-console-in-guards': 'error',
+      'custom/no-console-in-production': 'warn', // Warn level to allow gradual adoption
     },
   },
 );

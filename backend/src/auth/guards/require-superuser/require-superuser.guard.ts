@@ -19,8 +19,6 @@ export class RequireSuperuserGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    console.log('[[[[SUPERUSER GUARD]]]]');
-
     const allowedPermissions = this.reflector.getAllAndOverride<string[]>(
       SUPERUSER_KEY,
       [context.getHandler(), context.getClass()],
@@ -33,7 +31,6 @@ export class RequireSuperuserGuard implements CanActivate {
     }>();
 
     const user = request.currentUser;
-    console.log(user);
     if (!user) {
       throw new ForbiddenException('Access denied: user not found');
     }

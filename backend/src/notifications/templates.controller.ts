@@ -58,8 +58,6 @@ export class TemplatesController {
       );
     }
 
-    console.log('findAllTemplates => ', query);
-
     return this.templatesService.findAll(query);
   }
 

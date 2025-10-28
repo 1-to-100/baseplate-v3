@@ -44,8 +44,6 @@ export class ArticleCategoriesController {
       customerId = user.customerId;
     }
 
-    console.log('customerId', user);
-
     if (!customerId) {
       throw new BadRequestException(
         'User is not authorized to access this resource',
