@@ -253,6 +253,9 @@ export class DatabaseService implements OnModuleInit {
 
   /**
    * Execute RPC (Remote Procedure Call) functions
+   *
+   * SECURITY NOTE: Only use this for pre-defined PostgreSQL functions
+   * with proper input validation in the database layer.
    */
   async rpc<T = unknown>(
     functionName: string,
@@ -263,17 +266,6 @@ export class DatabaseService implements OnModuleInit {
       handleSupabaseError(error, `RPC ${functionName}`);
     }
     return data as T;
-  }
-
-  /**
-   * Execute raw SQL queries (if needed for migration compatibility)
-   * Note: This requires creating a PostgreSQL function that executes raw SQL
-   */
-  async rawQuery<T = unknown>(sql: string, params?: unknown[]): Promise<T> {
-    return this.rpc<T>('execute_raw_query', {
-      query: sql,
-      parameters: params,
-    });
   }
 
   /**
