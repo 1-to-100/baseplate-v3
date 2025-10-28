@@ -42,7 +42,9 @@ Ensure you have the following installed:
 ### 1. Clone repository and set env variables
 
 ```bash
-git clone https://github.com/1-to-100/baseplate.git
+git clone https://github.com/1-to-100/baseplate-v2.git
+
+mv basplate-v2 [your_project_name]
 
 cd baseplate/frontend
 
