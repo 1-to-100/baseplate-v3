@@ -98,6 +98,7 @@ Database schema and Row Level Security (RLS) policies are managed via Supabase m
 ```bash
 # Install Supabase CLI
 npm install -g supabase
+# Note: Mac may require you to install this with Homebrew: brew install supabase/tap/supabase
 
 # Login to Supabase
 supabase login
