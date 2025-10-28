@@ -15,6 +15,7 @@ import { NotificationDto } from '@/notifications/dto/notification.dto';
 import { NotificationTypes } from '@/notifications/constants/notification-types';
 import { ListAdminNotificationsInputDto } from '@/notifications/dto/list-admin-notifications-input.dto';
 import { SupabaseService } from '@/common/supabase/supabase.service';
+import { sanitizeNotificationHTML } from '@/common/helpers/sanitize.helper';
 
 @Injectable()
 export class NotificationsService {
@@ -31,6 +32,9 @@ export class NotificationsService {
     },
   ): Promise<TableType<'notifications'> | undefined> {
     this.logger.log('Creating notification');
+
+    // Sanitize message content to prevent XSS attacks
+    const sanitizedMessage = sanitizeNotificationHTML(createNotification.message);
 
     const { userId, customerId } = createNotification;
 
@@ -49,7 +53,7 @@ export class NotificationsService {
         sender_id: createNotification.senderId,
         type: createNotification.type,
         title: createNotification.title,
-        message: createNotification.message,
+        message: sanitizedMessage,
         template_id: createNotification.templateId,
         metadata: createNotification.metadata,
         channel: createNotification.channel,
@@ -80,7 +84,7 @@ export class NotificationsService {
                   customerId: notification.customer_id,
                   type: notification.type,
                   title: notification.title,
-                  message: notification.message,
+                  message: sanitizedMessage,
                   channel: notification.channel,
                 }),
               ),
@@ -104,7 +108,7 @@ export class NotificationsService {
         sender_id: createNotification.senderId,
         type: createNotification.type,
         title: createNotification.title,
-        message: createNotification.message,
+        message: sanitizedMessage,
         template_id: createNotification.templateId,
         metadata: createNotification.metadata,
         channel: createNotification.channel,
@@ -118,7 +122,11 @@ export class NotificationsService {
 
       await Promise.all([
         this.sendUnreadCountNotification(userId),
-        this.sendInAppNotification({ ...createNotification, userId }),
+        this.sendInAppNotification({ 
+          ...createNotification, 
+          userId,
+          message: sanitizedMessage 
+        }),
       ]);
 
       return notification;

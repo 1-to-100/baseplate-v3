@@ -12,6 +12,7 @@ import { NotificationTemplateDto } from '@/notifications/dto/notification-templa
 import { CreateTemplateDto } from '@/notifications/dto/create-template.dto';
 import { UpdateTemplateDto } from '@/notifications/dto/update-template.dto';
 import { SendTemplatesInputDto } from '@/notifications/dto/send-templates-input.dto';
+import { sanitizeEditorHTML } from '@/common/helpers/sanitize.helper';
 
 @Injectable()
 export class TemplatesService {
@@ -135,9 +136,12 @@ export class TemplatesService {
     customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
+      // Sanitize template message to prevent XSS attacks
+      const sanitizedMessage = sanitizeEditorHTML(createTemplateDto.message);
+
       const templateData = {
         title: createTemplateDto.title,
-        message: createTemplateDto.message,
+        message: sanitizedMessage,
         comment: createTemplateDto.comment,
         type: createTemplateDto.type,
         channel: createTemplateDto.channel,
@@ -216,7 +220,8 @@ export class TemplatesService {
         updateData.title = updateTemplateDto.title;
       }
       if (updateTemplateDto.message !== undefined) {
-        updateData.message = updateTemplateDto.message;
+        // Sanitize message to prevent XSS attacks
+        updateData.message = sanitizeEditorHTML(updateTemplateDto.message);
       }
       if (updateTemplateDto.comment !== undefined) {
         updateData.comment = updateTemplateDto.comment;

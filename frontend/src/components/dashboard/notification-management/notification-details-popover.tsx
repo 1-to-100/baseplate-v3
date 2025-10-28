@@ -19,6 +19,7 @@ import AddEditNotificationModal from "../modals/AddEditNotificationModal";
 import { ApiNotification } from "@/contexts/auth/types";
 import CircularProgress from "@mui/joy/CircularProgress";
 import { useColorScheme } from "@mui/joy/styles";
+import { sanitizeNotificationHTML } from "@/lib/sanitize";
 
 interface NotificationDetailsPopoverProps {
   open: boolean;
@@ -225,7 +226,7 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                     },
                   }}
                 >
-                  <div dangerouslySetInnerHTML={{ __html: notificationData?.message || '' }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeNotificationHTML(notificationData?.message || '') }} />
                 </Typography>
               </Stack>
 

@@ -23,6 +23,7 @@ import CircularProgress from "@mui/joy/CircularProgress";
 import { useInAppNotificationsChannel } from "@/hooks/use-notifications";
 import { useColorScheme } from "@mui/joy/styles";
 import { toast } from "@/components/core/toaster";
+import { sanitizeNotificationHTML } from "@/lib/sanitize";
 
 export interface NotificationsPopoverProps {
   anchorEl?: HTMLElement | null;
@@ -69,7 +70,7 @@ export function NotificationsPopover({
           </Typography>
           <Box
             dangerouslySetInnerHTML={{
-              __html: getFirstLine(payload.message || ""),
+              __html: sanitizeNotificationHTML(getFirstLine(payload.message || "")),
             }}
             sx={{
               "& a": {
@@ -488,7 +489,7 @@ function NotificationContent({
         {isExpanded ? (
           <>
             <Box
-              dangerouslySetInnerHTML={{ __html: notification.message }}
+              dangerouslySetInnerHTML={{ __html: sanitizeNotificationHTML(notification.message) }}
               sx={{
                 "& a": {
                   textDecoration: "none",
@@ -578,7 +579,7 @@ function NotificationContent({
           <>
             <Box
               dangerouslySetInnerHTML={{
-                __html: getFirstLine(notification.message),
+                __html: sanitizeNotificationHTML(getFirstLine(notification.message)),
               }}
               sx={{
                 "& a": {

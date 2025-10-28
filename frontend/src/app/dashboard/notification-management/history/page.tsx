@@ -10,14 +10,13 @@ import { ArrowsDownUp as SortIcon } from "@phosphor-icons/react/dist/ssr/ArrowsD
 import { config } from "@/config";
 import { useState } from "react";
 import Pagination from "@/components/dashboard/layout/pagination";
-import SearchInput from "@/components/dashboard/layout/search-input";
 import { useQuery } from "@tanstack/react-query";
 import { getNotificationsHistory } from "@/lib/api/notifications";
 import { useGlobalSearch } from "@/hooks/use-global-search";
 import CircularProgress from "@mui/joy/CircularProgress";
 import NotificationFilter from "@/components/dashboard/notification-management/notification-filter";
-import { ApiNotification } from "@/contexts/auth/types";
 import { useColorScheme } from "@mui/joy/styles";
+import { sanitizeNotificationHTML } from "@/lib/sanitize";
 
 const metadata = {
   title: `Notification History | Dashboard | ${config.site.name}`,
@@ -545,7 +544,7 @@ export default function Page(): React.JSX.Element {
                             >
                               <div
                                 dangerouslySetInnerHTML={{
-                                  __html: getFirstLine(notification.message),
+                                  __html: sanitizeNotificationHTML(getFirstLine(notification.message)),
                                 }}
                               />
                             </Typography>

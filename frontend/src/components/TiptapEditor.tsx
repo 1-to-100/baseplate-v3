@@ -14,6 +14,7 @@ import { Node, Extension, mergeAttributes } from "@tiptap/core";
 import { CommandProps, RawCommands } from "@tiptap/core";
 import React, { useRef, useState, useEffect } from "react";
 import { useColorScheme } from "@mui/joy/styles";
+import { sanitizeEditorHTML } from "@/lib/sanitize";
 import {
   TextB,
   TextItalic,
@@ -472,7 +473,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     if (onTocChange) onTocChange(headings);
 
     if (changed) {
-      editor.commands.setContent(doc.body.innerHTML, false);
+      const sanitizedHTML = sanitizeEditorHTML(doc.body.innerHTML);
+      editor.commands.setContent(sanitizedHTML, false);
     }
   }, [isPreview, editor, onTocChange]);
 
@@ -1234,7 +1236,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       {isPreview ? (
         <div
           className="tiptap-preview"
-          dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
+          dangerouslySetInnerHTML={{ __html: sanitizeEditorHTML(editor?.getHTML() || "") }}
         />
       ) : (
         <EditorContent editor={editor} />

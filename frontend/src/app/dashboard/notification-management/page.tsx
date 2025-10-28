@@ -36,6 +36,7 @@ import NotificationDetailsPopover from "@/components/dashboard/notification-mana
 import { useColorScheme } from "@mui/joy/styles";
 import { toast } from "@/components/core/toaster";
 import { useGlobalSearch } from "@/hooks/use-global-search";
+import { sanitizeNotificationHTML } from "@/lib/sanitize";
 
 interface HttpError extends Error {
   response?: {
@@ -695,7 +696,7 @@ export default function Page(): React.JSX.Element {
                             >
                               <div
                                 dangerouslySetInnerHTML={{
-                                  __html: getFirstLine(notification.message),
+                                  __html: sanitizeNotificationHTML(getFirstLine(notification.message)),
                                 }}
                               />
                             </Box>
