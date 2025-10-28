@@ -6,10 +6,13 @@ export class FrontendPathsService {
   private readonly home: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.home = this.configService.get<string>('FRONTEND_URL')!;
-    if (!this.home) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    if (!frontendUrl) {
       throw new Error('FRONTEND_URL is not defined or invalid.');
     }
+
+    this.home = frontendUrl;
   }
 
   getFrontendUrl(): string {

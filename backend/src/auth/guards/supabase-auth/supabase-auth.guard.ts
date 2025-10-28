@@ -41,9 +41,17 @@ export class SupabaseAuthGuard implements CanActivate {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
-    this.supabaseSecret = this.configService.get<string>(
-      'SUPABASE_JWT_SECRET',
-    )!;
+    // SECURE: Explicit validation following SupabaseService pattern
+    const secret = this.configService.get<string>('SUPABASE_JWT_SECRET');
+
+    if (!secret) {
+      throw new Error(
+        'SUPABASE_JWT_SECRET is required but not configured. ' +
+          'Please check your environment configuration.',
+      );
+    }
+
+    this.supabaseSecret = secret;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -83,8 +91,12 @@ export class SupabaseAuthGuard implements CanActivate {
       (firstName && lastName ? `${firstName} ${lastName}` : '') ||
       (given_name && family_name ? `${given_name} ${family_name}` : '');
 
+    if (!decodedPayload.sub) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
     request.user = {
-      uid: decodedPayload.sub!,
+      uid: decodedPayload.sub,
       email: decodedPayload.email as string,
       name: fullName,
       picture,
