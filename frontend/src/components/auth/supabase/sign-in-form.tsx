@@ -61,7 +61,7 @@ export function SignInForm(): React.JSX.Element {
       hasShownMessage.current = true;
       toast.success(message);
     }
-  }, []);
+  }, [searchParams]);
 
   const onAuth = React.useCallback(
     async (providerId: OAuthProvider['id']): Promise<void> => {

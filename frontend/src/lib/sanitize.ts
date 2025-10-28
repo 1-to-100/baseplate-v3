@@ -1,4 +1,9 @@
-import DOMPurify from 'dompurify';
+import DOMPurify, { Config as DOMPurifyConfig } from 'dompurify';
+
+// Custom type for DOMPurify config with ALLOWED_ATTR as object
+type SanitizeConfig = Omit<DOMPurifyConfig, 'ALLOWED_ATTR'> & {
+  ALLOWED_ATTR: Record<string, string[]>;
+};
 
 /**
  * Sanitize HTML for notification content (strict policy)
@@ -16,7 +21,7 @@ export const sanitizeNotificationHTML = (html: string): string => {
     return '';
   }
 
-  const config: any = {
+  const config: SanitizeConfig = {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 
       'h1', 'h2', 'h3', 'h4', 'a', 'span', 'div'
@@ -31,7 +36,7 @@ export const sanitizeNotificationHTML = (html: string): string => {
     ALLOW_UNKNOWN_PROTOCOLS: false,
   };
 
-  return DOMPurify.sanitize(html, config);
+  return DOMPurify.sanitize(html, config as unknown as DOMPurifyConfig);
 };
 
 /**
@@ -49,7 +54,7 @@ export const sanitizeEditorHTML = (html: string): string => {
     return '';
   }
 
-  const config: any = {
+  const config: SanitizeConfig = {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -78,7 +83,7 @@ export const sanitizeEditorHTML = (html: string): string => {
     ADD_ATTR: ['target'],
   };
 
-  return DOMPurify.sanitize(html, config);
+  return DOMPurify.sanitize(html, config as unknown as DOMPurifyConfig);
 };
 
 /**

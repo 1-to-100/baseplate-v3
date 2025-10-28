@@ -76,7 +76,7 @@ export function SignUpForm(): React.JSX.Element {
       hasShownErrorMessage.current = true;
       toast.error(errorMessage);
     }
-  }, []);
+  }, [searchParams]);
 
   const onAuth = React.useCallback(
     async (providerId: OAuthProvider['id']): Promise<void> => {
@@ -162,7 +162,7 @@ export function SignUpForm(): React.JSX.Element {
 
       setIsPending(false);
     },
-    [supabaseClient, router, setError]
+    [router, setError]
   );
 
   return (
