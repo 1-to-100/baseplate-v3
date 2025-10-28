@@ -14,6 +14,14 @@ export async function updateSession(request: NextRequest) {
     config.supabase.url!,
     config.supabase.anonKey!,
     {
+      cookieOptions: {
+        name: "sb",
+        path: "/",
+        sameSite: "lax", // Required for OAuth redirects to work properly
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true, // CRITICAL: Prevents XSS attacks from accessing cookies
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll()
