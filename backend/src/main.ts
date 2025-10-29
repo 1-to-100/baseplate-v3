@@ -34,6 +34,7 @@ async function createApp() {
         'http://localhost:3001',
         'http://localhost:3002',
         'https://app-baseplate-v2.vercel.app',
+        'https://api-baseplate-v2.vercel.app',
         'https://baseplate.huboxt.com',
         ...(frontendUrl ? [frontendUrl] : []),
       ],
@@ -88,6 +89,42 @@ async function createApp() {
 // For Vercel serverless
 export const handler = async (req: any, res: any) => {
   try {
+    // Manually set CORS headers for Vercel serverless
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'https://app-baseplate-v2.vercel.app',
+      'https://api-baseplate-v2.vercel.app',
+      'https://baseplate.huboxt.com',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean);
+
+    const origin = req.headers.origin || req.headers.referer;
+    
+    if (origin && allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'
+      );
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Accept, Authorization, X-Requested-With, x-customer-id, x-impersonate-user-id'
+      );
+      res.setHeader(
+        'Access-Control-Expose-Headers',
+        'Content-Length, X-Knowledge-Base'
+      );
+    }
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+
     const app = await createApp();
     const server = app.getHttpAdapter().getInstance();
     server(req, res);
