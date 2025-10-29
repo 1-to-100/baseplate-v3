@@ -18,6 +18,14 @@ export type SupabaseDecodedToken = {
   role?: string;
   permissions?: string[];
   status?: string;
+  // SECURE: Add validated context claims from app_metadata
+  app_metadata?: {
+    customer_id?: string | null;
+    customer_ids?: string[]; // For system admins who can access multiple
+    impersonated_user_id?: string | null;
+    impersonation_allowed?: boolean;
+    context_validated_at?: number; // Timestamp for expiration
+  };
 };
 
 type supabaseJwtPayload =
@@ -29,6 +37,14 @@ type supabaseJwtPayload =
         given_name?: string; // linkedin
         family_name?: string; // linkedin
         picture?: string;
+      };
+      // IMPORTANT: app_metadata is included in JWT by Supabase
+      app_metadata?: {
+        customer_id?: string | null;
+        customer_ids?: string[];
+        impersonated_user_id?: string | null;
+        impersonation_allowed?: boolean;
+        context_validated_at?: number;
       };
     })
   | null;
@@ -95,11 +111,15 @@ export class SupabaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid token payload');
     }
 
+    // SECURE: Extract app_metadata with validated context
+    const appMetadata = decodedPayload.app_metadata || {};
+
     request.user = {
       uid: decodedPayload.sub,
       email: decodedPayload.email as string,
       name: fullName,
       picture,
+      app_metadata: appMetadata, // Include validated context claims
     };
 
     const currentUser = await this.usersService.findByUid(request.user.uid);

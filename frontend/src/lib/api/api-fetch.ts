@@ -22,36 +22,24 @@ export async function getAccessToken(
   throw new Error("Unsupported authentication strategy");
 }
 
-function getImpersonatedUserId(): number | null {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("impersonatedUserId");
-    return stored ? parseInt(stored, 10) : null;
-  }
-  return null;
-}
-
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
   const idToken = await getAccessToken(config.auth.strategy);
-  const customerId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("selectedCustomerId")
-      : null;
-  const impersonatedUserId = getImpersonatedUserId();
 
+  // SECURE: No custom headers needed!
+  // Customer ID and impersonation are in the JWT app_metadata
+  // The insecure x-customer-id and x-impersonate-user-id headers have been removed
   const response = await fetch(path, {
     ...options,
-    credentials: 'include', // CRITICAL: Send cookies with cross-origin requests
+    credentials: 'include', // Send cookies with cross-origin requests
     headers: {
       ...options.headers,
       Authorization: `Bearer ${idToken}`,
       "Content-Type": "application/json",
-      ...(customerId && { "x-customer-id": customerId }),
-      ...(impersonatedUserId && {
-        "x-impersonate-user-id": impersonatedUserId.toString(),
-      }),
+      // REMOVED: x-customer-id (INSECURE - replaced with JWT claims)
+      // REMOVED: x-impersonate-user-id (INSECURE - replaced with JWT claims)
     },
   });
 

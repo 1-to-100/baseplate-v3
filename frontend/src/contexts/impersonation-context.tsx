@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { authService } from "@/lib/auth/auth-service";
 
 interface ImpersonationContextValue {
   impersonatedUserId: string | null;
@@ -21,24 +22,31 @@ export function ImpersonationProvider({
 }: ImpersonationProviderProps): React.JSX.Element {
   const [impersonatedUserId, setImpersonatedUserId] = React.useState<
     string | null
-  >(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("impersonatedUserId");
-      return stored || null;
-    }
-    return null;
-  });
+  >(null);
 
   const handleSetImpersonatedUserId = React.useCallback(
-    (userId: string | null) => {
-      setImpersonatedUserId(userId);
-
-      if (typeof window !== "undefined") {
-        if (userId) {
-          localStorage.setItem("impersonatedUserId", userId);
-        } else {
-          localStorage.removeItem("impersonatedUserId");
+    async (userId: string | null) => {
+      if (userId) {
+        try {
+          // SECURE: Backend validates and issues new JWT with impersonation context
+          await authService.refreshWithContext({ 
+            impersonatedUserId: userId 
+          });
+          setImpersonatedUserId(userId);
+          
+          // Reload to use new token with updated context
+          window.location.reload();
+        } catch (error) {
+          console.error('Failed to impersonate user:', error);
+          alert('You do not have permission to impersonate this user');
         }
+      } else {
+        // Clear impersonation
+        await authService.clearContext();
+        setImpersonatedUserId(null);
+        
+        // Reload to use updated token
+        window.location.reload();
       }
     },
     []

@@ -39,8 +39,10 @@ async function createApp() {
         ...(frontendUrl ? [frontendUrl] : []),
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      // SECURE: Removed insecure headers (x-customer-id, x-impersonate-user-id)
+      // Context is now managed through JWT app_metadata claims
       allowedHeaders:
-        'Content-Type, Accept, Authorization, X-Requested-With, x-customer-id, x-impersonate-user-id',
+        'Content-Type, Accept, Authorization, X-Requested-With',
       exposedHeaders: 'Content-Length, X-Knowledge-Base',
       credentials: true, // Allow cookies
       preflightContinue: false,
