@@ -34,7 +34,7 @@ export const paths = {
     },
   },
   dashboard: {
-    overview: '/dashboard/user-management',
+    overview: '/dashboard/documentation',
     customerManagement: {
       list: '/dashboard/customer-management',
       details: (customerId: string) => `/dashboard/customer-management/${customerId}`,

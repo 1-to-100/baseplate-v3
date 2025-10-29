@@ -20,7 +20,7 @@ export class FrontendPathsService {
   }
 
   getDashboardOverviewUrl(): string {
-    return new URL('/dashboard/user-management', this.home).href;
+    return new URL('/dashboard/documentation', this.home).href;
   }
 
   getSetNewPasswordUrl(): string {
@@ -33,7 +33,7 @@ export class FrontendPathsService {
 
   getCallbackPkceUrl(): string {
     const callbackPkceUrl = new URL('/auth/supabase/callback/pkce', this.home);
-    callbackPkceUrl.searchParams.set('next', '/dashboard/user-management');
+    callbackPkceUrl.searchParams.set('next', '/dashboard/documentation');
     return callbackPkceUrl.href;
   }
 
@@ -42,7 +42,7 @@ export class FrontendPathsService {
       '/auth/supabase/callback/implicit',
       this.home,
     );
-    callbackImplicitUrl.searchParams.set('next', '/dashboard/user-management');
+    callbackImplicitUrl.searchParams.set('next', '/dashboard/documentation');
     return callbackImplicitUrl.href;
   }
 }
