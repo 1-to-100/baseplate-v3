@@ -24,8 +24,10 @@ export function createClient(
           const secureOptions: CookieOptions = {
             ...options,
             path: options.path || '/',
-            sameSite: options.sameSite || 'lax', // CSRF protection
-            secure: options.secure ?? (process.env.NODE_ENV === 'production'), // HTTPS in production
+            // Use 'none' for cross-origin (frontend/backend on different domains)
+            // Use 'lax' for same-origin setups
+            sameSite: options.sameSite || 'none', 
+            secure: options.secure ?? true, // Required for sameSite='none'
             // Note: httpOnly is NOT forced here - Supabase sets it per cookie type
             // Auth tokens get httpOnly=true, but client-accessible cookies need httpOnly=false
           };
@@ -42,8 +44,8 @@ export function createClient(
           const secureOptions: CookieOptions = {
             ...options,
             path: options.path || '/',
-            sameSite: options.sameSite || 'lax',
-            secure: options.secure ?? (process.env.NODE_ENV === 'production'),
+            sameSite: options.sameSite || 'none',
+            secure: options.secure ?? true,
           };
           store.set({ name, value: "", ...secureOptions });
         } catch (error) {

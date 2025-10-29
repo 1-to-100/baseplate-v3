@@ -43,6 +43,7 @@ export async function apiFetch<T>(
 
   const response = await fetch(path, {
     ...options,
+    credentials: 'include', // CRITICAL: Send cookies with cross-origin requests
     headers: {
       ...options.headers,
       Authorization: `Bearer ${idToken}`,
