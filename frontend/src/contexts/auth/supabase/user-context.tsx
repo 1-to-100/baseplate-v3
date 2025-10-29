@@ -106,6 +106,7 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
       }
 
       logger.debug('[Auth] onAuthStateChange:', event, session);
+      
       if (event === 'INITIAL_SESSION') {
         handleInitialSession(session);
         syncUser(session).then();
@@ -114,6 +115,12 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
       if (event === 'SIGNED_IN') {
         handleSignedIn(session);
         syncUser(session).then();
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        logger.debug('[Auth] Token refreshed successfully');
+        // Update user state with refreshed session to maintain app_metadata context
+        handleInitialSession(session);
       }
 
       if (event === 'SIGNED_OUT') {

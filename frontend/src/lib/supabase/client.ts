@@ -4,7 +4,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { config } from '@/config';
 
 export function createClient(): SupabaseClient {
-  // Let Supabase SSR handle cookie configuration automatically
-  // It will use appropriate settings based on the environment
+  // Supabase SSR client handles:
+  // - Cookie configuration automatically
+  // - Auto token refresh (enabled by default)
+  // - Session persistence across page reloads
+  // Token refresh events are handled in UserContext via onAuthStateChange
   return createBrowserClient(config.supabase.url!, config.supabase.anonKey!);
 }

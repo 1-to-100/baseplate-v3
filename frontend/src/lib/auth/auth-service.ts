@@ -25,6 +25,12 @@ class AuthService {
    * SECURE: Updates user context in app_metadata
    * Backend validates authorization before updating app_metadata
    * Then refreshes the session to get new JWT with updated claims
+   * 
+   * Process:
+   * 1. Backend validates permissions and updates Supabase user app_metadata
+   * 2. Frontend calls refreshSession() to get new JWT with updated app_metadata
+   * 3. New JWT contains validated customer_id and/or impersonated_user_id claims
+   * 4. Automatic token refresh will maintain these claims until next context change
    */
   async refreshWithContext(params: RefreshContextParams): Promise<void> {
     const { data: { session } } = await this.supabase.auth.getSession();
