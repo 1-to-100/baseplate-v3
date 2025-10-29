@@ -64,7 +64,6 @@ export class ManagersService {
   }
 
   async findOne(id: string) {
-    // Get customer success role ID by name
     const { data: role } = await this.database
       .getClient()
       .from('roles')
