@@ -24,16 +24,9 @@ export async function updateSession(request: NextRequest) {
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Enhance security: Ensure sameSite and secure flags are set
-            const secureOptions: CookieOptions = {
-              ...options,
-              path: options.path || '/',
-              // Use 'none' for cross-origin (frontend/backend on different domains)
-              sameSite: options.sameSite || 'none',
-              secure: options.secure ?? true, // Required for sameSite='none'
-              // Note: httpOnly is NOT forced here - Supabase sets it per cookie type
-            };
-            supabaseResponse.cookies.set(name, value, secureOptions);
+            // Pass through Supabase's cookie options without modification
+            // Supabase SSR handles security settings appropriately
+            supabaseResponse.cookies.set(name, value, options);
           });
         },
       },

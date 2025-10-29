@@ -19,19 +19,9 @@ export function createClient(
       async set(name: string, value: string, options: CookieOptions) {
         try {
           const store = await cookieStore;
-          // Enhance security: Ensure sameSite and secure flags are set
-          // while preserving Supabase's httpOnly decisions per cookie
-          const secureOptions: CookieOptions = {
-            ...options,
-            path: options.path || '/',
-            // Use 'none' for cross-origin (frontend/backend on different domains)
-            // Use 'lax' for same-origin setups
-            sameSite: options.sameSite || 'none', 
-            secure: options.secure ?? true, // Required for sameSite='none'
-            // Note: httpOnly is NOT forced here - Supabase sets it per cookie type
-            // Auth tokens get httpOnly=true, but client-accessible cookies need httpOnly=false
-          };
-          store.set({ name, value, ...secureOptions });
+          // Pass through Supabase's cookie options without modification
+          // Supabase SSR handles security settings appropriately per environment
+          store.set({ name, value, ...options });
         } catch (error) {
           // The `set` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing
@@ -41,13 +31,7 @@ export function createClient(
       async remove(name: string, options: CookieOptions) {
         try {
           const store = await cookieStore;
-          const secureOptions: CookieOptions = {
-            ...options,
-            path: options.path || '/',
-            sameSite: options.sameSite || 'none',
-            secure: options.secure ?? true,
-          };
-          store.set({ name, value: "", ...secureOptions });
+          store.set({ name, value: "", ...options });
         } catch (error) {
           // The `delete` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing
