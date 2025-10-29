@@ -1,60 +1,67 @@
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 
 /**
- * Sanitize HTML content to prevent XSS attacks
+ * Sanitize HTML for notifications with strict rules
  * This is used for notification content, user-generated content, etc.
  * 
  * @param html - The HTML string to sanitize
- * @returns Sanitized HTML string safe for storage and rendering
+ * @returns Sanitized HTML string
  */
 export function sanitizeNotificationHTML(html: string): string {
   if (!html || typeof html !== 'string') {
     return '';
   }
 
-  // DOMPurify with safe defaults - removes scripts, event handlers, and dangerous protocols
-  // Using minimal config to avoid TypeScript type issues with complex configurations
-  const sanitized = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(html, {
+    allowedTags: [
       'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 
       'h1', 'h2', 'h3', 'h4', 'a', 'span', 'div'
     ],
-    ALLOW_DATA_ATTR: false,
-  } as any);
-
-  return typeof sanitized === 'string' ? sanitized : '';
+    allowedAttributes: {
+      'a': ['href', 'target', 'rel'],
+      'span': ['style'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    disallowedTagsMode: 'discard',
+  });
 }
 
 /**
- * Sanitize HTML for rich text editor content (more permissive)
+ * Sanitize HTML for rich text editor with more permissive settings
  * Use this for article content, templates, etc.
  * 
  * @param html - The HTML string to sanitize
- * @returns Sanitized HTML string safe for storage and rendering
+ * @returns Sanitized HTML string
  */
 export function sanitizeEditorHTML(html: string): string {
   if (!html || typeof html !== 'string') {
     return '';
   }
 
-  // DOMPurify with more permissive settings for rich text editor
-  // Using minimal config to avoid TypeScript type issues with complex configurations
-  const sanitized = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(html, {
+    allowedTags: [
       'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'a', 'img', 'video', 'code', 'pre', 'blockquote', 
-      'span', 'div', 'sub', 'sup'
+      'a', 'span', 'div', 'blockquote', 'code', 'pre',
+      'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
     ],
-    ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ['target'],
-  } as any);
-
-  return typeof sanitized === 'string' ? sanitized : '';
+    allowedAttributes: {
+      'a': ['href', 'target', 'rel'],
+      'img': ['src', 'alt', 'width', 'height'],
+      'span': ['style', 'class'],
+      'div': ['style', 'class'],
+      'td': ['colspan', 'rowspan'],
+      'th': ['colspan', 'rowspan'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'data'],
+    allowedSchemesByTag: {
+      img: ['http', 'https', 'data']
+    },
+    disallowedTagsMode: 'discard',
+  });
 }
 
 /**
  * Generic sanitization alias
  */
 export const sanitizeHTML = sanitizeNotificationHTML;
-
