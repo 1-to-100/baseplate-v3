@@ -56,6 +56,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const validateEmailUrl = `${config.site.apiUrl}/register/validate-email/${encodeURIComponent(user.email)}`;
     const emailValidationResponse = await fetch(validateEmailUrl, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

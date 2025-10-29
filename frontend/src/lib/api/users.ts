@@ -69,6 +69,7 @@ export async function validateEmail(email: string): Promise<boolean> {
   const validateEmailUrl = `${config.site.apiUrl}/register/validate-email/${encodeURIComponent(email)}`;
   const response = await fetch(validateEmailUrl, {
     method: "GET",
+    credentials: 'include',
     headers: {
       "Content-Type": "application/json",
     },
@@ -88,6 +89,7 @@ export async function validateEmail(email: string): Promise<boolean> {
 export async function resetPassword(email: string): Promise<{status: string, message: string}> {
   const response = await fetch(`${config.site.apiUrl}/auth/reset-password`, {
     method: "POST",
+    credentials: 'include',
     headers: {
       "Content-Type": "application/json",
     },
@@ -110,6 +112,7 @@ export async function resetPassword(email: string): Promise<{status: string, mes
 export async function registerUser(payload: RegisterUserPayload): Promise<ApiUser> {
   const response = await fetch(`${config.site.apiUrl}/register`, {
     method: "POST",
+    credentials: 'include',
     headers: {
       "Content-Type": "application/json",
     },
