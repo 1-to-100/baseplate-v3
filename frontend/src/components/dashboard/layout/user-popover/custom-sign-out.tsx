@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import ListItemButton from '@mui/joy/ListItemButton';
 import ListItemContent from '@mui/joy/ListItemContent';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
@@ -14,6 +15,7 @@ import { toast } from '@/components/core/toaster';
 
 export function CustomSignOut(): React.JSX.Element {
   const { checkSession } = useUser();
+  const queryClient = useQueryClient();
 
   const router = useRouter();
 
@@ -27,6 +29,9 @@ export function CustomSignOut(): React.JSX.Element {
         return;
       }
 
+      // Clear all React Query cache to ensure no stale data remains
+      queryClient.clear();
+
       // Refresh the auth state
       await checkSession?.();
 
@@ -37,7 +42,7 @@ export function CustomSignOut(): React.JSX.Element {
       logger.error('Sign out error', err);
       toast.error('Something went wrong, unable to sign out');
     }
-  }, [checkSession, router]);
+  }, [checkSession, queryClient, router]);
 
   return (
     <ListItemButton onClick={handleSignOut}>

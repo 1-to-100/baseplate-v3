@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import ListItemButton from '@mui/joy/ListItemButton';
 import ListItemContent from '@mui/joy/ListItemContent';
 import ListItemDecorator from '@mui/joy/ListItemDecorator';
@@ -13,6 +14,7 @@ import { toast } from '@/components/core/toaster';
 
 export function SupabaseSignOut(): React.JSX.Element {
   const [supabaseClient] = React.useState<SupabaseClient>(createSupabaseClient());
+  const queryClient = useQueryClient();
 
   const handleSignOut = React.useCallback(async (): Promise<void> => {
     try {
@@ -22,6 +24,9 @@ export function SupabaseSignOut(): React.JSX.Element {
         logger.error('Sign out error', error);
         toast.error('Something went wrong, unable to sign out');
       } else {
+        // Clear all React Query cache to ensure no stale data remains
+        queryClient.clear();
+        
         // UserProvider will handle Router refresh
         // After refresh, GuestGuard will handle the redirect
       }
@@ -29,7 +34,7 @@ export function SupabaseSignOut(): React.JSX.Element {
       logger.error('Sign out error', err);
       toast.error('Something went wrong, unable to sign out');
     }
-  }, [supabaseClient]);
+  }, [supabaseClient, queryClient]);
 
   return (
     <ListItemButton onClick={handleSignOut}>
