@@ -1101,7 +1101,6 @@ export class UsersService {
         email: `__deleted__${user.email}`,
         deleted_at: deletedAt.toISOString(),
         status: UserStatus.SUSPENDED,
-        email_verified: false,
         role_id: null,
       },
     });
