@@ -73,6 +73,7 @@ function mapUserToDto(user: any): OutputUserDto {
         name: user.roles.name,
         description: user.roles.description,
         systemRole: user.roles.is_system_role,
+        display_name: user.roles.display_name,
       },
     }),
     ...(user.manager && { manager: user.manager }),
@@ -439,6 +440,7 @@ export class UsersService {
         orderBy: applyOrderByField,
         select: `
           *,
+          roles!role_id(*),
           customers!customer_id(customer_id, name, owner_id)
         `,
       },

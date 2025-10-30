@@ -832,7 +832,7 @@ export default function Page(): React.JSX.Element {
                                 wordBreak: "break-all",
                               }}
                             >
-                              {user.role?.name || 'No Role'}
+                              {user.role?.display_name || 'No Role'}
                             </Box>
                           </td>
                           <td>

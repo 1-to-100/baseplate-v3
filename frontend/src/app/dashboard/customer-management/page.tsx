@@ -399,7 +399,7 @@ export default function Page(): React.JSX.Element {
               onOpen={handleOpenFilter}
               initialFilters={filters}
             />
-            <Button
+            {!isCustomerSuccess(userInfo) && <Button
               variant="solid"
               color="primary"
               onClick={handleAddUser}
@@ -410,7 +410,7 @@ export default function Page(): React.JSX.Element {
               }}
             >
               Add customer
-            </Button>
+            </Button>}
           </Stack>
         </Stack>
 
@@ -747,19 +747,21 @@ export default function Page(): React.JSX.Element {
                               border: "1px solid var(--joy-palette-divider)",
                             }}
                           >
-                            <Box
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                handleEdit(customer.id);
-                              }}
-                              sx={menuItemStyle}
-                            >
-                              <PencilIcon
-                                fontSize="16px"
-                                style={{ marginRight: "10px" }}
-                              />
-                              Edit
-                            </Box>
+                            {!isCustomerSuccess(userInfo) && (
+                              <Box
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  handleEdit(customer.id);
+                                }}
+                                sx={menuItemStyle}
+                              >
+                                <PencilIcon
+                                  fontSize="16px"
+                                  style={{ marginRight: "10px" }}
+                                />
+                                Edit
+                              </Box>
+                            )}
                             <Box
                               onMouseDown={(event) => {
                                 event.preventDefault();
