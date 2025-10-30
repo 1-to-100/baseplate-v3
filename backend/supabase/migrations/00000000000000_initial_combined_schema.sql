@@ -324,9 +324,9 @@ create table public.extension_data (
 comment on table public.extension_data is 
   'Stores values for custom fields defined in extension_data_types';
 
--- Article categories table
-create table public.article_categories (
-  article_category_id uuid primary key default gen_random_uuid(),
+-- Help article categories table
+create table public.help_article_categories (
+  help_article_category_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
   name text not null,
   slug text not null,
@@ -340,15 +340,15 @@ create table public.article_categories (
   created_at timestamptz not null default now(),
   updated_at timestamptz,
   
-  constraint article_categories_customer_slug_key unique (customer_id, slug)
+  constraint help_article_categories_customer_slug_key unique (customer_id, slug)
 );
 
-comment on table public.article_categories is 
+comment on table public.help_article_categories is 
   'Categories for organizing help articles';
 
--- Articles table
-create table public.articles (
-  article_id uuid primary key default gen_random_uuid(),
+-- Help articles table
+create table public.help_articles (
+  help_article_id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
   category_id uuid not null,
   title text not null,
@@ -367,10 +367,10 @@ create table public.articles (
   created_at timestamptz not null default now(),
   updated_at timestamptz,
   
-  constraint articles_customer_slug_key unique (customer_id, slug)
+  constraint help_articles_customer_slug_key unique (customer_id, slug)
 );
 
-comment on table public.articles is 
+comment on table public.help_articles is 
   'Help articles and documentation';
 
 -- Notification templates table (with combined changes from all migrations)
@@ -631,40 +631,40 @@ alter table public.extension_data
   foreign key (extension_data_type_id) references public.extension_data_types(extension_data_type_id)
   on delete cascade;
 
--- Article categories foreign keys
-alter table public.article_categories
-  add constraint article_categories_customer_id_fkey
+-- Help article categories foreign keys
+alter table public.help_article_categories
+  add constraint help_article_categories_customer_id_fkey
   foreign key (customer_id) references public.customers(customer_id)
   on delete cascade;
 
-alter table public.article_categories
-  add constraint article_categories_parent_id_fkey
-  foreign key (parent_id) references public.article_categories(article_category_id)
+alter table public.help_article_categories
+  add constraint help_article_categories_parent_id_fkey
+  foreign key (parent_id) references public.help_article_categories(help_article_category_id)
   on delete cascade;
 
-alter table public.article_categories
-  add constraint article_categories_created_by_fkey
+alter table public.help_article_categories
+  add constraint help_article_categories_created_by_fkey
   foreign key (created_by) references public.users(user_id)
   on delete restrict;
 
--- Articles foreign keys
-alter table public.articles
-  add constraint articles_customer_id_fkey
+-- Help articles foreign keys
+alter table public.help_articles
+  add constraint help_articles_customer_id_fkey
   foreign key (customer_id) references public.customers(customer_id)
   on delete cascade;
 
-alter table public.articles
-  add constraint articles_category_id_fkey
-  foreign key (category_id) references public.article_categories(article_category_id)
+alter table public.help_articles
+  add constraint help_articles_category_id_fkey
+  foreign key (category_id) references public.help_article_categories(help_article_category_id)
   on delete restrict;
 
-alter table public.articles
-  add constraint articles_created_by_fkey
+alter table public.help_articles
+  add constraint help_articles_created_by_fkey
   foreign key (created_by) references public.users(user_id)
   on delete restrict;
 
-alter table public.articles
-  add constraint articles_updated_by_fkey
+alter table public.help_articles
+  add constraint help_articles_updated_by_fkey
   foreign key (updated_by) references public.users(user_id)
   on delete set null;
 
@@ -824,19 +824,19 @@ create index idx_extension_data_types_is_active on public.extension_data_types(i
 create index idx_extension_data_extension_data_type_id on public.extension_data(extension_data_type_id);
 create index idx_extension_data_data_id on public.extension_data(data_id);
 
--- Article categories indexes
-create index idx_article_categories_customer_id on public.article_categories(customer_id);
-create index idx_article_categories_parent_id on public.article_categories(parent_id);
-create index idx_article_categories_slug on public.article_categories(slug);
+-- Help article categories indexes
+create index idx_help_article_categories_customer_id on public.help_article_categories(customer_id);
+create index idx_help_article_categories_parent_id on public.help_article_categories(parent_id);
+create index idx_help_article_categories_slug on public.help_article_categories(slug);
 
--- Articles indexes
-create index idx_articles_customer_id on public.articles(customer_id);
-create index idx_articles_category_id on public.articles(category_id);
-create index idx_articles_status on public.articles(status);
-create index idx_articles_slug on public.articles(slug);
-create index idx_articles_created_by on public.articles(created_by);
-create index idx_articles_published_at on public.articles(published_at);
-create index idx_articles_featured on public.articles(featured) where featured = true;
+-- Help articles indexes
+create index idx_help_articles_customer_id on public.help_articles(customer_id);
+create index idx_help_articles_category_id on public.help_articles(category_id);
+create index idx_help_articles_status on public.help_articles(status);
+create index idx_help_articles_slug on public.help_articles(slug);
+create index idx_help_articles_created_by on public.help_articles(created_by);
+create index idx_help_articles_published_at on public.help_articles(published_at);
+create index idx_help_articles_featured on public.help_articles(featured) where featured = true;
 
 -- Notification templates indexes
 create index idx_notification_templates_customer_id on public.notification_templates(customer_id);
@@ -940,12 +940,12 @@ create trigger update_extension_data_updated_at
   before update on public.extension_data
   for each row execute function public.update_updated_at_column();
 
-create trigger update_article_categories_updated_at
-  before update on public.article_categories
+create trigger update_help_article_categories_updated_at
+  before update on public.help_article_categories
   for each row execute function public.update_updated_at_column();
 
-create trigger update_articles_updated_at
-  before update on public.articles
+create trigger update_help_articles_updated_at
+  before update on public.help_articles
   for each row execute function public.update_updated_at_column();
 
 create trigger update_notification_templates_updated_at
@@ -1250,8 +1250,8 @@ ALTER TABLE public.user_invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.taxonomies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.extension_data_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.extension_data ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.article_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.help_article_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.help_articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
@@ -1456,24 +1456,24 @@ CREATE POLICY permissions_delete_system_admin ON public.permissions
   USING ((SELECT public.has_role('system_admin')));
 
 -- =============================================================================
--- RLS POLICIES: ARTICLES & CATEGORIES
+-- RLS POLICIES: HELP ARTICLES & CATEGORIES
 -- =============================================================================
 
-CREATE POLICY article_categories_select_all ON public.article_categories
+CREATE POLICY help_article_categories_select_all ON public.help_article_categories
   FOR SELECT TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) OR
     (SELECT public.has_role('system_admin'))
   );
 
-CREATE POLICY article_categories_insert_customer ON public.article_categories
+CREATE POLICY help_article_categories_insert_customer ON public.help_article_categories
   FOR INSERT TO authenticated
   WITH CHECK (
     customer_id = (SELECT public.current_customer_id()) AND
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY article_categories_update_customer ON public.article_categories
+CREATE POLICY help_article_categories_update_customer ON public.help_article_categories
   FOR UPDATE TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) AND
@@ -1484,26 +1484,26 @@ CREATE POLICY article_categories_update_customer ON public.article_categories
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY article_categories_delete_customer ON public.article_categories
+CREATE POLICY help_article_categories_delete_customer ON public.help_article_categories
   FOR DELETE TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) AND
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY article_categories_select_customer_success ON public.article_categories
+CREATE POLICY help_article_categories_select_customer_success ON public.help_article_categories
   FOR SELECT TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY article_categories_insert_customer_success ON public.article_categories
+CREATE POLICY help_article_categories_insert_customer_success ON public.help_article_categories
   FOR INSERT TO authenticated
   WITH CHECK (
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY article_categories_update_customer_success ON public.article_categories
+CREATE POLICY help_article_categories_update_customer_success ON public.help_article_categories
   FOR UPDATE TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())
@@ -1512,27 +1512,27 @@ CREATE POLICY article_categories_update_customer_success ON public.article_categ
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY article_categories_delete_customer_success ON public.article_categories
+CREATE POLICY help_article_categories_delete_customer_success ON public.help_article_categories
   FOR DELETE TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY articles_select_all ON public.articles
+CREATE POLICY help_articles_select_all ON public.help_articles
   FOR SELECT TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) OR
     (SELECT public.has_role('system_admin'))
   );
 
-CREATE POLICY articles_insert_customer ON public.articles
+CREATE POLICY help_articles_insert_customer ON public.help_articles
   FOR INSERT TO authenticated
   WITH CHECK (
     customer_id = (SELECT public.current_customer_id()) AND
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY articles_update_customer ON public.articles
+CREATE POLICY help_articles_update_customer ON public.help_articles
   FOR UPDATE TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) AND
@@ -1543,26 +1543,26 @@ CREATE POLICY articles_update_customer ON public.articles
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY articles_delete_customer ON public.articles
+CREATE POLICY help_articles_delete_customer ON public.help_articles
   FOR DELETE TO authenticated
   USING (
     customer_id = (SELECT public.current_customer_id()) AND
     ((SELECT public.has_role('customer_admin')) OR (SELECT public.has_permission('help_articles:manage')))
   );
 
-CREATE POLICY articles_select_customer_success ON public.articles
+CREATE POLICY help_articles_select_customer_success ON public.help_articles
   FOR SELECT TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY articles_insert_customer_success ON public.articles
+CREATE POLICY help_articles_insert_customer_success ON public.help_articles
   FOR INSERT TO authenticated
   WITH CHECK (
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY articles_update_customer_success ON public.articles
+CREATE POLICY help_articles_update_customer_success ON public.help_articles
   FOR UPDATE TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())
@@ -1571,7 +1571,7 @@ CREATE POLICY articles_update_customer_success ON public.articles
     customer_id IN (SELECT public.get_accessible_customer_ids())
   );
 
-CREATE POLICY articles_delete_customer_success ON public.articles
+CREATE POLICY help_articles_delete_customer_success ON public.help_articles
   FOR DELETE TO authenticated
   USING (
     customer_id IN (SELECT public.get_accessible_customer_ids())

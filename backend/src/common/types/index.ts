@@ -14,8 +14,8 @@ export type {
   Permission,
   Manager,
   SubscriptionType,
-  Article,
-  ArticleCategory,
+  HelpArticle,
+  HelpArticleCategory,
   Notification,
   NotificationTemplate,
   UserWithRelations,
@@ -32,6 +32,10 @@ export type {
 
 // Re-export Subscription as alias for SubscriptionType
 export type { SubscriptionType as Subscription } from './database.types';
+
+// Re-export convenience aliases for help articles
+export type { HelpArticle as Article } from './database.types';
+export type { HelpArticleCategory as ArticleCategory } from './database.types';
 
 // Re-export enums
 export {

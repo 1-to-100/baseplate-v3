@@ -71,9 +71,9 @@ export class CleanupCommand {
         this.logger.log(`Deleted ${templateCount} notification templates`);
       }
 
-      // 3. Delete articles
+      // 3. Delete help articles
       const { data: articles, error: articleError } =
-        (await this.database.articles
+        (await this.database.help_articles
           .delete()
           .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
@@ -81,16 +81,16 @@ export class CleanupCommand {
         };
 
       if (articleError) {
-        this.logger.error('Error deleting articles:', articleError);
+        this.logger.error('Error deleting help articles:', articleError);
       } else {
         const articleCount = Array.isArray(articles) ? articles.length : 0;
         deletedCount += articleCount;
-        this.logger.log(`Deleted ${articleCount} articles`);
+        this.logger.log(`Deleted ${articleCount} help articles`);
       }
 
-      // 4. Delete article categories
+      // 4. Delete help article categories
       const { data: categories, error: categoryError } =
-        (await this.database.article_categories
+        (await this.database.help_article_categories
           .delete()
           .eq('customer_id', testCustomer.customer_id)) as {
           data: any[] | null;
@@ -144,11 +144,11 @@ export class CleanupCommand {
         // Delete notifications received by this user
         await this.database.notifications.delete().eq('user_id', user.id);
 
-        // Delete articles created by this user
-        await this.database.articles.delete().eq('created_by', user.id);
+        // Delete help articles created by this user
+        await this.database.help_articles.delete().eq('created_by', user.id);
 
-        // Delete article categories created by this user
-        await this.database.article_categories
+        // Delete help article categories created by this user
+        await this.database.help_article_categories
           .delete()
           .eq('created_by', user.id);
 

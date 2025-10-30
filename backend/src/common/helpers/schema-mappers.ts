@@ -120,11 +120,11 @@ export const columnNameMap: Record<string, Record<string, string>> = {
   roles: {
     id: 'role_id',
   },
-  article_categories: {
-    id: 'article_category_id',
+  help_article_categories: {
+    id: 'help_article_category_id',
   },
-  articles: {
-    id: 'article_id',
+  help_articles: {
+    id: 'help_article_id',
     views_number: 'view_count',
   },
   notifications: {

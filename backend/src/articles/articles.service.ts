@@ -38,7 +38,7 @@ export class ArticlesService {
         views_number: 0, // Default value
       };
 
-      const article = await this.database.create('articles', {
+      const article = await this.database.create('help_articles', {
         data: articleData,
       });
 
@@ -90,13 +90,13 @@ export class ArticlesService {
 
     // Use the database service's pagination method
     const paginateResult = await this.database.paginate(
-      'articles',
+      'help_articles',
       { page: page || 1, per_page: perPage || 10 },
       {
         where: whereClause,
         select: `
           *,
-          article_categories!category_id(*),
+          help_article_categories!category_id(*),
           users!created_by(id, first_name, last_name)
         `,
         orderBy: [{ field: 'id', direction: 'desc' }],
@@ -136,15 +136,15 @@ export class ArticlesService {
       createdAt: article.created_at,
       updatedAt: article.updated_at,
       viewsNumber: article.views_number,
-      Category: article.article_categories
+      Category: article.help_article_categories
         ? {
-            id: article.article_categories?.id,
-            name: article.article_categories?.name,
-            subcategory: article.article_categories?.subcategory,
-            icon: article.article_categories?.icon,
-            about: article.article_categories?.about,
-            createdAt: article.article_categories?.created_at,
-            updatedAt: article.article_categories?.updated_at,
+            id: article.help_article_categories?.id,
+            name: article.help_article_categories?.name,
+            subcategory: article.help_article_categories?.subcategory,
+            icon: article.help_article_categories?.icon,
+            about: article.help_article_categories?.about,
+            createdAt: article.help_article_categories?.created_at,
+            updatedAt: article.help_article_categories?.updated_at,
           }
         : null,
       Creator: article.users
@@ -161,14 +161,14 @@ export class ArticlesService {
     id: string,
     customerId: string,
   ): Promise<ListArticlesOutputDto> {
-    const article = await this.database.findFirst('articles', {
+    const article = await this.database.findFirst('help_articles', {
       where: {
         id,
         customer_id: customerId,
       },
       select: `
         *,
-        article_categories!category_id(*),
+        help_article_categories!category_id(*),
         users!created_by(id, first_name, last_name)
       `,
     });
@@ -185,7 +185,7 @@ export class ArticlesService {
     updateArticleDto: UpdateArticleDto,
     customerId: string,
   ) {
-    const article = await this.database.findFirst('articles', {
+    const article = await this.database.findFirst('help_articles', {
       where: {
         id,
         customer_id: customerId,
@@ -211,7 +211,7 @@ export class ArticlesService {
     if (updateArticleDto.videoUrl !== undefined)
       updateData.video_url = updateArticleDto.videoUrl;
 
-    const updatedArticle = await this.database.update('articles', {
+    const updatedArticle = await this.database.update('help_articles', {
       where: { id },
       data: updateData,
     });
@@ -235,7 +235,7 @@ export class ArticlesService {
   }
 
   async remove(id: string, customerId: string) {
-    const article = await this.database.findFirst('articles', {
+    const article = await this.database.findFirst('help_articles', {
       where: {
         id,
         customer_id: customerId,
@@ -246,7 +246,7 @@ export class ArticlesService {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
 
-    return this.database.delete('articles', {
+    return this.database.delete('help_articles', {
       where: { id },
     });
   }

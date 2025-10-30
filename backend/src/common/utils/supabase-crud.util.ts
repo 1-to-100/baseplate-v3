@@ -690,7 +690,7 @@ export class SupabaseCRUD {
         role: 'roles!role_id',
         manager: 'managers!manager_id',
         ownedCustomer: 'customers!owner_id',
-        articles: 'articles!created_by',
+        articles: 'help_articles!created_by',
         notifications: 'notifications!user_id',
         sentNotifications: 'notifications!sender_id',
         teamMembers: 'team_members!user_id',
@@ -702,7 +702,7 @@ export class SupabaseCRUD {
         owner: 'users!owner_id',
         customerSuccess: 'users!customer_success_id',
         users: 'users!customer_id',
-        articles: 'articles!customer_id',
+        articles: 'help_articles!customer_id',
         notifications: 'notifications!customer_id',
         notificationTemplates: 'notification_templates!customer_id',
         teams: 'teams!customer_id',
@@ -733,8 +733,8 @@ export class SupabaseCRUD {
         role: 'roles!role_id',
         permission: 'permissions!permission_id',
       },
-      articles: {
-        category: 'article_categories!category_id',
+      help_articles: {
+        category: 'help_article_categories!category_id',
         creator: 'users!created_by',
         customer: 'customers!customer_id',
       },

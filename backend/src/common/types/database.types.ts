@@ -291,8 +291,8 @@ export interface ExtensionData {
   updated_at?: string | null;
 }
 
-export interface ArticleCategory {
-  article_category_id: string;
+export interface HelpArticleCategory {
+  help_article_category_id: string;
   customer_id: string;
   name: string;
   slug: string;
@@ -307,8 +307,8 @@ export interface ArticleCategory {
   updated_at?: string | null;
 }
 
-export interface Article {
-  article_id: string;
+export interface HelpArticle {
+  help_article_id: string;
   customer_id: string;
   category_id: string;
   title: string;
@@ -403,7 +403,7 @@ export interface UserWithRelations extends User {
   customer?: Customer | null;
   role?: Role | null;
   owned_customer?: Customer | null;
-  articles?: Article[];
+  help_articles?: HelpArticle[];
   notifications?: Notification[];
   invitations_sent?: UserInvitation[];
 }
@@ -413,7 +413,7 @@ export interface CustomerWithRelations extends Customer {
   manager?: Manager | null;
   owner?: User | null;
   users?: User[];
-  articles?: Article[];
+  help_articles?: HelpArticle[];
   notifications?: Notification[];
   notification_templates?: NotificationTemplate[];
   taxonomies?: Taxonomy[];
@@ -448,14 +448,14 @@ export interface ManagerWithRelations extends Manager {
   customers?: Customer[];
 }
 
-export interface ArticleCategoryWithRelations extends ArticleCategory {
-  articles?: Article[];
-  children?: ArticleCategory[];
-  parent?: ArticleCategory | null;
+export interface HelpArticleCategoryWithRelations extends HelpArticleCategory {
+  help_articles?: HelpArticle[];
+  children?: HelpArticleCategory[];
+  parent?: HelpArticleCategory | null;
 }
 
-export interface ArticleWithRelations extends Article {
-  category?: ArticleCategory | null;
+export interface HelpArticleWithRelations extends HelpArticle {
+  category?: HelpArticleCategory | null;
   creator?: User | null;
   updater?: User | null;
   customer?: Customer | null;
@@ -586,22 +586,22 @@ export type UpdateExtensionDataInput = Partial<
   Omit<ExtensionData, 'extension_data_id' | 'created_at' | 'updated_at'>
 >;
 
-export type CreateArticleCategoryInput = Omit<
-  ArticleCategory,
-  'article_category_id' | 'created_at' | 'updated_at'
+export type CreateHelpArticleCategoryInput = Omit<
+  HelpArticleCategory,
+  'help_article_category_id' | 'created_at' | 'updated_at'
 >;
 
-export type UpdateArticleCategoryInput = Partial<
-  Omit<ArticleCategory, 'article_category_id' | 'created_at' | 'updated_at'>
+export type UpdateHelpArticleCategoryInput = Partial<
+  Omit<HelpArticleCategory, 'help_article_category_id' | 'created_at' | 'updated_at'>
 >;
 
-export type CreateArticleInput = Omit<
-  Article,
-  'article_id' | 'created_at' | 'updated_at'
+export type CreateHelpArticleInput = Omit<
+  HelpArticle,
+  'help_article_id' | 'created_at' | 'updated_at'
 >;
 
-export type UpdateArticleInput = Partial<
-  Omit<Article, 'article_id' | 'created_at' | 'updated_at'>
+export type UpdateHelpArticleInput = Partial<
+  Omit<HelpArticle, 'help_article_id' | 'created_at' | 'updated_at'>
 >;
 
 export type CreateNotificationTemplateInput = Omit<
@@ -693,7 +693,7 @@ export interface RoleFilters {
   search?: string;
 }
 
-export interface ArticleFilters {
+export interface HelpArticleFilters {
   customer_id?: string | string[];
   category_id?: string | string[];
   created_by?: string | string[];
@@ -782,8 +782,8 @@ export type TableNames =
   | 'taxonomies'
   | 'extension_data_types'
   | 'extension_data'
-  | 'article_categories'
-  | 'articles'
+  | 'help_article_categories'
+  | 'help_articles'
   | 'notification_templates'
   | 'notifications'
   | 'audit_logs'
@@ -815,8 +815,8 @@ export interface TableTypeMap {
   taxonomies: Taxonomy;
   extension_data_types: ExtensionDataType;
   extension_data: ExtensionData;
-  article_categories: ArticleCategory;
-  articles: Article;
+  help_article_categories: HelpArticleCategory;
+  help_articles: HelpArticle;
   notification_templates: NotificationTemplate;
   notifications: Notification;
   audit_logs: AuditLog;

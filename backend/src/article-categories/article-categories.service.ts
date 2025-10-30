@@ -22,7 +22,7 @@ export class ArticleCategoriesService {
       this.logger.log(
         `Create category with name ${createArticleCategoryDto.name}`,
       );
-      const category = await this.database.create('article_categories', {
+      const category = await this.database.create('help_article_categories', {
         data: {
           name: createArticleCategoryDto.name,
           slug: generateSlug(createArticleCategoryDto.name),
@@ -34,7 +34,7 @@ export class ArticleCategoriesService {
         },
       });
       return {
-        id: category.article_category_id,
+        id: category.help_article_category_id,
         name: category.name,
         subcategory: category.subcategory,
         about: category.about,
@@ -47,12 +47,12 @@ export class ArticleCategoriesService {
   }
 
   async findAll(customerId: string): Promise<OutputArticleCategoryDto[]> {
-    const categories = await this.database.findMany('article_categories', {
+    const categories = await this.database.findMany('help_article_categories', {
       where: { customer_id: customerId },
     });
     this.logger.log(`Find all categories for customer ${customerId}`);
     return categories.map((cat) => ({
-      id: cat.article_category_id,
+      id: cat.help_article_category_id,
       name: cat.name,
       subcategory: cat.subcategory ?? null,
       about: cat.about ?? null,
@@ -64,7 +64,7 @@ export class ArticleCategoriesService {
     // Using raw Supabase client for distinct query as it's not supported in our CRUD wrapper
     const { data, error } = await this.database
       .getClient()
-      .from('article_categories')
+      .from('help_article_categories')
       .select('subcategory')
       .eq('customer_id', customerId)
       .not('subcategory', 'is', null)
@@ -113,12 +113,12 @@ export class ArticleCategoriesService {
       if (updateArticleCategoryDto.icon !== undefined)
         updateData.icon = updateArticleCategoryDto.icon;
 
-      const category = await this.database.update('article_categories', {
-        where: { article_category_id: id, customer_id: customerId },
+      const category = await this.database.update('help_article_categories', {
+        where: { help_article_category_id: id, customer_id: customerId },
         data: updateData,
       });
       return {
-        id: category.article_category_id,
+        id: category.help_article_category_id,
         name: category.name,
         subcategory: category.subcategory,
         about: category.about,
@@ -133,9 +133,9 @@ export class ArticleCategoriesService {
   async remove(id: string, customerId: string) {
     try {
       this.logger.log(`Delete category ${id} for customer ${customerId}`);
-      await this.database.delete('article_categories', {
+      await this.database.delete('help_article_categories', {
         where: {
-          article_category_id: id,
+          help_article_category_id: id,
           customer_id: customerId,
         },
       });
@@ -152,8 +152,8 @@ export class ArticleCategoriesService {
   ): Promise<OutputArticleCategoryDto> {
     try {
       this.logger.log(`Find category ${id} for customer ${customerId}`);
-      const category = await this.database.findFirst('article_categories', {
-        where: { article_category_id: id, customer_id: customerId },
+      const category = await this.database.findFirst('help_article_categories', {
+        where: { help_article_category_id: id, customer_id: customerId },
       });
 
       if (!category) {
@@ -161,7 +161,7 @@ export class ArticleCategoriesService {
       }
 
       return {
-        id: category.article_category_id,
+        id: category.help_article_category_id,
         name: category.name,
         subcategory: category.subcategory,
         about: category.about,

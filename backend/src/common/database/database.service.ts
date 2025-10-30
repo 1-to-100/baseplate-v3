@@ -74,12 +74,12 @@ export class DatabaseService implements OnModuleInit {
     return this.client.from('api_logs');
   }
 
-  get article_categories() {
-    return this.client.from('article_categories');
+  get help_article_categories() {
+    return this.client.from('help_article_categories');
   }
 
-  get articles() {
-    return this.client.from('articles');
+  get help_articles() {
+    return this.client.from('help_articles');
   }
 
   get notifications() {
