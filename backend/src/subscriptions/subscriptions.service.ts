@@ -15,9 +15,17 @@ export class SubscriptionsService {
   // ===================================================================
 
   async getForTaxonomy() {
-    return this.database.findMany('subscription_types', {
-      select: 'subscription_type_id, name, description',
-    });
+    const subscriptionTypes = await this.database.findMany(
+      'subscription_types',
+      {
+        select: 'subscription_type_id, name',
+      },
+    );
+
+    return subscriptionTypes.map((type) => ({
+      id: type.subscription_type_id,
+      name: type.name,
+    }));
   }
 
   // ===================================================================

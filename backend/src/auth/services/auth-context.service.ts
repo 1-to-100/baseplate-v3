@@ -68,19 +68,16 @@ export class AuthContextService {
 
     // UPDATE USER APP_METADATA IN SUPABASE
     // This will cause Supabase to issue a new JWT with updated claims
-    const { data, error } = await this.supabase.admin.updateUserById(
-      user.uid,
-      {
-        app_metadata: {
-          customer_id: validatedCustomerId,
-          customer_ids: validatedCustomerIds,
-          impersonated_user_id: validatedImpersonatedUserId,
-          impersonation_allowed:
-            isSystemAdministrator(user) || isCustomerSuccess(user),
-          context_validated_at: Date.now(),
-        },
+    const { data, error } = await this.supabase.admin.updateUserById(user.uid, {
+      app_metadata: {
+        customer_id: validatedCustomerId,
+        customer_ids: validatedCustomerIds,
+        impersonated_user_id: validatedImpersonatedUserId,
+        impersonation_allowed:
+          isSystemAdministrator(user) || isCustomerSuccess(user),
+        context_validated_at: Date.now(),
       },
-    );
+    });
 
     if (error) {
       this.logger.error('Failed to update app_metadata:', error);
@@ -96,7 +93,7 @@ export class AuthContextService {
     this.logger.log(
       `Context updated for user ${user.id}: customer=${validatedCustomerId}, impersonation=${validatedImpersonatedUserId}`,
     );
-    
+
     return {
       updated: true,
       message: 'Context updated successfully. Please refresh your session.',
@@ -157,9 +154,7 @@ export class AuthContextService {
       );
 
       if (!assignment && user.customerId !== requestedCustomerId) {
-        throw new ForbiddenException(
-          'You do not have access to this customer',
-        );
+        throw new ForbiddenException('You do not have access to this customer');
       }
 
       return; // Access granted
@@ -222,4 +217,3 @@ export class AuthContextService {
     }
   }
 }
-

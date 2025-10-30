@@ -134,7 +134,7 @@ export class CustomersService {
         lifecycle_stage: { in: status },
       }),
       ...(search && {
-        or: [
+        OR: [
           { name: { ilike: `%${search}%` } },
           { email_domain: { ilike: `%${search}%` } },
         ],
@@ -386,7 +386,7 @@ export class CustomersService {
   ) {
     const where: any = {
       ...(ignoreCustomerId && { customer_id: { not: ignoreCustomerId } }), // Changed from id
-      or: [{ name }, { email }, { owner_id: ownerId }],
+      OR: [{ email_domain: name }, { owner_id: ownerId }],
     };
 
     const existingCustomer = await this.database.findFirst('customers', {
