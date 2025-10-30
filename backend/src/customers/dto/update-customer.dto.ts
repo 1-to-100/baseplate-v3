@@ -1,17 +1,20 @@
-import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
-import { UserStatusList, UserStatusType } from '@/common/constants/status';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 
 export class UpdateCustomerDto extends PartialType(CreateCustomerDto) {
-  @IsEnum(UserStatusList, {
-    message: `Status must be one of the following: ${Object.values(UserStatusList).join(', ')}`,
-  })
-  @IsOptional()
-  @ApiPropertyOptional({
-    description: 'Status (optional). Default: inactive',
-    enum: UserStatusList,
-    isArray: false,
-  })
-  status?: UserStatusType;
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Customer name', required: true })
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Subscription ID', required: true })
+  subscriptionId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Owner User ID', required: true })
+  ownerId: string;
 }

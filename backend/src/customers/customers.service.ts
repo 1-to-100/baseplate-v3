@@ -13,7 +13,6 @@ import { CreateCustomerDto } from '@/customers/dto/create-customer.dto';
 import { ListCustomersInputDto } from '@/customers/dto/list-customers-input.dto';
 import { ListCustomersOutputDto } from '@/customers/dto/list-customers-output.dto';
 import { OutputTaxonomyDto } from '@/taxonomies/dto/output-taxonomy.dto';
-import { UpdateCustomerDto } from '@/customers/dto/update-customer.dto';
 import { isPublicEmailDomain } from '@/common/helpers/public-email-domains';
 import { parseUserName } from '@/common/helpers/schema-mappers';
 import { CustomerSuccessOwnedCustomersService } from '@/customer-success-owned-customers/customer-success-owned-customers.service';
@@ -327,7 +326,7 @@ export class CustomersService {
     };
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto) {
+  async update(id: string, updateCustomerDto: CreateCustomerDto) {
     const customer = await this.database.findUnique('customers', {
       where: { customer_id: id }, // Changed from id
     });
