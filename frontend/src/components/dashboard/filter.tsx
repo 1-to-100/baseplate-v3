@@ -14,7 +14,7 @@ import { X as X } from "@phosphor-icons/react/dist/ssr/X";
 import { ApiUser, Customer } from "@/contexts/auth/types";
 import { useQuery } from "@tanstack/react-query";
 import { getCustomers, getSubscriptions } from "@/lib/api/customers";
-import { getRoles } from "@/lib/api/roles";
+import { getRolesList } from "@/lib/api/roles";
 import { getManagers } from "@/lib/api/managers";
 import { getStatuses } from "@/lib/api/users";
 
@@ -119,7 +119,7 @@ const Filter = ({
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
     queryKey: ["roles"],
-    queryFn: getRoles,
+    queryFn: () => getRolesList(),
     enabled: open,
   });
 

@@ -20,7 +20,7 @@ import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Box } from "@mui/joy";
 import { useColorScheme } from "@mui/joy/styles";
 import { createUser, updateUser, getUserById } from "./../../../lib/api/users";
-import { getRoles } from "./../../../lib/api/roles";
+import { getRolesList } from "./../../../lib/api/roles";
 import { getCustomers } from "./../../../lib/api/customers";
 import { getManagers } from "./../../../lib/api/managers";
 import { toast } from "@/components/core/toaster";
@@ -74,7 +74,7 @@ export default function AddEditUser({
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
     queryKey: ["roles"],
-    queryFn: getRoles,
+    queryFn: () => getRolesList(),
   });
 
   const { data: customers, isLoading: isCustomersLoading } = useQuery({

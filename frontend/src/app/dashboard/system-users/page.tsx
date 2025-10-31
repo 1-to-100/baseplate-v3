@@ -101,7 +101,7 @@ export default function Page(): React.JSX.Element {
 
   const transformUser = (apiUser: SystemUser): SystemUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.role_id === apiUser.roleId);
+    const role = roles?.find((r) => r.id === apiUser.roleId);
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
