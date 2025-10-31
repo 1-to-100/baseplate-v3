@@ -11,8 +11,6 @@ import Tab from "@mui/joy/Tab";
 import Card from "@mui/joy/Card";
 import Table from "@mui/joy/Table";
 import { Plus, Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { paths } from "@/paths";
 import {
   Avatar,
@@ -25,7 +23,6 @@ import {
 } from "@mui/joy";
 import { BreadcrumbsItem } from "@/components/core/breadcrumbs-item";
 import { BreadcrumbsSeparator } from "@/components/core/breadcrumbs-separator";
-import SearchInput from "@/components/dashboard/layout/search-input";
 import { GridFour as GridFour } from "@phosphor-icons/react/dist/ssr/GridFour";
 import { Table as TableIcon } from "@phosphor-icons/react/dist/ssr/Table";
 
@@ -35,7 +32,6 @@ import { Password } from "@phosphor-icons/react/dist/ssr/Password";
 import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
 import { X as X } from "@phosphor-icons/react/dist/ssr/X";
 import { useCallback, useState, useEffect } from "react";
@@ -43,7 +39,6 @@ import UserDetailsPopover from "@/components/dashboard/user-management/user-deta
 import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import Pagination from "@/components/dashboard/layout/pagination";
-import InviteUser from "@/components/dashboard/modals/InviteUserModal";
 import ResetPasswordUser from "@/components/dashboard/modals/ResetPasswordUserModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUsers, getUserById } from "../../../../lib/api/users";
@@ -51,10 +46,11 @@ import { getCustomerById } from "../../../../lib/api/customers";
 import Tooltip from "@mui/joy/Tooltip";
 import { ApiUser } from "@/contexts/auth/types";
 import { useGlobalSearch } from "@/hooks/use-global-search";
-import AddRoleModal from "@/components/dashboard/modals/AddRoleModal";
 import { useParams } from "next/navigation";
 import { DotsThreeVertical as DotsIcon } from "@phosphor-icons/react/dist/ssr/DotsThreeVertical";
 import AddEditCustomerModal from "@/components/dashboard/modals/AddEditCustomerModal";
+import { isCustomerSuccess } from "@/lib/user-utils";
+import { useUserInfo } from "@/hooks/use-user-info";
 
 const Customer: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -83,6 +79,8 @@ const Customer: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<keyof ApiUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const { userInfo } = useUserInfo();
 
   const params = useParams();
   const { debouncedSearchValue } = useGlobalSearch();
@@ -394,7 +392,7 @@ const Customer: React.FC = () => {
               position: "relative",
             }}
           >
-            <Button
+            {!isCustomerSuccess(userInfo) && <Button
               sx={{
                 width: { xs: "100%", sm: "auto" },
                 py: { xs: 1, sm: 0.75 },
@@ -405,7 +403,7 @@ const Customer: React.FC = () => {
               startDecorator={<PencilIcon fontSize="var(--Icon-fontSize)" />}
             >
               Edit
-            </Button>
+            </Button>}
             <Button
               variant="solid"
               color="primary"
@@ -882,16 +880,17 @@ const Customer: React.FC = () => {
                                 <EyeIcon fontSize="20px" style={iconStyle} />
                                 Open detail
                               </Box>
-                              <Box
+                             {!isCustomerSuccess(userInfo) && (<Box
                                 onMouseDown={(event) => {
                                   event.preventDefault();
-                                  handleEdit(user.id);
-                                }}
-                                sx={menuItemStyle}
-                              >
-                                <PencilIcon fontSize="20px" style={iconStyle} />
-                                Edit
-                              </Box>
+                                    handleEdit(user.id);
+                                  }}
+                                  sx={menuItemStyle}
+                                >
+                                  <PencilIcon fontSize="20px" style={iconStyle} />
+                                  Edit
+                                </Box>
+                              )}
                               <Box
                                 onMouseDown={(event) => {
                                   event.preventDefault();
