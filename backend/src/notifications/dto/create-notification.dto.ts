@@ -19,7 +19,7 @@ export class CreateNotificationDto {
   @ApiPropertyOptional({
     description: 'Customer ID associated with the notification',
   })
-  customerId?: string;
+  customerId?: string | null;
 
   @IsArray()
   @IsEnum(NotificationTypeList, { each: true })
@@ -46,7 +46,7 @@ export class CreateNotificationDto {
   @ApiPropertyOptional({
     description: 'Template ID associated with the notification',
   })
-  templateId?: number;
+  templateId?: string;
 
   @IsOptional()
   @ApiPropertyOptional({

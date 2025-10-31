@@ -1,13 +1,12 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendTemplatesInputDto {
   @IsOptional()
-  @IsInt()
   @ApiProperty({
     description: 'Customer ID associated with the notification template',
     required: false,
-    type: Number,
+    type: String,
   })
   customerId?: string;
 

@@ -7,7 +7,6 @@ import {
 import { DatabaseService } from '@/common/database/database.service';
 import { PaginatedOutputDto } from '@/common/dto/paginated-output.dto';
 import { TableType } from '@/common/types';
-import { WhereClause } from '@/common/utils/supabase-crud.util';
 
 import { CreateNotificationDto } from '@/notifications/dto/create-notification.dto';
 import { ListNotificationsInputDto } from '@/notifications/dto/list-notifications-input.dto';
@@ -34,7 +33,9 @@ export class NotificationsService {
     this.logger.log('Creating notification');
 
     // Sanitize message content to prevent XSS attacks
-    const sanitizedMessage = sanitizeNotificationHTML(createNotification.message);
+    const sanitizedMessage = sanitizeNotificationHTML(
+      createNotification.message,
+    );
 
     const { userId, customerId } = createNotification;
 
@@ -49,7 +50,7 @@ export class NotificationsService {
 
       const notifications = users.map((user) => ({
         user_id: user.user_id,
-        customer_id: createNotification.customerId,
+        customer_id: createNotification.customerId || null,
         sender_id: createNotification.senderId,
         type: createNotification.type,
         title: createNotification.title,
@@ -104,7 +105,7 @@ export class NotificationsService {
     } else if (userId) {
       const notificationData = {
         user_id: createNotification.userId,
-        customer_id: createNotification.customerId,
+        customer_id: createNotification.customerId || null,
         sender_id: createNotification.senderId,
         type: createNotification.type,
         title: createNotification.title,
@@ -122,10 +123,10 @@ export class NotificationsService {
 
       await Promise.all([
         this.sendUnreadCountNotification(userId),
-        this.sendInAppNotification({ 
-          ...createNotification, 
+        this.sendInAppNotification({
+          ...createNotification,
           userId,
-          message: sanitizedMessage 
+          message: sanitizedMessage,
         }),
       ]);
 
@@ -167,13 +168,17 @@ export class NotificationsService {
     const offset = (pageNum - 1) * perPageNum;
 
     // Build query using Supabase client for array filtering support
-    let query = this.database.getClient()
+    let query = this.database
+      .getClient()
       .from('notifications')
-      .select(`
+      .select(
+        `
         *,
         users!user_id(user_id, email, full_name),
         customers!customer_id(customer_id, name)
-      `, { count: 'exact' })
+      `,
+        { count: 'exact' },
+      )
       .eq('user_id', userId);
 
     // Filter by type using array contains operator
@@ -267,14 +272,18 @@ export class NotificationsService {
     const offset = (pageNum - 1) * perPageNum;
 
     // Build query using Supabase client for array filtering support
-    let query = this.database.getClient()
+    let query = this.database
+      .getClient()
       .from('notifications')
-      .select(`
+      .select(
+        `
         *,
         sender:users!sender_id(user_id, email, full_name),
         users!user_id(user_id, email, full_name),
         customers!customer_id(customer_id, name)
-      `, { count: 'exact' });
+      `,
+        { count: 'exact' },
+      );
 
     if (userId) {
       query = query.in('user_id', userId);
@@ -304,7 +313,7 @@ export class NotificationsService {
     // Handle search with OR conditions
     if (search) {
       query = query.or(
-        `title.ilike.%${search}%,message.ilike.%${search}%,generated_by.ilike.%${search}%`
+        `title.ilike.%${search}%,message.ilike.%${search}%,generated_by.ilike.%${search}%`,
       );
     }
 

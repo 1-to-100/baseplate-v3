@@ -102,7 +102,7 @@ export class TemplatesService {
           customers!customer_id(customer_id, name, owner_id)
         `,
           )
-          .eq('id', id)
+          .eq('template_id', id)
           .is('deleted_at', null)
           .single();
 
@@ -410,7 +410,7 @@ export class TemplatesService {
       } else if (sendTemplateInputDto.customerId) {
         // If no specific users provided but customerId is given, get all users for that customer
         const { data: users, error } = await this.database.users
-          .select('id')
+          .select('user_id')
           .eq('customer_id', sendTemplateInputDto.customerId)
           .is('deleted_at', null);
 
@@ -420,7 +420,7 @@ export class TemplatesService {
           );
         }
 
-        targetUserIds = users?.map((user) => user.id) || [];
+        targetUserIds = users?.map((user) => user.user_id) || [];
       }
 
       if (targetUserIds.length === 0) {
@@ -434,8 +434,7 @@ export class TemplatesService {
         notificationPromises.push(
           this.notificationService.create({
             userId,
-            customerId:
-              template.customerId || sendTemplateInputDto.customerId,
+            customerId: template.customerId || sendTemplateInputDto.customerId,
             type: template.type,
             title: template.title,
             message: template.message,
@@ -462,7 +461,7 @@ export class TemplatesService {
 
   private transformTemplate(template: any): NotificationTemplateDto {
     return {
-      id: template.id,
+      id: template.template_id,
       title: template.title,
       message: template.message,
       comment: template.comment,

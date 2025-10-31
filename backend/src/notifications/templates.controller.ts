@@ -200,7 +200,7 @@ export class TemplatesController {
       const foundUsers = await this.database.findMany('users', {
         where: {
           deleted_at: null,
-          id: { in: sendTemplateInputDto.userIds },
+          user_id: { in: sendTemplateInputDto.userIds },
         },
       });
 
