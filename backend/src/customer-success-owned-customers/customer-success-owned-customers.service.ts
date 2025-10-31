@@ -36,10 +36,10 @@ export class CustomerSuccessOwnedCustomersService {
       {
         where,
         include: {
-          user: {
+          users: {
             select: 'user_id, full_name, email, avatar_url',
           },
-          customer: {
+          customers: {
             select: 'customer_id, name, email_domain, lifecycle_stage',
           },
         },
@@ -58,10 +58,10 @@ export class CustomerSuccessOwnedCustomersService {
       {
         where: { customer_success_owned_customer_id: id },
         include: {
-          user: {
+          users: {
             select: 'user_id, full_name, email, avatar_url',
           },
-          customer: {
+          customers: {
             select: 'customer_id, name, email_domain, lifecycle_stage',
           },
         },

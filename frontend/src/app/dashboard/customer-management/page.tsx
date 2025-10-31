@@ -670,13 +670,25 @@ export default function Page(): React.JSX.Element {
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {typeof customer.customerSuccess?.name === "string"
-                              ? customer.customerSuccess?.name.slice(0, 75)
-                              : customer.customerSuccess?.name || "N/A"}
-                            <br />
-                            {typeof customer.customerSuccess?.email === "string"
-                              ? customer.customerSuccess?.email.slice(0, 75)
-                              : customer.customerSuccess?.email || "N/A"}
+                            {customer.customerSuccess && Array.isArray(customer.customerSuccess) && customer.customerSuccess.length > 0
+                              ? customer.customerSuccess.map((cs, index) => (
+                                  <Box key={cs.id} component="span">
+                                    {cs.name}
+                                    {cs.email && (
+                                      <>
+                                        <br />
+                                        {cs.email}
+                                      </>
+                                    )}
+                                    {index < customer.customerSuccess!.length - 1 && (
+                                      <>
+                                        <br />
+                                        <br />
+                                      </>
+                                    )}
+                                  </Box>
+                                ))
+                              : "N/A"}
                           </Box>
                         </td>
                         <td

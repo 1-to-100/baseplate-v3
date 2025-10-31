@@ -104,3 +104,35 @@ export async function deleteCustomer(id: string): Promise<Customer> {
     method: 'DELETE',
   });
 }
+
+export interface CustomerSuccessUser {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
+export async function getCustomerSuccessUsers(customerId: string): Promise<CustomerSuccessUser[]> {
+  return apiFetch<CustomerSuccessUser[]>(`${config.site.apiUrl}/customers/${customerId}/customer-success`, {
+    method: 'GET',
+  });
+}
+
+export async function addCustomerSuccessUser(customerId: string, userId: string): Promise<void> {
+  return apiFetch<void>(`${config.site.apiUrl}/customers/${customerId}/customer-success/${userId}`, {
+    method: 'POST',
+  });
+}
+
+export async function removeCustomerSuccessUser(customerId: string, userId: string): Promise<void> {
+  return apiFetch<void>(`${config.site.apiUrl}/customers/${customerId}/customer-success/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function updateCustomerSuccessUsers(customerId: string, userIds: string[]): Promise<CustomerSuccessUser[]> {
+  return apiFetch<CustomerSuccessUser[]>(`${config.site.apiUrl}/customers/${customerId}/customer-success`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userIds }),
+  });
+}

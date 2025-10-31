@@ -169,8 +169,8 @@ export class CustomersService {
         // Map CS assignments to the format needed for the API
         const customerSuccessUsers = csAssignments.map((assignment: any) => ({
           id: assignment.user_id,
-          name: assignment.user?.full_name,
-          email: assignment.user?.email,
+          name: assignment.users?.full_name,
+          email: assignment.users?.email,
         }));
 
         // Get subscription type if exists
@@ -280,8 +280,8 @@ export class CustomersService {
     // Map CS assignments to the format needed for the API
     const customerSuccessUsers = csAssignments.map((assignment: any) => ({
       id: assignment.user_id,
-      name: assignment.user?.full_name,
-      email: assignment.user?.email,
+      name: assignment.users?.full_name,
+      email: assignment.users?.email,
     }));
 
     // Find owner user
@@ -565,9 +565,9 @@ export class CustomersService {
 
     return csAssignments.map((assignment: any) => ({
       id: assignment.user_id,
-      name: assignment.user?.full_name,
-      email: assignment.user?.email,
-      avatarUrl: assignment.user?.avatar_url,
+      name: assignment.users?.full_name,
+      email: assignment.users?.email,
+      avatarUrl: assignment.users?.avatar_url,
     }));
   }
 

@@ -42,7 +42,7 @@ import Pagination from "@/components/dashboard/layout/pagination";
 import ResetPasswordUser from "@/components/dashboard/modals/ResetPasswordUserModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUsers, getUserById } from "../../../../lib/api/users";
-import { getCustomerById } from "../../../../lib/api/customers";
+import { getCustomerById, getCustomerSuccessUsers } from "../../../../lib/api/customers";
 import Tooltip from "@mui/joy/Tooltip";
 import { ApiUser } from "@/contexts/auth/types";
 import { useGlobalSearch } from "@/hooks/use-global-search";
@@ -101,6 +101,22 @@ const Customer: React.FC = () => {
         throw new Error("Customer ID is missing");
       }
       return getCustomerById(id);
+    },
+    enabled: !!customerId,
+  });
+
+  const {
+    data: customerSuccessUsers,
+    isLoading: isCSUsersLoading,
+    error: csUsersError,
+  } = useQuery({
+    queryKey: ["customerSuccessUsers", customerId],
+    queryFn: () => {
+      const id = Array.isArray(customerId) ? customerId[0] : customerId;
+      if (!id) {
+        throw new Error("Customer ID is missing");
+      }
+      return getCustomerSuccessUsers(id);
     },
     enabled: !!customerId,
   });
@@ -1223,18 +1239,65 @@ const Customer: React.FC = () => {
                 fontWeight="300"
                 sx={{ color: "#636B74", width: "100px" }}
               >
-                Customer success manager
+                Customer Success Managers
               </Typography>
-              <Typography
-                level="body-sm"
-                fontWeight="300"
-                sx={{ color: "var(--joy-palette-text-primary)" }}
-              >
-                {customerData?.customerSuccess?.name?.slice(0, 45)} <br />
-                {customerData?.customerSuccess?.email?.slice(0, 45)}
-              </Typography>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                {isCSUsersLoading ? (
+                  <CircularProgress size="sm" />
+                ) : customerSuccessUsers && customerSuccessUsers.length > 0 && customerSuccessUsers[0] ? (
+                  <>
+                    <Typography
+                      level="body-sm"
+                      fontWeight="300"
+                      sx={{ color: "var(--joy-palette-text-primary)" }}
+                    >
+                      {customerSuccessUsers[0].email}
+                    </Typography>
+                    {customerSuccessUsers.length > 1 && (
+                      <Tooltip
+                        title={
+                          <Stack spacing={0.5}>
+                            {customerSuccessUsers.slice(1).map((csUser) => (
+                              <Typography
+                                key={csUser.id}
+                                level="body-xs"
+                                sx={{ color: "inherit" }}
+                              >
+                                {csUser.email}
+                              </Typography>
+                            ))}
+                          </Stack>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Typography
+                          level="body-sm"
+                          fontWeight="300"
+                          sx={{
+                            color: "var(--joy-palette-text-secondary)",
+                            cursor: "pointer",
+                            "&:hover": {
+                              color: "var(--joy-palette-text-primary)",
+                            },
+                          }}
+                        >
+                          +{customerSuccessUsers.length - 1}
+                        </Typography>
+                      </Tooltip>
+                    )}
+                  </>
+                ) : (
+                  <Typography
+                    level="body-sm"
+                    fontWeight="300"
+                    sx={{ color: "var(--joy-palette-text-secondary)" }}
+                  >
+                    No customer success managers assigned
+                  </Typography>
+                )}
+              </Stack>
             </Stack>
-            
 
             <Stack
               direction="row"

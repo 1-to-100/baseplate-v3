@@ -101,7 +101,7 @@ export class CustomersController {
     @Param('id') id: string,
     @User() user: OutputUserDto,
   ) {
-    if (!isSystemAdministrator(user)) {
+    if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException('You have no access to customers.');
     }
     return this.customersService.getCustomerSuccessUsers(id);

@@ -71,11 +71,12 @@ export interface Customer {
     name: string;
     email: string;
   };
-  customerSuccess?: {
+  customerSuccess?: Array<{
     id: string;
     name: string;
-    email: string;
-  };
+    email: string | null;
+    avatarUrl?: string;
+  }>;
   owner: {
     id: string;
     firstName: string;
