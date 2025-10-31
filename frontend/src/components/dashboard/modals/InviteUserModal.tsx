@@ -128,7 +128,7 @@ export default function InviteUser({
   };
 
   const handleConfirm = async () => {
-    if (!selectedRole || !selectedCustomer) {
+    if (!selectedCustomer) {
       return;
     }
 
@@ -157,13 +157,13 @@ export default function InviteUser({
 
     setIsLoading(true);
     try {
-      const roleId = roles?.find((role) => role.display_name === selectedRole)?.role_id;
+      const roleId = selectedRole ? roles?.find((role) => role.name === selectedRole)?.id : undefined;
       const customerId = customers?.find(
         (customer) => customer.name === selectedCustomer
       )?.id;
 
-      if (!roleId || !customerId) {
-        throw new Error("Role or customer not found");
+      if (!customerId) {
+        throw new Error("Customer not found");
       }
 
       const emailsToInvite =
@@ -247,11 +247,7 @@ export default function InviteUser({
             onChange={(event, newValue) => setSelectedRole(newValue as string)}
             placeholder="Select role"
           >
-            {roles?.map((role) => (
-              <Option key={role.role_id} value={role.display_name}>
-                {role.display_name?.slice(0, 45) || ""}
-              </Option>
-            ))}
+            {/* Temporarily empty - no roles to display */}
           </Select>
 
           <Typography
@@ -415,7 +411,7 @@ export default function InviteUser({
               variant="solid"
               onClick={handleConfirm}
               // loading={isLoading}
-              disabled={!selectedRole || !selectedCustomer || (emails.length === 0 && !emailInput.trim())}
+              disabled={!selectedCustomer || (emails.length === 0 && !emailInput.trim())}
               sx={{
                 borderRadius: "20px",
                 bgcolor: "#4F46E5",

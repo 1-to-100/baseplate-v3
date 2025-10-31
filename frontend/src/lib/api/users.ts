@@ -56,13 +56,13 @@ interface GetUsersResponse {
 interface InviteUserPayload {
   email: string;
   customerId: string;
-  roleId: string;
+  roleId?: string;
 }
 
 interface InviteMultipleUsersPayload {
   emails: string[];
   customerId: string;
-  roleId: string;
+  roleId?: string;
 }
 
 export async function validateEmail(email: string): Promise<boolean> {

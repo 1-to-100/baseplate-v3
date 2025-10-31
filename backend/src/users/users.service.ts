@@ -266,6 +266,8 @@ export class UsersService {
     // Use helper to build database data
     const userData = buildUserDbData({
       email: inviteUserDto.email,
+      firstName: '', // Provide empty string to ensure full_name is set
+      lastName: '', // Will result in 'Unnamed User' via combineUserName
       customerId: inviteUserDto.customerId,
       roleId: inviteUserDto.roleId,
       managerId: inviteUserDto.managerId,

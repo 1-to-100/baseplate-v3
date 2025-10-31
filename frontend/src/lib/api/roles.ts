@@ -1,5 +1,5 @@
 import { apiFetch } from "./api-fetch";
-import { Role } from "@/contexts/auth/types";
+import { Role, TaxonomyItem } from "@/contexts/auth/types";
 import {config} from "@/config";
 
 export interface ModulePermission {
@@ -26,8 +26,8 @@ interface PermissionsByModule {
     search?: string;
   }
   
-  export async function getRoles(): Promise<Role[]> {
-    return apiFetch<Role[]>(`${config.site.apiUrl}/taxonomies/roles`, {
+  export async function getRoles(): Promise<TaxonomyItem[]> {
+    return apiFetch<TaxonomyItem[]>(`${config.site.apiUrl}/taxonomies/roles`, {
       method: "GET",
       headers: {
         accept: "*/*",
