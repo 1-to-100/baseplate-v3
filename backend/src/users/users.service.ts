@@ -348,7 +348,7 @@ export class UsersService {
 
     // Build where conditions using snake_case database column names
     const where: any = {
-      ...(roleId && { role_id: { in: roleId } }),
+      ...(roleId ? { role_id: { in: roleId } } : { role_id: null }),
       ...(customerId && { customer_id: { in: customerId } }),
       ...(hasCustomer === true
         ? { customer_id: { not: null } }
