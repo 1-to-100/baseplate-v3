@@ -125,7 +125,7 @@ export default function AddEditCustomer({
             ? customerData.email
             : customerData.email[0] || "",
         subscriptionId: customerData.subscriptionId ?? null,
-        customerSuccessId: customerData.customerSuccess?.id ?? null,
+        customerSuccessId: customerData.customerSuccess?.[0]?.id ?? null,
         status: customerData.status || "",
         ownerId: customerData.owner?.id ?? null,
       });
