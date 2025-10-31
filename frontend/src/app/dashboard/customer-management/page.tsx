@@ -657,39 +657,94 @@ export default function Page(): React.JSX.Element {
                           </Stack>
                         </td>
                         <td>
-                          <Box
-                            sx={{
-                              position: "relative",
-                              display: "inline-block",
-                              fontWeight: 400,
-                              color: "var(--joy-palette-text-secondary)",
-                              wordBreak: "break-all",
-                              fontSize: { xs: "12px", sm: "14px" },
-                              maxWidth: { xs: "80px", sm: "none" },
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {customer.customerSuccess && Array.isArray(customer.customerSuccess) && customer.customerSuccess.length > 0
-                              ? customer.customerSuccess.map((cs, index) => (
-                                  <Box key={cs.id} component="span">
-                                    {cs.name}
-                                    {cs.email && (
-                                      <>
-                                        <br />
-                                        {cs.email}
-                                      </>
-                                    )}
-                                    {index < customer.customerSuccess!.length - 1 && (
-                                      <>
-                                        <br />
-                                        <br />
-                                      </>
-                                    )}
-                                  </Box>
-                                ))
-                              : "N/A"}
-                          </Box>
+                          <Stack direction="row" spacing={0.5} alignItems="flex-start">
+                            {customer.customerSuccess && Array.isArray(customer.customerSuccess) && customer.customerSuccess.length > 0 && customer.customerSuccess[0] ? (
+                              <>
+                                <Box>
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 400,
+                                      color: "var(--joy-palette-text-secondary)",
+                                      wordBreak: "break-all",
+                                      fontSize: { xs: "12px", sm: "14px" },
+                                      maxWidth: { xs: "80px", sm: "none" },
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {customer.customerSuccess[0].name}
+                                  </Typography>
+                                  {customer.customerSuccess[0].email && (
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 400,
+                                        color: "var(--joy-palette-text-secondary)",
+                                        wordBreak: "break-all",
+                                        fontSize: { xs: "12px", sm: "14px" },
+                                        maxWidth: { xs: "80px", sm: "none" },
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {customer.customerSuccess[0].email}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                {customer.customerSuccess.length > 1 && (
+                                  <Tooltip
+                                    title={
+                                      <Stack spacing={1}>
+                                        {customer.customerSuccess.slice(1).map((cs) => (
+                                          <Box key={cs.id}>
+                                            <Typography
+                                              level="body-xs"
+                                              sx={{ color: "inherit" }}
+                                            >
+                                              {cs.name}
+                                            </Typography>
+                                            {cs.email && (
+                                              <Typography
+                                                level="body-xs"
+                                                sx={{ color: "inherit" }}
+                                              >
+                                                {cs.email}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        ))}
+                                      </Stack>
+                                    }
+                                    arrow
+                                    placement="top"
+                                  >
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 400,
+                                        color: "var(--joy-palette-text-secondary)",
+                                        fontSize: { xs: "12px", sm: "14px" },
+                                        cursor: "pointer",
+                                        "&:hover": {
+                                          color: "var(--joy-palette-text-primary)",
+                                        },
+                                      }}
+                                    >
+                                      +{customer.customerSuccess.length - 1}
+                                    </Typography>
+                                  </Tooltip>
+                                )}
+                              </>
+                            ) : (
+                              <Typography
+                                sx={{
+                                  fontWeight: 400,
+                                  color: "var(--joy-palette-text-secondary)",
+                                  fontSize: { xs: "12px", sm: "14px" },
+                                }}
+                              >
+                                N/A
+                              </Typography>
+                            )}
+                          </Stack>
                         </td>
                         <td
                           style={{
