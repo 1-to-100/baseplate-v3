@@ -186,7 +186,7 @@ export class CustomersService {
         const userCount = await this.database.count('users', {
           where: {
             AND: [
-              { customer_id: customer.customer_id },
+              { customer_id: customer.customer_id, deleted_at: null },
               {
                 OR: [
                   { role_id: null },
