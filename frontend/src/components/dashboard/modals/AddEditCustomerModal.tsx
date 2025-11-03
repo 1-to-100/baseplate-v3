@@ -106,10 +106,11 @@ export default function AddEditCustomer({
   });
 
   const { data: users, isLoading: isUsersLoading } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", customerId],
     queryFn: async () => {
       const params: GetUsersParams = {
         perPage: 1000,
+        customerId: customerId ? [customerId] : undefined,
       };
       return getUsers(params);
     },
