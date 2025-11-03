@@ -161,7 +161,7 @@ export interface User {
 }
 
 export interface UserOneTimeCode {
-  id: string;
+  user_one_time_code_id: string;
   user_id: string;
   code: string;
   is_used: boolean;
@@ -345,7 +345,7 @@ export interface NotificationTemplate {
 }
 
 export interface Notification {
-  id: string;
+  notification_id: string;
   customer_id?: string | null;
   user_id: string;
   template_id?: string | null;
@@ -384,7 +384,7 @@ export interface AuditLog {
 }
 
 export interface ApiLog {
-  id: string;
+  api_log_id: string;
   method?: string | null;
   url?: string | null;
   status_code?: number | null;

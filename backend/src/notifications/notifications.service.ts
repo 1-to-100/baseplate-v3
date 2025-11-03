@@ -141,7 +141,7 @@ export class NotificationsService {
   async findOne(userId: string, id: number) {
     this.logger.log(`Finding notification with id ${id}`);
     const notification = await this.database.findFirst('notifications', {
-      where: { id, user_id: userId },
+      where: { notification_id: id, user_id: userId },
       select: `
         *,
         users!user_id(user_id, email, full_name),

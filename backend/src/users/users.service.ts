@@ -952,7 +952,7 @@ export class UsersService {
     }
 
     await this.database.update('user_one_time_codes', {
-      where: { id: existing_code.id },
+      where: { user_one_time_code_id: existing_code.user_one_time_code_id },
       data: { is_used: true },
     });
 
