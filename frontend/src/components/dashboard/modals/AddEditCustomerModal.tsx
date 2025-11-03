@@ -402,12 +402,10 @@ export default function AddEditCustomer({
                 }
                 onChange={(event, newValue) => {
                   handleInputChange("ownerId", newValue ? newValue.id : null);
-                  if (!customerId) {
-                    if (newValue && newValue.email) {
-                      handleInputChange("email", newValue.email);
-                    } else if (!newValue) {
-                      handleInputChange("email", "");
-                    }
+                  if (newValue && newValue.email) {
+                    handleInputChange("email", newValue.email);
+                  } else if (!newValue) {
+                    handleInputChange("email", "");
                   }
                 }}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
