@@ -808,7 +808,37 @@ export default function Page(): React.JSX.Element {
                         </td>
                       </tr>
                     ) : (
-                      users.map((user, index) => (
+                      users.map((user, index) => {
+                        // Permission checks
+                        const canResendInvite = user.status != "active" &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdministrator(userInfo) ||
+                            userInfo?.permissions?.includes("inviteUser") ||
+                            userInfo?.permissions?.includes("createUser"));
+
+                        const canImpersonate = user.status == "active" &&
+                          !isImpersonating &&
+                          user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
+                          userInfo &&
+                          (isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo));
+
+                        const canDeactivate = user?.status === 'active' &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdministrator(userInfo) ||
+                            userInfo?.permissions?.includes("editUser"));
+
+                        const canActivate = user.status && user.status == 'suspended' &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdministrator(userInfo) ||
+                            userInfo?.permissions?.includes("editUser"));
+
+                        const canDelete = user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
+                          user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdministrator(userInfo) ||
+                            userInfo?.permissions?.includes("deleteUser"));
+
+                        return (
                         <tr
                           key={user.id}
                           onMouseEnter={() => setHoveredRow(index)}
@@ -1032,14 +1062,7 @@ export default function Page(): React.JSX.Element {
                                 <EyeIcon fontSize="20px" />
                                 Open detail
                               </Box>
-                              {user.status != "active" &&
-                                (isUserOwner(userInfo, user) ||
-                                  userInfo?.permissions?.includes(
-                                    "inviteUser"
-                                  ) ||
-                                  userInfo?.permissions?.includes(
-                                    "createUser"
-                                  )) && (
+                              {canResendInvite && (
                                   <Box
                                     onMouseDown={(event) => {
                                       event.preventDefault();
@@ -1064,10 +1087,7 @@ export default function Page(): React.JSX.Element {
                                     Resend invite
                                   </Box>
                                 )}
-                              {user.status == "active" && !isImpersonating && user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
-                                userInfo &&
-                                (isSystemAdministrator(userInfo) ||
-                                  isCustomerSuccess(userInfo)) && (
+                              {canImpersonate && (
                                   <Box
                                     onMouseDown={(event) => {
                                       event.preventDefault();
@@ -1095,7 +1115,7 @@ export default function Page(): React.JSX.Element {
                                 <PencilIcon fontSize="20px" />
                                 Edit
                               </Box>
-                              {user?.status === 'active' && (isUserOwner(userInfo, user) || userInfo?.permissions?.includes("editUser")) && (
+                              {canDeactivate && (
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
@@ -1110,7 +1130,7 @@ export default function Page(): React.JSX.Element {
                                   Deactivate
                                 </Box>
                               )}
-                              {user.status && user.status == 'suspended' && (isUserOwner(userInfo, user) || userInfo?.permissions?.includes("editUser")) && (
+                              {canActivate && (
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
@@ -1125,7 +1145,7 @@ export default function Page(): React.JSX.Element {
                                   Activate
                                 </Box>
                               )}
-                              {user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR && user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS && (isUserOwner(userInfo, user) || userInfo?.permissions?.includes("deleteUser")) && (
+                              {canDelete && (
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
@@ -1143,7 +1163,8 @@ export default function Page(): React.JSX.Element {
                             </Popper>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </Table>
