@@ -1021,7 +1021,7 @@ export default function Page(): React.JSX.Element {
                                 wordBreak: "break-all",
                               }}
                             >
-                              {user.role?.name.slice(0, 75)}
+                              {user.role?.display_name.slice(0, 75)}
                             </Box>
                           </td>
                           <td>

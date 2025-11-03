@@ -350,7 +350,14 @@ export class UsersService {
 
     // Build where conditions using snake_case database column names
     const where: any = {
-      ...(roleId ? { role_id: { in: roleId } } : { role_id: null }),
+      ...(roleId
+        ? { role_id: { in: roleId } }
+        : {
+            OR: [
+              { role_id: null },
+              { role_id: { not: { in: await this.getSystemRoleIds() } } },
+            ],
+          }),
       ...(customerId && { customer_id: { in: customerId } }),
       ...(hasCustomer === true
         ? { customer_id: { not: null } }
@@ -377,6 +384,7 @@ export class UsersService {
         orderBy: applyOrderByField,
         select: `
           *,
+          roles!role_id(*),
           customers!customer_id(customer_id, name, owner_id)
         `,
       },
