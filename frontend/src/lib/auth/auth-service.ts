@@ -64,6 +64,9 @@ class AuthService {
     }
 
     // Step 2: Refresh the Supabase session to get new JWT with updated app_metadata
+    // Add a small delay to ensure Supabase has processed the metadata update
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const { data: refreshData, error: refreshError } = 
       await this.supabase.auth.refreshSession();
 

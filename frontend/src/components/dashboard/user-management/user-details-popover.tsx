@@ -155,13 +155,7 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
       setImpersonatedUserId(userData.id);
       handleMenuClose();
       onClose();
-
-      const redirectTo = userData.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS ? "/dashboard/user-management" : undefined;
-      if (redirectTo) {
-        window.location.href = redirectTo;
-      } else {
-        window.location.reload();
-      }
+      // Note: Page reload is handled automatically by the impersonation context after JWT update
     }
   };
 

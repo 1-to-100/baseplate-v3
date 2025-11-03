@@ -320,12 +320,7 @@ export default function Page(): React.JSX.Element {
   const handleImpersonateUser = (userId: string, redirectTo?: string) => {
     setImpersonatedUserId(userId);
     handleMenuClose();
-
-    if (redirectTo) {
-      window.location.href = redirectTo;
-    } else {
-      window.location.reload();
-    }
+    // Note: Page reload is handled automatically by the impersonation context after JWT update
   };
 
   const handleCloseEditModal = () => {

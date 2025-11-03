@@ -27,7 +27,7 @@ export function ImpersonationBanner(): React.JSX.Element | null {
 
   const handleStopImpersonation = () => {
     setImpersonatedUserId(null);
-    window.location.reload();
+    // Note: Page reload is handled automatically by the impersonation context after JWT is cleared
   };
 
   return (

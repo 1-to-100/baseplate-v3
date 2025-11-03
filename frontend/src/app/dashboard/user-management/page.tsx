@@ -483,7 +483,7 @@ export default function Page(): React.JSX.Element {
   const handleImpersonateUser = (userId: string) => {
     setImpersonatedUserId(userId);
     handleMenuClose();
-    window.location.reload();
+    // Note: Page reload is handled automatically by the impersonation context after JWT update
   };
 
   if (error) {

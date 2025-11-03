@@ -211,8 +211,8 @@ export class AuthContextService {
       }
     }
 
-    // Check if target user is active
-    if (targetUser.status !== 'ACTIVE') {
+    // Check if target user is active (case-insensitive)
+    if (targetUser.status?.toUpperCase() !== 'ACTIVE') {
       throw new ForbiddenException('Cannot impersonate inactive user');
     }
   }
