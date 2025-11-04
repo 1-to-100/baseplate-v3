@@ -20,7 +20,7 @@ export class CustomerSuccessOwnedCustomersService {
   async findAll(filters?: {
     userId?: string;
     customerId?: string;
-  }): Promise<CustomerSuccessOwnedCustomer[]> {
+  }): Promise<any[]> {
     const where: any = {};
 
     if (filters?.userId) {
@@ -35,36 +35,45 @@ export class CustomerSuccessOwnedCustomersService {
       'customer_success_owned_customers',
       {
         where,
-        include: {
-          users: {
-            select: 'user_id, full_name, email, avatar_url',
-          },
-          customers: {
-            select: 'customer_id, name, email_domain, lifecycle_stage',
-          },
-        },
       },
     );
 
-    return assignments;
+    // Fetch related user data for each assignment
+    const assignmentsWithData = await Promise.all(
+      assignments.map(async (assignment: any) => {
+        const user = assignment.user_id
+          ? await this.database.findUnique('users', {
+              where: { user_id: assignment.user_id },
+              select: 'user_id, full_name, email, avatar_url',
+            })
+          : null;
+
+        const customer = assignment.customer_id
+          ? await this.database.findUnique('customers', {
+              where: { customer_id: assignment.customer_id },
+              select: 'customer_id, name, email_domain, lifecycle_stage',
+            })
+          : null;
+
+        return {
+          ...assignment,
+          users: user,
+          customers: customer,
+        };
+      }),
+    );
+
+    return assignmentsWithData;
   }
 
   /**
    * Get a specific assignment by ID
    */
-  async findOne(id: string): Promise<CustomerSuccessOwnedCustomer> {
+  async findOne(id: string): Promise<any> {
     const assignment = await this.database.findUnique(
       'customer_success_owned_customers',
       {
         where: { customer_success_owned_customer_id: id },
-        include: {
-          users: {
-            select: 'user_id, full_name, email, avatar_url',
-          },
-          customers: {
-            select: 'customer_id, name, email_domain, lifecycle_stage',
-          },
-        },
       },
     );
 
@@ -74,24 +83,39 @@ export class CustomerSuccessOwnedCustomersService {
       );
     }
 
-    return assignment;
+    // Fetch related user data
+    const user = assignment.user_id
+      ? await this.database.findUnique('users', {
+          where: { user_id: assignment.user_id },
+          select: 'user_id, full_name, email, avatar_url',
+        })
+      : null;
+
+    const customer = assignment.customer_id
+      ? await this.database.findUnique('customers', {
+          where: { customer_id: assignment.customer_id },
+          select: 'customer_id, name, email_domain, lifecycle_stage',
+        })
+      : null;
+
+    return {
+      ...assignment,
+      users: user,
+      customers: customer,
+    };
   }
 
   /**
    * Get all customers assigned to a specific CS rep
    */
-  async getCustomersByCSRep(
-    userId: string,
-  ): Promise<CustomerSuccessOwnedCustomer[]> {
+  async getCustomersByCSRep(userId: string): Promise<any[]> {
     return this.findAll({ userId });
   }
 
   /**
    * Get all CS reps assigned to a specific customer
    */
-  async getCSRepsByCustomer(
-    customerId: string,
-  ): Promise<CustomerSuccessOwnedCustomer[]> {
+  async getCSRepsByCustomer(customerId: string): Promise<any[]> {
     return this.findAll({ customerId });
   }
 

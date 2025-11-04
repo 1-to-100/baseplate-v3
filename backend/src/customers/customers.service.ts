@@ -377,7 +377,7 @@ export class CustomersService {
           where: { user_id: userId, deleted_at: null },
         });
 
-        if (user && user.customer_id === null) {
+        if (user && !user.customer_id) {
           await this.database.update('users', {
             where: { user_id: userId, deleted_at: null },
             data: { customer_id: id },
