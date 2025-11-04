@@ -6,8 +6,12 @@ export interface Manager {
   name: string;
 }
 
-export async function getManagers(): Promise<Manager[]> {
-  return apiFetch<Manager[]>(`${config.site.apiUrl}/taxonomies/managers`, {
+export async function getManagers(customerId?: string): Promise<Manager[]> {
+  const url = customerId 
+    ? `${config.site.apiUrl}/taxonomies/managers?customerId=${customerId}`
+    : `${config.site.apiUrl}/taxonomies/managers`;
+  
+  return apiFetch<Manager[]>(url, {
     method: "GET",
     headers: {
       accept: "*/*",

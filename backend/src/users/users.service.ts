@@ -184,25 +184,17 @@ export class UsersService {
       throw new ConflictException('Invalid system role');
     }
 
-    if (isCustomerSuccess && !createSystemUserDto.customerId) {
-      throw new ConflictException(
-        'Customer ID is required for Customer Success role',
-      );
-    } else if (isCustomerSuccess && createSystemUserDto.customerId) {
+    if (isCustomerSuccess && createSystemUserDto.customerId) {
       const customer = await this.database.findUnique('customers', {
         where: { customer_id: createSystemUserDto.customerId },
       });
+
       if (!customer) {
         throw new ConflictException('Customer not found');
       }
     }
 
-    // Get role ID by name
-    const roleName = isSuperadmin
-      ? SYSTEM_ROLES.SYSTEM_ADMINISTRATOR
-      : SYSTEM_ROLES.CUSTOMER_SUCCESS;
-
-    const roleId = await this.getRoleIdByName(roleName);
+    const roleId = await this.getRoleIdByName(systemRole);
 
     let user: any = null;
 

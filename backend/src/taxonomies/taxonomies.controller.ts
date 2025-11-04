@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOkResponse } from '@nestjs/swagger';
 import { UserStatusList } from '@/common/constants/status';
 import { User } from '@/common/decorators/user.decorator';
@@ -55,8 +55,8 @@ export class TaxonomiesController {
     description: 'Managers',
     type: [OutputTaxonomyDto],
   })
-  async findAllManagers() {
-    return this.managersService.getForTaxonomy();
+  async findAllManagers(@Query('customerId') customerId?: string) {
+    return this.managersService.getForTaxonomy(customerId);
   }
 
   @Get('/subscriptions')

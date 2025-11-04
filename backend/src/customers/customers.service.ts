@@ -335,8 +335,56 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    const { name, subscriptionId, ownerId } = updateCustomerDto;
+    const { name, subscriptionId, ownerId, customerSuccessIds } =
+      updateCustomerDto;
     await this.validateSubscription(subscriptionId);
+
+    // Handle customer success assignments if provided
+    if (customerSuccessIds !== undefined) {
+      // Validate all CS users
+      for (const userId of customerSuccessIds) {
+        await this.validateCSUser(userId);
+      }
+
+      // Get existing assignments
+      const existingAssignments =
+        await this.csOwnedCustomersService.getCSRepsByCustomer(id);
+      const existingUserIds = existingAssignments.map((a: any) => a.user_id);
+
+      // Determine which assignments to add and remove
+      const toAdd = customerSuccessIds.filter(
+        (userId) => !existingUserIds.includes(userId),
+      );
+      const toRemove = existingUserIds.filter(
+        (userId: string) => !customerSuccessIds.includes(userId),
+      );
+
+      // Remove old assignments (do NOT modify user's customer_id)
+      for (const userId of toRemove) {
+        await this.csOwnedCustomersService.removeByUserAndCustomer(userId, id);
+      }
+
+      // Add new assignments
+      for (const userId of toAdd) {
+        // Create assignment
+        await this.csOwnedCustomersService.create({
+          user_id: userId,
+          customer_id: id,
+        });
+
+        // If user has no customer_id, set it
+        const user = await this.database.findUnique('users', {
+          where: { user_id: userId, deleted_at: null },
+        });
+
+        if (user && user.customer_id === null) {
+          await this.database.update('users', {
+            where: { user_id: userId, deleted_at: null },
+            data: { customer_id: id },
+          });
+        }
+      }
+    }
 
     let ownerEmail: string | undefined;
     if (ownerId && ownerId !== customer.owner_id) {

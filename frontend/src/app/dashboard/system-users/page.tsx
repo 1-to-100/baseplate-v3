@@ -89,11 +89,6 @@ export default function Page(): React.JSX.Element {
 
   const rowsPerPage = 10;
 
-  const { data: roles, isLoading: isRolesLoading } = useQuery({
-    queryKey: ["roles"],
-    queryFn: getRoles,
-  });
-
   const { data: customers, isLoading: isCustomersLoading } = useQuery({
     queryKey: ["customers"],
     queryFn: getCustomers,
@@ -101,7 +96,6 @@ export default function Page(): React.JSX.Element {
 
   const transformUser = (apiUser: SystemUser): SystemUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);
-    const role = roles?.find((r) => r.id === apiUser.roleId);
     return {
       managerId: apiUser.managerId,
       id: apiUser.id,
@@ -112,7 +106,7 @@ export default function Page(): React.JSX.Element {
       customerId: apiUser.customerId,
       customer: customer || apiUser.customer,
       roleId: apiUser.roleId,
-      role: role || apiUser.role,
+      role: apiUser.role,
       persona: apiUser.persona || "",
       status: apiUser.status,
       avatar: apiUser.avatar || undefined,
@@ -149,7 +143,7 @@ export default function Page(): React.JSX.Element {
         data: response.data.map(transformUser),
       };
     },
-    enabled: !isRolesLoading && !isCustomersLoading,
+    enabled: !isCustomersLoading,
   });
 
   const users = data?.data || [];
@@ -523,7 +517,7 @@ export default function Page(): React.JSX.Element {
           </Stack>
         </Stack>
 
-        {isLoading || isRolesLoading || isCustomersLoading ? (
+        {isLoading || isCustomersLoading ? (
           <Box
             sx={{
               display: "flex",

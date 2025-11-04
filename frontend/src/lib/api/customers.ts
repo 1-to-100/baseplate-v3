@@ -30,7 +30,7 @@ interface CreateCustomerPayload {
   name: string;
   email: string;
   subscriptionId?: string;
-  managerId?: string;
+  customerSuccessIds?: string[];
   ownerId?: string;
 }
 

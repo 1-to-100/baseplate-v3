@@ -84,7 +84,7 @@ export default function AddEditUser({
 
   const { data: managers, isLoading: isManagersLoading } = useQuery({
     queryKey: ["managers"],
-    queryFn: getManagers,
+    queryFn: () => getManagers(),
   });
 
   const { data: userData, isLoading: isUserLoading } = useQuery({

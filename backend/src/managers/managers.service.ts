@@ -38,7 +38,7 @@ export class ManagersService {
     return this.database.findMany('managers');
   }
 
-  async getForTaxonomy(): Promise<OutputManagerDto[]> {
+  async getForTaxonomy(customerId?: string): Promise<OutputManagerDto[]> {
     // Get customer success role ID by name
     const { data: role } = await this.database
       .getClient()
@@ -48,17 +48,26 @@ export class ManagersService {
       .single();
 
     if (!role) {
-      throw new Error('Customer Success role not found');
+      throw new NotFoundException('Customer Success role not found');
     }
 
+    const where: any = {
+      deleted_at: null,
+      role_id: role.role_id,
+      OR: [
+        { customer_id: null },
+        ...(customerId ? [{ customer_id: customerId }] : []),
+      ],
+    };
+
     const usersManagers = await this.database.findMany('users', {
-      where: { role_id: role.role_id },
+      where,
       select: 'user_id, email, full_name',
     });
 
     return usersManagers.map((manager) => ({
       id: manager.user_id,
-      name: manager.full_name,
+      name: manager.full_name || manager.email,
       email: manager.email,
     })) as OutputManagerDto[];
   }

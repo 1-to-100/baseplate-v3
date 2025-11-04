@@ -14,6 +14,8 @@ import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import FormHelperText from "@mui/joy/FormHelperText";
 import Autocomplete from "@mui/joy/Autocomplete";
+import Box from "@mui/joy/Box";
+import Chip from "@mui/joy/Chip";
 import { useColorScheme } from "@mui/joy/styles";
 import {
   createCustomer,
@@ -63,14 +65,14 @@ export default function AddEditCustomer({
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
-    customerSuccessId: string | null;
+    customerSuccessId: string[];
     subscriptionId: string | null;
     status: string;
     ownerId: string | null;
   }>({
     name: "",
     email: "",
-    customerSuccessId: null,
+    customerSuccessId: [],
     subscriptionId: null,
     status: "",
     ownerId: null,
@@ -82,8 +84,8 @@ export default function AddEditCustomer({
   const queryClient = useQueryClient();
 
   const { data: managers, isLoading: isManagersLoading } = useQuery({
-    queryKey: ["managers"],
-    queryFn: getManagers,
+    queryKey: ["managers", customerId],
+    queryFn: () => getManagers(customerId || undefined),
     enabled: open,
   });
 
@@ -126,7 +128,7 @@ export default function AddEditCustomer({
             ? customerData.email
             : customerData.email[0] || "",
         subscriptionId: customerData.subscriptionId ?? null,
-        customerSuccessId: customerData.customerSuccess?.[0]?.id ?? null,
+        customerSuccessId: customerData.customerSuccess?.map(cs => cs.id) || [],
         status: customerData.status || "",
         ownerId: customerData.owner?.id ?? null,
       });
@@ -136,7 +138,7 @@ export default function AddEditCustomer({
       setFormData({
         name: "",
         email: "",
-        customerSuccessId: null,
+        customerSuccessId: [],
         subscriptionId: null,
         status: "",
         ownerId: null,
@@ -236,7 +238,7 @@ export default function AddEditCustomer({
     return newErrors;
   };
 
-  const handleInputChange = (field: string, value: string | number | null) => {
+  const handleInputChange = (field: string, value: string | number | null | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({
       ...prev,
@@ -261,7 +263,7 @@ export default function AddEditCustomer({
         email: formData.email,
         name: formData.name,
         status: formData.status,
-        customerSuccessId: formData.customerSuccessId ?? undefined,
+        customerSuccessIds: formData.customerSuccessId.length > 0 ? formData.customerSuccessId : undefined,
         ownerId: formData.ownerId ?? undefined,
         subscriptionId: formData.subscriptionId ?? undefined,
       };
@@ -537,15 +539,25 @@ export default function AddEditCustomer({
                   fontWeight: 500,
                 }}
               >
-                Customer Success Manager
+                Customer Success Managers
               </Typography>
-              <Autocomplete
-                placeholder="Select user"
-                options={managers?.sort((a, b) => a.name.localeCompare(b.name)) || []}
-                value={managers?.find((manager) => manager.id === formData.customerSuccessId) || null}
-                onChange={(event, newValue) => handleInputChange("customerSuccessId", newValue ? newValue.id : null)}
-                getOptionLabel={(option) => option.name}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
+              <Select
+                multiple
+                placeholder="Select users"
+                value={formData.customerSuccessId}
+                onChange={(event, newValue) => handleInputChange("customerSuccessId", newValue as string[])}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    {selected.map((item) => {
+                      const manager = managers?.find(m => m.id === item.value);
+                      return (
+                        <Chip key={item.value} size="sm">
+                          {manager?.name || item.value}
+                        </Chip>
+                      );
+                    })}
+                  </Box>
+                )}
                 sx={{
                   borderRadius: "6px",
                   fontSize: "14px",
@@ -558,7 +570,13 @@ export default function AddEditCustomer({
                     placement: 'top',
                   },
                 }}
-              />
+              >
+                {managers?.sort((a, b) => a.name.localeCompare(b.name)).map((manager) => (
+                  <Option key={manager.id} value={manager.id}>
+                    {manager.name}
+                  </Option>
+                ))}
+              </Select>
               {errors?.customerSuccessId && (
                 <FormHelperText
                   sx={{

@@ -113,7 +113,7 @@ const Filter = ({
 
   const { data: managersSelect, isLoading: isManagersLoading } = useQuery({
     queryKey: ["managers"],
-    queryFn: getManagers,
+    queryFn: () => getManagers(),
     enabled: open,
   });
 

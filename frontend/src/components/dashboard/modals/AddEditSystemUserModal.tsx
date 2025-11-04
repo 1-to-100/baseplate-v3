@@ -31,6 +31,7 @@ import { getCustomers } from "./../../../lib/api/customers";
 import { toast } from "@/components/core/toaster";
 import {SystemRolesHumanNames} from "@/lib/constants/system-roles";
 import {SystemRole} from "@/contexts/auth/types";
+import { SYSTEM_ROLES } from "@/lib/user-utils";
 
 interface HttpError {
   response?: {
@@ -224,9 +225,6 @@ export default function AddEditSystemUser({
       newErrors.systemRole = "System role is required";
     }
 
-    if (formData.systemRole !== "system_admin" && !formData.customer) {
-      newErrors.customer = "Customer is required";
-    }
 
     return newErrors;
   };
@@ -627,7 +625,7 @@ export default function AddEditSystemUser({
                   fontWeight: 500,
                 }}
               >
-                Customer
+                Customer {formData.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS && "(Optional)"}
               </Typography>
               <Autocomplete
                 placeholder="Select customer"
