@@ -12,6 +12,8 @@ import { NotificationTypes } from '@/notifications/constants/notification-types'
 import { ListArticlesInputDto } from '@/articles/dto/list-articles-input.dto';
 import { ListArticlesOutputDto } from '@/articles/dto/list-articles-output.dto';
 import { UpdateArticleDto } from '@/articles/dto/update-article.dto';
+import { generateSlug } from '@/common/helpers/string-helpers';
+import { parseUserName } from '@/common/helpers/schema-mappers';
 
 @Injectable()
 export class ArticlesService {
@@ -28,6 +30,7 @@ export class ArticlesService {
       // Convert camelCase to snake_case for database fields
       const articleData = {
         title: createArticleDto.title,
+        slug: generateSlug(createArticleDto.title),
         category_id: createArticleDto.articleCategoryId,
         subcategory: createArticleDto.subcategory,
         customer_id: createArticleDto.customerId,
@@ -35,7 +38,7 @@ export class ArticlesService {
         status: createArticleDto.status as any, // Cast to any to avoid type issues
         content: createArticleDto.content,
         video_url: createArticleDto.videoUrl,
-        views_number: 0, // Default value
+        // view_count has a default value of 0 in the database, no need to set it explicitly
       };
 
       const article = await this.database.create('help_articles', {
@@ -97,9 +100,9 @@ export class ArticlesService {
         select: `
           *,
           help_article_categories!category_id(*),
-          users!created_by(id, first_name, last_name)
+          users!created_by(user_id, full_name)
         `,
-        orderBy: [{ field: 'id', direction: 'desc' }],
+        orderBy: [{ field: 'help_article_id', direction: 'desc' }],
       },
     );
 
@@ -124,8 +127,12 @@ export class ArticlesService {
   }
 
   transform(article: any) {
+    const { firstName, lastName } = article.users?.full_name
+      ? parseUserName(article.users.full_name)
+      : { firstName: '', lastName: '' };
+
     return {
-      id: article.id,
+      id: article.help_article_id,
       title: article.title,
       articleCategoryId: article.category_id,
       subcategory: article.subcategory,
@@ -135,10 +142,10 @@ export class ArticlesService {
       videoUrl: article.video_url,
       createdAt: article.created_at,
       updatedAt: article.updated_at,
-      viewsNumber: article.views_number,
+      viewsNumber: article.view_count,
       Category: article.help_article_categories
         ? {
-            id: article.help_article_categories?.id,
+            id: article.help_article_categories?.help_article_category_id,
             name: article.help_article_categories?.name,
             subcategory: article.help_article_categories?.subcategory,
             icon: article.help_article_categories?.icon,
@@ -149,9 +156,9 @@ export class ArticlesService {
         : null,
       Creator: article.users
         ? {
-            id: article.users?.id,
-            firstName: article.users?.first_name,
-            lastName: article.users?.last_name,
+            id: article.users?.user_id,
+            firstName,
+            lastName,
           }
         : null,
     };
@@ -163,13 +170,13 @@ export class ArticlesService {
   ): Promise<ListArticlesOutputDto> {
     const article = await this.database.findFirst('help_articles', {
       where: {
-        id,
+        help_article_id: id,
         customer_id: customerId,
       },
       select: `
         *,
         help_article_categories!category_id(*),
-        users!created_by(id, first_name, last_name)
+        users!created_by(user_id, full_name)
       `,
     });
 
@@ -187,7 +194,7 @@ export class ArticlesService {
   ) {
     const article = await this.database.findFirst('help_articles', {
       where: {
-        id,
+        help_article_id: id,
         customer_id: customerId,
       },
     });
@@ -212,7 +219,7 @@ export class ArticlesService {
       updateData.video_url = updateArticleDto.videoUrl;
 
     const updatedArticle = await this.database.update('help_articles', {
-      where: { id },
+      where: { help_article_id: id },
       data: updateData,
     });
 
@@ -237,7 +244,7 @@ export class ArticlesService {
   async remove(id: string, customerId: string) {
     const article = await this.database.findFirst('help_articles', {
       where: {
-        id,
+        help_article_id: id,
         customer_id: customerId,
       },
     });
@@ -247,7 +254,7 @@ export class ArticlesService {
     }
 
     return this.database.delete('help_articles', {
-      where: { id },
+      where: { help_article_id: id },
     });
   }
 }

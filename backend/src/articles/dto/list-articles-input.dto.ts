@@ -12,10 +12,10 @@ export class ListArticlesInputDto extends PaginatedInputDto {
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
-  @Type(() => Number)
+  @Type(() => String)
   @ApiPropertyOptional({ description: 'Category IDs', isArray: true })
   @Transform(eachNumberTransformer)
-  categoryId?: number[];
+  categoryId?: string[];
 
   @IsArray()
   @IsEnum(ArticleStatusList, { each: true })
