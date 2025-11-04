@@ -256,10 +256,6 @@ export class CustomersService {
   async findOne(id: string) {
     const customer = await this.database.findUnique('customers', {
       where: { customer_id: id }, // Changed from id
-      include: {
-        users: true,
-        subscription_types: true, // Changed from subscriptions
-      },
     });
 
     if (!customer) {
