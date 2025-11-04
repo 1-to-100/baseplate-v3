@@ -11,7 +11,6 @@ import {
   Query,
   BadRequestException,
 } from '@nestjs/common';
-import { Permissions } from '@/common/decorators/permissions.decorator';
 import { User } from '@/common/decorators/user.decorator';
 import { CustomerId } from '@/common/decorators/customer-id.decorator';
 import { ApiOkResponse, ApiConflictResponse, ApiParam } from '@nestjs/swagger';
@@ -38,7 +37,6 @@ export class ArticlesController {
   @ApiConflictResponse({
     description: 'Error creating article with provided data',
   })
-  @Permissions('Documents:createArticles')
   async create(
     @User() user: OutputUserDto,
     @Body() createArticleDto: CreateArticleDto,
@@ -65,7 +63,6 @@ export class ArticlesController {
 
   @Get()
   @ApiOkResponse({ description: 'The articles list' })
-  @Permissions('Documents:viewArticles')
   async findAll(
     @User() user: OutputUserDto,
     @CustomerId() customerId: string,
@@ -87,7 +84,6 @@ export class ArticlesController {
   @Get(':id')
   @ApiOkResponse({ description: 'The article record' })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:viewArticles')
   async findOne(
     @Param('id') id: string,
     @User() user: OutputUserDto,
@@ -112,7 +108,6 @@ export class ArticlesController {
     description: 'Error updating article with provided data',
   })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:editArticles')
   async update(
     @Param('id') id: string,
     @Body() updateArticleDto: UpdateArticleDto,
@@ -135,7 +130,6 @@ export class ArticlesController {
   @Delete(':id')
   @ApiOkResponse({ description: 'The article has been deleted' })
   @ApiParam({ name: 'id', type: Number })
-  @Permissions('Documents:deleteArticles')
   async remove(
     @Param('id') id: string,
     @User() user: OutputUserDto,

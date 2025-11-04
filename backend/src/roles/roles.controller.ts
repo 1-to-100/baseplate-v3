@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Permissions } from '@/common/decorators/permissions.decorator';
 import { RequiredSuperUser } from '@/common/decorators/superuser.decorator';
 import { SystemRoles } from '@/common/decorators/system-roles.decorator';
 import { SYSTEM_ROLES } from '@/common/constants/system-roles';
@@ -39,21 +38,18 @@ export class RolesController {
 
   @Post()
   @RequiredSuperUser('superAdmin')
-  @Permissions('RoleManagement:createRoles')
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
 
   @Get()
   @RequiredSuperUser('superAdmin')
-  @Permissions('RoleManagement:viewRoles')
   findAll(@Query() listRolesDto: ListRolesDto): Promise<RoleWithDetails[]> {
     return this.rolesService.findAll(listRolesDto.search);
   }
 
   @Get(':id')
   @RequiredSuperUser('superAdmin')
-  @Permissions('RoleManagement:viewRoles')
   async findOne(@Param('id') id: string): Promise<OutputRoleDto> {
     const role = await this.rolesService.findOne(id);
     const outputRole: OutputRoleDto = {
@@ -137,7 +133,6 @@ export class RolesController {
 
   @Patch(':id')
   @RequiredSuperUser('superAdmin')
-  @Permissions('RoleManagement:editRoles')
   update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     return this.rolesService.update(id, updateRoleDto);
   }
@@ -150,7 +145,6 @@ export class RolesController {
 
   @Post(':id/permissions')
   @RequiredSuperUser('superAdmin')
-  @Permissions('RoleManagement:editRoles')
   updatePermissionsByName(
     @Param('id') id: string,
     @Body() dto: UpdateRolePermissionsByNameDto,
