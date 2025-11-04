@@ -469,7 +469,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                   }}
                 >
                   <span>
-                    {category._count?.Articles ?? 0} articles
+                    {category.articlesCount ?? 0} articles
                   </span>
                   <span>
                     Last updated: {formatDate(category.updatedAt)}

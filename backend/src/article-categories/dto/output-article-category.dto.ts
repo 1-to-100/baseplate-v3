@@ -23,4 +23,7 @@ export class OutputArticleCategoryDto {
   @IsString()
   @IsOptional()
   icon: string | null = null;
+
+  @ApiPropertyOptional({ description: 'Number of articles in this category' })
+  articlesCount?: number;
 }

@@ -47,16 +47,27 @@ export class ArticleCategoriesService {
   }
 
   async findAll(customerId: string): Promise<OutputArticleCategoryDto[]> {
-    const categories = await this.database.findMany('help_article_categories', {
-      where: { customer_id: customerId },
-    });
+    // Using raw Supabase client to get categories with article counts
+    const { data, error } = await this.database
+      .getClient()
+      .from('help_article_categories')
+      .select('*, help_articles(count)')
+      .eq('customer_id', customerId);
+
+    if (error) {
+      this.logger.error(`Error fetching categories: ${error.message}`);
+      throw new ConflictException('Failed to fetch categories');
+    }
+
     this.logger.log(`Find all categories for customer ${customerId}`);
-    return categories.map((cat) => ({
+
+    return (data || []).map((cat: any) => ({
       id: cat.help_article_category_id,
       name: cat.name,
       subcategory: cat.subcategory ?? null,
       about: cat.about ?? null,
       icon: cat.icon ?? null,
+      articlesCount: cat.help_articles?.[0]?.count ?? 0,
     }));
   }
 
@@ -152,9 +163,12 @@ export class ArticleCategoriesService {
   ): Promise<OutputArticleCategoryDto> {
     try {
       this.logger.log(`Find category ${id} for customer ${customerId}`);
-      const category = await this.database.findFirst('help_article_categories', {
-        where: { help_article_category_id: id, customer_id: customerId },
-      });
+      const category = await this.database.findFirst(
+        'help_article_categories',
+        {
+          where: { help_article_category_id: id, customer_id: customerId },
+        },
+      );
 
       if (!category) {
         throw new NotFoundException('Category not found');

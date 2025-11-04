@@ -90,9 +90,7 @@ export interface Category {
   subcategory: string;
   about: string;
   icon: string;
-  _count: {
-    Articles: number;
-  };
+  articlesCount: number;
   updatedAt: string;
   Creator: {
     id: string;
