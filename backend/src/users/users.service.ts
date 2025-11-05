@@ -570,22 +570,21 @@ export class UsersService {
         throw new ConflictException(
           'You cannot change status of system administrator or customer success user',
         );
-      } else if (!existingUser.auth_user_id) {
-        throw new ConflictException(
-          'You cannot change status of user without Supabase UID',
-        );
       }
 
-      if (
-        updateUserDto.status === UserStatus.SUSPENDED &&
-        existingUser.status == UserStatus.ACTIVE
-      ) {
-        await this.supabaseService.banUser(existingUser.auth_user_id);
-      } else if (
-        updateUserDto.status === UserStatus.ACTIVE &&
-        existingUser.status == UserStatus.SUSPENDED
-      ) {
-        await this.supabaseService.unbanUser(existingUser.auth_user_id);
+      // Only interact with Supabase if the user has an auth_user_id
+      if (existingUser.auth_user_id) {
+        if (
+          updateUserDto.status === UserStatus.SUSPENDED &&
+          existingUser.status == UserStatus.ACTIVE
+        ) {
+          await this.supabaseService.banUser(existingUser.auth_user_id);
+        } else if (
+          updateUserDto.status === UserStatus.ACTIVE &&
+          existingUser.status == UserStatus.SUSPENDED
+        ) {
+          await this.supabaseService.unbanUser(existingUser.auth_user_id);
+        }
       }
     }
 
