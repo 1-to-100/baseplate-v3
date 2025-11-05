@@ -38,6 +38,14 @@ export class CustomersService {
     return roles?.map((role) => role.role_id) || [];
   }
 
+  private async getCustomerAdminRoleId(): Promise<string | null> {
+    const role = await this.database.findFirst('roles', {
+      where: { name: SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR },
+    });
+
+    return role?.role_id || null;
+  }
+
   async create(createCustomerDto: CreateCustomerDto) {
     const { name, subscriptionId, ownerId, customerSuccessIds } =
       createCustomerDto;
@@ -68,9 +76,20 @@ export class CustomersService {
       },
     });
 
+    // Set owner's customer_id and role
+    const updateData: any = { customer_id: customer.customer_id };
+
+    // If owner doesn't have a role, assign customer admin role
+    if (owner && !owner.role_id) {
+      const customerAdminRoleId = await this.getCustomerAdminRoleId();
+      if (customerAdminRoleId) {
+        updateData.role_id = customerAdminRoleId;
+      }
+    }
+
     await this.database.update('users', {
       where: { user_id: ownerId, deleted_at: null },
-      data: { customer_id: customer.customer_id },
+      data: updateData,
     });
 
     // Create customer success assignments if provided
@@ -395,9 +414,28 @@ export class CustomersService {
         customer.customer_id,
       );
       ownerEmail = owner!.email;
+
+      // Update old owner: set role_id to null
+      if (customer.owner_id) {
+        await this.database.update('users', {
+          where: { user_id: customer.owner_id, deleted_at: null },
+          data: { role_id: null },
+        });
+      }
+
+      // Update new owner: set customer_id and role (if no role)
+      const newOwnerUpdateData: any = { customer_id: id };
+
+      if (!owner!.role_id) {
+        const customerAdminRoleId = await this.getCustomerAdminRoleId();
+        if (customerAdminRoleId) {
+          newOwnerUpdateData.role_id = customerAdminRoleId;
+        }
+      }
+
       await this.database.update('users', {
         where: { user_id: ownerId, deleted_at: null },
-        data: { customer_id: id },
+        data: newOwnerUpdateData,
       });
     }
 
