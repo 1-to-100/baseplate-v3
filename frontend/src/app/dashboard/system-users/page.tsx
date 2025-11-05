@@ -21,6 +21,7 @@ import {Eye as EyeIcon} from "@phosphor-icons/react/dist/ssr/Eye";
 import {PencilSimple as PencilIcon} from "@phosphor-icons/react/dist/ssr/PencilSimple";
 import {ToggleLeft} from "@phosphor-icons/react/dist/ssr/ToggleLeft";
 import {ArrowsDownUp as SortIcon} from "@phosphor-icons/react/dist/ssr/ArrowsDownUp";
+import {PaperPlaneRight} from "@phosphor-icons/react";
 import {config} from "@/config";
 import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
 import UserDetailsPopover from "@/components/dashboard/user-management/user-details-popover";
@@ -38,9 +39,10 @@ import {useImpersonation} from "@/contexts/impersonation-context";
 import {ArrowRight as ArrowRightIcon} from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import {getRoles} from "@/lib/api/roles";
 import {getCustomers} from "@/lib/api/customers";
-import {getSystemUserById, getSystemUsers} from "@/lib/api/system-users";
+import {getSystemUserById, getSystemUsers, resendInviteSystemUser} from "@/lib/api/system-users";
 import {useRouter} from "next/navigation";
 import { isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES } from "@/lib/user-utils";
+import { toast } from "@/components/core/toaster";
 
 interface HttpError extends Error {
   response?: {
@@ -862,15 +864,17 @@ export default function Page(): React.JSX.Element {
                                 <EyeIcon fontSize="20px" />
                                 Open detail
                               </Box>
-                              {/* {user.status != 'active' &&
+                              {user.status != 'active' &&
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
-                                    resendInviteUser(user.email).then(() => {
-                                      toast.success("Invite sent successfully");
-                                    }).catch((error) => {
-                                      toast.error(`Failed to send invite: ${error.message}`);
-                                    });
+                                    resendInviteSystemUser(user.email)
+                                      .then(() => {
+                                        toast.success("Invite sent successfully");
+                                      })
+                                      .catch((error) => {
+                                        toast.error(`Failed to send invite: ${error.message}`);
+                                      });
                                   }}
                                   sx={{
                                     ...menuItemStyle,
@@ -880,7 +884,7 @@ export default function Page(): React.JSX.Element {
                                   <PaperPlaneRight size={20} />
                                   Resend invite
                                 </Box>
-                              } */}
+                              }
                               <Box
                                 onMouseDown={(event) => {
                                   event.preventDefault();

@@ -99,3 +99,10 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
     method: 'GET',
   });
 }
+
+export async function resendInviteSystemUser(email: string): Promise<void> {
+  return apiFetch<void>(`${config.site.apiUrl}/system-users/resend-invite`, {
+    method: 'POST',
+    body: JSON.stringify({email}),
+  });
+}

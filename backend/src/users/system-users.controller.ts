@@ -9,6 +9,7 @@ import {
   Post,
   Body,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiPaginatedResponse } from '@/common/decorators/api-paginated-response.decorator';
 import { ApiConflictResponse, ApiOkResponse } from '@nestjs/swagger';
@@ -23,7 +24,9 @@ import { OutputUserDto } from '@/users/dto/output-user.dto';
 import { ListUsersInputDto } from '@/users/dto/list-users-input.dto';
 import { CreateSystemUserDto } from '@/users/dto/create-system-user.dto';
 import { UpdateSystemUserDto } from '@/users/dto/update-system-user.dto';
+import { ResendInviteUserDto } from '@/users/dto/resend-invite-user.dto';
 import { isSystemAdministrator } from '@/common/utils/user-role-helpers';
+import { UserStatus } from '@/common/constants/status';
 
 @Controller('system-users')
 @UseGuards(DynamicAuthGuard, ImpersonationGuard, PermissionGuard)
@@ -102,5 +105,35 @@ export class SystemUsersController {
     }
 
     return this.usersService.updateSystemUser(id, updateSystemUserDto, user);
+  }
+
+  @Post('/resend-invite')
+  @ApiOkResponse({
+    description: 'The user record',
+    type: OutputUserDto,
+  })
+  async resendInvite(
+    @User() user: OutputUserDto,
+    @Body() resendInviteUserDto: ResendInviteUserDto,
+  ) {
+    if (!isSystemAdministrator(user)) {
+      throw new ForbiddenException('You have no access to resend invites.');
+    }
+
+    const foundUser = await this.usersService.getUserByEmail(
+      resendInviteUserDto.email,
+    );
+
+    if (!foundUser) {
+      throw new BadRequestException(
+        `User with email ${resendInviteUserDto.email} not found.`,
+      );
+    } else if (foundUser && foundUser.status === UserStatus.ACTIVE) {
+      throw new BadRequestException(
+        `User with email ${resendInviteUserDto.email} is already active.`,
+      );
+    }
+
+    return this.usersService.resendInviteEmail(resendInviteUserDto.email);
   }
 }
