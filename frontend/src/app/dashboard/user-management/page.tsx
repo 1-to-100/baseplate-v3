@@ -810,7 +810,7 @@ export default function Page(): React.JSX.Element {
                     ) : (
                       users.map((user, index) => {
                         // Permission checks
-                        const canResendInvite = user.status != "active" &&
+                        const canResendInvite = user.status != "active" && user.status != "suspended" &&
                           (isUserOwner(userInfo, user) ||
                             isCustomerAdministrator(userInfo) ||
                             userInfo?.permissions?.includes("inviteUser") ||
