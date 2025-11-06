@@ -355,7 +355,7 @@ export default function Page(): React.JSX.Element {
               width: { xs: "100%", sm: "auto" },
             }}
           >
-            {selectedRows.length > 0 ? (
+            {selectedRows.length > 0 && !isCustomerSuccess(userInfo) ? (
               <Box
                 sx={{
                   borderRight: { sm: "1px solid #E5E7EB" },
