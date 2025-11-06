@@ -1169,15 +1169,12 @@ export default function Page(): React.JSX.Element {
                   </tbody>
                 </Table>
               </Box>
-
-              {users.length > 9 && (
                 <Pagination
                   totalPages={totalPages}
                   currentPage={currentPage}
                   onPageChange={handlePageChange}
                   disabled={!hasResults}
                 />
-              )}
             </Box>
           </>
         )}
