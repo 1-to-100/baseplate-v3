@@ -308,7 +308,7 @@ export class SupabaseCRUD {
     }
 
     const { count } = await executeArrayQuery(
-      query.select('id', { count: 'exact' }),
+      query.select('*', { count: 'exact' }),
       `Update many ${tableName}`,
     );
 
@@ -351,7 +351,7 @@ export class SupabaseCRUD {
     }
 
     const { count } = await executeArrayQuery(
-      query.select('id', { count: 'exact' }),
+      query.select('*', { count: 'exact' }),
       `Delete many ${tableName}`,
     );
 
@@ -694,7 +694,8 @@ export class SupabaseCRUD {
         notifications: 'notifications!user_id',
         sentNotifications: 'notifications!sender_id',
         teamMembers: 'team_members!user_id',
-        customerSuccessOwnedCustomers: 'customer_success_owned_customers!user_id',
+        customerSuccessOwnedCustomers:
+          'customer_success_owned_customers!user_id',
       },
       customers: {
         subscription: 'subscriptions!subscription_id',
@@ -706,7 +707,8 @@ export class SupabaseCRUD {
         notifications: 'notifications!customer_id',
         notificationTemplates: 'notification_templates!customer_id',
         teams: 'teams!customer_id',
-        customerSuccessOwnedCustomers: 'customer_success_owned_customers!customer_id',
+        customerSuccessOwnedCustomers:
+          'customer_success_owned_customers!customer_id',
         subscriptions: 'subscriptions!customer_id',
       },
       teams: {
