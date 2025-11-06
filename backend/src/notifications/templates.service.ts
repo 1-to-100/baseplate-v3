@@ -187,15 +187,15 @@ export class TemplatesService {
   }
 
   async updateTemplate(
-    id: number,
+    id: string,
     updateTemplateDto: UpdateTemplateDto,
     customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
       // First check if the template exists and belongs to the customer (if specified)
       let existingQuery = this.database.notification_templates
-        .select('id, customer_id')
-        .eq('id', id)
+        .select('template_id, customer_id')
+        .eq('template_id', id)
         .is('deleted_at', null);
 
       if (customerId) {
@@ -236,7 +236,7 @@ export class TemplatesService {
       const { data: template, error } =
         await this.database.notification_templates
           .update(updateData)
-          .eq('id', id)
+          .eq('template_id', id)
           .is('deleted_at', null)
           .select(
             `
@@ -273,7 +273,7 @@ export class TemplatesService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateTemplateDto: UpdateTemplateDto,
     customerId: string,
   ): Promise<NotificationTemplateDto> {
@@ -281,7 +281,7 @@ export class TemplatesService {
   }
 
   async remove(
-    id: number,
+    id: string,
     customerId?: string,
   ): Promise<NotificationTemplateDto> {
     try {
@@ -293,7 +293,7 @@ export class TemplatesService {
           customers!customer_id(customer_id, name, owner_id)
         `,
         )
-        .eq('id', id)
+        .eq('template_id', id)
         .is('deleted_at', null);
 
       if (customerId) {
@@ -316,7 +316,7 @@ export class TemplatesService {
             deleted_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq('id', id)
+          .eq('template_id', id)
           .is('deleted_at', null)
           .select(
             `

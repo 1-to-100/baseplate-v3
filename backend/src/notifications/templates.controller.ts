@@ -5,7 +5,6 @@ import {
   ForbiddenException,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -66,7 +65,7 @@ export class TemplatesController {
     description: 'Get a notification template by ID.',
     type: NotificationTemplateDto,
   })
-  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'id', type: String })
   async findOne(
     @Param('id') id: string,
     @User() user: OutputUserDto,
@@ -108,9 +107,9 @@ export class TemplatesController {
   @ApiOkResponse({
     description: 'Update a notification template.',
   })
-  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'id', type: String })
   async updateTemplate(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @User() user: OutputUserDto,
     @Body() updateTemplateDto: UpdateTemplateDto,
   ): Promise<NotificationTemplateDto> {
@@ -128,11 +127,8 @@ export class TemplatesController {
     description: 'Delete a notification template.',
     type: NotificationTemplateDto,
   })
-  @ApiParam({ name: 'id', type: Number })
-  async deleteTemplate(
-    @Param('id', ParseIntPipe) id: number,
-    @User() user: OutputUserDto,
-  ) {
+  @ApiParam({ name: 'id', type: String })
+  async deleteTemplate(@Param('id') id: string, @User() user: OutputUserDto) {
     if (!isSystemAdministrator(user) && !isCustomerSuccess(user)) {
       throw new ForbiddenException(
         'User is not authorized to delete notification templates',
@@ -147,7 +143,7 @@ export class TemplatesController {
     description: 'Send a notification using a template.',
     type: NotificationTemplateDto,
   })
-  @ApiParam({ name: 'templateId', type: Number })
+  @ApiParam({ name: 'templateId', type: String })
   async sendNotificationUsingTemplate(
     @Param('templateId') templateId: string,
     @User() user: OutputUserDto,

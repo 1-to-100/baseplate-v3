@@ -189,7 +189,7 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                 </Typography>
               </Stack>
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ alignItems: { sm: "flex-start" } }}>
                 <Typography
                   level="body-sm"
                   fontWeight="300"
@@ -197,6 +197,7 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                     color: "#636B74",
                     width: { xs: "100%", sm: "100px" },
                     fontSize: { xs: "12px", sm: "14px" },
+                    flexShrink: 0,
                   }}
                 >
                   Message
@@ -206,18 +207,21 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                   component="div"
                   sx={{
                     fontSize: { xs: "12px", sm: "14px" },
+                    flex: 1,
                     '& img': {
                       width: '400px',
                       height: 'auto'
                     },
-                    p: {
+                    '& p': {
+                      margin: '0 !important',
+                      padding: 0,
                       ...(colorScheme === "dark" && {
                         "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']": {
                           color: "var(--joy-palette-text-secondary) !important"
-                        }
-                      }),
+                        },
+                      })                      
                     },
-                    span: {
+                    '& span': {
                       ...(colorScheme === "dark" && {
                         "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']": {
                           color: "var(--joy-palette-text-secondary) !important"
@@ -242,16 +246,45 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                 >
                   Type
                 </Typography>
-                <Typography
-                  level="body-sm"
-                  fontWeight="300"
-                  sx={{
-                    color: "var(--joy-palette-text-primary)",
-                    fontSize: { xs: "12px", sm: "14px" },
-                  }}
-                >
-                  {notificationData?.type}
-                </Typography>
+                <Box>
+                  <Box
+                    sx={{
+                      fontSize: { xs: "12px", sm: "14px" },
+                      fontWeight: 500,
+                      backgroundColor: notificationData?.type?.includes("in_app")
+                        ? colorScheme === "dark"
+                          ? "rgba(79, 70, 229, 0.2)"
+                          : "#E0E7FF"
+                        : notificationData?.type?.includes("email")
+                        ? colorScheme === "dark"
+                          ? "rgba(22, 163, 74, 0.2)"
+                          : "#DCFCE7"
+                        : colorScheme === "dark"
+                        ? "rgba(107, 114, 128, 0.2)"
+                        : "#F3F4F6",
+                      color: notificationData?.type?.includes("in_app")
+                        ? colorScheme === "dark"
+                          ? "#818CF8"
+                          : "#4F46E5"
+                        : notificationData?.type?.includes("email")
+                        ? colorScheme === "dark"
+                          ? "#4ADE80"
+                          : "#16A34A"
+                        : colorScheme === "dark"
+                        ? "#9CA3AF"
+                        : "#6B7280",
+                      borderRadius: "12px",
+                      padding: "2px 8px",
+                      display: "inline-block",
+                    }}
+                  >
+                    {notificationData?.type?.includes("in_app")
+                      ? "In-App"
+                      : notificationData?.type?.includes("email")
+                      ? "Email"
+                      : notificationData?.type?.[0] || ""}
+                  </Box>
+                </Box>
               </Stack>
 
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -266,16 +299,59 @@ const NotificationDetailsPopover = forwardRef<HTMLDivElement, NotificationDetail
                 >
                   Channel
                 </Typography>
-                <Typography
-                  level="body-sm"
-                  fontWeight="300"
-                  sx={{
-                    color: "var(--joy-palette-text-primary)",
-                    fontSize: { xs: "12px", sm: "14px" },
-                  }}
-                >
-                  {notificationData?.channel}
-                </Typography>
+                <Box>
+                  <Box
+                    sx={{
+                      fontSize: { xs: "12px", sm: "14px" },
+                      fontWeight: 500,
+                      backgroundColor:
+                        notificationData?.channel === "info"
+                          ? colorScheme === "dark"
+                            ? "rgba(107, 114, 128, 0.2)"
+                            : "#EEEFF0"
+                          : notificationData?.channel === "article"
+                          ? colorScheme === "dark"
+                            ? "rgba(107, 114, 128, 0.2)"
+                            : "#EEEFF0"
+                          : notificationData?.channel === "warning"
+                          ? colorScheme === "dark"
+                            ? "rgba(183, 76, 6, 0.2)"
+                            : "#FFF8C5"
+                          : notificationData?.channel === "alert"
+                          ? colorScheme === "dark"
+                            ? "rgba(211, 35, 47, 0.2)"
+                            : "#FFE9E8"
+                          : colorScheme === "dark"
+                          ? "rgba(79, 70, 229, 0.2)"
+                          : "#4F46E5",
+                      color:
+                        notificationData?.channel === "info"
+                          ? colorScheme === "dark"
+                            ? "#D1D5DB"
+                            : "#6B7280"
+                          : notificationData?.channel === "article"
+                          ? colorScheme === "dark"
+                            ? "#D1D5DB"
+                            : "#6B7280"
+                          : notificationData?.channel === "warning"
+                          ? colorScheme === "dark"
+                            ? "#FDBA74"
+                            : "#b74c06"
+                          : notificationData?.channel === "alert"
+                          ? colorScheme === "dark"
+                            ? "#FCA5A5"
+                            : "#D3232F"
+                          : colorScheme === "dark"
+                          ? "#818CF8"
+                          : "#4F46E5",
+                      borderRadius: "12px",
+                      padding: "2px 8px",
+                      display: "inline-block",
+                    }}
+                  >
+                    {notificationData?.channel}
+                  </Box>
+                </Box>
               </Stack>
 
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>

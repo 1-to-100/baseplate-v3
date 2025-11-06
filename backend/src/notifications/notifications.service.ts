@@ -278,7 +278,6 @@ export class NotificationsService {
       .select(
         `
         *,
-        sender:users!sender_id(user_id, email, full_name),
         users!user_id(user_id, email, full_name),
         customers!customer_id(customer_id, name)
       `,
