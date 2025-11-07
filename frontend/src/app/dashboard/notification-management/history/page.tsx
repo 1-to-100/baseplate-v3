@@ -388,12 +388,10 @@ export default function Page(): React.JSX.Element {
                                 maxWidth: "100%"
                               }}
                             >
-                              {notification.User?.firstName?.slice(0, 40) || notification.User?.lastName?.slice(0, 40) ? (
-                                <>
-                                  {notification.User?.firstName?.slice(0, 40) || ''} {notification.User?.lastName?.slice(0, 40) || ''}
-                                </>
+                              {notification.users?.full_name?.slice(0, 40)  ? (
+                                notification.users?.full_name?.slice(0, 40) || ''
                               ) : (
-                                notification.User?.email?.slice(0, 40) || ''
+                                notification.users?.email?.slice(0, 40) || ''
                               )}
                             </Typography>
                           </td>
@@ -407,7 +405,7 @@ export default function Page(): React.JSX.Element {
                                 maxWidth: "100%"
                               }}
                             >
-                              {notification.Customer?.name?.slice(0, 40) || ''}
+                              {notification.customers?.name?.slice(0, 40) || ''}
                             </Typography>
                           </td>
                           <td

@@ -60,14 +60,13 @@ export interface GetNotificationHistoryResponse {
     type: string;
     channel: string;
     createdAt: string;
-    User: {
-      id: number;
-      firstName: string;
-      lastName: string;
+    users: {
+      user_id: number;
+      full_name: string;
       email: string;
     };
-    Customer: { 
-      id: number;
+    customers: { 
+      customer_id: number;
       name: string;
     };
   }[];
