@@ -2,7 +2,6 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -13,11 +12,8 @@ import {
   NotificationTypes,
 } from '@/notifications/constants/notification-types';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
-import { Transform, Type } from 'class-transformer';
-import {
-  eachNumberTransformer,
-  eachStringTransformer,
-} from '@/common/helpers/class-transform-helpers';
+import { Transform } from 'class-transformer';
+import { eachStringTransformer } from '@/common/helpers/class-transform-helpers';
 
 export class ListAdminNotificationsInputDto extends PaginatedInputDto {
   @IsOptional()
@@ -50,7 +46,6 @@ export class ListAdminNotificationsInputDto extends PaginatedInputDto {
   channel?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
   @IsOptional()
   @ApiPropertyOptional({
     description:
@@ -58,32 +53,28 @@ export class ListAdminNotificationsInputDto extends PaginatedInputDto {
     required: false,
     isArray: true,
   })
-  @Transform(eachNumberTransformer)
+  @Transform(eachStringTransformer)
   customerId?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({
     description:
       'User IDs associated with the notification. Only for System Admin or Customer Success',
     required: false,
     isArray: true,
   })
-  @Transform(eachNumberTransformer)
-  userId?: number[];
+  @Transform(eachStringTransformer)
+  userId?: string[];
 
   @IsArray()
-  @IsInt({ each: true })
   @IsOptional()
-  @Type(() => Number)
   @ApiPropertyOptional({
     description:
       'User IDs who generated the notification. Only for System Admin or Customer Success',
     required: false,
     isArray: true,
   })
-  @Transform(eachNumberTransformer)
-  senderId?: number[];
+  @Transform(eachStringTransformer)
+  senderId?: string[];
 }

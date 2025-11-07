@@ -285,17 +285,22 @@ export class NotificationsService {
       );
 
     if (userId) {
-      query = query.in('user_id', userId);
+      const userIdArray = Array.isArray(userId) ? userId : [userId];
+      query = query.in('user_id', userIdArray);
     }
     if (customerId) {
-      query = query.in('customer_id', customerId);
+      const customerIdArray = Array.isArray(customerId)
+        ? customerId
+        : [customerId];
+      query = query.in('customer_id', customerIdArray);
     }
     if (senderId) {
-      query = query.in('sender_id', senderId);
+      const senderIdArray = Array.isArray(senderId) ? senderId : [senderId];
+      query = query.in('sender_id', senderIdArray);
     }
     // Filter by type using array contains operator
     if (type) {
-      query = query.contains('type', type);
+      query = query.contains('type', [type]);
     }
     // Use read_at as source of truth: null = unread, not null = read
     if (isRead !== undefined) {
@@ -306,7 +311,8 @@ export class NotificationsService {
       }
     }
     if (channel) {
-      query = query.in('channel', channel);
+      const channelArray = Array.isArray(channel) ? channel : [channel];
+      query = query.in('channel', channelArray);
     }
 
     // Handle search with OR conditions

@@ -46,8 +46,9 @@ export interface GetNotificationHistoryParams {
   search?: string;
   type?: string;
   channel?: string[];
-  customer?: string;
-  user?: string;
+  customerId?: string[];
+  userId?: string[];
+  senderId?: string[];
   orderBy?: string;
   orderDirection?: string;
 }
@@ -176,13 +177,26 @@ export async function getNotificationsHistory(params: GetNotificationHistoryPara
   if (params.perPage) query.set('perPage', params.perPage.toString());
   if (params.search) query.set('search', params.search);
   if (params.type) query.set('type', params.type);
-  if (params.channel) {
+  if (params.channel && params.channel.length > 0) {
     params.channel.forEach(channel => {
       query.append('channel', channel);
     });
   }
-  if (params.customer) query.set('customer', params.customer);
-  if (params.user) query.set('user', params.user);
+  if (params.customerId && params.customerId.length > 0) {
+    params.customerId.forEach(id => {
+      query.append('customerId', id);
+    });
+  }
+  if (params.userId && params.userId.length > 0) {
+    params.userId.forEach(id => {
+      query.append('userId', id);
+    });
+  }
+  if (params.senderId && params.senderId.length > 0) {
+    params.senderId.forEach(id => {
+      query.append('senderId', id);
+    });
+  }
   if (params.orderBy) query.set('orderBy', params.orderBy);
   if (params.orderDirection) query.set('orderDirection', params.orderDirection);
   

@@ -64,8 +64,8 @@ export default function Page(): React.JSX.Element {
         search: debouncedSearchValue || undefined,
         type: filters.type.length > 0 ? filters.type[0] : undefined,
         channel: filters.channel.length > 0 ? filters.channel : undefined,
-        customer: filters.customer.length > 0 ? filters.customer[0] : undefined,
-        user: filters.user.length > 0 ? filters.user[0] : undefined,
+        customerId: filters.customer.length > 0 ? filters.customer : undefined,
+        userId: filters.user.length > 0 ? filters.user : undefined,
       });
       return response;
     },
