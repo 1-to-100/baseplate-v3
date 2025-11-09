@@ -51,13 +51,28 @@ export class ManagersService {
       throw new NotFoundException('Customer Success role not found');
     }
 
+    if (!customerId) {
+      // If no customer ID provided, return all customer success managers
+      const allCSManagers = await this.database.findMany('users', {
+        where: {
+          deleted_at: null,
+          role_id: role.role_id,
+        },
+        select: 'user_id, email, full_name',
+      });
+
+      return allCSManagers.map((manager) => ({
+        id: manager.user_id,
+        name: manager.full_name || manager.email,
+        email: manager.email,
+      })) as OutputManagerDto[];
+    }
+
+    // If customer ID is provided, get managers by customer_id OR customer_success_owned_customers relation
     const where: any = {
       deleted_at: null,
       role_id: role.role_id,
-      OR: [
-        { customer_id: null },
-        ...(customerId ? [{ customer_id: customerId }] : []),
-      ],
+      OR: [{ customer_id: null }, { customer_id: customerId }],
     };
 
     const usersManagers = await this.database.findMany('users', {
@@ -65,7 +80,40 @@ export class ManagersService {
       select: 'user_id, email, full_name',
     });
 
-    return usersManagers.map((manager) => ({
+    // Also get managers from customer_success_owned_customers relations
+    const csOwnedCustomers = await this.database.findMany(
+      'customer_success_owned_customers',
+      {
+        where: {
+          customer_id: customerId,
+        },
+        select: 'user_id',
+      },
+    );
+
+    // Get user details for CS owned customers
+    const csOwnedManagerIds = csOwnedCustomers.map((rel: any) => rel.user_id);
+
+    let csOwnedManagers: any[] = [];
+    if (csOwnedManagerIds.length > 0) {
+      csOwnedManagers = await this.database.findMany('users', {
+        where: {
+          user_id: { in: csOwnedManagerIds },
+          deleted_at: null,
+          role_id: role.role_id,
+        },
+        select: 'user_id, email, full_name',
+      });
+    }
+
+    // Combine and deduplicate managers
+    const allManagers = [...usersManagers, ...csOwnedManagers];
+    const uniqueManagers = allManagers.filter(
+      (manager, index, self) =>
+        index === self.findIndex((m) => m.user_id === manager.user_id),
+    );
+
+    return uniqueManagers.map((manager) => ({
       id: manager.user_id,
       name: manager.full_name || manager.email,
       email: manager.email,
