@@ -144,6 +144,26 @@ export class ArticleCategoriesService {
   async remove(id: string, customerId: string) {
     try {
       this.logger.log(`Delete category ${id} for customer ${customerId}`);
+
+      // Check if category has any articles
+      const { data: articles, error: articlesError } = await this.database
+        .getClient()
+        .from('help_articles')
+        .select('help_article_id')
+        .eq('category_id', id)
+        .limit(1);
+
+      if (articlesError) {
+        this.logger.error(`Error checking articles: ${articlesError.message}`);
+        throw new ConflictException('Failed to verify category status');
+      }
+
+      if (articles && articles.length > 0) {
+        throw new ConflictException(
+          'Cannot delete category that contains articles. Please remove or reassign all articles first.',
+        );
+      }
+
       await this.database.delete('help_article_categories', {
         where: {
           help_article_category_id: id,
@@ -153,6 +173,9 @@ export class ArticleCategoriesService {
       return true;
     } catch (error) {
       this.logger.error(`Error deleting category: ${error}`);
+      if (error instanceof ConflictException) {
+        throw error;
+      }
       throw new ConflictException('Category cannot be deleted.');
     }
   }

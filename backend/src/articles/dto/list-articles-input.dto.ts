@@ -1,20 +1,19 @@
-import { IsArray, IsEnum, IsInt, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsOptional } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ArticleStatusList } from '@/common/constants/status';
 import { PaginatedInputDto } from '@/common/dto/paginated-input.dto';
 import {
   eachArticleStatusTransformer,
-  eachNumberTransformer,
+  eachStringTransformer,
 } from '@/common/helpers/class-transform-helpers';
 
 export class ListArticlesInputDto extends PaginatedInputDto {
   @IsArray()
-  @IsInt({ each: true })
   @IsOptional()
   @Type(() => String)
   @ApiPropertyOptional({ description: 'Category IDs', isArray: true })
-  @Transform(eachNumberTransformer)
+  @Transform(eachStringTransformer)
   categoryId?: string[];
 
   @IsArray()
