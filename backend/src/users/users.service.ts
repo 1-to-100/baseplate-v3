@@ -122,6 +122,16 @@ export class UsersService {
     return roles?.map((role) => role.role_id) || [];
   }
 
+  private async getStandardUserRoleIds(): Promise<string[]> {
+    const { data: roles } = await this.database
+      .getClient()
+      .from('roles')
+      .select('role_id')
+      .in('name', [SYSTEM_ROLES.STANDARD_USER, SYSTEM_ROLES.MANAGER]);
+
+    return roles?.map((role) => role.role_id) || [];
+  }
+
   async create(
     createUserDto: CreateUserDto,
     skipInvite: boolean = false,
@@ -255,13 +265,19 @@ export class UsersService {
       }
     }
 
+    // Assign standard_user role if no role is provided
+    let roleId = inviteUserDto.roleId;
+    if (!roleId) {
+      roleId = await this.getRoleIdByName(SYSTEM_ROLES.STANDARD_USER);
+    }
+
     // Use helper to build database data
     const userData = buildUserDbData({
       email: inviteUserDto.email,
       firstName: '', // Provide empty string to ensure full_name is set
       lastName: '', // Will result in 'Unnamed User' via combineUserName
       customerId: inviteUserDto.customerId,
-      roleId: inviteUserDto.roleId,
+      roleId: roleId,
       managerId: inviteUserDto.managerId,
       status: UserStatus.INACTIVE,
     });
@@ -345,10 +361,7 @@ export class UsersService {
       ...(roleId
         ? { role_id: { in: roleId } }
         : {
-            OR: [
-              { role_id: null },
-              { role_id: { not: { in: await this.getSystemRoleIds() } } },
-            ],
+            role_id: { in: await this.getStandardUserRoleIds() },
           }),
       ...(customerId && { customer_id: { in: customerId } }),
       ...(hasCustomer === true

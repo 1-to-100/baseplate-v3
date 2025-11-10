@@ -94,13 +94,12 @@ export default function AddEditUser({
   });
 
   const roleOptions = useMemo(() => {
-    if (userData?.roleId) {
-      const userRole = roles?.find((role) => role.role_id === userData?.roleId);
-      return userRole?.display_name ? [userRole.display_name] : [];
-    }
-
-    return [];
-  }, [roles, userData]);
+    // Only show Standard User and Manager roles
+    const standardRoles = roles?.filter(
+      (role) => role.name === "standard_user" || role.name === "manager"
+    );
+    return standardRoles?.map((role) => role.display_name).sort() || [];
+  }, [roles]);
 
   useEffect(() => {
     if (userId && userData && open) {
@@ -109,7 +108,7 @@ export default function AddEditUser({
         lastName: userData.lastName || "",
         email: userData.email || "",
         customer: userData?.customer?.name || "",
-        role: userData?.role?.name || "",
+        role: userData?.role?.display_name || "",
         manager: userData?.manager?.id.toString() || "",
       });
       setAvatarPreview(userData.avatar || null);
@@ -240,6 +239,10 @@ export default function AddEditUser({
     const emailError = validateEmail(formData.email);
     if (emailError) {
       newErrors.email = emailError;
+    }
+
+    if (!formData.role.trim()) {
+      newErrors.role = "Role is required";
     }
 
     const additionalEmailErrors = additionalEmails.map((email) => {
@@ -726,7 +729,7 @@ export default function AddEditUser({
                   fontWeight: 500,
                 }}
               >
-                Role
+                Role <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
               </Typography>
               <Autocomplete
                 placeholder="Select role"
