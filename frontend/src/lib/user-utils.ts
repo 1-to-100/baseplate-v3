@@ -5,6 +5,8 @@ export const SYSTEM_ROLES = {
   SYSTEM_ADMINISTRATOR: 'system_admin',
   CUSTOMER_SUCCESS: 'customer_success',
   CUSTOMER_ADMINISTRATOR: 'customer_admin',
+  STANDARD_USER: 'standard_user',
+  MANAGER: 'manager',
 } as const;
 
 /**
@@ -29,6 +31,22 @@ export const isCustomerAdministrator = (user?: ApiUser): boolean => {
 };
 
 /**
+ * Check if user is a Manager
+ */
+export const isManager = (user?: ApiUser): boolean => {
+  return user?.role?.name === SYSTEM_ROLES.MANAGER;
+};
+
+/**
+ * Check if user is Customer Administrator or Manager
+ * (both have the same permissions)
+ */
+export const isCustomerAdminOrManager = (user?: ApiUser): boolean => {
+  return user?.role?.name === SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR ||
+         user?.role?.name === SYSTEM_ROLES.MANAGER;
+};
+
+/**
  * Check if user has any system role
  */
 export const hasSystemRole = (user?: ApiUser): boolean => {
@@ -44,7 +62,7 @@ export const hasRole = (user: ApiUser | undefined, roleName: string): boolean =>
 
 /**
  * Check if the ownerUser can manage the target user
- * This includes System Admins, Customer Success for their customers, and Customer Admins for their customer
+ * This includes System Admins, Customer Success for their customers, Customer Admins, and Managers for their customer
  */
 export const isUserOwner = (ownerUser?: ApiUser, user?: ApiUser): boolean => {
   if (ownerUser?.customer?.ownerId === ownerUser?.id) {
@@ -59,6 +77,14 @@ export const isUserOwner = (ownerUser?: ApiUser, user?: ApiUser): boolean => {
   // Check if the ownerUser is Customer Success and the user belongs to the same customer (replaces isCustomerSuccess)
   if (
     isCustomerSuccess(ownerUser) &&
+    ownerUser.customerId === user.customerId
+  ) {
+    return true;
+  }
+
+  // Check if the ownerUser is Customer Admin or Manager for the same customer
+  if (
+    isCustomerAdminOrManager(ownerUser) &&
     ownerUser.customerId === user.customerId
   ) {
     return true;

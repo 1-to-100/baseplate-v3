@@ -27,6 +27,26 @@ export function isCustomerAdministrator(user?: OutputUserDto | null): boolean {
 }
 
 /**
+ * Check if user has Manager role
+ */
+export function isManager(user?: OutputUserDto | null): boolean {
+  if (!user) return false;
+  return user.role?.name === SYSTEM_ROLES.MANAGER;
+}
+
+/**
+ * Check if user has Customer Administrator or Manager role
+ * (both have the same permissions)
+ */
+export function isCustomerAdminOrManager(user?: OutputUserDto | null): boolean {
+  if (!user) return false;
+  return (
+    user.role?.name === SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR ||
+    user.role?.name === SYSTEM_ROLES.MANAGER
+  );
+}
+
+/**
  * Check if user has a specific system role by name
  */
 export function hasSystemRole(

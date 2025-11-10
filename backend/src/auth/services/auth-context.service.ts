@@ -6,7 +6,7 @@ import { OutputUserDto } from '@/users/dto/output-user.dto';
 import {
   isSystemAdministrator,
   isCustomerSuccess,
-  isCustomerAdministrator,
+  isCustomerAdminOrManager,
 } from '@/common/utils/user-role-helpers';
 
 export interface RefreshContextDto {
@@ -160,8 +160,8 @@ export class AuthContextService {
       return; // Access granted
     }
 
-    // Customer Administrator can only access their own customer
-    if (isCustomerAdministrator(user)) {
+    // Customer Administrator and Manager can only access their own customer
+    if (isCustomerAdminOrManager(user)) {
       if (user.customerId !== requestedCustomerId) {
         throw new ForbiddenException('You can only access your own customer');
       }

@@ -38,7 +38,7 @@ import {PaperPlaneRight, ToggleRight, TrashSimple} from "@phosphor-icons/react";
 import { toast } from "@/components/core/toaster";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-import { isUserOwner, isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES, isCustomerAdministrator } from "@/lib/user-utils";
+import { isUserOwner, isSystemAdministrator, isCustomerSuccess, SYSTEM_ROLES, isCustomerAdminOrManager } from "@/lib/user-utils";
 import { ArrowRight as ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { useImpersonation } from "@/contexts/impersonation-context";
 import {getCustomers} from "@/lib/api/customers";
@@ -606,7 +606,7 @@ export default function Page(): React.JSX.Element {
             {isSystemAdministrator(userInfo) ||
             isUserOwner(userInfo) ||
             isCustomerSuccess(userInfo) ||
-            isCustomerAdministrator(userInfo) ||
+            isCustomerAdminOrManager(userInfo) ||
             userInfo?.permissions?.includes("inviteUser") ||
             userInfo?.permissions?.includes("createUser") ? (
               <Box sx={{ position: "relative" }}>
@@ -812,7 +812,7 @@ export default function Page(): React.JSX.Element {
                         // Permission checks
                         const canResendInvite = user.status != "active" && user.status != "suspended" &&
                           (isUserOwner(userInfo, user) ||
-                            isCustomerAdministrator(userInfo) ||
+                            isCustomerAdminOrManager(userInfo) ||
                             userInfo?.permissions?.includes("inviteUser") ||
                             userInfo?.permissions?.includes("createUser"));
 
@@ -824,18 +824,18 @@ export default function Page(): React.JSX.Element {
 
                         const canDeactivate = user?.status === 'active' &&
                           (isUserOwner(userInfo, user) ||
-                            isCustomerAdministrator(userInfo) ||
+                            isCustomerAdminOrManager(userInfo) ||
                             userInfo?.permissions?.includes("editUser"));
 
                         const canActivate = user.status && user.status == 'suspended' &&
                           (isUserOwner(userInfo, user) ||
-                            isCustomerAdministrator(userInfo) ||
+                            isCustomerAdminOrManager(userInfo) ||
                             userInfo?.permissions?.includes("editUser"));
 
                         const canDelete = user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
                           user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS &&
                           (isUserOwner(userInfo, user) ||
-                            isCustomerAdministrator(userInfo) ||
+                            isCustomerAdminOrManager(userInfo) ||
                             userInfo?.permissions?.includes("deleteUser"));
 
                         return (

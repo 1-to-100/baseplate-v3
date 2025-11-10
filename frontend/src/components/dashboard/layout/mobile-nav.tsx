@@ -28,7 +28,7 @@ import { icons } from './nav-icons';
 import { WorkspaceSwitch } from './workspace-switch';
 import { useUserInfo } from "@/hooks/use-user-info";
 import { CustomerSelect } from "./customer-select";
-import { isSystemAdministrator, isCustomerSuccess, isCustomerAdministrator } from "@/lib/user-utils";
+import { isSystemAdministrator, isCustomerSuccess, isCustomerAdminOrManager } from "@/lib/user-utils";
 
 export interface MobileNavProps {
   items: NavItemConfig[];
@@ -48,7 +48,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
         return item.key !== "role" && item.key !== "system-users";
       }
 
-      if (isCustomerAdministrator(userInfo)) {
+      if (isCustomerAdminOrManager(userInfo)) {
         return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management";
       }
 

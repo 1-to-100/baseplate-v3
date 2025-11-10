@@ -35,8 +35,8 @@ import { IsImpersonating } from '@/common/decorators/is-impersonating.decorator'
 import { OriginalUser } from '@/common/decorators/original-user.decorator';
 import {
   isSystemAdministrator,
-  isCustomerAdministrator,
   isCustomerSuccess,
+  isCustomerAdminOrManager,
 } from '@/common/utils/user-role-helpers';
 
 @Controller('users')
@@ -234,8 +234,8 @@ export class UsersController {
       return this.usersService.findAll(listUserInputDto);
     }
 
-    // Customer success and customer administrator can have access to all users for their customerId
-    if (isCustomerSuccess(user) || isCustomerAdministrator(user)) {
+    // Customer success, customer administrator, and manager can have access to all users for their customerId
+    if (isCustomerSuccess(user) || isCustomerAdminOrManager(user)) {
       if (!user.customerId) {
         throw new ForbiddenException('You have no access to list users.');
       }
