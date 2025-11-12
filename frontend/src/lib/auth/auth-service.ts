@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { edgeFunctions } from '@/lib/supabase/edge-functions';
 
 interface RefreshContextParams {
   customerId?: string;
@@ -39,25 +40,11 @@ class AuthService {
       throw new Error('No active session');
     }
 
-    // Step 1: Tell backend to update app_metadata (with authorization checks)
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-with-context`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(params),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to refresh context' }));
-      throw new Error(error.message || 'Failed to refresh context');
-    }
-
-    const data: RefreshContextResponse = await response.json();
+    // Step 1: Update app_metadata via Edge Function
+    const data = await edgeFunctions.refreshWithContext({
+      customerId: params.customerId,
+      impersonatedUserId: params.impersonatedUserId,
+    });
 
     if (!data.updated) {
       throw new Error('Context was not updated');
@@ -91,15 +78,7 @@ class AuthService {
       return;
     }
 
-    await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/clear-context`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }
-    );
+    await edgeFunctions.clearContext();
 
     // Refresh session to get updated token
     await this.supabase.auth.refreshSession();

@@ -1,6 +1,7 @@
 import { config } from "@/config";
 import { apiFetch } from "./api-fetch";
 import { Customer, TaxonomyItem } from "@/contexts/auth/types";
+import { createClient } from "@/lib/supabase/client";
 
 interface GetCustomersParams {
   page?: number;
@@ -46,63 +47,191 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
 }
 
 export async function getCustomers(): Promise<TaxonomyItem[]> {
-  return apiFetch<TaxonomyItem[]>(`${config.site.apiUrl}/taxonomies/customers`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('customers')
+    .select('customer_id, name')
+    .order('name');
+  
+  if (error) throw error;
+  
+  return (data || []).map((customer: any) => ({
+    id: customer.customer_id,
+    name: customer.name,
+  }));
 }
 
 export async function getSubscriptions(): Promise<TaxonomyItem[]> {
-  return apiFetch<TaxonomyItem[]>(`${config.site.apiUrl}/taxonomies/subscriptions`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('subscription_id, name')
+    .order('name');
+  
+  if (error) throw error;
+  
+  return (data || []).map((subscription: any) => ({
+    id: subscription.subscription_id,
+    name: subscription.name,
+  }));
 }
 
 export async function getCustomersList(params: GetCustomersParams = {}): Promise<GetCustomersResponse> {
-  const query = new URLSearchParams();
-  if (params.page) query.set('page', params.page.toString());
-  if (params.perPage) query.set('perPage', params.perPage.toString());
-  if (params.search) query.set('search', params.search);
-  if (params.orderBy) query.set('orderBy', params.orderBy);
-  if (params.orderDirection) query.set('orderDirection', params.orderDirection);
-
-  if (params.managerId && params.managerId.length > 0) {
-    params.managerId.forEach(id => query.append('customerSuccessId', id));
+  const supabase = createClient();
+  
+  const page = params.page || 1;
+  const perPage = params.perPage || 10;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  
+  // Build the query with joins
+  let query = supabase
+    .from('customers')
+    .select(`
+      customer_id,
+      name,
+      domain,
+      email,
+      subscription_id,
+      status,
+      created_at,
+      updated_at,
+      subscription:subscriptions(subscription_id, name)
+    `, { count: 'exact' })
+    .range(from, to);
+  
+  // Apply filters
+  if (params.search) {
+    query = query.or(`name.ilike.%${params.search}%,email.ilike.%${params.search}%,domain.ilike.%${params.search}%`);
   }
+  
   if (params.subscriptionId && params.subscriptionId.length > 0) {
-    params.subscriptionId.forEach(id => query.append('subscriptionId', id));
+    query = query.in('subscription_id', params.subscriptionId);
   }
+  
   if (params.statusId && params.statusId.length > 0) {
-    params.statusId.forEach(status => query.append('status', status));
+    query = query.in('status', params.statusId);
   }
-
-  return apiFetch<GetCustomersResponse>(`${config.site.apiUrl}/customers?${query.toString()}`, {
-    method: 'GET',
-  });
+  
+  // Apply sorting
+  const orderBy = params.orderBy || 'created_at';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+  
+  const { data, error, count } = await query;
+  
+  if (error) throw error;
+  
+  const total = count || 0;
+  const lastPage = Math.ceil(total / perPage);
+  
+  return {
+    data: (data || []).map((customer: any) => ({
+      id: customer.customer_id,
+      name: customer.name,
+      email: customer.email,
+      domain: customer.domain,
+      subscriptionId: customer.subscription_id,
+      status: customer.status,
+      createdAt: customer.created_at,
+      updatedAt: customer.updated_at,
+      subscription: customer.subscription ? {
+        id: customer.subscription.subscription_id,
+        name: customer.subscription.name,
+      } : undefined,
+    })) as Customer[],
+    meta: {
+      total,
+      page,
+      lastPage,
+      perPage,
+      currentPage: page,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
 }
 
 export async function getCustomerById(id: string): Promise<Customer> {
-  return apiFetch<Customer>(`${config.site.apiUrl}/customers/${id}`, {
-    method: 'GET',
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('customers')
+    .select(`
+      customer_id,
+      name,
+      domain,
+      email,
+      subscription_id,
+      status,
+      created_at,
+      updated_at,
+      subscription:subscriptions(subscription_id, name)
+    `)
+    .eq('customer_id', id)
+    .single();
+  
+  if (error) throw error;
+  
+  return {
+    id: data.customer_id,
+    name: data.name,
+    email: data.email,
+    domain: data.domain,
+    subscriptionId: data.subscription_id,
+    status: data.status,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    managerId: undefined,
+    customerSuccessId: undefined,
+    ownerId: undefined,
+    subscriptionName: data.subscription?.name,
+    manager: undefined,
+    owner: undefined,
+    subscription: data.subscription ? {
+      id: data.subscription.subscription_id,
+      name: data.subscription.name,
+    } : undefined,
+  } as unknown as Customer;
 }
 
 export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Customer> {
-  return apiFetch<Customer>(`${config.site.apiUrl}/customers/${payload.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('customers')
+    .update({
+      name: payload.name,
+      email: payload.email,
+      subscription_id: payload.subscriptionId,
+    })
+    .eq('customer_id', payload.id);
+  
+  if (error) throw error;
+  
+  // Fetch and return updated customer
+  return getCustomerById(payload.id);
 }
 
 export async function deleteCustomer(id: string): Promise<Customer> {
-  return apiFetch<Customer>(`${config.site.apiUrl}/customers/${id}`, {
-    method: 'DELETE',
-  });
+  const supabase = createClient();
+  
+  // Fetch customer before deletion
+  const customerToDelete = await getCustomerById(id);
+  
+  const { error } = await supabase
+    .from('customers')
+    .update({
+      deleted_at: new Date().toISOString(),
+      status: 'inactive',
+    })
+    .eq('customer_id', id);
+  
+  if (error) throw error;
+  
+  return customerToDelete;
 }
 
 export interface CustomerSuccessUser {

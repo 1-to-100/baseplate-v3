@@ -211,7 +211,7 @@ create table public.users (
 );
 
 comment on table public.users is 
-  'Users within customer organizations. customer_id can be NULL for system-level admins and during the initial creation of customer owners (circular reference handling).';
+  'Users within customer organizations. All active users should have a role_id assigned. Standard_user is the default role for regular users. customer_id can be NULL for system-level admins and during the initial creation of customer owners (circular reference handling).';
 
 -- Add foreign key from customers to users (circular reference)
 alter table public.customers
@@ -1301,11 +1301,29 @@ COMMENT ON FUNCTION public.is_customer_success() IS
 -- Check if current user is customer admin
 CREATE OR REPLACE FUNCTION public.is_customer_admin()
 RETURNS boolean AS $$
-  SELECT public.has_role('customer_admin');
+  SELECT public.has_role('customer_admin') OR public.has_role('manager');
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 COMMENT ON FUNCTION public.is_customer_admin() IS 
-  'Returns true if the currently authenticated user has the customer_admin role';
+  'Returns true if the currently authenticated user has the customer_admin or manager role (both have the same permissions)';
+
+-- Check if current user is a manager
+CREATE OR REPLACE FUNCTION public.is_manager()
+RETURNS boolean AS $$
+  SELECT public.has_role('manager');
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.is_manager() IS 
+  'Returns true if the currently authenticated user has the manager role';
+
+-- Check if current user is customer admin or manager (both have same permissions)
+CREATE OR REPLACE FUNCTION public.is_customer_admin_or_manager()
+RETURNS boolean AS $$
+  SELECT public.is_customer_admin() OR public.is_manager();
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.is_customer_admin_or_manager() IS 
+  'Returns true if the currently authenticated user has the customer_admin or manager role';
 
 -- Check if current user can access the specified customer
 CREATE OR REPLACE FUNCTION public.can_access_customer(target_customer_id uuid)
@@ -2450,6 +2468,8 @@ GRANT EXECUTE ON FUNCTION public.is_system_role() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_system_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_customer_success() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_customer_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_manager() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_customer_admin_or_manager() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_access_customer(uuid) TO authenticated;
 
 -- =============================================================================
@@ -2470,8 +2490,8 @@ INSERT INTO public.roles (name, display_name, description, is_system_role, permi
   ('system_admin', 'System Administrator', 'Full system access', true, '["*"]'::jsonb),
   ('customer_success', 'Customer Success', 'Full access within mapped customers', true, '["customer:*"]'::jsonb),
   ('customer_admin', 'Customer Admin', 'Full access within customer', true, '["customer:*"]'::jsonb),
-  ('customer_user', 'Customer User', 'Standard user access', true, '["customer:read", "customer:write"]'::jsonb),
-  ('customer_viewer', 'Customer Viewer', 'Read-only access', true, '["customer:read"]'::jsonb);
+  ('manager', 'Manager', 'Full access within customer', true, '["customer:*"]'::jsonb),
+  ('standard_user', 'Standard User', 'Base user role with minimal permissions', true, '[]'::jsonb);
 
 INSERT INTO public.subscription_types (name, description, active, is_default, max_users, max_contacts) VALUES
   ('free', 'Free tier with basic features', true, true, 3, 100);

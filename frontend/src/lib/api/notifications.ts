@@ -1,6 +1,7 @@
 import {apiFetch} from "@/lib/api/api-fetch";
 import {config} from "@/config";
 import { ApiNotification, NotificationType } from "@/contexts/auth/types";
+import { createClient } from "@/lib/supabase/client";
 
 export interface GetNotificationsParams {
   page?: number;
@@ -83,37 +84,107 @@ export interface GetNotificationHistoryResponse {
 }
 
 export async function unreadNotificationsCount(): Promise<{count: number}> {
-  return apiFetch<{count: number}>(`${config.site.apiUrl}/notifications/unread-count`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  const supabase = createClient();
+  
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('notification_id', { count: 'exact', head: true })
+    .eq('is_read', false);
+  
+  if (error) throw error;
+  
+  return { count: count || 0 };
 }
 
 export async function getNotifications(params: GetNotificationsParams = {}): Promise<GetNotificationsResponse> {
-  const query = new URLSearchParams();
-  if (params.page) query.set('page', params.page.toString()); 
-  if (params.perPage) query.set('perPage', params.perPage.toString());
-  if (params.isRead) query.set('isRead', params.isRead.toString());
-  if (params.type) query.set('type', params.type);
-  if (params.channel) query.set('channel', params.channel);
+  const supabase = createClient();
   
-  return apiFetch<GetNotificationsResponse>(`${config.site.apiUrl}/notifications?${query.toString()}`, {
-    method: 'GET',
-  });
+  const page = params.page || 1;
+  const perPage = params.perPage || 10;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  
+  // Build the query
+  let query = supabase
+    .from('notifications')
+    .select('notification_id, title, message, type, channel, is_read, created_at, updated_at', { count: 'exact' })
+    .range(from, to);
+  
+  // Apply filters
+  if (params.search) {
+    query = query.or(`title.ilike.%${params.search}%,message.ilike.%${params.search}%`);
+  }
+  
+  if (params.isRead !== undefined) {
+    query = query.eq('is_read', params.isRead);
+  }
+  
+  if (params.type) {
+    query = query.eq('type', params.type);
+  }
+  
+  if (params.channel) {
+    query = query.eq('channel', params.channel);
+  }
+  
+  // Apply sorting
+  const orderBy = params.orderBy || 'created_at';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+  
+  const { data, error, count } = await query;
+  
+  if (error) throw error;
+  
+  const total = count || 0;
+  const lastPage = Math.ceil(total / perPage);
+  
+  return {
+    data: (data || []).map(notification => ({
+      id: notification.notification_id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      channel: notification.channel,
+      isRead: notification.is_read,
+      createdAt: notification.created_at,
+      updatedAt: notification.updated_at,
+    })) as ApiNotification[],
+    meta: {
+      total,
+      page,
+      lastPage,
+      perPage,
+      currentPage: page,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
 }
 
 export async function markNotificationAsRead(id: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notifications/${id}`, {
-    method: 'PATCH',
-  });
+  const supabase = createClient();
+  
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('notification_id', id);
+  
+  if (error) throw error;
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notifications/read-all`, {
-    method: 'PATCH',
-  });
+  const supabase = createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('is_read', false);
+  
+  if (error) throw error;
 }
 
 export async function getNotificationTemplates(params: GetNotificationsParams = {}): Promise<GetNotificationsResponse> {
@@ -163,12 +234,22 @@ export async function sendNotification(data: SendNotificationRequest, notificati
 }
 
 export async function getNotificationsTypes(): Promise<NotificationType> {
-  return apiFetch<NotificationType>(`${config.site.apiUrl}/taxonomies/notifications`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('notification_types')
+    .select('notification_type_id, name, display_name, description')
+    .order('name');
+  
+  if (error) throw error;
+  
+  // Return as NotificationType (likely needs type adjustment based on actual structure)
+  return (data || []).map(type => ({
+    id: type.notification_type_id,
+    name: type.name,
+    displayName: type.display_name,
+    description: type.description,
+  })) as any as NotificationType;
 }
 
 export async function getNotificationsHistory(params: GetNotificationHistoryParams = {}): Promise<GetNotificationHistoryResponse> {

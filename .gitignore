@@ -22,4 +22,10 @@ pnpm-debug.log*
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+.env.local 

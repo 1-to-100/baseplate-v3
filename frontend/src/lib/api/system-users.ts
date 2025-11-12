@@ -1,6 +1,7 @@
 import { config } from '@/config';
 import { apiFetch } from './api-fetch';
 import { SystemUser, SystemRole } from '@/contexts/auth/types';
+import { createClient } from '@/lib/supabase/client';
 
 
 
@@ -65,39 +66,147 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
 }
 
 export async function getSystemRoles(): Promise<SystemRole[]> {
-  return apiFetch<SystemRole[]>(`${config.site.apiUrl}/taxonomies/user-system-roles`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('user_system_roles')
+    .select('user_system_role_id, name, display_name')
+    .order('name');
+  
+  if (error) throw error;
+  
+  return (data || []).map(role => ({
+    id: role.user_system_role_id,
+    name: role.display_name || role.name,
+  })) as SystemRole[];
 }
 
 export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
-  const query = new URLSearchParams();
-  if (params.page) query.set('page', params.page.toString());
-  if (params.perPage) query.set('perPage', params.perPage.toString());
-  if (params.search) query.set('search', params.search);
-  if (params.orderBy) query.set('orderBy', params.orderBy);
-  if (params.orderDirection) query.set('orderDirection', params.orderDirection);
+  const supabase = createClient();
   
-  if (params.roleFilter) query.set('roleFilter', params.roleFilter);
+  const page = params.page || 1;
+  const perPage = params.perPage || 10;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  
+  // Build the query with joins
+  let query = supabase
+    .from('users')
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      avatar_url,
+      customer_id,
+      user_system_role_id,
+      status,
+      created_at,
+      updated_at,
+      customer:customers(customer_id, name),
+      user_system_role:user_system_roles(user_system_role_id, name, display_name)
+    `, { count: 'exact' })
+    .not('user_system_role_id', 'is', null)  // Only system users
+    .range(from, to);
+  
+  // Apply filters
+  if (params.search) {
+    query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
+  }
+  
+  if (params.roleFilter) {
+    query = query.eq('user_system_role_id', params.roleFilter);
+  }
+  
   if (params.customerId && params.customerId.length > 0) {
-    params.customerId.forEach(id => query.append('customerId', id));
+    query = query.in('customer_id', params.customerId);
   }
+  
   if (params.statusId && params.statusId.length > 0) {
-    params.statusId.forEach(status => query.append('status', status));
+    query = query.in('status', params.statusId);
   }
-
-  return apiFetch<GetUsersResponse>(`${config.site.apiUrl}/system-users?${query.toString()}`, {
-    method: 'GET',
-  });
+  
+  // Apply sorting
+  const orderBy = params.orderBy || 'created_at';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+  
+  const { data, error, count } = await query;
+  
+  if (error) throw error;
+  
+  const total = count || 0;
+  const lastPage = Math.ceil(total / perPage);
+  
+  return {
+    data: (data || []).map(user => ({
+      id: user.user_id,
+      uid: user.auth_user_id,
+      email: user.email,
+      firstName: user.full_name?.split(' ')[0] || '',
+      lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
+      avatar: user.avatar_url || undefined,
+      customerId: user.customer_id,
+      systemRole: user.user_system_role ? {
+        id: user.user_system_role.user_system_role_id,
+        name: user.user_system_role.display_name || user.user_system_role.name,
+      } : undefined,
+      status: user.status,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    })) as SystemUser[],
+    meta: {
+      total,
+      page,
+      lastPage,
+      perPage,
+      currentPage: page,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
 }
 
 export async function getSystemUserById(id: string): Promise<SystemUser> {
-  return apiFetch<SystemUser>(`${config.site.apiUrl}/system-users/${id}`, {
-    method: 'GET',
-  });
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      avatar_url,
+      customer_id,
+      user_system_role_id,
+      status,
+      created_at,
+      updated_at,
+      customer:customers(customer_id, name),
+      user_system_role:user_system_roles(user_system_role_id, name, display_name)
+    `)
+    .eq('user_id', id)
+    .single();
+  
+  if (error) throw error;
+  
+  return {
+    id: data.user_id,
+    uid: data.auth_user_id,
+    email: data.email,
+    firstName: data.full_name?.split(' ')[0] || '',
+    lastName: data.full_name?.split(' ').slice(1).join(' ') || '',
+    avatar: data.avatar_url || undefined,
+    customerId: data.customer_id,
+    systemRole: data.user_system_role ? {
+      id: data.user_system_role.user_system_role_id,
+      name: data.user_system_role.display_name || data.user_system_role.name,
+    } : undefined,
+    status: data.status,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  } as SystemUser;
 }
 
 export async function resendInviteSystemUser(email: string): Promise<void> {

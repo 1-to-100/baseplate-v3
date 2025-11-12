@@ -89,8 +89,8 @@ supabase db remote status
 
 # Generate types
 echo "📝 Generating TypeScript types..."
-supabase gen types typescript --linked > backend/supabase/types/supabase.ts
+supabase gen types typescript --linked > supabase/types/supabase.ts
 
 echo ""
 echo "🎉 Migrations applied successfully to $ENVIRONMENT!"
-echo "📝 TypeScript types updated in backend/supabase/types/supabase.ts"
+echo "📝 TypeScript types updated in supabase/types/supabase.ts"

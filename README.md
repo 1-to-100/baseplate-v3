@@ -94,7 +94,7 @@ DISABLE_BOOTSTRAP_ADMIN=true
 
 #### 🗄️ Database Migrations
 
-Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `backend/supabase/migrations/`.
+Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `supabase/migrations/`.
 
 **Prerequisites:**
 ```bash
@@ -116,7 +116,7 @@ cd backend
 npm run supabase:push
 ```
 
-For detailed migration management, see `backend/supabase/README.md`.
+For detailed migration management, see `supabase/README.md`.
 
 ---
 
@@ -247,7 +247,7 @@ npm install
 npm run start:dev // npm run start:dev:env - alternative start command (as start:dev doesn't work on some devices)
 ```
 
-**Note:** Database migrations are managed via Supabase. See `backend/supabase/README.md` for migration management.
+**Note:** Database migrations are managed via Supabase. See `supabase/README.md` for migration management.
 
 ---
 

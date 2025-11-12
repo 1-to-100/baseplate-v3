@@ -54,9 +54,9 @@ fi
 
 echo ""
 echo "🎉 Setup complete! Next steps:"
-echo "1. Edit backend/supabase/.env with your project details"
+echo "1. Edit supabase/.env with your project details"
 echo "2. Link to your project: supabase link --project-ref YOUR_PROJECT_REF"
 echo "3. Apply migrations: supabase db push"
-echo "4. Generate types: supabase gen types typescript --linked > backend/supabase/types/supabase.ts"
+echo "4. Generate types: supabase gen types typescript --linked > supabase/types/supabase.ts"
 echo ""
-echo "📚 See backend/supabase/README.md for detailed documentation"
+echo "📚 See supabase/README.md for detailed documentation"

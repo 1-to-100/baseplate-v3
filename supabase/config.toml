@@ -127,5 +127,6 @@ enable_confirmations = false
 # # or any other third-party OIDC providers.
 # url = ""
 
+# Edge Functions are enabled by default and don't need explicit configuration
 # [edge_functions]
-# enabled = false
+# enabled = true
