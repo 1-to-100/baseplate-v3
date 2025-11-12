@@ -1,0 +1,20 @@
+{
+  "name": "supabase-scripts",
+  "version": "1.0.0",
+  "description": "Supabase management scripts and utilities",
+  "private": true,
+  "scripts": {
+    "bootstrap": "tsx scripts/bootstrap-admin.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "@types/node": "^20.10.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
