@@ -35,7 +35,16 @@ export const config = {
     version: process.env.NEXT_PUBLIC_SITE_VERSION,
   },
   logLevel: (process.env.NEXT_PUBLIC_LOG_LEVEL as keyof typeof LogLevel) || LogLevel.ALL,
-  auth: { strategy: (process.env.NEXT_PUBLIC_AUTH_STRATEGY as keyof typeof AuthStrategy) || AuthStrategy.CUSTOM },
+  auth: { 
+    strategy: (() => {
+      const envStrategy = process.env.NEXT_PUBLIC_AUTH_STRATEGY;
+      const validStrategies = Object.values(AuthStrategy) as string[];
+      if (envStrategy && validStrategies.includes(envStrategy)) {
+        return envStrategy as keyof typeof AuthStrategy;
+      }
+      return AuthStrategy.CUSTOM;
+    })(),
+  },
   auth0: {
     secret: process.env.AUTH0_SECRET,
     baseUrl: process.env.AUTH0_BASE_URL,
