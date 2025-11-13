@@ -142,7 +142,7 @@ export interface SystemUser {
   phoneNumber?: string;
   isSuperadmin?: boolean;
   isCustomerSuccess?: boolean;
-  systemRole?: SystemRole;
+  systemRole?: SystemRoleObject;
   activity?: {
     id: number;
     browserOs: string;
@@ -176,7 +176,12 @@ export interface NotificationType {
     channels: string[];
   }
 
-export type SystemRole =  "customer_success" | "system_admin";
+export interface SystemRoleObject {
+  id: string;
+  name: string;
+}
+
+export type SystemRole = "customer_success" | "system_admin";
 
 export type Status = "active" | "inactive" | "suspended";
 

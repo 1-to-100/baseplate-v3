@@ -1,6 +1,6 @@
 import { config } from '@/config';
 import { apiFetch } from './api-fetch';
-import { ApiUser, Status } from '@/contexts/auth/types';
+import { ApiUser, Status, TaxonomyItem } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
@@ -252,16 +252,24 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       deletedAt: user.deleted_at || undefined,
-      customer: user.customer ? {
+      customer: user.customer ? (Array.isArray(user.customer) ? {
+        id: user.customer[0]?.customer_id || '',
+        name: user.customer[0]?.name || '',
+        domain: user.customer[0]?.domain || '',
+      } : {
         id: user.customer.customer_id,
         name: user.customer.name,
         domain: user.customer.domain,
-      } : undefined,
-      role: user.role ? {
+      }) : undefined,
+      role: user.role ? (Array.isArray(user.role) ? {
+        id: user.role[0]?.role_id || '',
+        name: user.role[0]?.name || '',
+        displayName: user.role[0]?.display_name || '',
+      } : {
         id: user.role.role_id,
         name: user.role.name,
         displayName: user.role.display_name,
-      } : undefined,
+      }) : undefined,
     })) as ApiUser[],
     meta: {
       total,
@@ -303,6 +311,9 @@ export async function getUserById(id: string): Promise<ApiUser> {
   
   if (error) throw error;
   
+  const customer = data.customer as any;
+  const role = data.role as any;
+  
   return {
     id: data.user_id,
     uid: data.auth_user_id,
@@ -320,16 +331,24 @@ export async function getUserById(id: string): Promise<ApiUser> {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     deletedAt: data.deleted_at || undefined,
-    customer: data.customer ? {
-      id: data.customer.customer_id,
-      name: data.customer.name,
-      domain: data.customer.domain,
-    } : undefined,
-    role: data.role ? {
-      id: data.role.role_id,
-      name: data.role.name,
-      displayName: data.role.display_name,
-    } : undefined,
+    customer: customer ? (Array.isArray(customer) ? {
+      id: customer[0]?.customer_id || '',
+      name: customer[0]?.name || '',
+      domain: customer[0]?.domain || '',
+    } : {
+      id: customer.customer_id,
+      name: customer.name,
+      domain: customer.domain,
+    }) : undefined,
+    role: role ? (Array.isArray(role) ? {
+      id: role[0]?.role_id || '',
+      name: role[0]?.name || '',
+      displayName: role[0]?.display_name || '',
+    } : {
+      id: role.role_id,
+      name: role.name,
+      displayName: role.display_name,
+    }) : undefined,
   } as ApiUser;
 }
 
@@ -406,7 +425,7 @@ export async function deleteUser(id: string): Promise<ApiUser> {
   return userToDelete;
 }
 
-export async function getStatuses(): Promise<Status[]> {
+export async function getStatuses(): Promise<TaxonomyItem[]> {
   const supabase = createClient();
   
   const { data, error } = await supabase
@@ -419,7 +438,7 @@ export async function getStatuses(): Promise<Status[]> {
   return (data || []).map((status: any) => ({
     id: status.status_id,
     name: status.display_name || status.name,
-  })) as Status[];
+  }));
 }
 
 export async function inviteUser(payload: InviteUserPayload): Promise<void> {

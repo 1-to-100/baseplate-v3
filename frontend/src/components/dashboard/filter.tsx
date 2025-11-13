@@ -146,11 +146,11 @@ const Filter = ({
     setActiveCategory(category === activeCategory ? null : category);
   };
 
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = (statusId: string) => {
     setSelectedStatuses((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status]
+      prev.includes(statusId)
+        ? prev.filter((s) => s !== statusId)
+        : [...prev, statusId]
     );
   };
 
@@ -503,7 +503,7 @@ const Filter = ({
                     {activeCategory === "Status" && users && users?.length > 0 &&
                       statuses?.map((status) => (
                         <Box
-                          key={status}
+                          key={status.id}
                           sx={{
                             display: "flex",
                             alignItems: "center",
@@ -511,8 +511,8 @@ const Filter = ({
                           }}
                         >
                           <Checkbox
-                            checked={selectedStatuses.includes(status)}
-                            onChange={() => handleStatusChange(status)}
+                            checked={selectedStatuses.includes(status.id)}
+                            onChange={() => handleStatusChange(status.id)}
                             sx={{
                               transform: { xs: "scale(0.9)", sm: "scale(1)" },
                             }}
@@ -524,7 +524,7 @@ const Filter = ({
                               color: "var(--joy-palette-text-primary)",
                             }}
                           >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                            {status.name}
                           </Typography>
                         </Box>
                       ))}

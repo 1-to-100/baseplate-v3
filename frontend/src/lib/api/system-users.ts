@@ -1,6 +1,6 @@
 import { config } from '@/config';
 import { apiFetch } from './api-fetch';
-import { SystemUser, SystemRole } from '@/contexts/auth/types';
+import { SystemUser, SystemRoleObject } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 
 
@@ -65,7 +65,7 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
   });
 }
 
-export async function getSystemRoles(): Promise<SystemRole[]> {
+export async function getSystemRoles(): Promise<SystemRoleObject[]> {
   const supabase = createClient();
   
   const { data, error } = await supabase
@@ -78,7 +78,7 @@ export async function getSystemRoles(): Promise<SystemRole[]> {
   return (data || []).map(role => ({
     id: role.user_system_role_id,
     name: role.display_name || role.name,
-  })) as SystemRole[];
+  }));
 }
 
 export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
@@ -143,14 +143,22 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       id: user.user_id,
       uid: user.auth_user_id,
       email: user.email,
+      name: user.full_name || '',
       firstName: user.full_name?.split(' ')[0] || '',
       lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
       avatar: user.avatar_url || undefined,
       customerId: user.customer_id,
-      systemRole: user.user_system_role ? {
-        id: user.user_system_role.user_system_role_id,
-        name: user.user_system_role.display_name || user.user_system_role.name,
-      } : undefined,
+      managerId: '',
+      systemRole: user.user_system_role ? (() => {
+        const role = user.user_system_role as any;
+        return Array.isArray(role) ? {
+          id: role[0]?.user_system_role_id || '',
+          name: role[0]?.display_name || role[0]?.name || '',
+        } : {
+          id: role.user_system_role_id,
+          name: role.display_name || role.name,
+        };
+      })() : undefined,
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -191,18 +199,25 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
   
   if (error) throw error;
   
+  const systemRoleData = data.user_system_role as any;
+  
   return {
     id: data.user_id,
     uid: data.auth_user_id,
     email: data.email,
+    name: data.full_name || '',
     firstName: data.full_name?.split(' ')[0] || '',
     lastName: data.full_name?.split(' ').slice(1).join(' ') || '',
     avatar: data.avatar_url || undefined,
     customerId: data.customer_id,
-    systemRole: data.user_system_role ? {
-      id: data.user_system_role.user_system_role_id,
-      name: data.user_system_role.display_name || data.user_system_role.name,
-    } : undefined,
+    managerId: '',
+    systemRole: systemRoleData ? (Array.isArray(systemRoleData) ? {
+      id: systemRoleData[0]?.user_system_role_id || '',
+      name: systemRoleData[0]?.display_name || systemRoleData[0]?.name || '',
+    } : {
+      id: systemRoleData.user_system_role_id,
+      name: systemRoleData.display_name || systemRoleData.name,
+    }) : undefined,
     status: data.status,
     createdAt: data.created_at,
     updatedAt: data.updated_at,

@@ -57,7 +57,7 @@ interface PermissionsByModule {
     
     let query = supabase
       .from('roles')
-      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description)')
+      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description), users_count:users(count)')
       .order('name');
     
     if (params.search) {
@@ -69,8 +69,10 @@ interface PermissionsByModule {
     if (error) throw error;
     
     return (data || []).map((role: any) => ({
+      role_id: role.role_id,
       id: role.role_id,
       name: role.name,
+      display_name: role.display_name,
       displayName: role.display_name,
       description: role.description,
       permissions: (role.permissions || []).map((p: any) => ({
@@ -79,6 +81,9 @@ interface PermissionsByModule {
         displayName: p.display_name,
         description: p.description,
       })),
+      _count: {
+        users: Array.isArray(role.users_count) ? role.users_count.length : 0,
+      },
     })) as Role[];
   }
   
@@ -101,15 +106,17 @@ interface PermissionsByModule {
     
     const { data, error } = await supabase
       .from('roles')
-      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description)')
+      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description), users_count:users(count)')
       .eq('role_id', id)
       .single();
     
     if (error) throw error;
     
     return {
+      role_id: data.role_id,
       id: data.role_id,
       name: data.name,
+      display_name: data.display_name,
       displayName: data.display_name,
       description: data.description,
       permissions: (data.permissions || []).map((p: any) => ({
@@ -118,6 +125,9 @@ interface PermissionsByModule {
         displayName: p.display_name,
         description: p.description,
       })),
+      _count: {
+        users: Array.isArray(data.users_count) ? data.users_count.length : 0,
+      },
     } as unknown as Role;
   }
 

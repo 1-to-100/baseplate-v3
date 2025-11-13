@@ -30,7 +30,7 @@ import { getSystemRoles } from "./../../../lib/api/system-users";
 import { getCustomers } from "./../../../lib/api/customers";
 import { toast } from "@/components/core/toaster";
 import {SystemRolesHumanNames} from "@/lib/constants/system-roles";
-import {SystemRole} from "@/contexts/auth/types";
+import {SystemRole, SystemRoleObject} from "@/contexts/auth/types";
 import { SYSTEM_ROLES } from "@/lib/user-utils";
 
 interface HttpError {
@@ -77,7 +77,7 @@ export default function AddEditSystemUser({
   const { colorScheme } = useColorScheme();
   const isLightTheme = colorScheme === "light";
   const queryClient = useQueryClient();
-  const [localSystemRoles, setLocalSystemRoles] = useState<SystemRole[]>([]);
+  const [localSystemRoles, setLocalSystemRoles] = useState<SystemRoleObject[]>([]);
 
   const formatSystemRole = (role: string): string => {
     return role

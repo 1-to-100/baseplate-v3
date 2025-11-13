@@ -107,7 +107,7 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
   // Build the query
   let query = supabase
     .from('notifications')
-    .select('notification_id, title, message, type, channel, is_read, created_at, updated_at', { count: 'exact' })
+    .select('notification_id, title, message, comment, type, channel, is_read, created_at, updated_at', { count: 'exact' })
     .range(from, to);
   
   // Apply filters
@@ -144,6 +144,7 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
       id: notification.notification_id,
       title: notification.title,
       message: notification.message,
+      comment: notification.comment || '',
       type: notification.type,
       channel: notification.channel,
       isRead: notification.is_read,
