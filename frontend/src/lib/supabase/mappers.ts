@@ -221,48 +221,44 @@ export function apiTeamToDbTeam(apiTeam: Partial<ApiTeam>): Partial<DbTeam> {
 /**
  * Convert snake_case keys to camelCase recursively
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function snakeToCamel<T = any>(obj: any): T {
-  if (obj === null || obj === undefined) return obj
+export function snakeToCamel<T = unknown>(obj: unknown): T {
+  if (obj === null || obj === undefined) return obj as T
   
   if (Array.isArray(obj)) {
     return obj.map(item => snakeToCamel(item)) as T
   }
   
   if (typeof obj === 'object' && obj.constructor === Object) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newObj: any = {}
+    const newObj: Record<string, unknown> = {}
     for (const key in obj) {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-      newObj[camelKey] = snakeToCamel(obj[key])
+      newObj[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key])
     }
     return newObj as T
   }
   
-  return obj
+  return obj as T
 }
 
 /**
  * Convert camelCase keys to snake_case recursively
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function camelToSnake<T = any>(obj: any): T {
-  if (obj === null || obj === undefined) return obj
+export function camelToSnake<T = unknown>(obj: unknown): T {
+  if (obj === null || obj === undefined) return obj as T
   
   if (Array.isArray(obj)) {
     return obj.map(item => camelToSnake(item)) as T
   }
   
   if (typeof obj === 'object' && obj.constructor === Object) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newObj: any = {}
+    const newObj: Record<string, unknown> = {}
     for (const key in obj) {
       const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
-      newObj[snakeKey] = camelToSnake(obj[key])
+      newObj[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key])
     }
     return newObj as T
   }
   
-  return obj
+  return obj as T
 }
 

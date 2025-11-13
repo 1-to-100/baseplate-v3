@@ -3,6 +3,26 @@ import { apiFetch } from './api-fetch';
 import { SystemUser, SystemRoleObject } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 
+interface SystemRoleData {
+  user_system_role_id: string;
+  name: string;
+  display_name: string | null;
+}
+
+interface UserWithSystemRole {
+  user_id: string;
+  auth_user_id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  customer_id: string | null;
+  user_system_role_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  user_system_role: SystemRoleData | SystemRoleData[] | null;
+}
+
 
 
 interface CreateUserPayload {
@@ -139,7 +159,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
   const lastPage = Math.ceil(total / perPage);
   
   return {
-    data: (data || []).map(user => ({
+    data: (data || []).map((user: UserWithSystemRole) => ({
       id: user.user_id,
       uid: user.auth_user_id,
       email: user.email,
@@ -150,8 +170,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       customerId: user.customer_id,
       managerId: '',
       systemRole: user.user_system_role ? (() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const role = user.user_system_role as any;
+        const role = user.user_system_role;
         return Array.isArray(role) ? {
           id: role[0]?.user_system_role_id || '',
           name: role[0]?.display_name || role[0]?.name || '',
@@ -200,8 +219,7 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
   
   if (error) throw error;
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const systemRoleData = data.user_system_role as any;
+  const systemRoleData = data.user_system_role as SystemRoleData | SystemRoleData[] | null;
   
   return {
     id: data.user_id,

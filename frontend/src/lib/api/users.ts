@@ -5,6 +5,43 @@ import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
 
+interface CustomerData {
+  customer_id: string;
+  name: string;
+  domain: string | null;
+}
+
+interface RoleData {
+  role_id: string;
+  name: string;
+  display_name: string | null;
+}
+
+interface StatusData {
+  status_id: string;
+  name: string;
+  display_name: string | null;
+}
+
+interface UserWithRelations {
+  user_id: string;
+  auth_user_id: string;
+  email: string;
+  email_verified: boolean;
+  full_name: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+  customer_id: string | null;
+  role_id: string | null;
+  manager_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  customer: CustomerData | CustomerData[] | null;
+  role: RoleData | RoleData[] | null;
+}
+
 interface RegisterUserPayload {
   firstName: string,
   lastName: string,
@@ -235,8 +272,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   const lastPage = Math.ceil(total / perPage);
   
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: (data || []).map((user: any) => ({
+    data: (data || []).map((user: UserWithRelations) => ({
       id: user.user_id,
       uid: user.auth_user_id,
       email: user.email,
@@ -312,10 +348,8 @@ export async function getUserById(id: string): Promise<ApiUser> {
   
   if (error) throw error;
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const customer = data.customer as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = data.role as any;
+  const customer = data.customer as CustomerData | CustomerData[] | null;
+  const role = data.role as RoleData | RoleData[] | null;
   
   return {
     id: data.user_id,
@@ -438,8 +472,7 @@ export async function getStatuses(): Promise<TaxonomyItem[]> {
   
   if (error) throw error;
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((status: any) => ({
+  return (data || []).map((status: StatusData) => ({
     id: status.status_id,
     name: status.display_name || status.name,
   }));
