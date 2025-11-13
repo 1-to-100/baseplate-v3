@@ -21,19 +21,35 @@ export class SupabaseDatabase {
 
   async getCurrentUser() {
     const user = await this.getAuthUser()
-    
     const { data, error } = await this.client
       .from('users')
       .select(`
-        *,
-        customer:customers(*),
-        role:roles(*),
-        manager:managers(*)
+        user_id,
+        auth_user_id,
+        email,
+        full_name,
+        avatar_url,
+        phone_number,
+        customer_id,
+        role_id,
+        manager_id,
+        status,
+        last_login_at,
+        preferences,
+        created_at,
+        updated_at,
+        deleted_at,
+        customer:customers!customer_id(*),
+        role:roles!role_id(*)
       `)
       .eq('auth_user_id', user.id)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error fetching current user:', error);
+      throw error;
+    }
+    console.log('Current user data:', data);
     return data
   }
 
