@@ -39,8 +39,8 @@ export class SupabaseDatabase {
         created_at,
         updated_at,
         deleted_at,
-        customer:customers!customer_id(*),
-        role:roles!role_id(*)
+        customer:customers(customer_id, name, email_domain),
+        role:roles(role_id, name, display_name)
       `)
       .eq('auth_user_id', user.id)
       .single()
@@ -50,7 +50,15 @@ export class SupabaseDatabase {
       throw error;
     }
     console.log('Current user data:', data);
-    return data
+    
+    // Handle array responses from Supabase (should be single objects for these relationships)
+    const result = {
+      ...data,
+      customer: Array.isArray(data.customer) ? data.customer[0] || null : data.customer,
+      role: Array.isArray(data.role) ? data.role[0] || null : data.role,
+    }
+    
+    return result
   }
 
   async getUsers(params: {

@@ -356,7 +356,6 @@ export async function getUserInfo(): Promise<ApiUser> {
     id: dbUser.user_id,
     uid: dbUser.auth_user_id,
     email: dbUser.email,
-    emailVerified: dbUser.email_verified,
     name: dbUser.full_name || '',
     firstName: dbUser.full_name?.split(' ')[0] || '',
     lastName: dbUser.full_name?.split(' ').slice(1).join(' ') || '',
@@ -372,7 +371,7 @@ export async function getUserInfo(): Promise<ApiUser> {
     customer: dbUser.customer ? {
       id: dbUser.customer.customer_id,
       name: dbUser.customer.name,
-      domain: dbUser.customer.domain,
+      domain: dbUser.customer.email_domain || null,
     } : undefined,
     role: dbUser.role ? {
       id: dbUser.role.role_id,
