@@ -24,7 +24,6 @@ const isProduction = process.env.NODE_ENV === 'production';
  * - TipTap editor HTML content
  */
 function buildCSP(): string {
-  const backendApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   
   // Extract domains from full URLs
@@ -36,7 +35,6 @@ function buildCSP(): string {
     }
   };
 
-  const backendDomain = getHostname(backendApiUrl);
   const supabaseDomain = getHostname(supabaseUrl);
 
   const directives = [
@@ -89,9 +87,6 @@ function buildCSP(): string {
       supabaseDomain ? `wss://${supabaseDomain}` : "",
       "https://*.supabase.co",
       "wss://*.supabase.co",
-      // Backend API
-      backendDomain ? `https://${backendDomain}` : "",
-      backendDomain ? `http://${backendDomain}` : "",
       // Mapbox
       "https://api.mapbox.com",
       "https://events.mapbox.com",

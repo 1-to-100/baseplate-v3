@@ -1,5 +1,3 @@
-import { config } from '@/config';
-import { apiFetch } from './api-fetch';
 import { ApiUser, Status, TaxonomyItem } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
@@ -108,23 +106,7 @@ interface InviteMultipleUsersPayload {
 }
 
 export async function validateEmail(email: string): Promise<boolean> {
-  const validateEmailUrl = `${config.site.apiUrl}/register/validate-email/${encodeURIComponent(email)}`;
-  const response = await fetch(validateEmailUrl, {
-    method: "GET",
-    credentials: 'include',
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    const errorMessage = errorData.message
-      || `Failed to validate email: ${response.statusText}`
-      || 'An error occurred during email validation';
-    throw new Error(errorMessage);
-  }
-
+  // API call removed
   return true;
 }
 
@@ -146,36 +128,13 @@ export async function resetPassword(email: string): Promise<{status: string, mes
 }
 
 export async function registerUser(payload: RegisterUserPayload): Promise<ApiUser> {
-  const response = await fetch(`${config.site.apiUrl}/register`, {
-    method: "POST",
-    credentials: 'include',
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: payload.email,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      password: payload.password,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    const errorMessage = errorData.message
-      || `Failed to register user: ${response.statusText}`
-      || 'An error occurred during registration';
-    throw new Error(errorMessage);
-  }
-
-  return response.json() as Promise<ApiUser>;
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
-  return apiFetch<ApiUser>(`${config.site.apiUrl}/users`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function updateUser(payload: UpdateUserPayload): Promise<ApiUser> {

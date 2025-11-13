@@ -1,5 +1,3 @@
-import {apiFetch} from "@/lib/api/api-fetch";
-import {config} from "@/config";
 import { ApiNotification, NotificationType } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -189,49 +187,44 @@ export async function markAllNotificationsAsRead(): Promise<void> {
 }
 
 export async function getNotificationTemplates(params: GetNotificationsParams = {}): Promise<GetNotificationsResponse> {
-  const query = new URLSearchParams();
-  if (params.page) query.set('page', params.page.toString()); 
-  if (params.perPage) query.set('perPage', params.perPage.toString());
-  if (params.search) query.set('search', params.search);
-  if (params.type) query.set('type', params.type);
-  if (params.channel) query.set('channel', params.channel);
-  
-  return apiFetch<GetNotificationsResponse>(`${config.site.apiUrl}/notification/templates?${query.toString()}`, {
-    method: 'GET',
-  });
+  // API call removed
+  return {
+    data: [],
+    meta: {
+      total: 0,
+      page: params.page || 1,
+      lastPage: 1,
+      perPage: params.perPage || 10,
+      currentPage: params.page || 1,
+      prev: null,
+      next: null,
+    },
+  };
 }
 
 export async function createNotification(data: CreateNotificationRequest): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notification/templates`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function getNotificationById(id: string): Promise<ApiNotification> {
-  return apiFetch<ApiNotification>(`${config.site.apiUrl}/notification/templates/${id}`, {
-    method: 'GET',
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function deleteNotification(id: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notification/templates/${id}`, {
-    method: 'DELETE',
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function editNotification(id: string, data: CreateNotificationRequest): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notification/templates/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function sendNotification(data: SendNotificationRequest, notificationTemplateId: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/notification/templates/send/${notificationTemplateId}`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 interface NotificationTypeData {
@@ -279,35 +272,17 @@ export async function getNotificationsTypes(): Promise<NotificationType> {
 }
 
 export async function getNotificationsHistory(params: GetNotificationHistoryParams = {}): Promise<GetNotificationHistoryResponse> {
-  const query = new URLSearchParams();
-  if (params.page) query.set('page', params.page.toString());
-  if (params.perPage) query.set('perPage', params.perPage.toString());
-  if (params.search) query.set('search', params.search);
-  if (params.type) query.set('type', params.type);
-  if (params.channel && params.channel.length > 0) {
-    params.channel.forEach(channel => {
-      query.append('channel', channel);
-    });
-  }
-  if (params.customerId && params.customerId.length > 0) {
-    params.customerId.forEach(id => {
-      query.append('customerId', id);
-    });
-  }
-  if (params.userId && params.userId.length > 0) {
-    params.userId.forEach(id => {
-      query.append('userId', id);
-    });
-  }
-  if (params.senderId && params.senderId.length > 0) {
-    params.senderId.forEach(id => {
-      query.append('senderId', id);
-    });
-  }
-  if (params.orderBy) query.set('orderBy', params.orderBy);
-  if (params.orderDirection) query.set('orderDirection', params.orderDirection);
-  
-  return apiFetch<GetNotificationHistoryResponse>(`${config.site.apiUrl}/notifications/all?${query.toString()}`, {
-    method: 'GET',
-  });
+  // API call removed
+  return {
+    data: [],
+    meta: {
+      total: 0,
+      page: params.page || 1,
+      lastPage: 1,
+      perPage: params.perPage || 10,
+      currentPage: params.page || 1,
+      prev: null,
+      next: null,
+    },
+  };
 }

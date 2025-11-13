@@ -9,9 +9,6 @@ import { logger } from '@/lib/default-logger';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 
 import type { UserContextValue } from '../types';
-import {apiFetch} from "@/lib/api/api-fetch";
-import {paths} from "@/paths";
-import {config} from "@/config";
 
 export const UserContext = React.createContext<UserContextValue | undefined>(undefined);
 
@@ -46,11 +43,7 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     console.log("[syncUser]" );
     const user = session?.user;
     if(!user) return;
-
-    const syncUserUrl = new URL(paths.auth.supabase.syncUser, config.site.apiUrl);
-    return apiFetch(syncUserUrl.href, {
-      method: 'POST',
-    })
+    // API call removed
   }, [])
 
   React.useEffect(() => {

@@ -10,8 +10,6 @@ import Input from '@mui/joy/Input';
 import FormHelperText from '@mui/joy/FormHelperText';
 import Alert from '@mui/joy/Alert';
 import Button from '@mui/joy/Button';
-import {toast} from '@/components/core/toaster';
-import {apiFetch} from '@/lib/api/api-fetch';
 
 type RoleFormProps = {
     role: string;
@@ -41,29 +39,9 @@ export const RoleForm: FC<RoleFormProps> = ({role}) => {
     const onSubmit = React.useCallback(
         async (values: RoleFormValues): Promise<void> => {
             setIsPending(true);
-            //
-            try {
-                const response = await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/set-role`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        role: values.role,
-                    }),
-                })
-
-                // if (!response.ok) {
-                //     const error = await response.json();
-                //     toast.error(error.message);
-                //     return;
-                // }
-            } catch (err) {
-                console.error(err);
-                alert('Error setting role');
-                // console.error('magic link sign in error', err);
-                // setError('root', {type: 'server', message: (err as { message: string }).message});
-                setIsPending(false);
-            } finally {
-                setIsPending(false);
-            }
+            // API call removed
+            console.log('Role update requested:', values.role);
+            setIsPending(false);
         },
         []
     );

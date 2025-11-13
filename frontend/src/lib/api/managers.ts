@@ -1,5 +1,3 @@
-import { apiFetch } from "./api-fetch";
-import {config} from "@/config";
 import { createClient } from "@/lib/supabase/client";
 
 export interface Manager {

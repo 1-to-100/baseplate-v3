@@ -11,7 +11,6 @@ export interface Config {
     primaryColor: PrimaryColor;
     themeColor: string;
     url: string;
-    apiUrl?: string;
     version?: string;
   };
   logLevel: keyof typeof LogLevel;
@@ -31,7 +30,6 @@ export const config = {
     themeColor: '#090a0b',
     primaryColor: 'palatinateBlue',
     url: getSiteURL(),
-    apiUrl: process.env.NEXT_PUBLIC_API_URL,
     version: process.env.NEXT_PUBLIC_SITE_VERSION,
   },
   logLevel: (process.env.NEXT_PUBLIC_LOG_LEVEL as keyof typeof LogLevel) || LogLevel.ALL,

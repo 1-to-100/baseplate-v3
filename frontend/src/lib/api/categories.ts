@@ -1,6 +1,4 @@
-import { apiFetch } from "./api-fetch";
 import { Category } from "@/contexts/auth/types";
-import {config} from "@/config";
 
 export interface ModulePermission {
   id: string;
@@ -44,12 +42,8 @@ interface PermissionsByModule {
   }
 
   export async function getSubcategories(): Promise<string[]> {
-    return apiFetch<string[]>(`${config.site.apiUrl}/documents/categories/subcategories`, {
-      method: "GET",
-      headers: {
-        accept: "*/*",
-      },
-    });
+    // API call removed
+    return [];
   }
 
   // export async function getCategoriesList(): Promise<Category[]> {
@@ -62,37 +56,33 @@ interface PermissionsByModule {
   // }
 
   export async function getCategoriesList(params: GetCategoriesListParams = {}): Promise<GetCategoriesListResponse> {
-    const query = new URLSearchParams();
-    if (params.search) query.set('search', params.search);
-  
-    return apiFetch<GetCategoriesListResponse>(`${config.site.apiUrl}/documents/categories?${query.toString()}`, {
-      method: 'GET',
-    });
+    // API call removed
+    return {
+      data: [],
+      meta: {
+        total: 0,
+        page: params.page || 1,
+      },
+    };
   }
   
   export async function createCategory(payload: CreateCategoryPayload): Promise<Category> {
-    return apiFetch<Category>(`${config.site.apiUrl}/documents/categories`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    // API call removed
+    throw new Error('API calls removed');
   }
  
   
 export async function getCategoryById(id: string): Promise<Category> {
-  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
-    method: "GET",
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function deleteCategory(id: string): Promise<Category> {
-  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${id}`, {
-    method: "DELETE",
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function editCategory(categoryId: string, payload: CreateCategoryPayload): Promise<Category> {
-  return apiFetch<Category>(`${config.site.apiUrl}/documents/categories/${categoryId}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }

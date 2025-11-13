@@ -1953,7 +1953,6 @@ supabase secrets set SITE_URL=https://your-domain.com --project-ref YOUR_PROJECT
 #### 8.3: Deploy Frontend
 
 **Steps:**
-1. [ ] Update environment variables (remove NEXT_PUBLIC_API_URL)
 2. [ ] Build production frontend
 3. [ ] Run pre-deployment tests
 4. [ ] Deploy to staging first
@@ -1961,11 +1960,6 @@ supabase secrets set SITE_URL=https://your-domain.com --project-ref YOUR_PROJECT
 6. [ ] Deploy to production
 7. [ ] Verify production works
 
-**Environment Variables to Remove:**
-```bash
-# Remove from .env
-NEXT_PUBLIC_API_URL=...  # No longer needed
-```
 
 **Environment Variables to Keep:**
 ```bash

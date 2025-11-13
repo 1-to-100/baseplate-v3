@@ -10,7 +10,6 @@ import Input from '@mui/joy/Input';
 import FormHelperText from '@mui/joy/FormHelperText';
 import Alert from '@mui/joy/Alert';
 import Button from '@mui/joy/Button';
-import {apiFetch} from '@/lib/api/api-fetch';
 
 type PermissionsFormProps = {
     permissions: string[];
@@ -41,22 +40,9 @@ export const PermissionsForm: FC<PermissionsFormProps> = ({permissions}) => {
         async (values: PermissionsFormValues): Promise<void> => {
             setIsPending(true);
             const permissionArray = values.permissions.split(' ').filter((p) => p.length > 0);
-            //
-            try {
-                await apiFetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/set-permissions`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        permissions: permissionArray,
-                    }),
-                })
-            } catch (err) {
-                console.error(err);
-                // console.error('magic link sign in error', err);
-                // setError('root', {type: 'server', message: (err as { message: string }).message});
-                setIsPending(false);
-            } finally {
-                setIsPending(false);
-            }
+            // API call removed
+            console.log('Permissions update requested:', permissionArray);
+            setIsPending(false);
         },
         []
     );

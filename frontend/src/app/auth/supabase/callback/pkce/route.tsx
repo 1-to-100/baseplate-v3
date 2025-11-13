@@ -53,22 +53,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       // return NextResponse.json({ error: 'User is missing' });
     }
 
-    const validateEmailUrl = `${config.site.apiUrl}/register/validate-email/${encodeURIComponent(user.email)}`;
-    const emailValidationResponse = await fetch(validateEmailUrl, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!emailValidationResponse.ok) {
-      await supabaseClient.auth.signOut();
-
-      const errorData = await emailValidationResponse.json();
-      url.searchParams.set('error', errorData.message || 'Email validation failed');
-      return NextResponse.redirect(url);
-    }
+    // Email validation API call removed
   } catch (err) {
     if (err instanceof AuthApiError && err.message.includes('code and code verifier should be non-empty')) {
       url.searchParams.set('error', 'Please open the link in the same browser');

@@ -1,6 +1,4 @@
-import { apiFetch } from "./api-fetch";
 import { Role, TaxonomyItem } from "@/contexts/auth/types";
-import {config} from "@/config";
 import { createClient } from "@/lib/supabase/client";
 
 export interface ModulePermission {
@@ -116,17 +114,13 @@ interface RoleWithRelations {
   }
   
   export async function createRole(payload: CreateRolePayload): Promise<Role> {
-    return apiFetch<Role>(`${config.site.apiUrl}/roles`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    // API call removed
+    throw new Error('API calls removed');
   }
   
   export async function addRolePermissions(payload: AddRolePermissionsPayload): Promise<Role> {
-    return apiFetch<Role>(`${config.site.apiUrl}/roles/${payload.id}/permissions`, {
-      method: "POST",
-      body: JSON.stringify({ permissionNames: payload.permissionNames }),
-    });
+    // API call removed
+    throw new Error('API calls removed');
   }
   
   export async function getRoleById(id: string): Promise<Role> {

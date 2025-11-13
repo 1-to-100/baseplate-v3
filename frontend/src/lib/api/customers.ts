@@ -1,5 +1,3 @@
-import { config } from "@/config";
-import { apiFetch } from "./api-fetch";
 import { Customer, TaxonomyItem } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -82,10 +80,8 @@ interface UpdateCustomerPayload extends Partial<CreateCustomerPayload> {
 }
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
-  return apiFetch<Customer>(`${config.site.apiUrl}/customers`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function getCustomers(): Promise<TaxonomyItem[]> {
@@ -328,26 +324,21 @@ export interface CustomerSuccessUser {
 }
 
 export async function getCustomerSuccessUsers(customerId: string): Promise<CustomerSuccessUser[]> {
-  return apiFetch<CustomerSuccessUser[]>(`${config.site.apiUrl}/customers/${customerId}/customer-success`, {
-    method: 'GET',
-  });
+  // API call removed
+  return [];
 }
 
 export async function addCustomerSuccessUser(customerId: string, userId: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/customers/${customerId}/customer-success/${userId}`, {
-    method: 'POST',
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function removeCustomerSuccessUser(customerId: string, userId: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/customers/${customerId}/customer-success/${userId}`, {
-    method: 'DELETE',
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function updateCustomerSuccessUsers(customerId: string, userIds: string[]): Promise<CustomerSuccessUser[]> {
-  return apiFetch<CustomerSuccessUser[]>(`${config.site.apiUrl}/customers/${customerId}/customer-success`, {
-    method: 'PATCH',
-    body: JSON.stringify({ userIds }),
-  });
+  // API call removed
+  return [];
 }

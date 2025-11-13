@@ -1,6 +1,4 @@
-import { apiFetch } from "./api-fetch";
 import { Article } from "@/contexts/auth/types";
-import {config} from "@/config";
 
 interface CreateArticlePayload {
   title?: string;
@@ -36,53 +34,42 @@ export interface GetArticlesParams {
 
 
 export async function getArticlesList(params: GetArticlesParams = {}): Promise<GetArticlesResponse> {
-    const query = new URLSearchParams();
-    if (params.page) query.set('page', params.page.toString());
-    if (params.perPage) query.set('perPage', params.perPage.toString());
-    if (params.search) query.set('search', params.search);
-    if (params.orderBy) query.set('orderBy', params.orderBy);
-    if (params.orderDirection) query.set('orderDirection', params.orderDirection);
-    
-    if (params.categoryId && params.categoryId.length > 0) {
-      params.categoryId.forEach(id => query.append('categoryId', id));
-    }
-    
-    if (params.statusId && params.statusId.length > 0) {
-      params.statusId.forEach(status => query.append('status', status));
-    }
-  
-    return apiFetch<GetArticlesResponse>(`${config.site.apiUrl}/documents/articles?${query.toString()}`, {
-      method: 'GET',
-    });
+    // API call removed
+    return {
+      data: [],
+      meta: {
+        total: 0,
+        page: params.page || 1,
+        lastPage: 1,
+        perPage: params.perPage || 10,
+        currentPage: params.page || 1,
+        prev: null,
+        next: null,
+      },
+    };
   }
 
 export async function createArticle(
   payload: CreateArticlePayload
 ): Promise<Article> {
-  return apiFetch<Article>(`${config.site.apiUrl}/documents/articles`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function getArticleById(id: string): Promise<Article> {
-  return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${id}`, {
-    method: "GET",
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function deleteArticle(id: string): Promise<Article> {
-  return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${id}`, {
-    method: "DELETE",
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function editArticle(
   articleId: string,
   payload: CreateArticlePayload
 ): Promise<Article> {
-  return apiFetch<Article>(`${config.site.apiUrl}/documents/articles/${articleId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }

@@ -1,5 +1,3 @@
-import { config } from '@/config';
-import { apiFetch } from './api-fetch';
 import { SystemUser, SystemRoleObject } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 
@@ -72,17 +70,13 @@ interface GetUsersResponse {
 }
 
 export async function createSystemUser(payload: CreateUserPayload): Promise<SystemUser> {
-  return apiFetch<SystemUser>(`${config.site.apiUrl}/system-users`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function updateSystemUser(payload: EditUserInfoPayload): Promise<SystemUser> {
-  return apiFetch<SystemUser>(`${config.site.apiUrl}/system-users/${payload.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }
 
 export async function getSystemRoles(): Promise<SystemRoleObject[]> {
@@ -245,8 +239,6 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
 }
 
 export async function resendInviteSystemUser(email: string): Promise<void> {
-  return apiFetch<void>(`${config.site.apiUrl}/system-users/resend-invite`, {
-    method: 'POST',
-    body: JSON.stringify({email}),
-  });
+  // API call removed
+  throw new Error('API calls removed');
 }

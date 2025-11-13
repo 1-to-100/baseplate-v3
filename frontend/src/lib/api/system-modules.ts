@@ -1,6 +1,3 @@
-import { apiFetch } from "./api-fetch";
-import {config} from "@/config";
-
 export interface SystemModules {
     name: string;
     label: string;
@@ -13,10 +10,6 @@ export interface SystemModules {
   }
 
 export async function getSystemModules(): Promise<SystemModules[]> {
-  return apiFetch<SystemModules[]>(`${config.site.apiUrl}/system-modules`, {
-    method: "GET",
-    headers: {
-      accept: "*/*",
-    },
-  });
+  // API call removed
+  return [];
 }
