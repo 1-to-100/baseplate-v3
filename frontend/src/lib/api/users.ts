@@ -235,6 +235,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   const lastPage = Math.ceil(total / perPage);
   
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: (data || []).map((user: any) => ({
       id: user.user_id,
       uid: user.auth_user_id,
@@ -311,7 +312,9 @@ export async function getUserById(id: string): Promise<ApiUser> {
   
   if (error) throw error;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const customer = data.customer as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = data.role as any;
   
   return {
@@ -435,6 +438,7 @@ export async function getStatuses(): Promise<TaxonomyItem[]> {
   
   if (error) throw error;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((status: any) => ({
     id: status.status_id,
     name: status.display_name || status.name,

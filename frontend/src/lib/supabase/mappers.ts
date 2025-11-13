@@ -221,6 +221,7 @@ export function apiTeamToDbTeam(apiTeam: Partial<ApiTeam>): Partial<DbTeam> {
 /**
  * Convert snake_case keys to camelCase recursively
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function snakeToCamel<T = any>(obj: any): T {
   if (obj === null || obj === undefined) return obj
   
@@ -229,6 +230,7 @@ export function snakeToCamel<T = any>(obj: any): T {
   }
   
   if (typeof obj === 'object' && obj.constructor === Object) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newObj: any = {}
     for (const key in obj) {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
@@ -243,6 +245,7 @@ export function snakeToCamel<T = any>(obj: any): T {
 /**
  * Convert camelCase keys to snake_case recursively
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function camelToSnake<T = any>(obj: any): T {
   if (obj === null || obj === undefined) return obj
   
@@ -251,6 +254,7 @@ export function camelToSnake<T = any>(obj: any): T {
   }
   
   if (typeof obj === 'object' && obj.constructor === Object) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newObj: any = {}
     for (const key in obj) {
       const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()

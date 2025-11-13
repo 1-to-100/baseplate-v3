@@ -202,8 +202,11 @@ export async function getCustomerById(id: string): Promise<Customer> {
   
   if (error) throw error;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subscription = data.subscription as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const manager = data.manager as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const owner = data.owner as any;
   
   return {

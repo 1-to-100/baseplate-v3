@@ -150,6 +150,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       customerId: user.customer_id,
       managerId: '',
       systemRole: user.user_system_role ? (() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const role = user.user_system_role as any;
         return Array.isArray(role) ? {
           id: role[0]?.user_system_role_id || '',
@@ -199,6 +200,7 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
   
   if (error) throw error;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const systemRoleData = data.user_system_role as any;
   
   return {
