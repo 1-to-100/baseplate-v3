@@ -234,23 +234,48 @@ export async function sendNotification(data: SendNotificationRequest, notificati
   });
 }
 
+interface NotificationTypeData {
+  notification_type_id: string;
+  name: string;
+  display_name: string | null;
+  description: string | null;
+}
+
 export async function getNotificationsTypes(): Promise<NotificationType> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
+  // Get notification types
+  const { data: typesData, error: typesError } = await supabase
     .from('notification_types')
     .select('notification_type_id, name, display_name, description')
     .order('name');
   
-  if (error) throw error;
+  if (typesError) throw typesError;
   
-  // Return as NotificationType (likely needs type adjustment based on actual structure)
-  return (data || []).map(type => ({
-    id: type.notification_type_id,
-    name: type.name,
-    displayName: type.display_name,
-    description: type.description,
-  })) as any as NotificationType;
+  // Get distinct channels from notifications table
+  const { data: channelsData, error: channelsError } = await supabase
+    .from('notifications')
+    .select('channel')
+    .not('channel', 'is', null);
+  
+  if (channelsError) throw channelsError;
+  
+  // Extract unique channel values
+  const uniqueChannels = Array.from(
+    new Set(
+      (channelsData || [])
+        .map((item) => item.channel)
+        .filter((channel): channel is string => channel !== null)
+    )
+  );
+  
+  // Extract type names
+  const typeNames = (typesData || []).map((type: NotificationTypeData) => type.name);
+  
+  return {
+    types: typeNames,
+    channels: uniqueChannels,
+  };
 }
 
 export async function getNotificationsHistory(params: GetNotificationHistoryParams = {}): Promise<GetNotificationHistoryResponse> {

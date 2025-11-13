@@ -3,6 +3,48 @@ import { apiFetch } from "./api-fetch";
 import { Customer, TaxonomyItem } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 
+interface CustomerData {
+  customer_id: string;
+  name: string;
+}
+
+interface SubscriptionData {
+  subscription_id: string;
+  name: string;
+}
+
+interface ManagerData {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+}
+
+interface OwnerData {
+  user_id: string;
+  full_name: string | null;
+}
+
+interface SubscriptionTypeData {
+  subscription_type_id: string;
+  name: string;
+}
+
+interface CustomerWithRelations {
+  customer_id: string;
+  name: string;
+  email_domain: string | null;
+  subscription_type_id: string | null;
+  owner_id: string | null;
+  manager_id: string | null;
+  lifecycle_stage: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  manager: ManagerData | ManagerData[] | null;
+  owner: OwnerData | OwnerData[] | null;
+  subscription: SubscriptionTypeData | SubscriptionTypeData[] | null;
+}
+
 interface GetCustomersParams {
   page?: number;
   perPage?: number;
@@ -56,7 +98,7 @@ export async function getCustomers(): Promise<TaxonomyItem[]> {
   
   if (error) throw error;
   
-  return (data || []).map((customer: any) => ({
+  return (data || []).map((customer: CustomerData) => ({
     id: customer.customer_id,
     name: customer.name,
   }));
@@ -72,7 +114,7 @@ export async function getSubscriptions(): Promise<TaxonomyItem[]> {
   
   if (error) throw error;
   
-  return (data || []).map((subscription: any) => ({
+  return (data || []).map((subscription: SubscriptionData) => ({
     id: subscription.subscription_id,
     name: subscription.name,
   }));
@@ -132,7 +174,7 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
   const lastPage = Math.ceil(total / perPage);
   
   return {
-    data: (data || []).map((customer: any) => ({
+    data: (data || []).map((customer: CustomerWithRelations) => ({
       id: customer.customer_id,
       name: customer.name,
       email: customer.email_domain || '',
@@ -202,12 +244,9 @@ export async function getCustomerById(id: string): Promise<Customer> {
   
   if (error) throw error;
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subscription = data.subscription as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const manager = data.manager as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const owner = data.owner as any;
+  const subscription = data.subscription as SubscriptionTypeData | SubscriptionTypeData[] | null;
+  const manager = data.manager as ManagerData | ManagerData[] | null;
+  const owner = data.owner as OwnerData | OwnerData[] | null;
   
   return {
     id: data.customer_id,
