@@ -17,6 +17,15 @@ export const useCheckSessionInvite = () => {
   useEffect(() => {
     const handleToken = async () => {
       try {
+        // First, check if there's already a session (set by the callback page)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (session) {
+          // Session already exists, no need to process tokens
+          return;
+        }
+
+        // If no session, try to get tokens from URL hash
         const { access_token, refresh_token } = Object.fromEntries(
           new URLSearchParams(window.location.hash.slice(1))
         );

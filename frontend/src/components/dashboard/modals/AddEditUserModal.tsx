@@ -108,7 +108,7 @@ export default function AddEditUser({
         lastName: userData.lastName || "",
         email: userData.email || "",
         customer: userData?.customer?.name || "",
-        role: userData?.role?.display_name || "",
+        role: userData?.role?.displayName || "",
         manager: userData?.manager?.id.toString() || "",
       });
       setAvatarPreview(userData.avatar || null);
@@ -139,10 +139,13 @@ export default function AddEditUser({
       onClose();
       toast.success("User created successfully.");
     },
-    onError: (error: HttpError) => {
-      const errorMessage = error.response?.data?.message;
-      if (errorMessage === "User with this email already exists") {
+    onError: (error: HttpError | Error) => {
+      // Handle both HTTP errors and regular Error objects
+      const errorMessage = (error as HttpError).response?.data?.message || (error as Error).message;
+      
+      if (errorMessage === "User with this email already exists" || errorMessage?.includes("already exists")) {
         setErrors((prev) => ({ ...prev, email: "User with this email already exists" }));
+        toast.error("User with this email already exists");
       } else if (errorMessage) {
         toast.error(errorMessage);
       } else {
@@ -159,13 +162,17 @@ export default function AddEditUser({
       onClose();
       toast.success("User updated successfully.");
     },
-    onError: (error: HttpError) => {
-      const errorMessage = error.response?.data?.message;
-      if (errorMessage === "User with this email already exists") {
+    onError: (error: HttpError | Error) => {
+      // Handle both HTTP errors and regular Error objects
+      const errorMessage = (error as HttpError).response?.data?.message || (error as Error).message;
+      
+      if (errorMessage === "User with this email already exists" || errorMessage?.includes("already exists")) {
         setErrors((prev) => ({ ...prev, email: "User with this email already exists" }));
+        toast.error("User with this email already exists");
       } else if (errorMessage) {
         toast.error(errorMessage);
       } else {
+        console.error('Update user error:', error);
         toast.error("An error occurred while updating the user.");
       }
     },

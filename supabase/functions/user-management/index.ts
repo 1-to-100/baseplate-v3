@@ -33,7 +33,7 @@ serve(async (req) => {
 })
 
 async function handleInvite(user: any, body: any) {
-  const { email, customerId, roleId, managerId } = body
+  const { email, customerId, roleId, managerId, fullName } = body
 
   // Authorization
   if (!isSystemAdmin(user) && !user.customer_id) {
@@ -78,16 +78,29 @@ async function handleInvite(user: any, body: any) {
     .insert({
       auth_user_id: authUser.user.id,
       email,
+      full_name: fullName || email.split('@')[0], // Use email prefix as fallback
       customer_id: customerId,
       role_id: roleId,
       manager_id: managerId,
       status: 'invited'
     })
     .select(`
-      *,
-      customer:customers(*),
-      role:roles(*),
-      manager:managers(*)
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      phone_number,
+      avatar_url,
+      customer_id,
+      role_id,
+      manager_id,
+      status,
+      created_at,
+      updated_at,
+      deleted_at,
+      customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+      role:roles(role_id, name, display_name),
+      manager:managers(manager_id, full_name, email)
     `)
     .single()
 
@@ -98,7 +111,7 @@ async function handleInvite(user: any, body: any) {
   }
 
   // Send invitation email
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3001'
+  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/auth/callback`
   })
@@ -202,7 +215,7 @@ async function inviteUser(supabase: any, email: string, customerId: string, role
     throw new Error(`Failed to create ${email}: ${dbError.message}`)
   }
 
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3001'
+  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
   await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/auth/callback`
   })
@@ -236,7 +249,7 @@ async function handleResendInvite(user: any, body: any) {
   }
 
   // Resend invitation
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3001'
+  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
   const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${siteUrl}/auth/callback`
   })

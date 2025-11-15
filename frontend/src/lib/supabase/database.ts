@@ -39,17 +39,13 @@ export class SupabaseDatabase {
         created_at,
         updated_at,
         deleted_at,
-        customer:customers(customer_id, name, email_domain),
+        customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
         role:roles(role_id, name, display_name)
       `)
       .eq('auth_user_id', user.id)
       .single()
 
-    if (error) {
-      console.error('Error fetching current user:', error);
-      throw error;
-    }
-    console.log('Current user data:', data);
+    if (error) throw error
     
     // Handle array responses from Supabase (should be single objects for these relationships)
     const result = {
@@ -75,7 +71,7 @@ export class SupabaseDatabase {
       .from('users')
       .select(`
         *,
-        customer:customers(*),
+        customer:customers!users_customer_id_fkey(*),
         role:roles(*),
         manager:managers(*)
       `, { count: 'exact' })
@@ -132,7 +128,7 @@ export class SupabaseDatabase {
       .from('users')
       .select(`
         *,
-        customer:customers(*),
+        customer:customers!users_customer_id_fkey(*),
         role:roles(*),
         manager:managers(*)
       `)
@@ -179,7 +175,7 @@ export class SupabaseDatabase {
       .from('users')
       .select('user_id')
       .eq('email', email)
-      .single()
+      .maybeSingle() // Use maybeSingle instead of single to avoid 406 error
 
     if (error && error.code !== 'PGRST116') throw error // PGRST116 = not found
     return !!data
@@ -289,7 +285,7 @@ export class SupabaseDatabase {
       .from('teams')
       .select(`
         *,
-        customer:customers(*)
+        customer:customers!teams_customer_id_fkey(*)
       `)
 
     if (customerId) {
@@ -307,7 +303,7 @@ export class SupabaseDatabase {
       .from('teams')
       .select(`
         *,
-        customer:customers(*),
+        customer:customers!teams_customer_id_fkey(*),
         members:team_members(
           *,
           user:users(*)

@@ -117,7 +117,7 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       status,
       created_at,
       updated_at,
-      customer:customers(customer_id, name),
+      customer:customers!users_customer_id_fkey(customer_id, name),
       user_system_role:user_system_roles(user_system_role_id, name, display_name)
     `, { count: 'exact' })
     .not('user_system_role_id', 'is', null)  // Only system users
@@ -205,7 +205,7 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
       status,
       created_at,
       updated_at,
-      customer:customers(customer_id, name),
+      customer:customers!users_customer_id_fkey(customer_id, name),
       user_system_role:user_system_roles(user_system_role_id, name, display_name)
     `)
     .eq('user_id', id)

@@ -1,4 +1,5 @@
 import { createClient } from './client'
+import { config } from '@/config'
 
 export class EdgeFunctions {
   private client = createClient()
@@ -12,13 +13,62 @@ export class EdgeFunctions {
     customerId: string
     roleId: string
     managerId?: string
+    fullName?: string
   }) {
-    const { data, error } = await this.client.functions.invoke('user-management', {
-      body: { action: 'invite', ...payload }
-    })
+    try {
+      // Use direct fetch to get better error messages
+      const { data: sessionData } = await this.client.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        throw new Error('Not authenticated');
+      }
 
-    if (error) throw new Error(error.message)
-    return data
+      const supabaseUrl = config.supabase.url;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not configured');
+      }
+      const functionUrl = `${supabaseUrl}/functions/v1/user-management`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ action: 'invite', ...payload }),
+      });
+
+      let responseData;
+      try {
+        const responseText = await response.text();
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('Failed to parse edge function response:', parseError);
+        throw new Error(`Edge function returned invalid JSON (status: ${response.status})`);
+      }
+
+      if (!response.ok) {
+        const errorMessage = responseData.error || responseData.message || `Edge function returned ${response.status}`;
+        console.error('Edge function error:', {
+          status: response.status,
+          statusText: response.statusText,
+          responseData,
+          payload
+        });
+        throw new Error(errorMessage);
+      }
+
+      // Edge function returns { data: ... } structure
+      return responseData.data || responseData;
+    } catch (err: any) {
+      // If it's already our error, re-throw it
+      if (err.message && !err.message.includes('Edge Function returned')) {
+        throw err;
+      }
+      
+      // Otherwise, wrap it
+      console.error('Unexpected error in inviteUser:', err);
+      throw new Error(err.message || 'Failed to invite user');
+    }
   }
 
   async inviteMultipleUsers(payload: {

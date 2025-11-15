@@ -2,11 +2,54 @@ import { ApiUser, Status, TaxonomyItem } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
+
+// Helper function to extract domain from email
+function getDomainFromEmail(email: string): string {
+  if (!email) return '';
+  const trimmed = email.trim().toLowerCase();
+  const domainRegex = /@([^@\s]+)$/;
+  const match = domainRegex.exec(trimmed);
+  return match ? (match[1] || '') : '';
+}
+
+// Helper function to check if domain is a public email domain
+function isPublicEmailDomain(domain: string): boolean {
+  const PUBLIC_EMAIL_DOMAINS = new Set([
+    'gmail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.fr', 'yahoo.co.jp',
+    'hotmail.com', 'hotmail.co.uk', 'hotmail.fr',
+    'outlook.com', 'outlook.co.uk', 'outlook.fr',
+    'live.com', 'msn.com', 'icloud.com', 'me.com', 'mac.com',
+    'aol.com', 'protonmail.com', 'proton.me',
+    'yandex.com', 'yandex.ru', 'mail.ru',
+    'zoho.com', 'gmx.com', 'gmx.net', 'mail.com',
+    'inbox.com', 'fastmail.com', 'fastmail.fm',
+    'tutanota.com', 'tutanota.de', 'titan.email',
+  ]);
+  return PUBLIC_EMAIL_DOMAINS.has(domain.toLowerCase().trim());
+}
+
+// Helper function to get role ID by name
+async function getRoleIdByName(roleName: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('roles')
+    .select('role_id')
+    .eq('name', roleName)
+    .single();
+  
+  if (error || !data) {
+    console.error(`Failed to find role ${roleName}:`, error);
+    return null;
+  }
+  
+  return data.role_id;
+}
 
 interface CustomerData {
   customer_id: string;
   name: string;
-  domain: string | null;
+  email_domain: string | null;
 }
 
 interface RoleData {
@@ -25,7 +68,6 @@ interface UserWithRelations {
   user_id: string;
   auth_user_id: string;
   email: string;
-  email_verified: boolean;
   full_name: string | null;
   phone_number: string | null;
   avatar_url: string | null;
@@ -133,8 +175,304 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
-  // API call removed
-  throw new Error('API calls removed');
+  // Check if email already exists
+  const emailExists = await supabaseDB.checkEmailExists(payload.email);
+  if (emailExists) {
+    throw new Error('User with this email already exists');
+  }
+  
+  const supabase = createClient();
+  const fullName = `${payload.firstName} ${payload.lastName}`.trim();
+  
+  // Extract domain from email
+  const domain = getDomainFromEmail(payload.email);
+  if (!domain) {
+    throw new Error('Email address does not contain a valid domain');
+  }
+  
+  // Check if it's a public email domain (optional - you may want to allow these)
+  // if (isPublicEmailDomain(domain)) {
+  //   throw new Error('Public email domains are not allowed');
+  // }
+  
+  try {
+    // Check if customer with this domain already exists
+    let customerId = payload.customerId;
+    let existingCustomer = null;
+    let isNewCustomer = false;
+    let newCustomerId: string | null = null;
+    
+    if (!customerId && domain) {
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('customer_id')
+        .eq('email_domain', domain)
+        .single();
+      
+      if (customerError && customerError.code !== 'PGRST116') {
+        // PGRST116 = not found, which is fine
+        console.warn('Error checking for existing customer:', customerError);
+      } else if (customerData) {
+        existingCustomer = customerData;
+        customerId = customerData.customer_id;
+      } else {
+        // Customer doesn't exist - we need to create it first, then use edge function
+        isNewCustomer = true;
+      }
+    }
+    
+    // If this is a new customer, create it first (but don't set owner_id yet - user doesn't exist)
+    if (isNewCustomer && domain) {
+      // Get customer_admin role ID for later use
+      const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
+      
+      if (!customerAdminRoleId) {
+        console.warn('Could not find customer_admin role');
+      }
+      
+      // Create new customer (owner_id will be set after user is created)
+      const { data: newCustomer, error: customerCreateError } = await supabase
+        .from('customers')
+        .insert({
+          name: domain,
+          email_domain: domain,
+          owner_id: null, // Will be updated after user is created
+          lifecycle_stage: 'onboarding',
+          active: true,
+        })
+        .select('customer_id')
+        .single();
+      
+      if (customerCreateError || !newCustomer) {
+        console.error('Failed to create customer:', customerCreateError);
+        throw new Error(customerCreateError?.message || 'Failed to create customer');
+      }
+      
+      customerId = newCustomer.customer_id;
+      newCustomerId = newCustomer.customer_id;
+    }
+    
+    // Use edge function to create user and send invitation email
+    // This handles: creating auth user, creating db user, and sending invite email
+    if (customerId) {
+      // Determine roleId - use customer_admin if new customer, otherwise use provided roleId
+      let roleIdToUse: string;
+      if (isNewCustomer) {
+        const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
+        if (!customerAdminRoleId) {
+          throw new Error('Could not find customer_admin role. Please ensure the role exists in the database.');
+        }
+        roleIdToUse = customerAdminRoleId;
+      } else {
+        if (!payload.roleId) {
+          throw new Error('Role ID is required when creating a user for an existing customer');
+        }
+        roleIdToUse = payload.roleId;
+      }
+      
+      // Call edge function to create auth user, db user, and send invite
+      const inviteResult = await edgeFunctions.inviteUser({
+        email: payload.email,
+        customerId: customerId,
+        roleId: roleIdToUse,
+        managerId: payload.managerId,
+        fullName: fullName,
+      });
+      
+      // Verify the edge function completed successfully
+      if (!inviteResult) {
+        throw new Error('Edge function did not return a result');
+      }
+      
+      // Wait a moment for the user to be created in the database
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // If this is a new customer, update the customer's owner_id with the created user
+      if (isNewCustomer && newCustomerId) {
+        // Fetch the created user to get their user_id
+        const { data: createdUser, error: fetchUserError } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('email', payload.email)
+          .single();
+        
+        if (!fetchUserError && createdUser) {
+          // Update customer with owner_id
+          const { error: updateCustomerError } = await supabase
+            .from('customers')
+            .update({ owner_id: createdUser.user_id })
+            .eq('customer_id', newCustomerId);
+          
+          if (updateCustomerError) {
+            console.warn('Failed to update customer owner_id:', updateCustomerError);
+          }
+        }
+      }
+      
+      // Update the user's status if needed (edge function sets status to 'invited' by default)
+      // Note: full_name is now set by the edge function, so we only need to update status if needed
+      if (payload.status && payload.status !== 'inactive') {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ 
+            status: payload.status,
+          })
+          .eq('email', payload.email);
+        
+        if (updateError) {
+          console.warn('Failed to update user status:', updateError);
+          // Continue anyway - user is created and invite is sent
+        }
+      }
+    } else {
+      // No customerId and no domain - create user without customer (system admin case)
+      // Note: This doesn't create an auth user or send invite email
+      const { data: userData, error: createError } = await supabase
+        .from('users')
+        .insert({
+          email: payload.email,
+          full_name: fullName,
+          customer_id: null,
+          role_id: payload.roleId || null,
+          manager_id: payload.managerId || null,
+          status: payload.status || 'inactive',
+        })
+        .select(`
+          user_id,
+          auth_user_id,
+          email,
+          full_name,
+          phone_number,
+          avatar_url,
+          customer_id,
+          role_id,
+          manager_id,
+          status,
+          created_at,
+          updated_at,
+          deleted_at,
+          customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+          role:roles(role_id, name, display_name)
+        `)
+        .single();
+      
+      if (createError || !userData) {
+        throw new Error(createError?.message || 'Failed to create user');
+      }
+      
+      // Map to ApiUser format and return
+      const customer = userData.customer as CustomerData | CustomerData[] | null;
+      const role = userData.role as RoleData | RoleData[] | null;
+      
+      return {
+        id: userData.user_id,
+        uid: userData.auth_user_id || undefined,
+        email: userData.email,
+        name: userData.full_name || fullName,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        avatar: userData.avatar_url || undefined,
+        phoneNumber: userData.phone_number || undefined,
+        customerId: userData.customer_id || undefined,
+        roleId: userData.role_id || undefined,
+        managerId: userData.manager_id || undefined,
+        status: userData.status as Status,
+        createdAt: userData.created_at,
+        updatedAt: userData.updated_at || undefined,
+        deletedAt: userData.deleted_at || undefined,
+        customer: customer ? (Array.isArray(customer) ? {
+          id: customer[0]?.customer_id || '',
+          name: customer[0]?.name || '',
+          domain: customer[0]?.email_domain || '',
+        } : {
+          id: customer.customer_id,
+          name: customer.name,
+          domain: customer.email_domain,
+        }) : undefined,
+        role: role ? (Array.isArray(role) ? {
+          id: role[0]?.role_id || '',
+          name: role[0]?.name || '',
+          displayName: role[0]?.display_name || '',
+        } : {
+          id: role.role_id,
+          name: role.name,
+          displayName: role.display_name,
+        }) : undefined,
+      } as ApiUser;
+    }
+    
+    // Fetch the created user to return it (for the edge function path)
+    const { data: userData, error: fetchError } = await supabase
+      .from('users')
+      .select(`
+        user_id,
+        auth_user_id,
+        email,
+        full_name,
+        phone_number,
+        avatar_url,
+        customer_id,
+        role_id,
+        manager_id,
+        status,
+        created_at,
+        updated_at,
+        deleted_at,
+        customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+        role:roles(role_id, name, display_name)
+      `)
+      .eq('email', payload.email)
+      .single();
+    
+    if (fetchError || !userData) {
+      throw new Error('User was created but could not be fetched');
+    }
+    
+    // Map to ApiUser format
+    const customer = userData.customer as CustomerData | CustomerData[] | null;
+    const role = userData.role as RoleData | RoleData[] | null;
+    
+    return {
+      id: userData.user_id,
+      uid: userData.auth_user_id || undefined,
+      email: userData.email,
+      name: userData.full_name || fullName,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      avatar: userData.avatar_url || undefined,
+      phoneNumber: userData.phone_number || undefined,
+      customerId: userData.customer_id || undefined,
+      roleId: userData.role_id || undefined,
+      managerId: userData.manager_id || undefined,
+      status: userData.status as Status,
+      createdAt: userData.created_at,
+      updatedAt: userData.updated_at || undefined,
+      deletedAt: userData.deleted_at || undefined,
+      customer: customer ? (Array.isArray(customer) ? {
+        id: customer[0]?.customer_id || '',
+        name: customer[0]?.name || '',
+        domain: customer[0]?.email_domain || '',
+      } : {
+        id: customer.customer_id,
+        name: customer.name,
+        domain: customer.email_domain,
+      }) : undefined,
+      role: role ? (Array.isArray(role) ? {
+        id: role[0]?.role_id || '',
+        name: role[0]?.name || '',
+        displayName: role[0]?.display_name || '',
+      } : {
+        id: role.role_id,
+        name: role.name,
+        displayName: role.display_name,
+      }) : undefined,
+    } as ApiUser;
+  } catch (error: any) {
+    console.error('Error in createUser:', error);
+    // If edge function fails, throw the error with more context
+    const errorMessage = error.message || 'Failed to create user and send invitation';
+    throw new Error(errorMessage);
+  }
 }
 
 export async function updateUser(payload: UpdateUserPayload): Promise<ApiUser> {
@@ -177,7 +515,6 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       user_id, 
       auth_user_id, 
       email, 
-      email_verified,
       full_name,
       phone_number,
       avatar_url,
@@ -188,7 +525,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       created_at,
       updated_at,
       deleted_at,
-      customer:customers(customer_id, name, domain),
+      customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
       role:roles(role_id, name, display_name)
     `, { count: 'exact' })
     .range(from, to);
@@ -235,7 +572,6 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       id: user.user_id,
       uid: user.auth_user_id,
       email: user.email,
-      emailVerified: user.email_verified,
       name: user.full_name || '',
       firstName: user.full_name?.split(' ')[0] || '',
       lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
@@ -251,11 +587,11 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       customer: user.customer ? (Array.isArray(user.customer) ? {
         id: user.customer[0]?.customer_id || '',
         name: user.customer[0]?.name || '',
-        domain: user.customer[0]?.domain || '',
+        domain: user.customer[0]?.email_domain || '',
       } : {
         id: user.customer.customer_id,
         name: user.customer.name,
-        domain: user.customer.domain,
+        domain: user.customer.email_domain,
       }) : undefined,
       role: user.role ? (Array.isArray(user.role) ? {
         id: user.role[0]?.role_id || '',
@@ -279,6 +615,12 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   };
 }
 
+interface ManagerData {
+  manager_id: string;
+  full_name: string;
+  email: string;
+}
+
 export async function getUserById(id: string): Promise<ApiUser> {
   const supabase = createClient();
   
@@ -288,7 +630,6 @@ export async function getUserById(id: string): Promise<ApiUser> {
       user_id, 
       auth_user_id, 
       email, 
-      email_verified,
       full_name,
       phone_number,
       avatar_url,
@@ -299,22 +640,30 @@ export async function getUserById(id: string): Promise<ApiUser> {
       created_at,
       updated_at,
       deleted_at,
-      customer:customers(customer_id, name, domain),
-      role:roles(role_id, name, display_name)
+      customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+      role:roles(role_id, name, display_name),
+      manager:managers(manager_id, full_name, email)
     `)
     .eq('user_id', id)
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching user by id:', error);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error('User not found');
+  }
   
   const customer = data.customer as CustomerData | CustomerData[] | null;
   const role = data.role as RoleData | RoleData[] | null;
+  const manager = data.manager as ManagerData | ManagerData[] | null;
   
   return {
     id: data.user_id,
-    uid: data.auth_user_id,
+    uid: data.auth_user_id || undefined,
     email: data.email,
-    emailVerified: data.email_verified,
     name: data.full_name || '',
     firstName: data.full_name?.split(' ')[0] || '',
     lastName: data.full_name?.split(' ').slice(1).join(' ') || '',
@@ -325,16 +674,16 @@ export async function getUserById(id: string): Promise<ApiUser> {
     managerId: data.manager_id || undefined,
     status: data.status as Status,
     createdAt: data.created_at,
-    updatedAt: data.updated_at,
+    updatedAt: data.updated_at || undefined,
     deletedAt: data.deleted_at || undefined,
     customer: customer ? (Array.isArray(customer) ? {
       id: customer[0]?.customer_id || '',
       name: customer[0]?.name || '',
-      domain: customer[0]?.domain || '',
+      domain: customer[0]?.email_domain || '',
     } : {
       id: customer.customer_id,
       name: customer.name,
-      domain: customer.domain,
+      domain: customer.email_domain,
     }) : undefined,
     role: role ? (Array.isArray(role) ? {
       id: role[0]?.role_id || '',
@@ -344,6 +693,13 @@ export async function getUserById(id: string): Promise<ApiUser> {
       id: role.role_id,
       name: role.name,
       displayName: role.display_name,
+    }) : undefined,
+    manager: manager ? (Array.isArray(manager) ? {
+      id: manager[0]?.manager_id || '',
+      name: manager[0]?.full_name || manager[0]?.email || '',
+    } : {
+      id: manager.manager_id,
+      name: manager.full_name || manager.email,
     }) : undefined,
   } as ApiUser;
 }
