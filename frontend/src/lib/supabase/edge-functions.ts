@@ -59,15 +59,15 @@ export class EdgeFunctions {
 
       // Edge function returns { data: ... } structure
       return responseData.data || responseData;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // If it's already our error, re-throw it
-      if (err.message && !err.message.includes('Edge Function returned')) {
+      if (err instanceof Error && err.message && !err.message.includes('Edge Function returned')) {
         throw err;
       }
       
       // Otherwise, wrap it
       console.error('Unexpected error in inviteUser:', err);
-      throw new Error(err.message || 'Failed to invite user');
+      throw new Error(err instanceof Error ? err.message : 'Failed to invite user');
     }
   }
 

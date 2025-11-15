@@ -467,10 +467,10 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
         displayName: role.display_name,
       }) : undefined,
     } as ApiUser;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in createUser:', error);
     // If edge function fails, throw the error with more context
-    const errorMessage = error.message || 'Failed to create user and send invitation';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create user and send invitation';
     throw new Error(errorMessage);
   }
 }

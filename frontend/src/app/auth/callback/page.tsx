@@ -13,7 +13,7 @@ import { toast } from '@/components/core/toaster';
 // This page handles Supabase auth callbacks (invitations, password resets, etc.)
 // It processes the hash parameters from the URL and sets the session
 
-let executedRef = { current: false };
+const executedRef = { current: false };
 
 export default function Page(): React.JSX.Element | null {
   const [supabaseClient] = React.useState<SupabaseClient>(createSupabaseClient());
