@@ -38,6 +38,10 @@ interface CustomerSuccessOwnedCustomerRow {
   users: CustomerSuccessData | CustomerSuccessData[] | null;
 }
 
+interface CustomerSuccessOwnedCustomerRowWithoutId {
+  users: CustomerSuccessData | CustomerSuccessData[] | null;
+}
+
 interface CustomerWithRelations {
   customer_id: string;
   name: string;
@@ -291,7 +295,7 @@ export async function getCustomerById(id: string): Promise<Customer> {
   const subscription = data.subscription as SubscriptionTypeData | SubscriptionTypeData[] | null;
   const owner = data.owner as OwnerData | OwnerData[] | null;
   const customerSuccess = (!csError && csData) ? csData
-    .map((cs: CustomerSuccessOwnedCustomerRow) => {
+    .map((cs: CustomerSuccessOwnedCustomerRowWithoutId) => {
       const user = Array.isArray(cs.users) ? cs.users[0] : cs.users;
       return user;
     })
