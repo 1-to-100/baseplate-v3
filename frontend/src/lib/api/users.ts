@@ -555,8 +555,17 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     }
   }
   
-  // Apply sorting
-  const orderBy = params.orderBy || 'created_at';
+  // Apply sorting - map 'name' to 'full_name' since users table doesn't have 'name' column
+  const validOrderColumns = ['user_id', 'auth_user_id', 'email', 'full_name', 'phone_number', 'avatar_url', 'customer_id', 'role_id', 'manager_id', 'status', 'created_at', 'updated_at', 'deleted_at'];
+  let orderBy = params.orderBy || 'created_at';
+  // Map 'name' to 'full_name' for users table
+  if (orderBy === 'name') {
+    orderBy = 'full_name';
+  }
+  // Only allow valid columns
+  if (!validOrderColumns.includes(orderBy)) {
+    orderBy = 'created_at';
+  }
   const orderDirection = params.orderDirection || 'desc';
   query = query.order(orderBy, { ascending: orderDirection === 'asc' });
   

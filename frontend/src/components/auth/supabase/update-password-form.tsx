@@ -22,6 +22,7 @@ import { paths } from "@/paths";
 import { DynamicLogo } from "@/components/core/logo";
 import { useCheckSessionInvite } from "@/components/auth/supabase/check-session-invite";
 import { config } from "@/config";
+import { supabaseDB } from "@/lib/supabase/database";
 
 const passwordSchema = zod
   .object({
@@ -147,6 +148,17 @@ export function UpdatePasswordForm({
           setError("root", { type: "server", message: error.message });
           setIsPending(false);
           return;
+        }
+
+        // Update user status to 'active' if they were invited
+        try {
+          const currentUser = await supabaseDB.getCurrentUser();
+          if (currentUser.status === 'invited') {
+            await supabaseDB.updateUser(currentUser.user_id, { status: 'active' });
+          }
+        } catch (statusError) {
+          // Log error but don't block the flow - password update was successful
+          console.warn('Failed to update user status:', statusError);
         }
 
         const redirectUrl = new URL(
