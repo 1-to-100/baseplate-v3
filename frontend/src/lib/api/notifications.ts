@@ -246,8 +246,28 @@ export async function getNotificationTemplates(params: GetNotificationsParams = 
   const total = count || 0;
   const lastPage = Math.ceil(total / perPage);
   
+  interface TemplateWithCustomer {
+    template_id: string;
+    title: string;
+    message: string;
+    comment?: string | null;
+    type: string[];
+    channel: string;
+    created_at: string;
+    updated_at: string;
+    customers: {
+      customer_id: string;
+      name: string;
+      owner_id: string | null;
+    } | {
+      customer_id: string;
+      name: string;
+      owner_id: string | null;
+    }[] | null;
+  }
+  
   return {
-    data: (data || []).map((template: any) => {
+    data: (data || []).map((template: TemplateWithCustomer) => {
       // Handle customers relationship (can be object or array)
       const customer = Array.isArray(template.customers) 
         ? template.customers[0] 
@@ -436,7 +456,14 @@ export async function editNotification(id: string, data: CreateNotificationReque
   const sanitizedMessage = sanitizeEditorHTML(data.message);
   
   // Prepare update data
-  const updateData: any = {
+  const updateData: {
+    title: string;
+    message: string;
+    comment: string;
+    type: string[];
+    channel: string;
+    updated_at: string;
+  } = {
     title: data.title,
     message: sanitizedMessage,
     comment: data.comment,
@@ -634,8 +661,34 @@ export async function getNotificationsHistory(params: GetNotificationHistoryPara
   const total = count || 0;
   const lastPage = Math.ceil(total / perPage);
   
+  interface NotificationWithRelations {
+    notification_id: number;
+    title: string;
+    message: string;
+    type: string[];
+    channel: string;
+    created_at: string;
+    read_at: string | null;
+    users: {
+      user_id: number;
+      email: string;
+      full_name: string;
+    } | {
+      user_id: number;
+      email: string;
+      full_name: string;
+    }[] | null;
+    customers: {
+      customer_id: number;
+      name: string;
+    } | {
+      customer_id: number;
+      name: string;
+    }[] | null;
+  }
+  
   return {
-    data: (data || []).map((notification: any) => {
+    data: (data || []).map((notification: NotificationWithRelations) => {
       const result: {
         id: number;
         title: string;
