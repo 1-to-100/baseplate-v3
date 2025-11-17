@@ -52,11 +52,11 @@ type Values = zod.infer<typeof schema>;
 const defaultValues = { firstName: '', lastName: '', email: '', password: '', terms: false } satisfies Values;
 
 export function SignUpForm(): React.JSX.Element {
-  const [supabaseClient] = React.useState<SupabaseClient>(createSupabaseClient());
+  const supabaseClient = React.useMemo<SupabaseClient>(() => createSupabaseClient(), []);
   const searchParams = useSearchParams();
   const hasShownErrorMessage = React.useRef(false);
   const router = useRouter();
-  const [showPassword, setShowPassword] = React.useState<boolean>();
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
 
   const [isPending, setIsPending] = React.useState<boolean>(false);
 

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
 import { SYSTEM_ROLES } from '@/lib/user-utils';
+import { paths } from '@/paths';
+import { config } from '@/config';
 
 // Helper function to extract domain from email
 function getDomainFromEmail(email: string): string {
@@ -36,10 +38,15 @@ async function getRoleIdByName(roleName: string): Promise<string | null> {
     .from('roles')
     .select('role_id')
     .eq('name', roleName)
-    .single();
+    .maybeSingle(); // Use maybeSingle instead of single to handle not found gracefully
   
-  if (error || !data) {
+  if (error) {
     console.error(`Failed to find role ${roleName}:`, error);
+    return null;
+  }
+  
+  if (!data) {
+    console.error(`Role ${roleName} not found in database`);
     return null;
   }
   
@@ -170,8 +177,301 @@ export async function resetPassword(email: string): Promise<{status: string, mes
 }
 
 export async function registerUser(payload: RegisterUserPayload): Promise<ApiUser> {
-  // API call removed
-  throw new Error('API calls removed');
+  try {
+    const { firstName, lastName, email, password } = payload;
+    const supabase = createClient();
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // Extract domain from email
+    const domain = getDomainFromEmail(email);
+    if (!domain) {
+      throw new Error('Email address does not contain a valid domain');
+    }
+
+    // Check if it's a public email domain
+    if (isPublicEmailDomain(domain)) {
+      throw new Error('Please use your work email instead of a personal one (@gmail, @yahoo, etc.) to connect with your company. Personal email domains cannot join existing companies.');
+    }
+
+    // Check if email already exists
+    const emailExists = await supabaseDB.checkEmailExists(email);
+    if (emailExists) {
+      throw new Error('User with this email already exists');
+    }
+
+    // Find existing customer by domain
+    const { data: existingCustomer, error: customerError } = await supabase
+      .from('customers')
+      .select('customer_id')
+      .eq('email_domain', domain)
+      .maybeSingle();
+
+    if (customerError && customerError.code !== 'PGRST116') {
+      // PGRST116 = not found, which is fine
+      throw new Error(`Failed to check existing customer: ${customerError.message}`);
+    }
+
+    // Sign up user in Supabase Auth
+    const redirectToUrl = `${config.site.url}${paths.auth.supabase.callback.implicit}`;
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectToUrl,
+        data: {
+          firstName,
+          lastName,
+        },
+      },
+    });
+
+    if (signUpError) {
+      throw new Error(`Failed to sign up in Supabase: ${signUpError.message}`);
+    }
+
+    if (!authData.user) {
+      throw new Error('Failed to create auth user');
+    }
+
+    const authUserId = authData.user.id;
+
+    // Create user record in database
+    // If a session exists, we can use direct insert (RLS policy will allow it)
+    // If no session (email confirmation required), use the database function
+    let userId: string;
+    
+    if (authData.session) {
+      // Session exists - use direct insert (RLS policy will allow it)
+      const { data: newUser, error: createUserError } = await supabase
+        .from('users')
+        .insert({
+          auth_user_id: authUserId,
+          email,
+          full_name: fullName,
+          customer_id: existingCustomer?.customer_id || null,
+          status: 'inactive', // Will be activated after email confirmation
+        })
+        .select('user_id')
+        .single();
+
+      if (createUserError || !newUser) {
+        throw new Error(`Failed to create user: ${createUserError?.message || 'Unknown error'}`);
+      }
+
+      userId = newUser.user_id;
+    } else {
+      // No session - use database function that bypasses RLS
+      const { data: functionResult, error: functionError } = await supabase.rpc(
+        'create_user_for_registration',
+        {
+          p_auth_user_id: authUserId,
+          p_email: email,
+          p_full_name: fullName,
+          p_customer_id: existingCustomer?.customer_id || null,
+        }
+      );
+
+      if (functionError || !functionResult) {
+        throw new Error(`Failed to create user: ${functionError?.message || 'Unknown error'}`);
+      }
+
+      userId = functionResult;
+    }
+
+    let customerId = existingCustomer?.customer_id || null;
+    let roleId: string | null = null;
+
+    // If no existing customer, create new customer and assign role
+    if (!existingCustomer) {
+      // Get CUSTOMER_ADMINISTRATOR role ID
+      const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
+      if (!customerAdminRoleId) {
+        throw new Error('Could not find customer_admin role. Please ensure the role exists in the database.');
+      }
+      roleId = customerAdminRoleId;
+
+      // Create new customer using database function (more reliable than direct insert with RLS)
+      let newCustomerId: string | null = null;
+      
+      const { data: functionResult, error: functionError } = await supabase.rpc(
+        'create_customer_for_registration',
+        {
+          p_owner_id: userId,
+          p_name: domain,
+          p_email_domain: domain,
+        }
+      );
+
+      if (functionError || !functionResult) {
+        console.warn('Failed to create customer:', functionError);
+      } else {
+        newCustomerId = functionResult;
+      }
+
+      if (newCustomerId) {
+        customerId = newCustomerId;
+
+        // Update user with customer_id and role_id
+        const { error: updateUserError } = await supabase
+          .from('users')
+          .update({
+            customer_id: customerId,
+            role_id: roleId,
+          })
+          .eq('user_id', userId);
+
+        if (updateUserError) {
+          console.warn('Failed to update user with customer and role:', updateUserError);
+        }
+      }
+    }
+
+    // Fetch and return created user with relations
+    // Try to fetch with relations, but if RLS blocks it, construct from known data
+    let userData: any = null;
+    
+    // Try to fetch the user (without relations first to avoid RLS issues with joins)
+    const { data: userBasic, error: userFetchError } = await supabase
+      .from('users')
+      .select(`
+        user_id,
+        auth_user_id,
+        email,
+        full_name,
+        phone_number,
+        avatar_url,
+        customer_id,
+        role_id,
+        manager_id,
+        status,
+        created_at,
+        updated_at,
+        deleted_at
+      `)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!userFetchError && userBasic) {
+      userData = userBasic;
+      
+      // Try to fetch relations separately to avoid RLS issues with joins
+      if (customerId) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('customer_id, name, email_domain')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+        if (customerData) {
+          userData.customer = customerData;
+        }
+      }
+      
+      if (roleId) {
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('role_id, name, display_name')
+          .eq('role_id', roleId)
+          .maybeSingle();
+        if (roleData) {
+          userData.role = roleData;
+        }
+      }
+    } else {
+      console.warn('Failed to fetch user, constructing from known data:', userFetchError);
+    }
+    
+    // If we couldn't fetch, construct the user data from what we know
+    if (!userData) {
+      // Fetch customer and role separately if needed
+      let customer: CustomerData | null = null;
+      let role: RoleData | null = null;
+      
+      if (customerId) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('customer_id, name, email_domain')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+        if (customerData) {
+          customer = customerData as CustomerData;
+        }
+      }
+      
+      if (roleId) {
+        const { data: roleData } = await supabase
+          .from('roles')
+          .select('role_id, name, display_name')
+          .eq('role_id', roleId)
+          .maybeSingle();
+        if (roleData) {
+          role = roleData as RoleData;
+        }
+      }
+      
+      // Construct user data from known values
+      userData = {
+        user_id: userId,
+        auth_user_id: authUserId,
+        email,
+        full_name: fullName,
+        phone_number: null,
+        avatar_url: null,
+        customer_id: customerId,
+        role_id: roleId,
+        manager_id: null,
+        status: 'inactive',
+        created_at: new Date().toISOString(),
+        updated_at: null,
+        deleted_at: null,
+        customer,
+        role,
+      };
+    }
+
+    // Map to ApiUser format
+    const customer = userData.customer as CustomerData | CustomerData[] | null;
+    const role = userData.role as RoleData | RoleData[] | null;
+
+    return {
+      id: userData.user_id,
+      uid: userData.auth_user_id || undefined,
+      email: userData.email,
+      name: userData.full_name || fullName,
+      firstName,
+      lastName,
+      avatar: userData.avatar_url || undefined,
+      phoneNumber: userData.phone_number || undefined,
+      customerId: userData.customer_id || undefined,
+      roleId: userData.role_id || undefined,
+      managerId: userData.manager_id || undefined,
+      status: userData.status as Status,
+      createdAt: userData.created_at,
+      updatedAt: userData.updated_at || undefined,
+      deletedAt: userData.deleted_at || undefined,
+      customer: customer ? (Array.isArray(customer) ? {
+        id: customer[0]?.customer_id || '',
+        name: customer[0]?.name || '',
+        domain: customer[0]?.email_domain || '',
+      } : {
+        id: customer.customer_id,
+        name: customer.name,
+        domain: customer.email_domain,
+      }) : undefined,
+      role: role ? (Array.isArray(role) ? {
+        id: role[0]?.role_id || '',
+        name: role[0]?.name || '',
+        displayName: role[0]?.display_name || '',
+      } : {
+        id: role.role_id,
+        name: role.name,
+        displayName: role.display_name,
+      }) : undefined,
+    } as ApiUser;
+  } catch (error: unknown) {
+    console.error('Error in registerUser:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to register user';
+    throw new Error(errorMessage);
+  }
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
