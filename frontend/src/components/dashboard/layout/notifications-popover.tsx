@@ -180,15 +180,20 @@ export function NotificationsPopover({
       await queryClient.cancelQueries({ queryKey: ["notifications"] });
       const previousNotifications = queryClient.getQueryData(["notifications"]);
 
+      // For infinite queries, update all notifications to mark them as read
       queryClient.setQueryData(
         ["notifications"],
-        (old: GetNotificationsResponse | undefined) => {
-          if (!old?.data) return old;
+        (old: { pages: GetNotificationsResponse[]; pageParams: unknown[] } | undefined) => {
+          if (!old?.pages) return old;
+          const readTimestamp = new Date().toISOString();
           return {
             ...old,
-            data: old.data.map((n: ApiNotification) => ({
-              ...n,
-              isRead: true,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((n: ApiNotification) => ({
+                ...n,
+                readAt: readTimestamp,
+              })),
             })),
           };
         }
@@ -334,15 +339,20 @@ function NotificationContent({
 
       const previousNotifications = queryClient.getQueryData(["notifications"]);
 
+      // For infinite queries, update the notification to mark it as read
       queryClient.setQueryData(
         ["notifications"],
-        (old: GetNotificationsResponse | undefined) => {
-          if (!old?.data) return old;
+        (old: { pages: GetNotificationsResponse[]; pageParams: unknown[] } | undefined) => {
+          if (!old?.pages) return old;
+          const readTimestamp = new Date().toISOString();
           return {
             ...old,
-            data: old.data.map((n: ApiNotification) =>
-              n.id === notification.id ? { ...n, isRead: true } : n
-            ),
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data.map((n: ApiNotification) =>
+                n.id === notification.id ? { ...n, readAt: readTimestamp } : n
+              ),
+            })),
           };
         }
       );
@@ -654,7 +664,7 @@ function NotificationContent({
         )}
       </Stack>
 
-      {!notification.isRead ? (
+      {!notification.readAt ? (
         <Button
           variant="solid"
           onClick={() => markAsRead()}

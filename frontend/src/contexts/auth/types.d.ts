@@ -156,7 +156,7 @@ export interface ApiNotification {
   message: string;
   comment: string;
   createdAt: string;
-  isRead?: boolean;
+  readAt?: string | null;
   channel: string;
   type: string;
   User?: {

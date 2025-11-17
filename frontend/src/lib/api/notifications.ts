@@ -156,7 +156,7 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
       comment: '',
       type: notification.type,
       channel: notification.channel,
-      isRead: notification.read_at !== null, // Convert read_at timestamp to boolean
+      readAt: notification.read_at,
       createdAt: notification.created_at,
       updatedAt: notification.updated_at,
     })) as ApiNotification[],
@@ -174,24 +174,25 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
 
 export async function markNotificationAsRead(id: string): Promise<void> {
   const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
   
   const { error } = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() }) // Set read_at timestamp to mark as read
-    .eq('notification_id', id);
+    .eq('notification_id', id)
+    .eq('user_id', currentUser.user_id); // Filter by user_id for RLS compliance
   
   if (error) throw error;
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
   const supabase = createClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  const currentUser = await supabaseDB.getCurrentUser();
   
   const { error } = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() }) // Set read_at timestamp to mark as read
+    .eq('user_id', currentUser.user_id) // Filter by user_id for RLS compliance
     .is('read_at', null); // Only update unread notifications (where read_at is NULL)
   
   if (error) throw error;
@@ -390,7 +391,7 @@ export async function getNotificationById(id: string): Promise<ApiNotification> 
     comment: '',
     type: Array.isArray(notification.type) ? notification.type.join(',') : notification.type,
     channel: notification.channel,
-    isRead: notification.read_at !== null,
+    readAt: notification.read_at,
     createdAt: notification.created_at,
   };
 }
