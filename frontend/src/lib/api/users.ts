@@ -328,7 +328,7 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
 
     // Fetch and return created user with relations
     // Try to fetch with relations, but if RLS blocks it, construct from known data
-    let userData: any = null;
+    let userData: UserWithRelations | null = null;
     
     // Try to fetch the user (without relations first to avoid RLS issues with joins)
     const { data: userBasic, error: userFetchError } = await supabase
@@ -352,7 +352,12 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
       .maybeSingle();
 
     if (!userFetchError && userBasic) {
-      userData = userBasic;
+      // Initialize userData with customer and role as null
+      userData = {
+        ...userBasic,
+        customer: null,
+        role: null,
+      };
       
       // Try to fetch relations separately to avoid RLS issues with joins
       if (customerId) {
@@ -421,11 +426,16 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
         manager_id: null,
         status: 'inactive',
         created_at: new Date().toISOString(),
-        updated_at: null,
+        updated_at: new Date().toISOString(),
         deleted_at: null,
         customer,
         role,
       };
+    }
+
+    // Ensure userData is not null (should never happen, but TypeScript needs this)
+    if (!userData) {
+      throw new Error('Failed to create or fetch user data');
     }
 
     // Map to ApiUser format
