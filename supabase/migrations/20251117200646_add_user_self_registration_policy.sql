@@ -5,9 +5,11 @@
 -- Drop existing policies and functions if they exist (idempotent)
 DROP POLICY IF EXISTS users_insert_self_registration ON public.users;
 DROP POLICY IF EXISTS customers_insert_self_registration ON public.customers;
+DROP POLICY IF EXISTS customers_select_anon_by_domain ON public.customers;
 DROP POLICY IF EXISTS roles_select_anon ON public.roles;
 DROP FUNCTION IF EXISTS public.create_user_for_registration(uuid, text, text, uuid);
 DROP FUNCTION IF EXISTS public.create_customer_for_registration(uuid, text, text, uuid);
+DROP FUNCTION IF EXISTS public.activate_user_on_email_confirmation();
 
 -- Function: Create user record during registration
 -- This SECURITY DEFINER function allows creating a user record even when
@@ -144,6 +146,82 @@ COMMENT ON FUNCTION public.create_customer_for_registration(uuid, text, text) IS
 -- Grant execute permission to authenticated and anonymous users
 GRANT EXECUTE ON FUNCTION public.create_customer_for_registration(uuid, text, text) TO authenticated, anon;
 
+-- Function: Activate user on email confirmation
+-- This function activates a user (sets status to 'active') and assigns standard_user role
+-- if the user doesn't have a role yet and has a customer_id
+CREATE OR REPLACE FUNCTION public.activate_user_on_email_confirmation()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id uuid;
+  v_user_record RECORD;
+  v_standard_user_role_id uuid;
+BEGIN
+  -- Get current user's user_id
+  SELECT user_id INTO v_user_id
+  FROM public.users
+  WHERE auth_user_id = auth.uid()
+  LIMIT 1;
+  
+  IF v_user_id IS NULL THEN
+    -- User record doesn't exist yet, nothing to activate
+    RETURN;
+  END IF;
+  
+  -- Get user record
+  SELECT * INTO v_user_record
+  FROM public.users
+  WHERE user_id = v_user_id;
+  
+  -- Only activate if user is currently inactive
+  IF v_user_record.status != 'inactive' THEN
+    RETURN;
+  END IF;
+  
+  -- Check if user has confirmed email in auth.users
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.users 
+    WHERE id = auth.uid() 
+    AND email_confirmed_at IS NOT NULL
+  ) THEN
+    -- Email not confirmed yet, don't activate
+    RETURN;
+  END IF;
+  
+  -- Get standard_user role ID if user needs a role
+  IF v_user_record.role_id IS NULL AND v_user_record.customer_id IS NOT NULL THEN
+    SELECT role_id INTO v_standard_user_role_id
+    FROM public.roles
+    WHERE name = 'standard_user'
+    LIMIT 1;
+    
+    -- Update user: activate and assign role if needed
+    UPDATE public.users
+    SET 
+      status = 'active',
+      role_id = COALESCE(v_user_record.role_id, v_standard_user_role_id),
+      updated_at = now()
+    WHERE user_id = v_user_id;
+  ELSE
+    -- Just activate, keep existing role
+    UPDATE public.users
+    SET 
+      status = 'active',
+      updated_at = now()
+    WHERE user_id = v_user_id;
+  END IF;
+END;
+$$;
+
+COMMENT ON FUNCTION public.activate_user_on_email_confirmation() IS 
+  'Activates a user (sets status to active) when they confirm their email. Also assigns standard_user role if user has no role and belongs to a customer.';
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.activate_user_on_email_confirmation() TO authenticated;
+
 -- Policy: Allow users to create a customer where they are the owner during registration (if they have a session)
 CREATE POLICY customers_insert_self_registration ON public.customers
   FOR INSERT TO authenticated
@@ -165,4 +243,13 @@ CREATE POLICY roles_select_anon ON public.roles
 
 COMMENT ON POLICY roles_select_anon ON public.roles IS 
   'Allows anonymous users to read roles. Needed during registration to look up role IDs.';
+
+-- Policy: Allow anonymous users to read customers by email_domain (needed during registration)
+-- This allows users to check if a customer exists for their email domain during registration
+CREATE POLICY customers_select_anon_by_domain ON public.customers
+  FOR SELECT TO anon
+  USING (true);
+
+COMMENT ON POLICY customers_select_anon_by_domain ON public.customers IS 
+  'Allows anonymous users to read customers by email_domain. Needed during registration to determine if user should join existing customer or create new one.';
 

@@ -324,6 +324,26 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
           console.warn('Failed to update user with customer and role:', updateUserError);
         }
       }
+    } else {
+      // User is joining an existing customer - assign standard_user role
+      const standardUserRoleId = await getRoleIdByName(SYSTEM_ROLES.STANDARD_USER);
+      if (!standardUserRoleId) {
+        console.warn('Could not find standard_user role. User will be created without a role.');
+      } else {
+        roleId = standardUserRoleId;
+
+        // Update user with role_id
+        const { error: updateUserError } = await supabase
+          .from('users')
+          .update({
+            role_id: roleId,
+          })
+          .eq('user_id', userId);
+
+        if (updateUserError) {
+          console.warn('Failed to update user with standard_user role:', updateUserError);
+        }
+      }
     }
 
     // Fetch and return created user with relations

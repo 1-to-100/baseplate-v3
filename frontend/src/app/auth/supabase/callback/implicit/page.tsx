@@ -64,6 +64,19 @@ export default function Page(): React.JSX.Element | null {
       return;
     }
 
+    // Activate user if they just confirmed their email
+    // This will set status to 'active' and assign standard_user role if missing
+    try {
+      const { error: activateError } = await supabaseClient.rpc('activate_user_on_email_confirmation');
+      if (activateError) {
+        logger.debug('Failed to activate user on email confirmation:', activateError);
+        // Don't block the flow if activation fails - user can still log in
+      }
+    } catch (err) {
+      logger.debug('Error calling activate_user_on_email_confirmation:', err);
+      // Don't block the flow if activation fails
+    }
+
     let next = searchParams.get('next');
 
     if (!next) {

@@ -43,8 +43,21 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     console.log("[syncUser]" );
     const user = session?.user;
     if(!user) return;
-    // API call removed
-  }, [])
+    
+    // Activate user if they just confirmed their email
+    // This will set status to 'active' and assign standard_user role if missing
+    // The function is idempotent - it only activates if user is inactive and email is confirmed
+    try {
+      const { error: activateError } = await supabaseClient.rpc('activate_user_on_email_confirmation');
+      if (activateError) {
+        logger.debug('Failed to activate user on email confirmation:', activateError);
+        // Don't block the flow if activation fails
+      }
+    } catch (err) {
+      logger.debug('Error calling activate_user_on_email_confirmation:', err);
+      // Don't block the flow if activation fails
+    }
+  }, [supabaseClient])
 
   React.useEffect(() => {
     function handleInitialSession(session: Session | null): void {
