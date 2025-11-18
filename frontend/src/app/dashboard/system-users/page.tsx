@@ -78,11 +78,11 @@ export default function Page(): React.JSX.Element {
   const [filters, setFilters] = useState<{
     statusId: string[];
     customerId: string[];
-    roleFilter?: string;
+    roleId?: string[];
   }>({
     statusId: [],
     customerId: [],
-    roleFilter: undefined,
+    roleId: undefined,
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { userInfo } = useUserInfo();
@@ -113,8 +113,6 @@ export default function Page(): React.JSX.Element {
       status: apiUser.status,
       avatar: apiUser.avatar || undefined,
       activity: apiUser.activity,
-      isSuperadmin: apiUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
-      isCustomerSuccess: apiUser.role?.name === SYSTEM_ROLES.CUSTOMER_SUCCESS,
     };
   };
 
@@ -127,7 +125,7 @@ export default function Page(): React.JSX.Element {
       sortDirection,
       filters.statusId,
       filters.customerId,
-      filters.roleFilter,
+      filters.roleId,
     ],
     queryFn: async () => {
       const response = await getSystemUsers({
@@ -139,7 +137,9 @@ export default function Page(): React.JSX.Element {
         statusId: filters.statusId.length > 0 ? filters.statusId : undefined,
         customerId:
           filters.customerId.length > 0 ? filters.customerId : undefined,
+        roleId: filters.roleId && filters.roleId.length > 0 ? filters.roleId : undefined,
       });
+
       return {
         ...response,
         data: response.data.map(transformUser),
@@ -336,7 +336,7 @@ export default function Page(): React.JSX.Element {
   const handleFilter = (filters: {
     statusId: string[];
     customerId: string[];
-    roleFilter?: string;
+    roleId?: string[];
   }) => {
     setFilters(filters);
     setCurrentPage(1);
@@ -823,7 +823,7 @@ export default function Page(): React.JSX.Element {
                                 wordBreak: "break-all",
                               }}
                             >
-                              {user.role?.display_name || 'No Role'}
+                              {user.role?.name || 'No Role'}
                             </Box>
                           </td>
                           <td>

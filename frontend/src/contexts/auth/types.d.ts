@@ -143,7 +143,7 @@ export interface SystemUser {
   phoneNumber?: string;
   isSuperadmin?: boolean;
   isCustomerSuccess?: boolean;
-  systemRole?: SystemRoleObject;
+  systemRole?: Role;
   activity?: {
     id: number;
     browserOs: string;
