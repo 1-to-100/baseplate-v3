@@ -9,6 +9,7 @@ DROP POLICY IF EXISTS customers_select_anon_by_domain ON public.customers;
 DROP POLICY IF EXISTS roles_select_anon ON public.roles;
 DROP FUNCTION IF EXISTS public.create_user_for_registration(uuid, text, text, uuid);
 DROP FUNCTION IF EXISTS public.create_customer_for_registration(uuid, text, text, uuid);
+DROP FUNCTION IF EXISTS public.update_user_customer_and_role(uuid, uuid, uuid);
 DROP FUNCTION IF EXISTS public.activate_user_on_email_confirmation();
 
 -- Function: Create user record during registration
@@ -145,6 +146,54 @@ COMMENT ON FUNCTION public.create_customer_for_registration(uuid, text, text) IS
 
 -- Grant execute permission to authenticated and anonymous users
 GRANT EXECUTE ON FUNCTION public.create_customer_for_registration(uuid, text, text) TO authenticated, anon;
+
+-- Function: Update user with customer_id and role_id during registration
+-- This SECURITY DEFINER function allows updating a user record even when
+-- the user doesn't have a session yet (email confirmation required).
+CREATE OR REPLACE FUNCTION public.update_user_customer_and_role(
+  p_user_id uuid,
+  p_customer_id uuid,
+  p_role_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_auth_user_id uuid;
+  v_user_exists boolean;
+BEGIN
+  -- Verify that the user exists and get their auth_user_id
+  SELECT 
+    EXISTS(SELECT 1 FROM public.users WHERE user_id = p_user_id),
+    (SELECT auth_user_id FROM public.users WHERE user_id = p_user_id LIMIT 1)
+  INTO v_user_exists, v_auth_user_id;
+  
+  IF NOT v_user_exists THEN
+    RAISE EXCEPTION 'User does not exist';
+  END IF;
+  
+  -- Verify that if auth.uid() is available (user has session), it matches the user's auth_user_id
+  IF auth.uid() IS NOT NULL AND auth.uid() != v_auth_user_id THEN
+    RAISE EXCEPTION 'User does not match current session';
+  END IF;
+  
+  -- Update the user record
+  UPDATE public.users
+  SET 
+    customer_id = p_customer_id,
+    role_id = p_role_id,
+    updated_at = now()
+  WHERE user_id = p_user_id;
+END;
+$$;
+
+COMMENT ON FUNCTION public.update_user_customer_and_role(uuid, uuid, uuid) IS 
+  'Updates a user record with customer_id and role_id during registration. Can be called even without a session (email confirmation required). Verifies user exists and matches session if available.';
+
+-- Grant execute permission to authenticated and anonymous users
+GRANT EXECUTE ON FUNCTION public.update_user_customer_and_role(uuid, uuid, uuid) TO authenticated, anon;
 
 -- Function: Activate user on email confirmation
 -- This function activates a user (sets status to 'active') and assigns standard_user role

@@ -311,14 +311,15 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
       if (newCustomerId) {
         customerId = newCustomerId;
 
-        // Update user with customer_id and role_id
-        const { error: updateUserError } = await supabase
-          .from('users')
-          .update({
-            customer_id: customerId,
-            role_id: roleId,
-          })
-          .eq('user_id', userId);
+        // Update user with customer_id and role_id using database function (bypasses RLS)
+        const { error: updateUserError } = await supabase.rpc(
+          'update_user_customer_and_role',
+          {
+            p_user_id: userId,
+            p_customer_id: customerId,
+            p_role_id: roleId,
+          }
+        );
 
         if (updateUserError) {
           console.warn('Failed to update user with customer and role:', updateUserError);
@@ -332,13 +333,16 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
       } else {
         roleId = standardUserRoleId;
 
-        // Update user with role_id
-        const { error: updateUserError } = await supabase
-          .from('users')
-          .update({
-            role_id: roleId,
-          })
-          .eq('user_id', userId);
+        // Update user with role_id using database function (bypasses RLS)
+        // Note: customer_id is already set from existingCustomer, so we pass it again
+        const { error: updateUserError } = await supabase.rpc(
+          'update_user_customer_and_role',
+          {
+            p_user_id: userId,
+            p_customer_id: customerId, // Already set from existingCustomer
+            p_role_id: roleId,
+          }
+        );
 
         if (updateUserError) {
           console.warn('Failed to update user with standard_user role:', updateUserError);
