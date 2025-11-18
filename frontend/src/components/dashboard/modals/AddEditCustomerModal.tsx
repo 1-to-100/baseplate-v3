@@ -123,10 +123,7 @@ export default function AddEditCustomer({
     if (customerId && customerData && open) {
       setFormData({
         name: customerData.name || "",
-        email:
-          typeof customerData.email === "string"
-            ? customerData.email
-            : customerData.email[0] || "",
+        email: customerData.owner?.email || '',
         subscriptionId: customerData.subscriptionId ?? null,
         customerSuccessId: customerData.customerSuccess?.map(cs => cs.id) || [],
         status: customerData.status || "",

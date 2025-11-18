@@ -6,8 +6,8 @@ interface CustomerData {
   name: string;
 }
 
-interface SubscriptionData {
-  subscription_id: string;
+interface SubscriptionTypeData {
+  subscription_type_id: string;
   name: string;
 }
 
@@ -26,6 +26,7 @@ interface CustomerSuccessData {
 interface OwnerData {
   user_id: string;
   full_name: string | null;
+  email: string | null;
 }
 
 interface SubscriptionTypeData {
@@ -119,14 +120,14 @@ export async function getSubscriptions(): Promise<TaxonomyItem[]> {
   const supabase = createClient();
   
   const { data, error } = await supabase
-    .from('subscriptions')
-    .select('subscription_id, name')
+    .from('subscription_types')
+    .select('subscription_type_id, name')
     .order('name');
   
   if (error) throw error;
   
-  return (data || []).map((subscription: SubscriptionData) => ({
-    id: subscription.subscription_id,
+  return (data || []).map((subscription: SubscriptionTypeData) => ({
+    id: subscription.subscription_type_id,
     name: subscription.name,
   }));
 }
@@ -153,7 +154,7 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       active,
       created_at,
       updated_at,
-      owner:users!customers_owner_id_fkey(user_id, full_name),
+      owner:users!customers_owner_id_fkey(user_id, full_name, email),
       subscription:subscription_types(subscription_type_id, name)
     `, { count: 'exact' })
     .range(from, to);
@@ -233,10 +234,12 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
           id: customer.owner[0]?.user_id || '',
           firstName: customer.owner[0]?.full_name?.split(' ')[0] || '',
           lastName: customer.owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
+          email: customer.owner[0]?.email || '',
         } : {
           id: customer.owner.user_id,
           firstName: customer.owner.full_name?.split(' ')[0] || '',
           lastName: customer.owner.full_name?.split(' ').slice(1).join(' ') || '',
+          email: customer.owner.email || '',
         }) : { id: '', firstName: '', lastName: '' },
         numberOfUsers: undefined,
         customerSuccess: customerSuccess.map((cs) => ({
@@ -276,7 +279,7 @@ export async function getCustomerById(id: string): Promise<Customer> {
       active,
       created_at,
       updated_at,
-      owner:users!customers_owner_id_fkey(user_id, full_name),
+      owner:users!customers_owner_id_fkey(user_id, full_name, email),
       subscription:subscription_types(subscription_type_id, name)
     `)
     .eq('customer_id', id)
@@ -321,10 +324,12 @@ export async function getCustomerById(id: string): Promise<Customer> {
       id: owner[0]?.user_id || '',
       firstName: owner[0]?.full_name?.split(' ')[0] || '',
       lastName: owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
+      email: owner[0]?.email || '',
     } : {
       id: owner.user_id,
       firstName: owner.full_name?.split(' ')[0] || '',
       lastName: owner.full_name?.split(' ').slice(1).join(' ') || '',
+      email: owner.email || '',
     }) : { id: '', firstName: '', lastName: '' },
     numberOfUsers: undefined,
     customerSuccess,
