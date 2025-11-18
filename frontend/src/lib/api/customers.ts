@@ -1,5 +1,6 @@
 import { Customer, TaxonomyItem } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
+import { SYSTEM_ROLES } from "@/lib/user-utils";
 
 interface CustomerData {
   customer_id: string;
@@ -93,6 +94,69 @@ interface CreateCustomerPayload {
 
 interface UpdateCustomerPayload extends Partial<CreateCustomerPayload> {
   id: string;
+}
+
+/**
+ * Get system role IDs (SYSTEM_ADMINISTRATOR and CUSTOMER_SUCCESS)
+ * These roles should be excluded from user counts
+ */
+async function getSystemRoleIds(supabase: ReturnType<typeof createClient>): Promise<string[]> {
+  const { data: roles, error } = await supabase
+    .from('roles')
+    .select('role_id')
+    .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS]);
+
+  if (error) {
+    console.warn('Failed to fetch system role IDs:', error);
+    return [];
+  }
+
+  return (roles || []).map((role) => role.role_id);
+}
+
+/**
+ * Count users for a customer (excluding system roles, including users with no role)
+ * This matches the backend logic in customers.service.ts
+ * 
+ * Counts users where:
+ * - customer_id matches
+ * - deleted_at is null
+ * - role_id is null OR role_id is not in systemRoleIds (SYSTEM_ADMINISTRATOR, CUSTOMER_SUCCESS)
+ */
+async function countUsersForCustomer(
+  supabase: ReturnType<typeof createClient>,
+  customerId: string,
+  systemRoleIds: string[]
+): Promise<number> {
+  try {
+    // Fetch all users for this customer (excluding deleted)
+    // We need to filter by role_id, so we fetch minimal data and filter in memory
+    const { data: allUsers, error } = await supabase
+      .from('users')
+      .select('user_id, role_id')
+      .eq('customer_id', customerId)
+      .is('deleted_at', null);
+
+    if (error) {
+      console.warn(`Failed to count users for customer ${customerId}:`, error);
+      return 0;
+    }
+
+    if (!allUsers || allUsers.length === 0) {
+      return 0;
+    }
+
+    // Filter: role_id is null OR role_id is not in systemRoleIds
+    // This matches the backend logic: exclude system_admin and customer_success roles
+    const filteredUsers = allUsers.filter(
+      (user) => !user.role_id || !systemRoleIds.includes(user.role_id)
+    );
+
+    return filteredUsers.length;
+  } catch (error) {
+    console.warn(`Failed to count users for customer ${customerId}:`, error);
+    return 0;
+  }
 }
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
@@ -214,6 +278,19 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       });
     }
   }
+
+  // Get system role IDs for user counting (exclude system_admin and customer_success)
+  const systemRoleIds = await getSystemRoleIds(supabase);
+
+  // Calculate user counts for all customers in parallel
+  const userCountPromises = customerIds.map((customerId) =>
+    countUsersForCustomer(supabase, customerId, systemRoleIds)
+  );
+  const userCounts = await Promise.all(userCountPromises);
+  const userCountMap = new Map<string, number>();
+  customerIds.forEach((customerId, index) => {
+    userCountMap.set(customerId, userCounts[index] ?? 0);
+  });
   
   return {
     data: (data || []).map((customer: CustomerWithRelations) => {
@@ -241,7 +318,7 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
           lastName: customer.owner.full_name?.split(' ').slice(1).join(' ') || '',
           email: customer.owner.email || '',
         }) : { id: '', firstName: '', lastName: '' },
-        numberOfUsers: undefined,
+        numberOfUsers: userCountMap.get(customer.customer_id) ?? 0,
         customerSuccess: customerSuccess.map((cs) => ({
           id: cs.user_id,
           name: cs.full_name || '',
@@ -294,6 +371,10 @@ export async function getCustomerById(id: string): Promise<Customer> {
       users!customer_success_owned_customers_user_id_fkey(user_id, full_name, email)
     `)
     .eq('customer_id', id);
+
+  // Get system role IDs and calculate user count
+  const systemRoleIds = await getSystemRoleIds(supabase);
+  const numberOfUsers = await countUsersForCustomer(supabase, id, systemRoleIds);
   
   const subscription = data.subscription as SubscriptionTypeData | SubscriptionTypeData[] | null;
   const owner = data.owner as OwnerData | OwnerData[] | null;
@@ -331,7 +412,7 @@ export async function getCustomerById(id: string): Promise<Customer> {
       lastName: owner.full_name?.split(' ').slice(1).join(' ') || '',
       email: owner.email || '',
     }) : { id: '', firstName: '', lastName: '' },
-    numberOfUsers: undefined,
+    numberOfUsers,
     customerSuccess,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
