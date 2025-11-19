@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import { supabaseDB } from "@/lib/supabase/database";
 import { generateSlug } from "@/lib/helpers/string-helpers";
 import { authService } from "@/lib/auth/auth-service";
-import { isSystemAdministrator } from "@/lib/user-utils";
+import { SYSTEM_ROLES } from "@/lib/user-utils";
 
 export interface ModulePermission {
   id: string;
@@ -89,7 +89,7 @@ interface PermissionsByModule {
     
     // For system admins, get customerId from JWT context
     let customerId = currentUser.customer_id;
-    if (!customerId && isSystemAdministrator(currentUser as any)) {
+    if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
       const context = await authService.getCurrentContext();
       customerId = context.customerId || undefined;
     }
@@ -130,7 +130,7 @@ interface PermissionsByModule {
     
     // For system admins, get customerId from JWT context
     let customerId = currentUser.customer_id;
-    if (!customerId && isSystemAdministrator(currentUser as any)) {
+    if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
       const context = await authService.getCurrentContext();
       customerId = context.customerId || undefined;
     }
@@ -206,7 +206,7 @@ interface PermissionsByModule {
     
     // For system admins, get customerId from JWT context
     let customerId = currentUser.customer_id;
-    if (!customerId && isSystemAdministrator(currentUser as any)) {
+    if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
       const context = await authService.getCurrentContext();
       customerId = context.customerId || undefined;
     }
@@ -258,7 +258,7 @@ export async function getCategoryById(id: string): Promise<Category> {
   
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
-  if (!customerId && isSystemAdministrator(currentUser as any)) {
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
@@ -303,7 +303,7 @@ export async function deleteCategory(id: string): Promise<Category> {
   
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
-  if (!customerId && isSystemAdministrator(currentUser as any)) {
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
@@ -350,7 +350,7 @@ export async function editCategory(categoryId: string, payload: CreateCategoryPa
   
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
-  if (!customerId && isSystemAdministrator(currentUser as any)) {
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
