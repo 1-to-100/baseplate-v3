@@ -1,6 +1,8 @@
 import { SystemUser, SystemRoleObject } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { SYSTEM_ROLES } from '@/lib/user-utils';
+import { supabaseDB } from '@/lib/supabase/database';
+import { edgeFunctions } from '@/lib/supabase/edge-functions';
 
 interface RoleData {
   role_id: string;
@@ -73,14 +75,278 @@ interface GetUsersResponse {
   };
 }
 
+// Helper function to get role ID by name
+async function getRoleIdByName(roleName: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('roles')
+    .select('role_id')
+    .eq('name', roleName)
+    .maybeSingle();
+  
+  if (error) {
+    console.error(`Failed to find role ${roleName}:`, error);
+    return null;
+  }
+  
+  if (!data) {
+    console.error(`Role ${roleName} not found in database`);
+    return null;
+  }
+  
+  return data.role_id;
+}
+
 export async function createSystemUser(payload: CreateUserPayload): Promise<SystemUser> {
-  // API call removed
-  throw new Error('API calls removed');
+  const supabase = createClient();
+  const fullName = `${payload.firstName} ${payload.lastName}`.trim();
+  
+  // Validate system role
+  const isSystemAdmin = payload.systemRole === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR;
+  const isCustomerSuccess = payload.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS;
+  
+  if (!isSystemAdmin && !isCustomerSuccess) {
+    throw new Error('Invalid system role. Must be system_admin or customer_success');
+  }
+  
+  // Check if email already exists
+  const emailExists = await supabaseDB.checkEmailExists(payload.email);
+  if (emailExists) {
+    throw new Error('User with this email already exists');
+  }
+  
+  // Validate customer if customer_success
+  if (isCustomerSuccess && payload.customerId) {
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('customer_id')
+      .eq('customer_id', payload.customerId)
+      .maybeSingle();
+    
+    if (customerError || !customer) {
+      throw new Error('Customer not found');
+    }
+  }
+  
+  // Get role ID by name
+  const roleId = await getRoleIdByName(payload.systemRole);
+  if (!roleId) {
+    throw new Error(`Role ${payload.systemRole} not found`);
+  }
+  
+  // Create user in database
+  const { data: userData, error: createError } = await supabase
+    .from('users')
+    .insert({
+      email: payload.email,
+      full_name: fullName,
+      customer_id: payload.customerId || null,
+      role_id: roleId,
+      status: payload.status || 'inactive',
+    })
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      avatar_url,
+      customer_id,
+      role_id,
+      status,
+      created_at,
+      updated_at,
+      role:roles(role_id, name, display_name, description, is_system_role)
+    `)
+    .single();
+  
+  if (createError || !userData) {
+    throw new Error(createError?.message || 'Failed to create user');
+  }
+  
+  // If customer_success and has customerId, create entry in customer_success_owned_customers
+  if (isCustomerSuccess && payload.customerId) {
+    const { error: csError } = await supabase
+      .from('customer_success_owned_customers')
+      .insert({
+        user_id: userData.user_id,
+        customer_id: payload.customerId,
+      });
+    
+    if (csError) {
+      console.error('Failed to create customer success assignment:', csError);
+      // Don't throw - user is created, assignment can be fixed later
+    }
+  }
+  
+  // Use edge function to create auth user and send invite email
+  if (payload.customerId) {
+    try {
+      await edgeFunctions.inviteUser({
+        email: payload.email,
+        customerId: payload.customerId,
+        roleId: roleId,
+        fullName: fullName,
+      });
+    } catch (inviteError) {
+      console.error('Failed to send invite email:', inviteError);
+      // Don't throw - user is created, invite can be resent later
+    }
+  }
+  
+  // Map to SystemUser format
+  const role = userData.role as RoleData | RoleData[] | null;
+  
+  return {
+    id: userData.user_id,
+    uid: userData.auth_user_id || '',
+    email: userData.email,
+    name: userData.full_name || '',
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    avatar: userData.avatar_url || undefined,
+    customerId: userData.customer_id,
+    managerId: '',
+    role: role ? (Array.isArray(role) ? {
+      id: role[0]?.role_id || '',
+      name: role[0]?.display_name || role[0]?.name || '',
+    } : {
+      id: role.role_id,
+      name: role.display_name || role.name,
+    }) : undefined,
+    status: userData.status,
+    createdAt: userData.created_at,
+    updatedAt: userData.updated_at,
+  } as SystemUser;
 }
 
 export async function updateSystemUser(payload: EditUserInfoPayload): Promise<SystemUser> {
-  // API call removed
-  throw new Error('API calls removed');
+  const supabase = createClient();
+  const fullName = `${payload.firstName} ${payload.lastName}`.trim();
+  
+  // Validate system role
+  const isSystemAdmin = payload.systemRole === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR;
+  const isCustomerSuccess = payload.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS;
+  
+  if (!isSystemAdmin && !isCustomerSuccess) {
+    throw new Error('Invalid system role. Must be system_admin or customer_success');
+  }
+  
+  // Get current user to check existing role
+  const { data: currentUser, error: fetchError } = await supabase
+    .from('users')
+    .select('role_id, customer_id')
+    .eq('user_id', payload.id)
+    .single();
+  
+  if (fetchError || !currentUser) {
+    throw new Error('User not found');
+  }
+  
+  // Get new role ID
+  const newRoleId = await getRoleIdByName(payload.systemRole);
+  if (!newRoleId) {
+    throw new Error(`Role ${payload.systemRole} not found`);
+  }
+  
+  // Validate customer if customer_success
+  if (isCustomerSuccess && payload.customerId) {
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('customer_id')
+      .eq('customer_id', payload.customerId)
+      .maybeSingle();
+    
+    if (customerError || !customer) {
+      throw new Error('Customer not found');
+    }
+  }
+  
+  // Update user
+  const { data: userData, error: updateError } = await supabase
+    .from('users')
+    .update({
+      email: payload.email,
+      full_name: fullName,
+      customer_id: payload.customerId || null,
+      role_id: newRoleId,
+      status: payload.status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', payload.id)
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      avatar_url,
+      customer_id,
+      role_id,
+      status,
+      created_at,
+      updated_at,
+      role:roles(role_id, name, display_name, description, is_system_role)
+    `)
+    .single();
+  
+  if (updateError || !userData) {
+    throw new Error(updateError?.message || 'Failed to update user');
+  }
+  
+  // Handle customer_success_owned_customers
+  if (isCustomerSuccess && payload.customerId) {
+    // Check if assignment already exists
+    const { data: existingAssignment } = await supabase
+      .from('customer_success_owned_customers')
+      .select('customer_success_owned_customer_id')
+      .eq('user_id', payload.id)
+      .eq('customer_id', payload.customerId)
+      .maybeSingle();
+    
+    if (!existingAssignment) {
+      // Create new assignment
+      const { error: csError } = await supabase
+        .from('customer_success_owned_customers')
+        .insert({
+          user_id: payload.id,
+          customer_id: payload.customerId,
+        });
+      
+      if (csError) {
+        console.error('Failed to create customer success assignment:', csError);
+      }
+    }
+  } else {
+    // If not customer_success or no customerId, remove all assignments
+    await supabase
+      .from('customer_success_owned_customers')
+      .delete()
+      .eq('user_id', payload.id);
+  }
+  
+  // Map to SystemUser format
+  const role = userData.role as RoleData | RoleData[] | null;
+  
+  return {
+    id: userData.user_id,
+    uid: userData.auth_user_id || '',
+    email: userData.email,
+    name: userData.full_name || '',
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    avatar: userData.avatar_url || undefined,
+    customerId: userData.customer_id,
+    managerId: '',
+    role: role ? (Array.isArray(role) ? {
+      id: role[0]?.role_id || '',
+      name: role[0]?.display_name || role[0]?.name || '',
+    } : {
+      id: role.role_id,
+      name: role.display_name || role.name,
+    }) : undefined,
+    status: userData.status,
+    createdAt: userData.created_at,
+    updatedAt: userData.updated_at,
+  } as SystemUser;
 }
 
 /**
@@ -317,6 +583,5 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
 }
 
 export async function resendInviteSystemUser(email: string): Promise<void> {
-  // API call removed
-  throw new Error('API calls removed');
+  await edgeFunctions.resendInvite(email);
 }
