@@ -32,6 +32,29 @@ function parseUserName(fullName: string | null): {
   }
 }
 
+interface ArticleWithRelations {
+  help_article_id: string;
+  category_id: string;
+  title: string;
+  slug: string;
+  content: string | null;
+  subcategory: string | null;
+  status: string;
+  video_url: string | null;
+  view_count: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string | null;
+  help_article_categories: {
+    help_article_category_id: string;
+    name: string;
+  } | null;
+  users: {
+    user_id: string;
+    full_name: string | null;
+  } | null;
+}
+
 export interface GetArticlesParams {
     page?: number;
     perPage?: number;
@@ -107,7 +130,7 @@ export async function getArticlesList(params: GetArticlesParams = {}): Promise<G
     const lastPage = Math.ceil(total / perPage);
 
     // Transform data to Article format
-    const articles = (data || []).map((article: any) => {
+    const articles = ((data || []) as ArticleWithRelations[]).map((article) => {
       const { firstName, lastName } = parseUserName(article.users?.full_name || null);
 
       return {

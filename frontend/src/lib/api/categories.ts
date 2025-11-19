@@ -64,6 +64,23 @@ interface PermissionsByModule {
     }
   }
 
+  interface CategoryWithRelations {
+    help_article_category_id: string;
+    name: string;
+    slug: string;
+    subcategory: string | null;
+    about: string | null;
+    icon: string | null;
+    created_by: string;
+    created_at: string;
+    updated_at: string | null;
+    help_articles: Array<{ count: number }> | null;
+    users: {
+      user_id: string;
+      full_name: string | null;
+    } | null;
+  }
+
   export async function getSubcategories(): Promise<string[]> {
     const supabase = createClient();
     const currentUser = await supabaseDB.getCurrentUser();
@@ -135,7 +152,7 @@ interface PermissionsByModule {
     const total = count || 0;
 
     // Transform data to Category format
-    const categories = (data || []).map((cat: any) => {
+    const categories = ((data || []) as CategoryWithRelations[]).map((cat) => {
       const { firstName, lastName } = parseUserName(
         cat.users?.full_name || null
       );
