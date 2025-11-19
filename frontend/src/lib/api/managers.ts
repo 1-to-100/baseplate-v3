@@ -70,9 +70,9 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
   if (csError) throw csError;
 
   // Get user details for CS owned customers
-  const csOwnedManagerIds = (csOwnedCustomers || []).map((rel: any) => rel.user_id);
+  const csOwnedManagerIds = (csOwnedCustomers || []).map((rel: { user_id: string }) => rel.user_id);
 
-  let csOwnedManagers: any[] = [];
+  let csOwnedManagers: Array<{ user_id: string; email: string; full_name: string | null }> = [];
   if (csOwnedManagerIds.length > 0) {
     const { data: csManagersData, error: csManagersError } = await supabase
       .from('users')

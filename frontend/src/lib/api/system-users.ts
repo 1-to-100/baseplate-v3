@@ -228,7 +228,7 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     if (updatedUser?.auth_user_id) {
       userData.auth_user_id = updatedUser.auth_user_id;
     }
-  } catch (resendError: any) {
+  } catch (resendError: unknown) {
     console.error('Failed to send invite email:', resendError);
     // Don't throw - user is created, invite can be resent later via UI
   }

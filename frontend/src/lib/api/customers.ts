@@ -262,7 +262,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
   }
   
   // Set owner's customer_id and role
-  const updateData: any = { customer_id: customer.customer_id };
+  const updateData: { customer_id: string; role_id?: string } = { customer_id: customer.customer_id };
   
   // If owner doesn't have a role, assign customer admin role
   if (!owner.role_id) {
@@ -607,7 +607,7 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
       console.error('Failed to get existing assignments:', existingError);
     }
     
-    const existingUserIds = (existingAssignments || []).map((a: any) => a.user_id);
+    const existingUserIds = (existingAssignments || []).map((a: { user_id: string }) => a.user_id);
     
     // Determine which assignments to add and remove
     const toAdd = customerSuccessIds.filter(
@@ -688,7 +688,7 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
     }
     
     // Update new owner: set customer_id and role (if no role)
-    const newOwnerUpdateData: any = { customer_id: payload.id };
+    const newOwnerUpdateData: { customer_id: string; role_id?: string } = { customer_id: payload.id };
     
     if (!owner.role_id) {
       const customerAdminRoleId = await getCustomerAdminRoleId(supabase);
@@ -705,14 +705,14 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
   }
   
   // Build update data
-  const updateData: any = {};
+  const updateData: { name?: string; subscription_type_id?: string; owner_id?: string; email_domain?: string } = {};
   if (name !== undefined) updateData.name = name;
   if (subscriptionId !== undefined) updateData.subscription_type_id = subscriptionId;
   if (ownerId !== undefined) updateData.owner_id = ownerId;
   if (ownerEmail !== undefined) updateData.email_domain = getDomainFromEmail(ownerEmail);
   
   // Remove undefined fields
-  Object.keys(updateData).forEach(
+  (Object.keys(updateData) as Array<keyof typeof updateData>).forEach(
     (key) => updateData[key] === undefined && delete updateData[key],
   );
   
