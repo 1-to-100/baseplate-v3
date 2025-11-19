@@ -2,6 +2,8 @@ import { Category } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 import { supabaseDB } from "@/lib/supabase/database";
 import { generateSlug } from "@/lib/helpers/string-helpers";
+import { authService } from "@/lib/auth/auth-service";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 export interface ModulePermission {
   id: string;
@@ -85,14 +87,21 @@ interface PermissionsByModule {
     const supabase = createClient();
     const currentUser = await supabaseDB.getCurrentUser();
     
-    if (!currentUser.customer_id) {
-      throw new Error('User must have a customer_id');
+    // For system admins, get customerId from JWT context
+    let customerId = currentUser.customer_id;
+    if (!customerId && isSystemAdministrator(currentUser as any)) {
+      const context = await authService.getCurrentContext();
+      customerId = context.customerId || undefined;
+    }
+    
+    if (!customerId) {
+      throw new Error('User must have a customer_id or select a customer context');
     }
 
     const { data, error } = await supabase
       .from('help_article_categories')
       .select('subcategory')
-      .eq('customer_id', currentUser.customer_id)
+      .eq('customer_id', customerId)
       .not('subcategory', 'is', null)
       .order('subcategory', { ascending: true });
 
@@ -119,8 +128,15 @@ interface PermissionsByModule {
     const supabase = createClient();
     const currentUser = await supabaseDB.getCurrentUser();
     
-    if (!currentUser.customer_id) {
-      throw new Error('User must have a customer_id');
+    // For system admins, get customerId from JWT context
+    let customerId = currentUser.customer_id;
+    if (!customerId && isSystemAdministrator(currentUser as any)) {
+      const context = await authService.getCurrentContext();
+      customerId = context.customerId || undefined;
+    }
+    
+    if (!customerId) {
+      throw new Error('User must have a customer_id or select a customer context');
     }
 
     const page = params.page || 1;
@@ -132,7 +148,7 @@ interface PermissionsByModule {
     let query = supabase
       .from('help_article_categories')
       .select('*, help_articles(count), users!created_by(user_id, full_name)', { count: 'exact' })
-      .eq('customer_id', currentUser.customer_id)
+      .eq('customer_id', customerId)
       .range(from, to);
 
     // Apply search filter if provided
@@ -188,8 +204,15 @@ interface PermissionsByModule {
     const supabase = createClient();
     const currentUser = await supabaseDB.getCurrentUser();
     
-    if (!currentUser.customer_id) {
-      throw new Error('User must have a customer_id');
+    // For system admins, get customerId from JWT context
+    let customerId = currentUser.customer_id;
+    if (!customerId && isSystemAdministrator(currentUser as any)) {
+      const context = await authService.getCurrentContext();
+      customerId = context.customerId || undefined;
+    }
+    
+    if (!customerId) {
+      throw new Error('User must have a customer_id or select a customer context');
     }
 
     const slug = generateSlug(payload.name);
@@ -202,7 +225,7 @@ interface PermissionsByModule {
         subcategory: payload.subcategory || null,
         about: payload.about || null,
         icon: payload.icon || null,
-        customer_id: currentUser.customer_id,
+        customer_id: customerId,
         created_by: currentUser.user_id,
       })
       .select('*, users!created_by(user_id, full_name)')
@@ -233,15 +256,22 @@ export async function getCategoryById(id: string): Promise<Category> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && isSystemAdministrator(currentUser as any)) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   const { data, error } = await supabase
     .from('help_article_categories')
     .select('*, help_articles(count), users!created_by(user_id, full_name)')
     .eq('help_article_category_id', id)
-    .eq('customer_id', currentUser.customer_id)
+    .eq('customer_id', customerId)
     .single();
 
   if (error) throw error;
@@ -271,8 +301,15 @@ export async function deleteCategory(id: string): Promise<Category> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && isSystemAdministrator(currentUser as any)) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   // First, get the category to return it
@@ -300,7 +337,7 @@ export async function deleteCategory(id: string): Promise<Category> {
     .from('help_article_categories')
     .delete()
     .eq('help_article_category_id', id)
-    .eq('customer_id', currentUser.customer_id);
+    .eq('customer_id', customerId);
 
   if (error) throw error;
 
@@ -311,8 +348,15 @@ export async function editCategory(categoryId: string, payload: CreateCategoryPa
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && isSystemAdministrator(currentUser as any)) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   // Build update data
@@ -342,7 +386,7 @@ export async function editCategory(categoryId: string, payload: CreateCategoryPa
     .from('help_article_categories')
     .update(updateData)
     .eq('help_article_category_id', categoryId)
-    .eq('customer_id', currentUser.customer_id);
+    .eq('customer_id', customerId);
 
   if (error) throw error;
 

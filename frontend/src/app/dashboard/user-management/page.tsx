@@ -291,22 +291,39 @@ export default function Page(): React.JSX.Element {
 
   const confirmDelete = async () => {
     if (rowsToDelete.length > 0) {
+      let successCount = 0;
+      let errorCount = 0;
+      
       try {
         for (const userId of rowsToDelete) {
           try {
-            setOpenDeleteModal(false);
             await deleteUser(userId);
-            toast.success('User successfully deleted');
+            successCount++;
           } catch (error) {
+            errorCount++;
             const httpError = error as HttpError;
-            toast.error(httpError.response?.data?.message);
+            toast.error(httpError.response?.data?.message || 'Failed to delete user');
           }
         }
-        queryClient.invalidateQueries({ queryKey: ["users"] });
+        
+        // Invalidate and refetch queries after all deletions are complete
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+        await queryClient.refetchQueries({ queryKey: ["users"] });
+        
+        // Show success message only if at least one deletion succeeded
+        if (successCount > 0) {
+          if (successCount === 1) {
+            toast.success('User successfully deleted');
+          } else {
+            toast.success(`${successCount} users successfully deleted`);
+          }
+        }
       } catch (error) {
-        // toast.error('An error occurred while deleting users');
+        toast.error('An error occurred while deleting users');
       }
     }
+    
+    // Clean up state after all operations complete
     setOpenDeleteModal(false);
     setRowsToDelete([]);
     setSelectedRows([]);

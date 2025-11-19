@@ -862,7 +862,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
       role:roles(role_id, name, display_name)
     `, { count: 'exact' })
-    .range(from, to);
+    .is('deleted_at', null); // Exclude deleted users
   
   // Apply filters
   if (params.search) {
@@ -902,6 +902,9 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   }
   const orderDirection = params.orderDirection || 'desc';
   query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+  
+  // Apply pagination
+  query = query.range(from, to);
   
   const { data, error, count } = await query;
   
