@@ -144,13 +144,13 @@ interface GetUsersResponse {
 
 interface InviteUserPayload {
   email: string;
-  customerId: string;
+  customerId?: string;
   roleId?: string;
 }
 
 interface InviteMultipleUsersPayload {
   emails: string[];
-  customerId: string;
+  customerId?: string;
   roleId?: string;
 }
 
@@ -1138,7 +1138,7 @@ export async function getStatuses(): Promise<TaxonomyItem[]> {
 export async function inviteUser(payload: InviteUserPayload): Promise<void> {
   await edgeFunctions.inviteUser({
     email: payload.email,
-    customerId: payload.customerId,
+    customerId: payload.customerId || null,
     roleId: payload.roleId || '',
   });
 }
@@ -1150,7 +1150,7 @@ export async function resendInviteUser(email: string): Promise<void> {
 export async function inviteMultipleUsers(payload: InviteMultipleUsersPayload): Promise<void> {
   await edgeFunctions.inviteMultipleUsers({
     emails: payload.emails,
-    customerId: payload.customerId,
+    customerId: payload.customerId || null,
     roleId: payload.roleId || '',
   });
 }

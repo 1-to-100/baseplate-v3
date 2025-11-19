@@ -8,12 +8,12 @@ import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tabs, TabList, Tab, Input, IconButton } from "@mui/joy";
 import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
 import { useQuery } from "@tanstack/react-query";
-import { getRoles } from "@/lib/api/roles";
+import { getRolesList } from "@/lib/api/roles";
 import { getCustomers } from "@/lib/api/customers";
 import { inviteUser, inviteMultipleUsers } from "@/lib/api/users";
 import { toast } from "@/components/core/toaster";
@@ -46,13 +46,21 @@ export default function InviteUser({
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
     queryKey: ["roles"],
-    queryFn: getRoles,
+    queryFn: () => getRolesList(),
   });
 
   const { data: customers, isLoading: isCustomersLoading } = useQuery({
     queryKey: ["customers"],
     queryFn: getCustomers,
   });
+
+  const roleOptions = useMemo(() => {
+    // Only show Standard User and Manager roles
+    const standardRoles = roles?.filter(
+      (role) => role.name === "standard_user" || role.name === "manager"
+    );
+    return standardRoles?.map((role) => role.display_name).filter((name): name is string => !!name).sort() || [];
+  }, [roles]);
 
   const validateEmail = (email: string): string | null => {
     if (!email.trim()) {
@@ -128,12 +136,9 @@ export default function InviteUser({
   };
 
   const handleConfirm = async () => {
-    if (!selectedCustomer) {
-      return;
-    }
-
     setError("");
 
+    // Validate and add email from input if it's valid
     if (emailInput.trim() !== "") {
       if (emails.length >= 5) {
         setError("Maximum 5 email addresses allowed");
@@ -141,13 +146,20 @@ export default function InviteUser({
       }
       const emailError = validateEmail(emailInput.trim());
       if (emailError) {
-        setError(emailError);
-        return;
+        // Only show error if there are no valid emails in the list
+        if (emails.length === 0) {
+          setError(emailError);
+          return;
+        }
+        // If there are valid emails, just clear the input and proceed
+        setEmailInput("");
+      } else {
+        setEmails([...emails, emailInput.trim()]);
+        setEmailInput("");
       }
-      setEmails([...emails, emailInput.trim()]);
-      setEmailInput("");
     }
 
+    // Validate all emails in the list
     const emailErrors = emails.map((email) => validateEmail(email));
     const hasErrors = emailErrors.some((error) => error !== null);
     if (hasErrors) {
@@ -155,19 +167,20 @@ export default function InviteUser({
       return;
     }
 
+    // Check if we have at least one valid email to invite
+    if (emails.length === 0) {
+      setError("Please enter at least one email address");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const roleId = selectedRole ? roles?.find((role) => role.name === selectedRole)?.id : undefined;
-      const customerId = customers?.find(
+      const roleId = selectedRole ? roles?.find((role) => role.display_name === selectedRole)?.role_id : undefined;
+      const customerId = selectedCustomer ? customers?.find(
         (customer) => customer.name === selectedCustomer
-      )?.id;
+      )?.id : undefined;
 
-      if (!customerId) {
-        throw new Error("Customer not found");
-      }
-
-      const emailsToInvite =
-        emailInput.trim() !== "" ? [...emails, emailInput.trim()] : emails;
+      const emailsToInvite = emails;
 
       if (emailsToInvite.length === 1) {
         const email = emailsToInvite[0];
@@ -247,7 +260,11 @@ export default function InviteUser({
             onChange={(event, newValue) => setSelectedRole(newValue as string)}
             placeholder="Select role"
           >
-            {/* Temporarily empty - no roles to display */}
+            {roleOptions.map((roleName) => (
+              <Option key={roleName} value={roleName}>
+                {roleName}
+              </Option>
+            ))}
           </Select>
 
           <Typography
@@ -260,7 +277,7 @@ export default function InviteUser({
           <Select
             value={selectedCustomer}
             onChange={(event, newValue) =>
-              setSelectedCustomer(newValue as string)
+              setSelectedCustomer((newValue as string) || "")
             }
             placeholder="Select customer"
           >
@@ -411,7 +428,7 @@ export default function InviteUser({
               variant="solid"
               onClick={handleConfirm}
               // loading={isLoading}
-              disabled={!selectedCustomer || (emails.length === 0 && !emailInput.trim())}
+              disabled={emails.length === 0 && !emailInput.trim()}
               sx={{
                 borderRadius: "20px",
                 bgcolor: "#4F46E5",

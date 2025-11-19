@@ -10,7 +10,7 @@ export class EdgeFunctions {
 
   async inviteUser(payload: {
     email: string
-    customerId: string
+    customerId?: string | null
     roleId: string
     managerId?: string
     fullName?: string
@@ -73,7 +73,7 @@ export class EdgeFunctions {
 
   async inviteMultipleUsers(payload: {
     emails: string[]
-    customerId: string
+    customerId?: string | null
     roleId: string
     managerId?: string
   }) {

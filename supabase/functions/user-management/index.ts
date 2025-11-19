@@ -35,12 +35,15 @@ serve(async (req) => {
 async function handleInvite(user: any, body: any) {
   const { email, customerId, roleId, managerId, fullName } = body
 
+  // Convert empty string to null for customerId
+  const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
+
   // Authorization
   if (!isSystemAdmin(user) && !user.customer_id) {
     throw new ApiError('No access to invite users', 403)
   }
 
-  if (!isSystemAdmin(user) && user.customer_id !== customerId) {
+  if (!isSystemAdmin(user) && user.customer_id !== normalizedCustomerId) {
     throw new ApiError('Cannot invite users for another customer', 403)
   }
 
@@ -79,7 +82,7 @@ async function handleInvite(user: any, body: any) {
       auth_user_id: authUser.user.id,
       email,
       full_name: fullName || email.split('@')[0], // Use email prefix as fallback
-      customer_id: customerId,
+      customer_id: normalizedCustomerId,
       role_id: roleId,
       manager_id: managerId,
       status: 'invited'
@@ -127,12 +130,15 @@ async function handleInvite(user: any, body: any) {
 async function handleInviteMultiple(user: any, body: any) {
   const { emails, customerId, roleId, managerId } = body
 
+  // Convert empty string to null for customerId
+  const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
+
   // Authorization
   if (!isSystemAdmin(user) && !user.customer_id) {
     throw new ApiError('No access to invite users', 403)
   }
 
-  if (!isSystemAdmin(user) && user.customer_id !== customerId) {
+  if (!isSystemAdmin(user) && user.customer_id !== normalizedCustomerId) {
     throw new ApiError('Cannot invite users for another customer', 403)
   }
 
@@ -161,7 +167,7 @@ async function handleInviteMultiple(user: any, body: any) {
   // Create users in parallel
   const results = await Promise.allSettled(
     uniqueEmails.map((email: string) => 
-      inviteUser(supabase, email, customerId, roleId, managerId, user.user_id)
+      inviteUser(supabase, email, normalizedCustomerId, roleId, managerId, user.user_id)
     )
   )
 
@@ -184,7 +190,7 @@ async function handleInviteMultiple(user: any, body: any) {
   })
 }
 
-async function inviteUser(supabase: any, email: string, customerId: string, roleId: string, managerId: string | undefined, invitedBy: string) {
+async function inviteUser(supabase: any, email: string, customerId: string | null, roleId: string, managerId: string | undefined, invitedBy: string) {
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email,
     email_confirm: false,
@@ -197,12 +203,15 @@ async function inviteUser(supabase: any, email: string, customerId: string, role
 
   if (authError) throw new Error(`Failed to create ${email}: ${authError.message}`)
 
+  // Convert empty string to null for customerId
+  const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
+
   const { data: dbUser, error: dbError } = await supabase
     .from('users')
     .insert({
       auth_user_id: authUser.user.id,
       email,
-      customer_id: customerId,
+      customer_id: normalizedCustomerId,
       role_id: roleId,
       manager_id: managerId,
       status: 'invited'
