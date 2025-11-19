@@ -21,7 +21,9 @@ export class SupabaseDatabase {
 
   async getCurrentUser() {
     const user = await this.getAuthUser()
-    const { data, error } = await this.client
+    
+    // First try to find by auth_user_id
+    let { data, error } = await this.client
       .from('users')
       .select(`
         user_id,
@@ -45,7 +47,56 @@ export class SupabaseDatabase {
       .eq('auth_user_id', user.id)
       .single()
 
+    // If not found by auth_user_id, try to find by email and link it
+    if (error && error.code === 'PGRST116' && user.email) {
+      const { data: userByEmail, error: emailError } = await this.client
+        .from('users')
+        .select(`
+          user_id,
+          auth_user_id,
+          email,
+          full_name,
+          avatar_url,
+          phone_number,
+          customer_id,
+          role_id,
+          manager_id,
+          status,
+          last_login_at,
+          preferences,
+          created_at,
+          updated_at,
+          deleted_at,
+          customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+          role:roles(role_id, name, display_name)
+        `)
+        .eq('email', user.email)
+        .is('deleted_at', null)
+        .single()
+
+      if (emailError || !userByEmail) {
+        throw new Error('User not found in database')
+      }
+
+      // Link auth_user_id if it's missing
+      if (!userByEmail.auth_user_id) {
+        const { error: updateError } = await this.client
+          .from('users')
+          .update({ auth_user_id: user.id })
+          .eq('user_id', userByEmail.user_id)
+
+        if (updateError) {
+          console.error('Failed to link auth_user_id:', updateError)
+          // Continue anyway - the user can still use the app
+        }
+      }
+
+      data = userByEmail
+      error = null
+    }
+
     if (error) throw error
+    if (!data) throw new Error('User not found in database')
     
     // Handle array responses from Supabase (should be single objects for these relationships)
     const result = {

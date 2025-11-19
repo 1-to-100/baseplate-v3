@@ -208,12 +208,36 @@ DECLARE
   v_user_id uuid;
   v_user_record RECORD;
   v_standard_user_role_id uuid;
+  v_auth_email text;
 BEGIN
-  -- Get current user's user_id
+  -- Get current auth user's email
+  SELECT email INTO v_auth_email
+  FROM auth.users
+  WHERE id = auth.uid()
+  LIMIT 1;
+  
+  -- First try to find by auth_user_id
   SELECT user_id INTO v_user_id
   FROM public.users
   WHERE auth_user_id = auth.uid()
   LIMIT 1;
+  
+  -- If not found by auth_user_id, try to find by email and link it
+  IF v_user_id IS NULL AND v_auth_email IS NOT NULL THEN
+    SELECT user_id INTO v_user_id
+    FROM public.users
+    WHERE email = v_auth_email
+      AND deleted_at IS NULL
+      AND (auth_user_id IS NULL OR auth_user_id != auth.uid())
+    LIMIT 1;
+    
+    -- If found by email, link the auth_user_id
+    IF v_user_id IS NOT NULL THEN
+      UPDATE public.users
+      SET auth_user_id = auth.uid()
+      WHERE user_id = v_user_id;
+    END IF;
+  END IF;
   
   IF v_user_id IS NULL THEN
     -- User record doesn't exist yet, nothing to activate

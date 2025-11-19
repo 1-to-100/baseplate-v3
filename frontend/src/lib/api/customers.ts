@@ -159,9 +159,164 @@ async function countUsersForCustomer(
   }
 }
 
+// Helper function to validate customer success user
+async function validateCSUser(supabase: ReturnType<typeof createClient>, userId: string): Promise<void> {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('user_id, role_id, deleted_at')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .single();
+  
+  if (userError || !user) {
+    throw new Error(`Customer success user not found with ID: ${userId}`);
+  }
+  
+  if (!user.role_id) {
+    throw new Error('User must have a customer success role');
+  }
+  
+  // Get the role to check if it's customer success
+  const { data: role, error: roleError } = await supabase
+    .from('roles')
+    .select('name')
+    .eq('role_id', user.role_id)
+    .single();
+  
+  if (roleError || !role) {
+    throw new Error('Role not found');
+  }
+  
+  if (role.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS) {
+    throw new Error('User must have a customer success role');
+  }
+}
+
+// Helper function to get customer admin role ID
+async function getCustomerAdminRoleId(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('role_id')
+    .eq('name', SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Failed to find customer_admin role:', error);
+    return null;
+  }
+  
+  return data?.role_id || null;
+}
+
+// Helper function to get domain from email
+function getDomainFromEmail(email: string): string {
+  if (!email) return '';
+  const trimmed = email.trim().toLowerCase();
+  const domainRegex = /@([^@\s]+)$/;
+  const match = domainRegex.exec(trimmed);
+  return match ? (match[1] || '') : '';
+}
+
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
-  // API call removed
-  throw new Error('API calls removed');
+  const supabase = createClient();
+  
+  // Validate owner exists
+  if (!payload.ownerId) {
+    throw new Error('Owner ID is required');
+  }
+  
+  const { data: owner, error: ownerError } = await supabase
+    .from('users')
+    .select('user_id, email, role_id, deleted_at')
+    .eq('user_id', payload.ownerId)
+    .is('deleted_at', null)
+    .single();
+  
+  if (ownerError || !owner) {
+    throw new Error('Owner not found');
+  }
+  
+  // Validate all customer success users if provided
+  if (payload.customerSuccessIds && payload.customerSuccessIds.length > 0) {
+    for (const csId of payload.customerSuccessIds) {
+      await validateCSUser(supabase, csId);
+    }
+  }
+  
+  // Create customer
+  const { data: customer, error: createError } = await supabase
+    .from('customers')
+    .insert({
+      name: payload.name,
+      subscription_type_id: payload.subscriptionId || null,
+      email_domain: getDomainFromEmail(owner.email),
+      owner_id: payload.ownerId,
+      lifecycle_stage: 'onboarding',
+      active: true,
+    })
+    .select('customer_id')
+    .single();
+  
+  if (createError || !customer) {
+    throw new Error(createError?.message || 'Failed to create customer');
+  }
+  
+  // Set owner's customer_id and role
+  const updateData: any = { customer_id: customer.customer_id };
+  
+  // If owner doesn't have a role, assign customer admin role
+  if (!owner.role_id) {
+    const customerAdminRoleId = await getCustomerAdminRoleId(supabase);
+    if (customerAdminRoleId) {
+      updateData.role_id = customerAdminRoleId;
+    }
+  }
+  
+  const { error: updateOwnerError } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('user_id', payload.ownerId)
+    .is('deleted_at', null);
+  
+  if (updateOwnerError) {
+    console.error('Failed to update owner:', updateOwnerError);
+  }
+  
+  // Create customer success assignments if provided
+  if (payload.customerSuccessIds && payload.customerSuccessIds.length > 0) {
+    for (const csId of payload.customerSuccessIds) {
+      // Create assignment
+      const { error: csError } = await supabase
+        .from('customer_success_owned_customers')
+        .insert({
+          user_id: csId,
+          customer_id: customer.customer_id,
+        });
+      
+      if (csError) {
+        console.error('Failed to create customer success assignment:', csError);
+      }
+      
+      // If user has no customer_id, set it
+      const { data: user } = await supabase
+        .from('users')
+        .select('customer_id')
+        .eq('user_id', csId)
+        .is('deleted_at', null)
+        .single();
+      
+      if (user && !user.customer_id) {
+        await supabase
+          .from('users')
+          .update({ customer_id: customer.customer_id })
+          .eq('user_id', csId)
+          .is('deleted_at', null);
+      }
+    }
+  }
+  
+  // Fetch and return created customer
+  return getCustomerById(customer.customer_id);
 }
 
 export async function getCustomers(): Promise<TaxonomyItem[]> {
@@ -422,16 +577,154 @@ export async function getCustomerById(id: string): Promise<Customer> {
 export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Customer> {
   const supabase = createClient();
   
-  const { error } = await supabase
+  // Get existing customer
+  const { data: customer, error: fetchError } = await supabase
     .from('customers')
-    .update({
-      name: payload.name,
-      email_domain: payload.email,
-      subscription_type_id: payload.subscriptionId,
-    })
-    .eq('customer_id', payload.id);
+    .select('customer_id, owner_id')
+    .eq('customer_id', payload.id)
+    .single();
   
-  if (error) throw error;
+  if (fetchError || !customer) {
+    throw new Error(`Customer with ID ${payload.id} not found`);
+  }
+  
+  const { name, subscriptionId, ownerId, customerSuccessIds } = payload;
+  
+  // Handle customer success assignments if provided
+  if (customerSuccessIds !== undefined) {
+    // Validate all CS users
+    for (const userId of customerSuccessIds) {
+      await validateCSUser(supabase, userId);
+    }
+    
+    // Get existing assignments
+    const { data: existingAssignments, error: existingError } = await supabase
+      .from('customer_success_owned_customers')
+      .select('user_id')
+      .eq('customer_id', payload.id);
+    
+    if (existingError) {
+      console.error('Failed to get existing assignments:', existingError);
+    }
+    
+    const existingUserIds = (existingAssignments || []).map((a: any) => a.user_id);
+    
+    // Determine which assignments to add and remove
+    const toAdd = customerSuccessIds.filter(
+      (userId) => !existingUserIds.includes(userId),
+    );
+    const toRemove = existingUserIds.filter(
+      (userId: string) => !customerSuccessIds.includes(userId),
+    );
+    
+    // Remove old assignments (do NOT modify user's customer_id)
+    for (const userId of toRemove) {
+      const { error: removeError } = await supabase
+        .from('customer_success_owned_customers')
+        .delete()
+        .eq('user_id', userId)
+        .eq('customer_id', payload.id);
+      
+      if (removeError) {
+        console.error('Failed to remove assignment:', removeError);
+      }
+    }
+    
+    // Add new assignments
+    for (const userId of toAdd) {
+      // Create assignment
+      const { error: csError } = await supabase
+        .from('customer_success_owned_customers')
+        .insert({
+          user_id: userId,
+          customer_id: payload.id,
+        });
+      
+      if (csError) {
+        console.error('Failed to create customer success assignment:', csError);
+      }
+      
+      // If user has no customer_id, set it
+      const { data: user } = await supabase
+        .from('users')
+        .select('customer_id')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .single();
+      
+      if (user && !user.customer_id) {
+        await supabase
+          .from('users')
+          .update({ customer_id: payload.id })
+          .eq('user_id', userId)
+          .is('deleted_at', null);
+      }
+    }
+  }
+  
+  // Handle owner update if provided
+  let ownerEmail: string | undefined;
+  if (ownerId && ownerId !== customer.owner_id) {
+    const { data: owner, error: ownerError } = await supabase
+      .from('users')
+      .select('user_id, email, role_id')
+      .eq('user_id', ownerId)
+      .is('deleted_at', null)
+      .single();
+    
+    if (ownerError || !owner) {
+      throw new Error('Owner not found');
+    }
+    
+    ownerEmail = owner.email;
+    
+    // Update old owner: set role_id to null
+    if (customer.owner_id) {
+      await supabase
+        .from('users')
+        .update({ role_id: null })
+        .eq('user_id', customer.owner_id)
+        .is('deleted_at', null);
+    }
+    
+    // Update new owner: set customer_id and role (if no role)
+    const newOwnerUpdateData: any = { customer_id: payload.id };
+    
+    if (!owner.role_id) {
+      const customerAdminRoleId = await getCustomerAdminRoleId(supabase);
+      if (customerAdminRoleId) {
+        newOwnerUpdateData.role_id = customerAdminRoleId;
+      }
+    }
+    
+    await supabase
+      .from('users')
+      .update(newOwnerUpdateData)
+      .eq('user_id', ownerId)
+      .is('deleted_at', null);
+  }
+  
+  // Build update data
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (subscriptionId !== undefined) updateData.subscription_type_id = subscriptionId;
+  if (ownerId !== undefined) updateData.owner_id = ownerId;
+  if (ownerEmail !== undefined) updateData.email_domain = getDomainFromEmail(ownerEmail);
+  
+  // Remove undefined fields
+  Object.keys(updateData).forEach(
+    (key) => updateData[key] === undefined && delete updateData[key],
+  );
+  
+  // Update customer
+  if (Object.keys(updateData).length > 0) {
+    const { error: updateError } = await supabase
+      .from('customers')
+      .update(updateData)
+      .eq('customer_id', payload.id);
+    
+    if (updateError) throw updateError;
+  }
   
   // Fetch and return updated customer
   return getCustomerById(payload.id);

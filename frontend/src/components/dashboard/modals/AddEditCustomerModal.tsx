@@ -391,13 +391,15 @@ export default function AddEditCustomer({
                 }
                 getOptionKey={(user: ApiUser) => user.id}
                 value={
-                  users?.data?.find((user: ApiUser) => user.id === formData.ownerId) ||
-                  (customerData?.owner ? {
-                    id: customerData.owner.id,
-                    firstName: customerData.owner.firstName,
-                    lastName: customerData.owner.lastName,
-                    email: ""
-                  } as ApiUser : null)
+                  formData.ownerId
+                    ? (users?.data?.find((user: ApiUser) => user.id === formData.ownerId) ||
+                        (customerData?.owner ? {
+                          id: customerData.owner.id,
+                          firstName: customerData.owner.firstName,
+                          lastName: customerData.owner.lastName,
+                          email: customerData.owner.email || ""
+                        } as ApiUser : null))
+                    : null
                 }
                 onChange={(event, newValue) => {
                   handleInputChange("ownerId", newValue ? newValue.id : null);
@@ -407,7 +409,10 @@ export default function AddEditCustomer({
                     handleInputChange("email", "");
                   }
                 }}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
+                isOptionEqualToValue={(option, value) => {
+                  if (!value || !option) return false;
+                  return option.id === value.id;
+                }}
                 sx={{
                   borderRadius: "6px",
                   fontSize: "14px",

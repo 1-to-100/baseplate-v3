@@ -134,7 +134,7 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     throw new Error(`Role ${payload.systemRole} not found`);
   }
   
-  // Create user in database
+  // Create user in database first (with status 'inactive' so resend invite works)
   const { data: userData, error: createError } = await supabase
     .from('users')
     .insert({
@@ -142,7 +142,7 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
       full_name: fullName,
       customer_id: payload.customerId || null,
       role_id: roleId,
-      status: payload.status || 'inactive',
+      status: 'inactive', // Use 'inactive' so resend invite can work
     })
     .select(`
       user_id,
@@ -160,7 +160,77 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     .single();
   
   if (createError || !userData) {
+    // If user already exists, get the existing user
+    if (createError?.code === '23505' || createError?.message?.includes('already exists')) {
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          auth_user_id,
+          email,
+          full_name,
+          avatar_url,
+          customer_id,
+          role_id,
+          status,
+          created_at,
+          updated_at,
+          role:roles(role_id, name, display_name, description, is_system_role)
+        `)
+        .eq('email', payload.email)
+        .single();
+      
+      if (fetchError || !existingUser) {
+        throw new Error('User already exists but could not be retrieved');
+      }
+      
+      // Use existing user
+      const role = existingUser.role as RoleData | RoleData[] | null;
+      
+      return {
+        id: existingUser.user_id,
+        uid: existingUser.auth_user_id || '',
+        email: existingUser.email,
+        name: existingUser.full_name || '',
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        avatar: existingUser.avatar_url || undefined,
+        customerId: existingUser.customer_id,
+        managerId: '',
+        role: role ? (Array.isArray(role) ? {
+          id: role[0]?.role_id || '',
+          name: role[0]?.display_name || role[0]?.name || '',
+        } : {
+          id: role.role_id,
+          name: role.display_name || role.name,
+        }) : undefined,
+        status: existingUser.status,
+        createdAt: existingUser.created_at,
+        updatedAt: existingUser.updated_at,
+      } as SystemUser;
+    }
+    
     throw new Error(createError?.message || 'Failed to create user');
+  }
+  
+  // Create auth user and send invite email using resend invite
+  // This will create auth user if it doesn't exist and send the email
+  try {
+    await edgeFunctions.resendInvite(payload.email);
+    
+    // Refresh user data to get auth_user_id
+    const { data: updatedUser } = await supabase
+      .from('users')
+      .select('auth_user_id')
+      .eq('user_id', userData.user_id)
+      .single();
+    
+    if (updatedUser?.auth_user_id) {
+      userData.auth_user_id = updatedUser.auth_user_id;
+    }
+  } catch (resendError: any) {
+    console.error('Failed to send invite email:', resendError);
+    // Don't throw - user is created, invite can be resent later via UI
   }
   
   // If customer_success and has customerId, create entry in customer_success_owned_customers
@@ -175,21 +245,6 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     if (csError) {
       console.error('Failed to create customer success assignment:', csError);
       // Don't throw - user is created, assignment can be fixed later
-    }
-  }
-  
-  // Use edge function to create auth user and send invite email
-  if (payload.customerId) {
-    try {
-      await edgeFunctions.inviteUser({
-        email: payload.email,
-        customerId: payload.customerId,
-        roleId: roleId,
-        fullName: fullName,
-      });
-    } catch (inviteError) {
-      console.error('Failed to send invite email:', inviteError);
-      // Don't throw - user is created, invite can be resent later
     }
   }
   

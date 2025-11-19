@@ -239,13 +239,97 @@ async function handleResendInvite(user: any, body: any) {
     throw new ApiError('User not found', 404)
   }
 
-  if (targetUser.status === 'active') {
+  // Allow resending invite for active users if they don't have auth_user_id
+  // This handles cases where user was created without auth user
+  if (targetUser.status === 'active' && targetUser.auth_user_id) {
     throw new ApiError('User is already active', 400)
   }
 
   // Authorization
   if (!isSystemAdmin(user) && user.customer_id !== targetUser.customer_id) {
     throw new ApiError('Cannot resend invite for user from another customer', 403)
+  }
+
+  // If user doesn't have auth_user_id, create or find auth user first
+  if (!targetUser.auth_user_id) {
+    let authUserId: string | null = null
+    
+    // First, try to create a new auth user
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: {
+        invited: true,
+        invited_by: user.user_id,
+        invited_at: new Date().toISOString()
+      }
+    })
+
+    if (authError) {
+      // If creation fails because user already exists, find and link it
+      if (authError.message?.includes('already registered') || 
+          authError.message?.includes('already exists') ||
+          authError.message?.includes('User already registered')) {
+        
+        // Search for existing auth user by email
+        // We need to paginate through all users to find by email
+        let found = false
+        let page = 1
+        const perPage = 1000 // Use larger page size for efficiency
+        
+        while (!found && page <= 50) { // Search up to 50k users
+          const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers({
+            page,
+            perPage
+          })
+          
+          if (listError) {
+            console.error('Error listing users:', listError)
+            break
+          }
+          
+          if (!authUsers?.users || authUsers.users.length === 0) {
+            break
+          }
+          
+          const existingAuthUser = authUsers.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+          if (existingAuthUser) {
+            authUserId = existingAuthUser.id
+            found = true
+            break
+          }
+          
+          // If we got fewer users than perPage, we've reached the end
+          if (authUsers.users.length < perPage) {
+            break
+          }
+          
+          page++
+        }
+        
+        if (!authUserId) {
+          throw new ApiError(`Auth user with email ${email} exists but could not be found. Please contact support.`, 400)
+        }
+      } else {
+        throw new ApiError(`Failed to create auth user: ${authError.message}`, 400)
+      }
+    } else {
+      // Successfully created new auth user
+      authUserId = authUser.user.id
+    }
+    
+    // Link auth user to DB user
+    if (authUserId) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ auth_user_id: authUserId })
+        .eq('user_id', targetUser.user_id)
+      
+      if (updateError) {
+        console.error('Failed to link auth user to DB user:', updateError)
+        // Don't throw - we can still try to send the invite
+      }
+    }
   }
 
   // Resend invitation
