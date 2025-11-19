@@ -63,7 +63,7 @@ export default function AddEditUser({
   });
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isActive, setIsActive] = useState<boolean>(true);
+  const [isActive, setIsActive] = useState<boolean>(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] =
     useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors | null>(null);

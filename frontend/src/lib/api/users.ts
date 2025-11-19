@@ -645,7 +645,7 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
       
       // Update the user's status if needed (edge function sets status to 'invited' by default)
       // Note: full_name is now set by the edge function, so we only need to update status if needed
-      if (payload.status && payload.status !== 'inactive') {
+      if (payload.status) {
         const { error: updateError } = await supabase
           .from('users')
           .update({ 
