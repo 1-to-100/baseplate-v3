@@ -26,7 +26,7 @@ import { getManagers } from "@/lib/api/managers";
 import { getSubscriptions } from "../../../lib/api/customers";
 import { ApiUser, Customer } from "@/contexts/auth/types";
 import { toast } from "@/components/core/toaster";
-import { getStatuses, getUsers, GetUsersParams } from "@/lib/api/users";
+import { getUsers, GetUsersParams } from "@/lib/api/users";
 
 interface HttpError {
   response?: {
@@ -99,12 +99,6 @@ export default function AddEditCustomer({
     queryKey: ["customers", customerId],
     queryFn: () => getCustomerById(customerId!),
     enabled: !!customerId && open,
-  });
-
-  const { data: statuses, isLoading: isStatusesLoading } = useQuery({
-    queryKey: ["statuses"],
-    queryFn: getStatuses,
-    enabled: open,
   });
 
   const { data: users, isLoading: isUsersLoading } = useQuery({
