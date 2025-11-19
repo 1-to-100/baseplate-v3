@@ -45,6 +45,7 @@ import {getCustomers} from "@/lib/api/customers";
 import {getRoles} from "@/lib/api/roles";
 import {deleteUser, getUserById, getUsers, resendInviteUser, updateUser} from "@/lib/api/users";
 import { useGlobalSearch } from "@/hooks/use-global-search";
+import { authService } from "@/lib/auth/auth-service";
 
 interface HttpError extends Error {
   response?: {
@@ -112,6 +113,40 @@ export default function Page(): React.JSX.Element {
     queryKey: ["customers"],
     queryFn: getCustomers,
   });
+
+  // Auto-filter by selected customer for system admins
+  useEffect(() => {
+    const loadCustomerContext = async () => {
+      if (isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo)) {
+        try {
+          const context = await authService.getCurrentContext();
+          if (context.customerId && typeof context.customerId === 'string') {
+            // Only set if not already filtered (don't override manual filter)
+            setFilters((prev) => {
+              // If filters are empty or if the context customer matches, update
+              if (prev.customerId.length === 0 || prev.customerId.includes(context.customerId as string)) {
+                return {
+                  ...prev,
+                  customerId: [context.customerId as string],
+                };
+              }
+              return prev;
+            });
+          } else {
+            // If no customer context, clear customer filter for system admins
+            setFilters((prev) => ({
+              ...prev,
+              customerId: [],
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load customer context:', error);
+        }
+      }
+    };
+
+    void loadCustomerContext();
+  }, [userInfo]);
 
   const transformUser = (apiUser: ApiUser): ApiUser => {
     const customer = customers?.find((c) => c.id === apiUser.customerId);

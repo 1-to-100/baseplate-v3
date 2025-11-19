@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCustomers, getSubscriptions } from "@/lib/api/customers";
 import { getRolesList } from "@/lib/api/roles";
 import { getManagers } from "@/lib/api/managers";
-import { getStatuses } from "@/lib/api/users";
+import { UserStatusList, UserStatusDisplayNames } from "@/lib/constants/user-status";
 
 interface FilterProps {
   users?: ApiUser[];
@@ -57,13 +57,13 @@ const Filter = ({
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>(initialFilters?.customerSuccessId || []);
   const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<string[]>(initialFilters?.subscriptionId || []);
-  const [activeCategory, setActiveCategory] = useState<string | null>(users && users?.length > 0 ? "Status" : "Manager");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
-    setActiveCategory("Status");
+    setActiveCategory(null);
     if (onClose) {
       onClose();
     }
@@ -98,7 +98,7 @@ const Filter = ({
   useEffect(() => {
     const handleCloseFilter = () => {
       setAnchorEl(null);
-      setActiveCategory("Status");
+      setActiveCategory(null);
       if (onClose) {
         onClose();
       }
@@ -129,11 +129,11 @@ const Filter = ({
     enabled: open,
   });
 
-  const { data: statuses, isLoading: isStatusesLoading } = useQuery({
-    queryKey: ["statuses"],
-    queryFn: getStatuses,
-    enabled: open,
-  });
+  // Use constants instead of fetching from database
+  const statuses = useMemo(() => UserStatusList.map((status) => ({
+    id: status,
+    name: UserStatusDisplayNames[status],
+  })), []);
 
   const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -500,34 +500,43 @@ const Filter = ({
                     Select {activeCategory.toLowerCase()}
                   </Typography>
                   <Stack spacing={1}>
-                    {activeCategory === "Status" && users && users?.length > 0 &&
-                      statuses?.map((status) => (
-                        <Box
-                          key={status.id}
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                          }}
-                        >
-                          <Checkbox
-                            checked={selectedStatuses.includes(status.id)}
-                            onChange={() => handleStatusChange(status.id)}
-                            sx={{
-                              transform: { xs: "scale(0.9)", sm: "scale(1)" },
-                            }}
-                          />
-                          <Typography
-                            level="body-sm"
-                            sx={{
-                              fontSize: { xs: "12px", sm: "14px" },
-                              color: "var(--joy-palette-text-primary)",
-                            }}
-                          >
-                            {status.name}
+                    {activeCategory === "Status" && (
+                      <>
+                        {statuses && statuses.length > 0 ? (
+                          statuses.map((status) => (
+                            <Box
+                              key={status.id}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1.5,
+                              }}
+                            >
+                              <Checkbox
+                                checked={selectedStatuses.includes(status.id)}
+                                onChange={() => handleStatusChange(status.id)}
+                                sx={{
+                                  transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                                }}
+                              />
+                              <Typography
+                                level="body-sm"
+                                sx={{
+                                  fontSize: { xs: "12px", sm: "14px" },
+                                  color: "var(--joy-palette-text-primary)",
+                                }}
+                              >
+                                {status.name}
+                              </Typography>
+                            </Box>
+                          ))
+                        ) : (
+                          <Typography level="body-sm" sx={{ color: "var(--joy-palette-text-secondary)" }}>
+                            No statuses available
                           </Typography>
-                        </Box>
-                      ))}
+                        )}
+                      </>
+                    )}
                     {activeCategory === "Customer" && (
                       <Box
                         sx={{
