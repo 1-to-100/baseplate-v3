@@ -115,6 +115,7 @@ async function handleInvite(user: any, body: any) {
 
   // Send invitation email
   const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  console.log('Invite redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
@@ -225,6 +226,7 @@ async function inviteUser(supabase: any, email: string, customerId: string | nul
   }
 
   const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  console.log('Invite multiple redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
   await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
@@ -343,6 +345,7 @@ async function handleResendInvite(user: any, body: any) {
 
   // Resend invitation
   const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  console.log('Resend invite redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
   const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })

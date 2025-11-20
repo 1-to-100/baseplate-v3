@@ -28,6 +28,8 @@ export class EdgeFunctions {
         throw new Error('Supabase URL is not configured');
       }
       const functionUrl = `${supabaseUrl}/functions/v1/user-management`;
+      const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
+      console.log('Invite user - sending siteUrl:', siteUrl)
       
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -38,7 +40,7 @@ export class EdgeFunctions {
         body: JSON.stringify({ 
           action: 'invite', 
           ...payload,
-          siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+          siteUrl
         }),
       });
 
@@ -82,11 +84,13 @@ export class EdgeFunctions {
     roleId: string
     managerId?: string
   }) {
+    const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
+    console.log('Invite multiple users - sending siteUrl:', siteUrl)
     const { data, error } = await this.client.functions.invoke('user-management', {
       body: { 
         action: 'invite-multiple', 
         ...payload,
-        siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+        siteUrl
       }
     })
 
@@ -95,11 +99,13 @@ export class EdgeFunctions {
   }
 
   async resendInvite(email: string) {
+    const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
+    console.log('Resend invite - sending siteUrl:', siteUrl)
     const { data, error } = await this.client.functions.invoke('user-management', {
       body: { 
         action: 'resend-invite', 
         email,
-        siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+        siteUrl
       }
     })
 
