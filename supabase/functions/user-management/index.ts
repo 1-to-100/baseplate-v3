@@ -33,7 +33,7 @@ serve(async (req) => {
 })
 
 async function handleInvite(user: any, body: any) {
-  const { email, customerId, roleId, managerId, fullName } = body
+  const { email, customerId, roleId, managerId, fullName, siteUrl } = body
 
   // Convert empty string to null for customerId
   const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
@@ -114,9 +114,9 @@ async function handleInvite(user: any, body: any) {
   }
 
   // Send invitation email
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback`
+    redirectTo: `${redirectUrl}/auth/callback`
   })
 
   if (inviteError) {
@@ -128,7 +128,7 @@ async function handleInvite(user: any, body: any) {
 }
 
 async function handleInviteMultiple(user: any, body: any) {
-  const { emails, customerId, roleId, managerId } = body
+  const { emails, customerId, roleId, managerId, siteUrl } = body
 
   // Convert empty string to null for customerId
   const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
@@ -167,7 +167,7 @@ async function handleInviteMultiple(user: any, body: any) {
   // Create users in parallel
   const results = await Promise.allSettled(
     uniqueEmails.map((email: string) => 
-      inviteUser(supabase, email, normalizedCustomerId, roleId, managerId, user.user_id)
+      inviteUser(supabase, email, normalizedCustomerId, roleId, managerId, user.user_id, siteUrl)
     )
   )
 
@@ -190,7 +190,7 @@ async function handleInviteMultiple(user: any, body: any) {
   })
 }
 
-async function inviteUser(supabase: any, email: string, customerId: string | null, roleId: string, managerId: string | undefined, invitedBy: string) {
+async function inviteUser(supabase: any, email: string, customerId: string | null, roleId: string, managerId: string | undefined, invitedBy: string, siteUrl?: string) {
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email,
     email_confirm: false,
@@ -224,16 +224,16 @@ async function inviteUser(supabase: any, email: string, customerId: string | nul
     throw new Error(`Failed to create ${email}: ${dbError.message}`)
   }
 
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
   await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback`
+    redirectTo: `${redirectUrl}/auth/callback`
   })
 
   return dbUser
 }
 
 async function handleResendInvite(user: any, body: any) {
-  const { email } = body
+  const { email, siteUrl } = body
 
   const supabase = createServiceClient()
 
@@ -342,9 +342,9 @@ async function handleResendInvite(user: any, body: any) {
   }
 
   // Resend invitation
-  const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
   const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback`
+    redirectTo: `${redirectUrl}/auth/callback`
   })
 
   if (error) {

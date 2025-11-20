@@ -1,5 +1,6 @@
 import { createClient } from './client'
 import { config } from '@/config'
+import { getSiteURL } from '@/lib/get-site-url'
 
 export class EdgeFunctions {
   private client = createClient()
@@ -34,7 +35,11 @@ export class EdgeFunctions {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionData.session.access_token}`,
         },
-        body: JSON.stringify({ action: 'invite', ...payload }),
+        body: JSON.stringify({ 
+          action: 'invite', 
+          ...payload,
+          siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+        }),
       });
 
       let responseData;
@@ -78,7 +83,11 @@ export class EdgeFunctions {
     managerId?: string
   }) {
     const { data, error } = await this.client.functions.invoke('user-management', {
-      body: { action: 'invite-multiple', ...payload }
+      body: { 
+        action: 'invite-multiple', 
+        ...payload,
+        siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+      }
     })
 
     if (error) throw new Error(error.message)
@@ -87,7 +96,11 @@ export class EdgeFunctions {
 
   async resendInvite(email: string) {
     const { data, error } = await this.client.functions.invoke('user-management', {
-      body: { action: 'resend-invite', email }
+      body: { 
+        action: 'resend-invite', 
+        email,
+        siteUrl: getSiteURL().replace(/\/$/, '') // Remove trailing slash
+      }
     })
 
     if (error) throw new Error(error.message)
