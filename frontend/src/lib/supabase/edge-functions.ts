@@ -29,7 +29,6 @@ export class EdgeFunctions {
       }
       const functionUrl = `${supabaseUrl}/functions/v1/user-management`;
       const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
-      console.log('Invite user - sending siteUrl:', siteUrl)
       
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -85,7 +84,6 @@ export class EdgeFunctions {
     managerId?: string
   }) {
     const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
-    console.log('Invite multiple users - sending siteUrl:', siteUrl)
     const { data, error } = await this.client.functions.invoke('user-management', {
       body: { 
         action: 'invite-multiple', 
@@ -100,7 +98,6 @@ export class EdgeFunctions {
 
   async resendInvite(email: string) {
     const siteUrl = getSiteURL().replace(/\/$/, '') // Remove trailing slash
-    console.log('Resend invite - sending siteUrl:', siteUrl)
     const { data, error } = await this.client.functions.invoke('user-management', {
       body: { 
         action: 'resend-invite', 

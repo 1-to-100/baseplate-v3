@@ -114,8 +114,7 @@ async function handleInvite(user: any, body: any) {
   }
 
   // Send invitation email
-  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
-  console.log('Invite redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
+  const redirectUrl = (siteUrl && siteUrl.trim()) || Deno.env.get('SITE_URL') || 'http://localhost:3000'
   const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
@@ -225,8 +224,7 @@ async function inviteUser(supabase: any, email: string, customerId: string | nul
     throw new Error(`Failed to create ${email}: ${dbError.message}`)
   }
 
-  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
-  console.log('Invite multiple redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
+  const redirectUrl = (siteUrl && siteUrl.trim()) || Deno.env.get('SITE_URL') || 'http://localhost:3000'
   await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
@@ -261,11 +259,13 @@ async function handleResendInvite(user: any, body: any) {
     throw new ApiError('Cannot resend invite for user from another customer', 403)
   }
 
-  // If user doesn't have auth_user_id, create or find auth user first
-  if (!targetUser.auth_user_id) {
-    let authUserId: string | null = null
-    
-    // First, try to create a new auth user
+  // Get or find auth user
+  let authUserId: string | null = targetUser.auth_user_id || null
+  let authUserData: any = null
+
+  // If user doesn't have auth_user_id, try to find existing auth user
+  if (!authUserId) {
+    // Try to create a new auth user first
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
       email_confirm: false,
@@ -283,12 +283,11 @@ async function handleResendInvite(user: any, body: any) {
           authError.message?.includes('User already registered')) {
         
         // Search for existing auth user by email
-        // We need to paginate through all users to find by email
         let found = false
         let page = 1
-        const perPage = 1000 // Use larger page size for efficiency
+        const perPage = 1000
         
-        while (!found && page <= 50) { // Search up to 50k users
+        while (!found && page <= 50) {
           const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers({
             page,
             perPage
@@ -306,11 +305,11 @@ async function handleResendInvite(user: any, body: any) {
           const existingAuthUser = authUsers.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
           if (existingAuthUser) {
             authUserId = existingAuthUser.id
+            authUserData = existingAuthUser
             found = true
             break
           }
           
-          // If we got fewer users than perPage, we've reached the end
           if (authUsers.users.length < perPage) {
             break
           }
@@ -327,6 +326,7 @@ async function handleResendInvite(user: any, body: any) {
     } else {
       // Successfully created new auth user
       authUserId = authUser.user.id
+      authUserData = authUser.user
     }
     
     // Link auth user to DB user
@@ -338,20 +338,111 @@ async function handleResendInvite(user: any, body: any) {
       
       if (updateError) {
         console.error('Failed to link auth user to DB user:', updateError)
-        // Don't throw - we can still try to send the invite
       }
     }
+  } else {
+    // Get existing auth user data
+    const { data: authUser, error: getUserError } = await supabase.auth.admin.getUserById(authUserId)
+    if (getUserError) {
+      throw new ApiError(`Failed to get auth user: ${getUserError.message}`, 400)
+    }
+    authUserData = authUser?.user
   }
 
   // Resend invitation
-  const redirectUrl = siteUrl || Deno.env.get('SITE_URL') || 'http://localhost:3000'
-  console.log('Resend invite redirect URL:', { siteUrl, envUrl: Deno.env.get('SITE_URL'), redirectUrl })
-  const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${redirectUrl}/auth/callback`
-  })
+  const redirectUrl = (siteUrl && siteUrl.trim()) || Deno.env.get('SITE_URL') || 'http://localhost:3000'
+  const redirectToUrl = `${redirectUrl}/auth/callback`
 
-  if (error) {
-    throw new ApiError(`Failed to resend invite: ${error.message}`, 400)
+  // Handle different scenarios
+  if (authUserId && authUserData) {
+    // User exists in auth
+    if (authUserData.email_confirmed_at) {
+      // Email is already confirmed
+      // If user status is not active, send a magic link for sign-in instead of invite
+      if (targetUser.status !== 'active') {
+        const { error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'magiclink',
+          email,
+          options: {
+            redirectTo: redirectToUrl
+          }
+        })
+
+        if (linkError) {
+          throw new ApiError(`Failed to generate sign-in link: ${linkError.message}`, 400)
+        }
+
+        // Update user metadata
+        await supabase.auth.admin.updateUserById(authUserId, {
+          user_metadata: {
+            ...(authUserData.user_metadata || {}),
+            last_signin_link_sent_at: new Date().toISOString()
+          }
+        })
+
+        return createSuccessResponse({ 
+          message: 'Sign-in link sent successfully. User can use the link to sign in.',
+          type: 'magiclink'
+        })
+      } else {
+        throw new ApiError('User email is already confirmed and account is active. User should be able to sign in.', 400)
+      }
+    }
+
+    // User exists but email not confirmed - use generateLink to create new invite
+    // This works for existing users without deleting/recreating
+    const { error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: {
+        redirectTo: redirectToUrl
+      }
+    })
+
+    if (linkError) {
+      throw new ApiError(`Failed to generate invite link: ${linkError.message}`, 400)
+    }
+
+    // Update user metadata to track the resend
+    await supabase.auth.admin.updateUserById(authUserId, {
+      user_metadata: {
+        ...(authUserData.user_metadata || {}),
+        invited: true,
+        invited_by: user.user_id,
+        last_invite_sent_at: new Date().toISOString()
+      }
+    })
+    
+  } else if (!authUserId) {
+    // No auth user exists - create new one and send invite
+    const { data: newAuthUser, error: createError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: {
+        invited: true,
+        invited_by: user.user_id,
+        invited_at: new Date().toISOString()
+      }
+    })
+
+    if (createError) {
+      throw new ApiError(`Failed to create auth user: ${createError.message}`, 400)
+    }
+
+    // Update DB with auth_user_id
+    await supabase
+      .from('users')
+      .update({ auth_user_id: newAuthUser.user.id })
+      .eq('user_id', targetUser.user_id)
+
+    // Send invite for new user
+    const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: redirectToUrl
+    })
+
+    if (inviteError) {
+      throw new ApiError(`Failed to send invite: ${inviteError.message}`, 400)
+    }
   }
 
   return createSuccessResponse({ message: 'Invitation resent successfully' })
