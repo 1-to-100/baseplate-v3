@@ -358,27 +358,39 @@ async function handleResendInvite(user: any, body: any) {
     // User exists in auth
     if (authUserData.email_confirmed_at) {
       // Email is already confirmed
-      // If user status is not active, send a magic link for sign-in instead of invite
+      // If user status is not active, send an invite email for sign-in
       if (targetUser.status !== 'active') {
-        const { error: linkError } = await supabase.auth.admin.generateLink({
-          type: 'magiclink',
-          email,
-          options: {
-            redirectTo: redirectToUrl
+        // Following backend pattern: delete existing auth user, then inviteUserByEmail()
+        // This allows inviteUserByEmail() to recreate the user and send the email
+        if (authUserId) {
+          try {
+            await supabase.auth.admin.deleteUser(authUserId)
+          } catch (error) {
+            console.error(`Failed to delete auth user ${authUserId}:`, error)
+            // Continue anyway - inviteUserByEmail might still work
           }
-        })
-
-        if (linkError) {
-          throw new ApiError(`Failed to generate sign-in link: ${linkError.message}`, 400)
         }
 
-        // Update user metadata
-        await supabase.auth.admin.updateUserById(authUserId, {
-          user_metadata: {
-            ...(authUserData.user_metadata || {}),
-            last_signin_link_sent_at: new Date().toISOString()
-          }
+        // Now inviteUserByEmail() will create a new auth user and send the email
+        const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+          redirectTo: redirectToUrl
         })
+
+        if (inviteError) {
+          throw new ApiError(`Failed to send sign-in link: ${inviteError.message}`, 400)
+        }
+
+        // Get the newly created auth user to update DB with new auth_user_id
+        const { data: authUsers } = await supabase.auth.admin.listUsers()
+        const newAuthUser = authUsers?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+        
+        if (newAuthUser) {
+          // Update DB with new auth_user_id
+          await supabase
+            .from('users')
+            .update({ auth_user_id: newAuthUser.id })
+            .eq('user_id', targetUser.user_id)
+        }
 
         return createSuccessResponse({ 
           message: 'Sign-in link sent successfully. User can use the link to sign in.',
@@ -389,29 +401,47 @@ async function handleResendInvite(user: any, body: any) {
       }
     }
 
-    // User exists but email not confirmed - use generateLink to create new invite
-    // This works for existing users without deleting/recreating
-    const { error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'invite',
-      email,
-      options: {
-        redirectTo: redirectToUrl
+    // User exists but email not confirmed - use inviteUserByEmail to send invite
+    // Following backend pattern: delete existing auth user first, then inviteUserByEmail()
+    if (authUserId) {
+      try {
+        await supabase.auth.admin.deleteUser(authUserId)
+      } catch (error) {
+        console.error(`Failed to delete auth user ${authUserId}:`, error)
+        // Continue anyway - inviteUserByEmail might still work
       }
-    })
-
-    if (linkError) {
-      throw new ApiError(`Failed to generate invite link: ${linkError.message}`, 400)
     }
 
-    // Update user metadata to track the resend
-    await supabase.auth.admin.updateUserById(authUserId, {
-      user_metadata: {
-        ...(authUserData.user_metadata || {}),
-        invited: true,
-        invited_by: user.user_id,
-        last_invite_sent_at: new Date().toISOString()
-      }
+    // Now inviteUserByEmail() will create a new auth user and send the email
+    const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: redirectToUrl
     })
+
+    if (inviteError) {
+      throw new ApiError(`Failed to send invite: ${inviteError.message}`, 400)
+    }
+
+    // Get the newly created auth user to update DB and metadata
+    const { data: authUsers } = await supabase.auth.admin.listUsers()
+    const newAuthUser = authUsers?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+    
+    if (newAuthUser) {
+      // Update DB with new auth_user_id
+      await supabase
+        .from('users')
+        .update({ auth_user_id: newAuthUser.id })
+        .eq('user_id', targetUser.user_id)
+
+      // Update user metadata to track the resend
+      await supabase.auth.admin.updateUserById(newAuthUser.id, {
+        user_metadata: {
+          ...(authUserData?.user_metadata || {}),
+          invited: true,
+          invited_by: user.user_id,
+          last_invite_sent_at: new Date().toISOString()
+        }
+      })
+    }
     
   } else if (!authUserId) {
     // No auth user exists - create new one and send invite
