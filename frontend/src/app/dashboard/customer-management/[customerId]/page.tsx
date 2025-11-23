@@ -41,7 +41,7 @@ import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemM
 import Pagination from "@/components/dashboard/layout/pagination";
 import ResetPasswordUser from "@/components/dashboard/modals/ResetPasswordUserModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUsers, getUserById } from "../../../../lib/api/users";
+import { getUsers, getUserById, deleteUser, updateUser } from "../../../../lib/api/users";
 import { getCustomerById, getCustomerSuccessUsers } from "../../../../lib/api/customers";
 import Tooltip from "@mui/joy/Tooltip";
 import { ApiUser } from "@/contexts/auth/types";
@@ -49,8 +49,11 @@ import { useGlobalSearch } from "@/hooks/use-global-search";
 import { useParams } from "next/navigation";
 import { DotsThreeVertical as DotsIcon } from "@phosphor-icons/react/dist/ssr/DotsThreeVertical";
 import AddEditCustomerModal from "@/components/dashboard/modals/AddEditCustomerModal";
-import { isCustomerSuccess } from "@/lib/user-utils";
+import { isCustomerSuccess, isUserOwner, isCustomerAdminOrManager, SYSTEM_ROLES } from "@/lib/user-utils";
 import { useUserInfo } from "@/hooks/use-user-info";
+import { toast } from "@/components/core/toaster";
+import { ToggleLeft } from "@phosphor-icons/react/dist/ssr/ToggleLeft";
+import { ToggleRight } from "@phosphor-icons/react/dist/ssr/ToggleRight";
 
 const Customer: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -68,7 +71,9 @@ const Customer: React.FC = () => {
   );
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openDeactivateModal, setOpenDeactivateModal] = useState(false);
   const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openAddUserModal, setOpenAddUserModal] = useState(false);
   const [openEditRoleModal, setOpenEditRoleModal] = useState(false);
@@ -273,7 +278,102 @@ const Customer: React.FC = () => {
     }
   };
 
-  const confirmDelete = () => {
+  const handleDeactivate = async (userId: string) => {
+    setSelectedRows([userId]);
+    setOpenDeactivateModal(true);
+  };
+
+  const confirmDeactivate = async () => {
+    if (selectedRows.length > 0) {
+      try {
+        setOpenDeactivateModal(false);
+        for (const userId of selectedRows) {
+          await updateUser({ id: userId, status: 'suspended' });
+        }
+        toast.success('User deactivated successfully');
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+        if (customerId) {
+          await queryClient.invalidateQueries({
+            queryKey: ["customer", customerId],
+          });
+        }
+      } catch (error) {
+        const httpError = error as { response?: { data?: { message?: string } } };
+        toast.error(httpError.response?.data?.message || 'Failed to deactivate user');
+      }
+      handleMenuClose();
+    }
+
+    setOpenDeactivateModal(false);
+    setRowsToDelete([]);
+    setSelectedRows([]);
+  };
+
+  const handleActivate = async (userId: string) => {
+    try {
+      await updateUser({ id: userId, status: 'active' });
+      toast.success('User activated successfully');
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      if (customerId) {
+        await queryClient.invalidateQueries({
+          queryKey: ["customer", customerId],
+        });
+      }
+    } catch (error) {
+      const httpError = error as { response?: { data?: { message?: string } } };
+      toast.error(httpError.response?.data?.message || 'Failed to activate user');
+    }
+    handleMenuClose();
+  };
+
+  const handleBulkDeactivate = () => {
+    if (selectedRows.length > 0) {
+      setRowsToDelete(selectedRows);
+      setIsDeactivating(true);
+      setOpenDeactivateModal(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (rowsToDelete.length > 0) {
+      let successCount = 0;
+      let errorCount = 0;
+      
+      try {
+        for (const userId of rowsToDelete) {
+          try {
+            await deleteUser(userId);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+            const httpError = error as { response?: { data?: { message?: string } } };
+            toast.error(httpError.response?.data?.message || 'Failed to delete user');
+          }
+        }
+        
+        // Invalidate and refetch queries after all deletions are complete
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+        await queryClient.refetchQueries({ queryKey: ["users"] });
+        if (customerId) {
+          await queryClient.invalidateQueries({
+            queryKey: ["customer", customerId],
+          });
+        }
+        
+        // Show success message only if at least one deletion succeeded
+        if (successCount > 0) {
+          if (successCount === 1) {
+            toast.success('User successfully deleted');
+          } else {
+            toast.success(`${successCount} users successfully deleted`);
+          }
+        }
+      } catch (error) {
+        toast.error('An error occurred while deleting users');
+      }
+    }
+    
+    // Clean up state after all operations complete
     setOpenDeleteModal(false);
     setRowsToDelete([]);
     setSelectedRows([]);
@@ -537,6 +637,18 @@ const Customer: React.FC = () => {
                   >
                     <TrashIcon fontSize="var(--Icon-fontSize)" />
                   </IconButton>
+                  <IconButton
+                    onClick={handleBulkDeactivate}
+                    sx={{
+                      bgcolor: "var(--joy-palette-background-mainBg)",
+                      color: "#636B74",
+                      borderRadius: "50%",
+                      width: 32,
+                      height: 32,
+                    }}
+                  >
+                    <ToggleLeft fontSize="var(--Icon-fontSize)" />
+                  </IconButton>
                 </Box>
               ) : null}
             </Stack>
@@ -716,7 +828,25 @@ const Customer: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((user, index) => (
+                      {users.map((user, index) => {
+                        // Permission checks
+                        const canDeactivate = user?.status === 'active' &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdminOrManager(userInfo) ||
+                            userInfo?.permissions?.includes("editUser"));
+
+                        const canActivate = user.status && user.status == 'suspended' &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdminOrManager(userInfo) ||
+                            userInfo?.permissions?.includes("editUser"));
+
+                        const canDelete = user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
+                          user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS &&
+                          (isUserOwner(userInfo, user) ||
+                            isCustomerAdminOrManager(userInfo) ||
+                            userInfo?.permissions?.includes("deleteUser"));
+
+                        return (
                         <tr
                           key={user.id}
                           onMouseEnter={() => setHoveredRow(index)}
@@ -917,21 +1047,48 @@ const Customer: React.FC = () => {
                                 <Password fontSize="20px" style={iconStyle} />
                                 Reset password
                               </Box>
-                              <Box
-                                onMouseDown={(event) => {
-                                  event.preventDefault();
-                                  handleDeleteRow(user.id);
-                                  handleMenuClose();
-                                }}
-                                sx={{ ...menuItemStyle, color: "#EF4444" }}
-                              >
-                                <TrashIcon fontSize="20px" style={iconStyle} />
-                                Delete
-                              </Box>
+                              {canDeactivate && (
+                                <Box
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    handleDeactivate(user.id);
+                                  }}
+                                  sx={menuItemStyle}
+                                >
+                                  <ToggleLeft fontSize="20px" style={iconStyle} />
+                                  Deactivate
+                                </Box>
+                              )}
+                              {canActivate && (
+                                <Box
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    handleActivate(user.id);
+                                  }}
+                                  sx={menuItemStyle}
+                                >
+                                  <ToggleRight fontSize="20px" style={iconStyle} />
+                                  Activate
+                                </Box>
+                              )}
+                              {canDelete && (
+                                <Box
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    handleDeleteRow(user.id);
+                                    handleMenuClose();
+                                  }}
+                                  sx={{ ...menuItemStyle, color: "#EF4444" }}
+                                >
+                                  <TrashIcon fontSize="20px" style={iconStyle} />
+                                  Delete
+                                </Box>
+                              )}
                             </Popper>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </Table>
                 </Box>
@@ -943,7 +1100,25 @@ const Customer: React.FC = () => {
                     gap: 2,
                   }}
                 >
-                  {users.map((user, index) => (
+                  {users.map((user, index) => {
+                    // Permission checks
+                    const canDeactivate = user?.status === 'active' &&
+                      (isUserOwner(userInfo, user) ||
+                        isCustomerAdminOrManager(userInfo) ||
+                        userInfo?.permissions?.includes("editUser"));
+
+                    const canActivate = user.status && user.status == 'suspended' &&
+                      (isUserOwner(userInfo, user) ||
+                        isCustomerAdminOrManager(userInfo) ||
+                        userInfo?.permissions?.includes("editUser"));
+
+                    const canDelete = user.role?.name !== SYSTEM_ROLES.SYSTEM_ADMINISTRATOR &&
+                      user.role?.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS &&
+                      (isUserOwner(userInfo, user) ||
+                        isCustomerAdminOrManager(userInfo) ||
+                        userInfo?.permissions?.includes("deleteUser"));
+
+                    return (
                     <Card
                       key={user.id}
                       sx={{
@@ -1080,20 +1255,47 @@ const Customer: React.FC = () => {
                           <Password fontSize="20px" style={iconStyle} />
                           Reset password
                         </Box>
-                        <Box
-                          onMouseDown={(event) => {
-                            event.preventDefault();
-                            handleDeleteRow(user.id);
-                            handleMenuClose();
-                          }}
-                          sx={{ ...menuItemStyle, color: "#EF4444" }}
-                        >
-                          <TrashIcon fontSize="20px" style={iconStyle} />
-                          Delete
-                        </Box>
+                        {canDeactivate && (
+                          <Box
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              handleDeactivate(user.id);
+                            }}
+                            sx={menuItemStyle}
+                          >
+                            <ToggleLeft fontSize="20px" style={iconStyle} />
+                            Deactivate
+                          </Box>
+                        )}
+                        {canActivate && (
+                          <Box
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              handleActivate(user.id);
+                            }}
+                            sx={menuItemStyle}
+                          >
+                            <ToggleRight fontSize="20px" style={iconStyle} />
+                            Activate
+                          </Box>
+                        )}
+                        {canDelete && (
+                          <Box
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              handleDeleteRow(user.id);
+                              handleMenuClose();
+                            }}
+                            sx={{ ...menuItemStyle, color: "#EF4444" }}
+                          >
+                            <TrashIcon fontSize="20px" style={iconStyle} />
+                            Delete
+                          </Box>
+                        )}
                       </Popper>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </Box>
               )}
             </Box>
@@ -1349,8 +1551,18 @@ const Customer: React.FC = () => {
         onClose={() => setOpenDeleteModal(false)}
         onConfirm={confirmDelete}
         usersToDelete={usersToDelete}
-        title="Delete customer"
-        description="Are you sure you want to delete this customer?"
+        title="Delete user"
+        description="This user will be permanently removed from the system. They will not be able to log in or register again with this email. Are you sure you want to continue?"
+      />
+
+      <DeleteDeactivateUserModal
+        open={openDeactivateModal}
+        onClose={() => setOpenDeactivateModal(false)}
+        onConfirm={confirmDeactivate}
+        usersToDelete={usersToDelete}
+        isDeactivate={true}
+        title="Deactivate user"
+        description="Are you sure you want to deactivate this user?"
       />
 
       <AddEditUserModal

@@ -24,6 +24,8 @@ import { getRolesList } from "./../../../lib/api/roles";
 import { getCustomers } from "./../../../lib/api/customers";
 import { getManagers } from "./../../../lib/api/managers";
 import { toast } from "@/components/core/toaster";
+import { useUserInfo } from "@/hooks/use-user-info";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 interface HttpError {
   response?: {
@@ -93,6 +95,9 @@ export default function AddEditUser({
     enabled: !!userId && open,
   });
 
+  const { userInfo } = useUserInfo();
+  const isCurrentUserSystemAdmin = useMemo(() => isSystemAdministrator(userInfo), [userInfo]);
+
   const roleOptions = useMemo(() => {
     // Only show Standard User and Manager roles
     const standardRoles = roles?.filter(
@@ -116,11 +121,16 @@ export default function AddEditUser({
       setErrors(null);
       setEmailWarnings([]);
     } else if (!userId && open) {
+      // If current user is not a system admin, preselect their customer
+      const initialCustomer = !isCurrentUserSystemAdmin && userInfo?.customer?.name 
+        ? userInfo.customer.name 
+        : "";
+      
       setFormData({
         firstName: "",
         lastName: "",
         email: "",
-        customer: "",
+        customer: initialCustomer,
         role: "",
         manager: "",
       });
@@ -130,7 +140,7 @@ export default function AddEditUser({
       setErrors(null);
       setEmailWarnings([]);
     }
-  }, [userId, userData, open]);
+  }, [userId, userData, open, isCurrentUserSystemAdmin, userInfo]);
 
   const createUserMutation = useMutation({
     mutationFn: createUser,
@@ -696,6 +706,7 @@ export default function AddEditUser({
                 value={formData.customer}
                 onChange={handleCustomerChange}
                 options={customers?.sort((a, b) => a.name.localeCompare(b.name)).map((customer) => customer.name) || []}
+                disabled={!isCurrentUserSystemAdmin}
                 slotProps={{
                   listbox: {
                     placement: 'top',

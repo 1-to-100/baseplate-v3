@@ -8,8 +8,8 @@ import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
-import { useState, useMemo } from "react";
-import { Tabs, TabList, Tab, Input, IconButton } from "@mui/joy";
+import { useState, useMemo, useEffect } from "react";
+import { Tabs, TabList, Tab, Input, IconButton, FormHelperText } from "@mui/joy";
 import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,8 @@ import { getCustomers } from "@/lib/api/customers";
 import { inviteUser, inviteMultipleUsers } from "@/lib/api/users";
 import { toast } from "@/components/core/toaster";
 import { queryClient } from "@/lib/react-query";
+import { useUserInfo } from "@/hooks/use-user-info";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 interface InviteUserProps {
   open: boolean;
@@ -43,6 +45,7 @@ export default function InviteUser({
   const [emails, setEmails] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [roleError, setRoleError] = useState<string>("");
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
     queryKey: ["roles"],
@@ -53,6 +56,9 @@ export default function InviteUser({
     queryKey: ["customers"],
     queryFn: getCustomers,
   });
+
+  const { userInfo } = useUserInfo();
+  const isCurrentUserSystemAdmin = useMemo(() => isSystemAdministrator(userInfo), [userInfo]);
 
   const roleOptions = useMemo(() => {
     // Only show Standard User and Manager roles
@@ -123,12 +129,26 @@ export default function InviteUser({
 
   const resetForm = () => {
     setSelectedRole("");
-    setSelectedCustomer("");
+    // If current user is not a system admin, preselect their customer
+    const initialCustomer = !isCurrentUserSystemAdmin && userInfo?.customer?.name 
+      ? userInfo.customer.name 
+      : "";
+    setSelectedCustomer(initialCustomer);
     setEmailInput("");
     setEmails([]);
     setError("");
+    setRoleError("");
     setViewMode("email");
   };
+
+  // Initialize customer selection when modal opens
+  useEffect(() => {
+    if (open && !isCurrentUserSystemAdmin && userInfo?.customer?.name) {
+      setSelectedCustomer(userInfo.customer.name);
+    } else if (open && isCurrentUserSystemAdmin) {
+      setSelectedCustomer("");
+    }
+  }, [open, isCurrentUserSystemAdmin, userInfo]);
 
   const onCancel = () => {
     resetForm();
@@ -137,6 +157,13 @@ export default function InviteUser({
 
   const handleConfirm = async () => {
     setError("");
+    setRoleError("");
+
+    // Validate role
+    if (!selectedRole.trim()) {
+      setRoleError("Role is required");
+      return;
+    }
 
     // Validate and add email from input if it's valid
     if (emailInput.trim() !== "") {
@@ -257,8 +284,12 @@ export default function InviteUser({
           </Typography>
           <Select
             value={selectedRole}
-            onChange={(event, newValue) => setSelectedRole(newValue as string)}
+            onChange={(event, newValue) => {
+              setSelectedRole(newValue as string);
+              setRoleError("");
+            }}
             placeholder="Select role"
+            color={roleError ? "danger" : undefined}
           >
             {roleOptions.map((roleName) => (
               <Option key={roleName} value={roleName}>
@@ -266,6 +297,17 @@ export default function InviteUser({
               </Option>
             ))}
           </Select>
+          {roleError && (
+            <FormHelperText
+              sx={{
+                color: "var(--joy-palette-danger-500)",
+                fontSize: "12px",
+                mt: 0.5,
+              }}
+            >
+              {roleError}
+            </FormHelperText>
+          )}
 
           <Typography
             level="body-sm"
@@ -280,6 +322,7 @@ export default function InviteUser({
               setSelectedCustomer((newValue as string) || "")
             }
             placeholder="Select customer"
+            disabled={!isCurrentUserSystemAdmin}
           >
             {customers &&
               customers?.map((customer) => (

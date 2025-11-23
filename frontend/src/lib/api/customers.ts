@@ -757,8 +757,52 @@ export interface CustomerSuccessUser {
 }
 
 export async function getCustomerSuccessUsers(customerId: string): Promise<CustomerSuccessUser[]> {
-  // API call removed
-  return [];
+  const supabase = createClient();
+  
+  // Validate customer exists
+  const { data: customer, error: customerError } = await supabase
+    .from('customers')
+    .select('customer_id')
+    .eq('customer_id', customerId)
+    .single();
+  
+  if (customerError || !customer) {
+    throw new Error(`Customer with ID ${customerId} not found`);
+  }
+  
+  // Get CS assignments for this customer
+  const { data: csData, error: csError } = await supabase
+    .from('customer_success_owned_customers')
+    .select(`
+      user_id,
+      users!customer_success_owned_customers_user_id_fkey(user_id, full_name, email, avatar_url)
+    `)
+    .eq('customer_id', customerId);
+  
+  if (csError) {
+    throw new Error(csError.message || 'Failed to fetch customer success users');
+  }
+  
+  if (!csData || csData.length === 0) {
+    return [];
+  }
+  
+  // Map assignments to CustomerSuccessUser format
+  const result: CustomerSuccessUser[] = [];
+  
+  for (const assignment of csData) {
+    const user = Array.isArray(assignment.users) ? assignment.users[0] : assignment.users;
+    if (user) {
+      result.push({
+        id: user.user_id,
+        name: user.full_name || '',
+        email: user.email || '',
+        avatarUrl: user.avatar_url || undefined,
+      });
+    }
+  }
+  
+  return result;
 }
 
 export async function addCustomerSuccessUser(customerId: string, userId: string): Promise<void> {
