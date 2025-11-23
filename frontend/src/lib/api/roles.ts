@@ -30,7 +30,6 @@ interface RoleWithRelations {
   display_name: string | null;
   description: string | null;
   permissions: PermissionData | PermissionData[] | null;
-  users_count: unknown[] | null;
 }
   
   interface CreateRolePayload {
@@ -75,42 +74,56 @@ interface RoleWithRelations {
   export async function getRolesList(params: GetRolesParams = {}): Promise<Role[]> {
     const supabase = createClient();
     
+    // Build query
     let query = supabase
       .from('roles')
-      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description), users_count:users(count)')
+      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description)')
       .order('name');
     
+    // Add search filter if provided
     if (params.search) {
       query = query.or(`name.ilike.%${params.search}%,display_name.ilike.%${params.search}%`);
     }
     
-    const { data, error } = await query;
+    const { data: roles, error } = await query;
     
     if (error) throw error;
     
-    return (data || []).map((role: RoleWithRelations) => {
-      const permissions = role.permissions 
-        ? (Array.isArray(role.permissions) ? role.permissions : [role.permissions])
-        : [];
-      
-      return {
-        role_id: role.role_id,
-        id: role.role_id,
-        name: role.name,
-        display_name: role.display_name,
-        displayName: role.display_name,
-        description: role.description,
-        permissions: permissions.map((p: PermissionData) => ({
-          id: p.permission_id,
-          name: p.name,
-          displayName: p.display_name,
-          description: p.description,
-        })),
-        _count: {
-          users: Array.isArray(role.users_count) ? role.users_count.length : 0,
-        },
-      };
-    }) as Role[];
+    // For each role, get user count
+    const rolesWithDetails = await Promise.all(
+      (roles || []).map(async (role: RoleWithRelations) => {
+        // Count users with this role (excluding removed users)
+        const { count: userCount } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('role_id', role.role_id)
+          .is('deleted_at', null);
+        
+        const permissions = role.permissions 
+          ? (Array.isArray(role.permissions) ? role.permissions : [role.permissions])
+          : [];
+        
+        return {
+          role_id: role.role_id,
+          id: role.role_id,
+          name: role.name,
+          display_name: role.display_name,
+          displayName: role.display_name,
+          description: role.description,
+          permissions: permissions.map((p: PermissionData) => ({
+            id: p.permission_id,
+            name: p.name,
+            displayName: p.display_name,
+            description: p.description,
+          })),
+          _count: {
+            users: userCount || 0,
+          },
+        };
+      }),
+    );
+    
+    return rolesWithDetails as Role[];
   }
   
   export async function createRole(payload: CreateRolePayload): Promise<Role> {
@@ -126,26 +139,33 @@ interface RoleWithRelations {
   export async function getRoleById(id: string): Promise<Role> {
     const supabase = createClient();
     
-    const { data, error } = await supabase
+    const { data: roleData, error } = await supabase
       .from('roles')
-      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description), users_count:users(count)')
+      .select('role_id, name, display_name, description, permissions (permission_id, name, display_name, description)')
       .eq('role_id', id)
       .single();
     
     if (error) throw error;
     
-    const roleData = data as RoleWithRelations;
-    const permissions = roleData.permissions 
-      ? (Array.isArray(roleData.permissions) ? roleData.permissions : [roleData.permissions])
+    // Count users with this role (excluding removed users)
+    const { count: userCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role_id', id)
+      .is('deleted_at', null);
+    
+    const role = roleData as RoleWithRelations;
+    const permissions = role.permissions 
+      ? (Array.isArray(role.permissions) ? role.permissions : [role.permissions])
       : [];
     
     return {
-      role_id: roleData.role_id,
-      id: roleData.role_id,
-      name: roleData.name,
-      display_name: roleData.display_name,
-      displayName: roleData.display_name,
-      description: roleData.description,
+      role_id: role.role_id,
+      id: role.role_id,
+      name: role.name,
+      display_name: role.display_name,
+      displayName: role.display_name,
+      description: role.description,
       permissions: permissions.map((p: PermissionData) => ({
         id: p.permission_id,
         name: p.name,
@@ -153,7 +173,7 @@ interface RoleWithRelations {
         description: p.description,
       })),
       _count: {
-        users: Array.isArray(roleData.users_count) ? roleData.users_count.length : 0,
+        users: userCount || 0,
       },
     } as unknown as Role;
   }

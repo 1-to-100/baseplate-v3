@@ -171,7 +171,7 @@ const SystemAdminSettings: React.FC = () => {
         search: debouncedSearchValue || undefined,
         orderBy: sortColumn || undefined,
         orderDirection: sortDirection,
-        roleId: roleId ? [Array.isArray(roleId) ? roleId[0] || '' : roleId].filter(Boolean) : undefined,
+        roleId: roleId ? [roleId] : undefined,
       });
       return {
         ...response,
