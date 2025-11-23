@@ -85,7 +85,7 @@ async function handleInvite(user: any, body: any) {
       customer_id: normalizedCustomerId,
       role_id: roleId,
       manager_id: managerId,
-      status: 'invited'
+      status: 'inactive'
     })
     .select(`
       user_id,
@@ -190,7 +190,22 @@ async function handleInviteMultiple(user: any, body: any) {
   })
 }
 
-async function inviteUser(supabase: any, email: string, customerId: string | null, roleId: string, managerId: string | undefined, invitedBy: string, siteUrl?: string) {
+async function inviteUser(supabase: any, email: string, customerId: string | null, roleId: string | undefined, managerId: string | undefined, invitedBy: string, siteUrl?: string) {
+  // Assign default role if not provided (matching backend behavior)
+  let finalRoleId = roleId
+  if (!finalRoleId) {
+    const { data: standardUserRole, error: roleError } = await supabase
+      .from('roles')
+      .select('role_id')
+      .eq('name', 'standard_user')
+      .single()
+
+    if (roleError || !standardUserRole) {
+      throw new Error(`Failed to find standard_user role: ${roleError?.message || 'Role not found'}`)
+    }
+    finalRoleId = standardUserRole.role_id
+  }
+
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email,
     email_confirm: false,
@@ -206,17 +221,38 @@ async function inviteUser(supabase: any, email: string, customerId: string | nul
   // Convert empty string to null for customerId
   const normalizedCustomerId = customerId === '' || customerId === undefined ? null : customerId
 
+  // Generate full_name with fallback (email prefix or 'Unnamed User')
+  const fullName = email.split('@')[0] || 'Unnamed User'
+
   const { data: dbUser, error: dbError } = await supabase
     .from('users')
     .insert({
       auth_user_id: authUser.user.id,
       email,
+      full_name: fullName,
       customer_id: normalizedCustomerId,
-      role_id: roleId,
+      role_id: finalRoleId,
       manager_id: managerId,
-      status: 'invited'
+      status: 'inactive'
     })
-    .select()
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      phone_number,
+      avatar_url,
+      customer_id,
+      role_id,
+      manager_id,
+      status,
+      created_at,
+      updated_at,
+      deleted_at,
+      customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+      role:roles(role_id, name, display_name),
+      manager:managers(manager_id, full_name, email)
+    `)
     .single()
 
   if (dbError) {

@@ -427,7 +427,7 @@ export default function InviteUser({
             <Button
               variant="solid"
               onClick={handleConfirm}
-              // loading={isLoading}
+              loading={isLoading}
               disabled={emails.length === 0 && !emailInput.trim()}
               sx={{
                 borderRadius: "20px",
