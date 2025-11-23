@@ -837,6 +837,54 @@ export async function updateUser(payload: UpdateUserPayload): Promise<ApiUser> {
 export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
   const supabase = createClient();
   
+  // Get role IDs for customer_admin and standard_user (only these roles should be displayed)
+  const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
+  const standardUserRoleId = await getRoleIdByName(SYSTEM_ROLES.STANDARD_USER);
+  const managerRoleId = await getRoleIdByName(SYSTEM_ROLES.MANAGER);
+  
+  // Build array of allowed role IDs (filter out nulls)
+  const allowedRoleIds: string[] = [];
+  if (customerAdminRoleId) allowedRoleIds.push(customerAdminRoleId);
+  if (standardUserRoleId) allowedRoleIds.push(standardUserRoleId);
+  if (managerRoleId) allowedRoleIds.push(managerRoleId);
+  
+  // If no allowed roles found, return empty result
+  if (allowedRoleIds.length === 0) {
+    return {
+      data: [],
+      meta: {
+        total: 0,
+        page: params.page || 1,
+        lastPage: 1,
+        perPage: params.perPage || 10,
+        currentPage: params.page || 1,
+        prev: null,
+        next: null,
+      },
+    };
+  }
+  
+  // If params.roleId is provided, intersect with allowed roles
+  let roleIdsToFilter = allowedRoleIds;
+  if (params.roleId && params.roleId.length > 0) {
+    roleIdsToFilter = params.roleId.filter(id => allowedRoleIds.includes(id));
+    // If no matching roles after intersection, return empty result
+    if (roleIdsToFilter.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page: params.page || 1,
+          lastPage: 1,
+          perPage: params.perPage || 10,
+          currentPage: params.page || 1,
+          prev: null,
+          next: null,
+        },
+      };
+    }
+  }
+  
   const page = params.page || 1;
   const perPage = params.perPage || 10;
   const from = (page - 1) * perPage;
@@ -862,15 +910,12 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
       role:roles(role_id, name, display_name)
     `, { count: 'exact' })
-    .is('deleted_at', null); // Exclude deleted users
+    .is('deleted_at', null) // Exclude deleted users
+    .in('role_id', roleIdsToFilter); // Only show customer_admin and standard_user roles
   
   // Apply filters
   if (params.search) {
     query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
-  }
-  
-  if (params.roleId && params.roleId.length > 0) {
-    query = query.in('role_id', params.roleId);
   }
   
   if (params.customerId && params.customerId.length > 0) {
