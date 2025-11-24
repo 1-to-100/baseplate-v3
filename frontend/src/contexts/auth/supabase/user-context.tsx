@@ -7,6 +7,9 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { User } from '@/types/user';
 import { logger } from '@/lib/default-logger';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { supabaseDB } from '@/lib/supabase/database';
+import { UserStatus } from '@/lib/constants/user-status';
+import { toast } from '@/components/core/toaster';
 
 import type { UserContextValue } from '../types';
 
@@ -56,6 +59,34 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     } catch (err) {
       logger.debug('Error calling activate_user_on_email_confirmation:', err);
       // Don't block the flow if activation fails
+    }
+
+    // Check user status after authentication
+    try {
+      const dbUser = await supabaseDB.getCurrentUser();
+      
+      // Check if user is soft-deleted
+      if (dbUser.deleted_at) {
+        await supabaseClient.auth.signOut();
+        toast.error('Your account has been deleted. Please contact support.');
+        logger.warn(`User ${user.id} attempted to sign in but account is deleted`);
+        return;
+      }
+      
+      if (
+        dbUser.status === UserStatus.INACTIVE ||
+        dbUser.status === UserStatus.SUSPENDED
+      ) {
+        // Sign out the user immediately
+        await supabaseClient.auth.signOut();
+        toast.error('Your account is not active. Please contact support.');
+        logger.warn(`User ${user.id} attempted to sign in with status: ${dbUser.status}`);
+        return;
+      }
+    } catch (dbError) {
+      // If we can't fetch user from database, log but don't block
+      // The backend guard will catch this on API calls
+      logger.debug('Failed to check user status in syncUser:', dbError);
     }
   }, [supabaseClient])
 

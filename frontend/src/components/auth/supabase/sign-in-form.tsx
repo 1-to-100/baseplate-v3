@@ -27,9 +27,11 @@ import { z as zod } from 'zod';
 
 import { paths } from '@/paths';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { supabaseDB } from '@/lib/supabase/database';
 import { DynamicLogo } from '@/components/core/logo';
 import { toast } from '@/components/core/toaster';
 import {OAuthProvider, oAuthProviders} from "@/lib/auth/supabase/auth-providers";
+import { UserStatus } from '@/lib/constants/user-status';
 
 const schema = zod.object({
   email: zod.string().min(1, { message: 'Email is required' }).email(),
@@ -93,7 +95,7 @@ export function SignInForm(): React.JSX.Element {
     async (values: Values): Promise<void> => {
       setIsPending(true);
 
-      const { error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
@@ -108,10 +110,47 @@ export function SignInForm(): React.JSX.Element {
           setError('root', { type: 'server', message: error.message });
           setIsPending(false);
         }
-      } else {
-        // UserProvider will handle Router refresh
-        // After refresh, GuestGuard will handle the redirect
+        return;
       }
+
+      // Check user status after successful authentication
+      if (data?.user) {
+        try {
+          const dbUser = await supabaseDB.getCurrentUser();
+          
+          // Check if user is soft-deleted
+          if (dbUser.deleted_at) {
+            await supabaseClient.auth.signOut();
+            setError('root', {
+              type: 'server',
+              message: 'Your account has been deleted. Please contact support.',
+            });
+            setIsPending(false);
+            return;
+          }
+          
+          if (
+            dbUser.status === UserStatus.INACTIVE ||
+            dbUser.status === UserStatus.SUSPENDED
+          ) {
+            // Sign out the user immediately
+            await supabaseClient.auth.signOut();
+            setError('root', {
+              type: 'server',
+              message: 'Your account is not active. Please contact support.',
+            });
+            setIsPending(false);
+            return;
+          }
+        } catch (dbError) {
+          // If we can't fetch user from database, log but don't block
+          // The backend guard will catch this on API calls
+          console.error('Failed to check user status:', dbError);
+        }
+      }
+
+      // UserProvider will handle Router refresh
+      // After refresh, GuestGuard will handle the redirect
     },
     [supabaseClient, router, setError]
   );

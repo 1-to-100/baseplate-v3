@@ -8,6 +8,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { paths } from '@/paths';
 import { logger } from '@/lib/default-logger';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { supabaseDB } from '@/lib/supabase/database';
+import { UserStatus } from '@/lib/constants/user-status';
 import { toast } from '@/components/core/toaster';
 
 // This page handles Supabase auth callbacks (invitations, password resets, etc.)
@@ -68,6 +70,36 @@ export default function Page(): React.JSX.Element | null {
       toast.error(error.message || 'Something went wrong');
       router.replace(paths.auth.supabase.signIn);
       return;
+    }
+
+    // Check user status after successful authentication
+    if (data?.user) {
+      try {
+        const dbUser = await supabaseDB.getCurrentUser();
+        
+        // Check if user is soft-deleted
+        if (dbUser.deleted_at) {
+          await supabaseClient.auth.signOut();
+          toast.error('Your account has been deleted. Please contact support.');
+          router.replace(paths.auth.supabase.signIn);
+          return;
+        }
+        
+        if (
+          dbUser.status === UserStatus.INACTIVE ||
+          dbUser.status === UserStatus.SUSPENDED
+        ) {
+          // Sign out the user immediately
+          await supabaseClient.auth.signOut();
+          toast.error('Your account is not active. Please contact support.');
+          router.replace(paths.auth.supabase.signIn);
+          return;
+        }
+      } catch (dbError) {
+        // If we can't fetch user from database, log but don't block
+        // The backend guard will catch this on API calls
+        logger.debug('Failed to check user status in callback:', dbError);
+      }
     }
 
     // If this is an invite, redirect to set password page
