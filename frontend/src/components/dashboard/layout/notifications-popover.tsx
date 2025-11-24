@@ -168,7 +168,7 @@ export function NotificationsPopover({
     useInfiniteQuery({
       queryKey: ["notifications"],
       queryFn: ({ pageParam = 1 }) =>
-        getNotifications({ isRead: false, type: "in_app", page: pageParam }),
+        getNotifications({ type: "in_app", page: pageParam }),
       getNextPageParam: (lastPage: GetNotificationsResponse) =>
         lastPage.meta.next,
       initialPageParam: 1,

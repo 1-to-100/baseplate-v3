@@ -1,8 +1,8 @@
 import { ApiNotification, NotificationType } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
-import { NotificationTypeList } from "@/lib/constants/notification-types";
+import { NotificationTypeList, NotificationTypes } from "@/lib/constants/notification-types";
 import { NotificationChannelList } from "@/lib/constants/notification-channel";
-import { sanitizeEditorHTML } from "@/lib/sanitize";
+import { sanitizeEditorHTML, sanitizeNotificationHTML } from "@/lib/sanitize";
 import { supabaseDB } from "@/lib/supabase/database";
 
 export interface GetNotificationsParams {
@@ -87,10 +87,12 @@ export interface GetNotificationHistoryResponse {
 
 export async function unreadNotificationsCount(): Promise<{count: number}> {
   const supabase = createClient();
-  
+  const currentUser = await supabaseDB.getCurrentUser();
+
   const { count, error } = await supabase
     .from('notifications')
     .select('notification_id', { count: 'exact', head: true })
+    .eq('user_id', currentUser.user_id)
     .is('read_at', null); // NULL read_at means unread
   
   if (error) throw error;
@@ -100,16 +102,23 @@ export async function unreadNotificationsCount(): Promise<{count: number}> {
 
 export async function getNotifications(params: GetNotificationsParams = {}): Promise<GetNotificationsResponse> {
   const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
   
   const page = params.page || 1;
   const perPage = params.perPage || 10;
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
   
-  // Build the query - notifications table uses read_at (timestamp) not is_read (boolean)
+  // Build the query - match backend findAll: select all fields with relationships and filter by user_id
   let query = supabase
     .from('notifications')
-    .select('notification_id, title, message, type, channel, read_at, created_at, updated_at', { count: 'exact' })
+    .select(
+      `*,
+      users!user_id(user_id, email, full_name),
+      customers!customer_id(customer_id, name)`,
+      { count: 'exact' }
+    )
+    .eq('user_id', currentUser.user_id)
     .range(from, to);
   
   // Apply filters
@@ -135,7 +144,7 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
     query = query.eq('channel', params.channel);
   }
   
-  // Apply sorting - only allow valid columns from notifications table
+  // Apply sorting - default to created_at desc like backend, but allow custom ordering
   const validOrderColumns = ['notification_id', 'title', 'message', 'type', 'channel', 'read_at', 'created_at', 'updated_at'];
   const orderBy = (params.orderBy && validOrderColumns.includes(params.orderBy)) ? params.orderBy : 'created_at';
   const orderDirection = params.orderDirection || 'desc';
@@ -148,18 +157,88 @@ export async function getNotifications(params: GetNotificationsParams = {}): Pro
   const total = count || 0;
   const lastPage = Math.ceil(total / perPage);
   
+  // Transform data to match backend format and frontend ApiNotification interface
+  interface NotificationWithRelations {
+    notification_id: string;
+    title: string | null;
+    message: string;
+    type: string[];
+    channel: string | null;
+    read_at: string | null;
+    created_at: string;
+    updated_at: string | null;
+    user_id: string;
+    customer_id: string | null;
+    sender_id: string | null;
+    template_id: string | null;
+    generated_by: string | null;
+    users: {
+      user_id: string;
+      email: string;
+      full_name: string | null;
+    } | {
+      user_id: string;
+      email: string;
+      full_name: string | null;
+    }[] | null;
+    customers: {
+      customer_id: string;
+      name: string;
+    } | {
+      customer_id: string;
+      name: string;
+    }[] | null;
+  }
+  
   return {
-    data: (data || []).map(notification => ({
-      id: notification.notification_id,
-      title: notification.title,
-      message: notification.message,
-      comment: '',
-      type: notification.type,
-      channel: notification.channel,
-      readAt: notification.read_at,
-      createdAt: notification.created_at,
-      updatedAt: notification.updated_at,
-    })) as ApiNotification[],
+    data: (data || []).map((notification: NotificationWithRelations) => {
+      // Handle users relationship (can be object or array)
+      let user = null;
+      if (notification.users) {
+        const users = Array.isArray(notification.users) ? notification.users[0] : notification.users;
+        if (users) {
+          // Parse full_name into firstName and lastName
+          const nameParts = (users.full_name || '').split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          user = {
+            id: users.user_id,
+            email: users.email,
+            firstName,
+            lastName,
+          };
+        }
+      }
+      
+      // Handle customers relationship (can be object or array)
+      let customer = null;
+      if (notification.customers) {
+        const customers = Array.isArray(notification.customers) ? notification.customers[0] : notification.customers;
+        if (customers) {
+          customer = {
+            id: customers.customer_id,
+            name: customers.name,
+          };
+        }
+      }
+      
+      // Transform type array to string (join with comma like getNotificationTemplates does)
+      const typeString = Array.isArray(notification.type) ? notification.type.join(',') : notification.type;
+      
+      return {
+        id: notification.notification_id,
+        title: notification.title || '',
+        message: notification.message,
+        comment: '',
+        type: typeString,
+        channel: notification.channel || '',
+        readAt: notification.read_at,
+        createdAt: notification.created_at,
+        User: user || undefined,
+        Customer: customer || undefined,
+      };
+    }) as ApiNotification[],
     meta: {
       total,
       page,
@@ -196,6 +275,291 @@ export async function markAllNotificationsAsRead(): Promise<void> {
     .is('read_at', null); // Only update unread notifications (where read_at is NULL)
   
   if (error) throw error;
+}
+
+// ============================================================================
+// Reusable Notification Creation (matches backend NotificationsService.create)
+// ============================================================================
+
+export interface CreateNotificationInput {
+  userId?: string;
+  customerId?: string;
+  type: string[];
+  title: string;
+  message: string;
+  channel: string;
+  templateId?: string;
+  metadata?: Record<string, any>;
+  senderId?: string;
+  generatedBy?: string;
+}
+
+/**
+ * Send in-app notification via Supabase realtime broadcast
+ * Matches backend NotificationsService.sendInAppNotification
+ */
+async function sendInAppNotification(
+  notification: CreateNotificationInput & { userId: string }
+): Promise<void> {
+  if (
+    !notification.userId ||
+    !notification.customerId ||
+    !notification.type.includes(NotificationTypes.in_app)
+  ) {
+    return;
+  }
+
+  const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
+  
+  // If sending to current user, dispatch a custom event instead of broadcasting
+  // This avoids interfering with the user's existing channel subscription
+  if (notification.userId === currentUser.user_id) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('supabase:notification', {
+        detail: {
+          type: 'broadcast',
+          event: 'new',
+          payload: {
+            title: notification.title,
+            message: notification.message,
+            channel: notification.channel,
+          },
+        },
+      }));
+    }
+    return;
+  }
+  
+  try {
+    const channelName = `main-notifications:${notification.userId}`;
+    const channel = supabase.channel(channelName);
+    
+    // Subscribe and wait for ready
+    const subscribePromise = new Promise<void>((resolve, reject) => {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          reject(new Error(`Failed to subscribe to channel: ${status}`));
+        }
+      });
+    });
+
+    await subscribePromise;
+    
+    // Small delay to ensure channel is fully ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Send the broadcast
+    const sendResponse = await channel.send({
+      type: 'broadcast',
+      event: 'new',
+      payload: {
+        title: notification.title,
+        message: notification.message,
+        channel: notification.channel,
+      },
+    });
+
+    if (sendResponse === 'error') {
+      throw new Error('Failed to send broadcast');
+    }
+
+    // Only unsubscribe, don't remove channel to avoid interfering with user's subscription
+    await channel.unsubscribe();
+  } catch (error) {
+    // Log error but don't fail - frontend may not have permission to broadcast
+    console.error(`Failed to send in-app notification to user ${notification.userId}:`, error);
+  }
+}
+
+/**
+ * Send unread count notification via Supabase realtime broadcast
+ * Matches backend NotificationsService.sendUnreadCountNotification
+ */
+async function sendUnreadCountNotification(userId: string): Promise<void> {
+  const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
+  
+  // Get unread count
+  const { count, error: countError } = await supabase
+    .from('notifications')
+    .select('notification_id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('read_at', null);
+
+  if (countError) {
+    throw countError;
+  }
+
+  const unreadCount = count || 0;
+
+  // If sending to current user, dispatch a custom event instead of broadcasting
+  // This avoids interfering with the user's existing channel subscription
+  if (userId === currentUser.user_id) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('supabase:notification', {
+        detail: {
+          type: 'broadcast',
+          event: 'unread_count',
+          payload: { count: unreadCount },
+        },
+      }));
+    }
+    return;
+  }
+  
+  try {
+    const channelName = `unread-notifications:${userId}`;
+    const channel = supabase.channel(channelName);
+    
+    const subscribePromise = new Promise<void>((resolve, reject) => {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          reject(new Error(`Failed to subscribe to channel: ${status}`));
+        }
+      });
+    });
+
+    await subscribePromise;
+    
+    // Small delay to ensure channel is fully ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const sendResponse = await channel.send({
+      type: 'broadcast',
+      event: 'unread_count',
+      payload: { count: unreadCount },
+    });
+
+    if (sendResponse === 'error') {
+      throw new Error('Failed to send broadcast');
+    }
+
+    // Only unsubscribe, don't remove channel to avoid interfering with user's subscription
+    await channel.unsubscribe();
+  } catch (error) {
+    // Log error but don't fail - frontend may not have permission to broadcast
+    console.error(`Failed to send unread count notification to user ${userId}:`, error);
+  }
+}
+
+/**
+ * Create notification(s) for users - matches backend NotificationsService.create logic
+ * Handles both single user (userId) and multiple users (customerId) cases
+ * This creates actual notifications, not notification templates
+ */
+export async function createUserNotification(
+  input: CreateNotificationInput
+): Promise<void> {
+  const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
+
+  // Sanitize message content to prevent XSS attacks
+  const sanitizedMessage = sanitizeNotificationHTML(input.message);
+
+  const { userId, customerId } = input;
+
+  if (!userId && customerId) {
+    // Case 1: customerId provided (no userId) - create notifications for all users in customer
+    const users = await supabase
+      .from('users')
+      .select('user_id')
+      .eq('customer_id', customerId)
+      .is('deleted_at', null);
+
+    if (users.error) {
+      throw new Error(`Failed to fetch users: ${users.error.message}`);
+    }
+
+    if (!users.data || users.data.length === 0) {
+      throw new Error('No users found for the customer');
+    }
+
+    const notifications = users.data.map((user) => ({
+      user_id: user.user_id,
+      customer_id: customerId || null,
+      sender_id: input.senderId || currentUser.user_id,
+      type: input.type,
+      title: input.title,
+      message: sanitizedMessage,
+      template_id: input.templateId || null,
+      metadata: input.metadata || null,
+      channel: input.channel,
+      read_at: null, // null means unread; read_at is source of truth
+      generated_by: input.generatedBy || null,
+    }));
+
+    // Create notifications using batch insert
+    const { error: insertError } = await supabase
+      .from('notifications')
+      .insert(notifications);
+
+    if (insertError) {
+      throw new Error('Failed to create notifications');
+    }
+
+    // Use setTimeout to delay realtime notifications (matching backend behavior)
+    setTimeout(() => {
+      Promise.all(
+        users.data.map((user) => sendUnreadCountNotification(user.user_id))
+      )
+        .then(() => {
+          return Promise.all(
+            notifications.map((notification) =>
+              sendInAppNotification({
+                ...input,
+                userId: notification.user_id,
+                customerId: notification.customer_id || customerId,
+                message: sanitizedMessage,
+              })
+            )
+          );
+        })
+        .catch((error) => {
+          console.error('Error in delayed notification processing', error);
+        });
+    }, 100);
+  } else if (userId) {
+    // Case 2: userId provided - create single notification
+    const notificationData = {
+      user_id: userId,
+      customer_id: customerId || null,
+      sender_id: input.senderId || currentUser.user_id,
+      type: input.type,
+      title: input.title,
+      message: sanitizedMessage,
+      template_id: input.templateId || null,
+      metadata: input.metadata || null,
+      channel: input.channel,
+      read_at: null, // null means unread; read_at is source of truth
+      generated_by: input.generatedBy || null,
+    };
+
+    const { error: insertError } = await supabase
+      .from('notifications')
+      .insert(notificationData);
+
+    if (insertError) {
+      throw new Error('Failed to create notification');
+    }
+
+    // Send realtime notifications immediately
+    await Promise.all([
+      sendUnreadCountNotification(userId),
+      sendInAppNotification({
+        ...input,
+        userId,
+        customerId: customerId || currentUser.customer_id || undefined,
+        message: sanitizedMessage,
+      }),
+    ]);
+  } else {
+    throw new Error('Notification must be associated with a user or customer');
+  }
 }
 
 export async function getNotificationTemplates(params: GetNotificationsParams = {}): Promise<GetNotificationsResponse> {
@@ -508,11 +872,21 @@ export async function sendNotification(data: SendNotificationRequest, notificati
     throw new Error('You do not have permission to send notifications using this template');
   }
   
-  // Determine target users
-  let targetUserIds: string[] = [];
-  
-  if (data.userIds && data.userIds.length > 0) {
-    // Verify users exist and are active
+  // Determine target - use customerId if provided, otherwise send to individual users
+  if (data.customerId) {
+    // Case: Send to all users in customer (uses customerId path in createUserNotification)
+    await createUserNotification({
+      customerId: data.customerId,
+      type: template.type,
+      title: template.title,
+      message: template.message,
+      channel: template.channel,
+      templateId: notificationTemplateId,
+      senderId: currentUser.user_id,
+      generatedBy: 'user (notifications api)',
+    });
+  } else if (data.userIds && data.userIds.length > 0) {
+    // Case: Send to specific users - verify users first, then create notification for each
     const { data: users, error: usersError } = await supabase
       .from('users')
       .select('user_id, customer_id, status')
@@ -541,49 +915,24 @@ export async function sendNotification(data: SendNotificationRequest, notificati
       }
     }
     
-    targetUserIds = users.map(user => user.user_id);
-  } else if (data.customerId) {
-    // Get all users for the customer
-    const { data: users, error: usersError } = await supabase
-      .from('users')
-      .select('user_id')
-      .eq('customer_id', data.customerId)
-      .is('deleted_at', null);
-    
-    if (usersError) {
-      throw new Error(`Failed to fetch users for customer: ${usersError.message}`);
-    }
-    
-    targetUserIds = users?.map(user => user.user_id) || [];
-  }
-  
-  if (targetUserIds.length === 0) {
+    // Create notification for each user (using userId path in createUserNotification)
+    await Promise.all(
+      users.map((user) =>
+        createUserNotification({
+          userId: user.user_id,
+          customerId: template.customer_id || user.customer_id || undefined,
+          type: template.type,
+          title: template.title,
+          message: template.message,
+          channel: template.channel,
+          templateId: notificationTemplateId,
+          senderId: currentUser.user_id,
+          generatedBy: 'user (notifications api)',
+        })
+      )
+    );
+  } else {
     throw new Error('No target users specified for notification');
-  }
-  
-  // Sanitize message content to prevent XSS attacks
-  const sanitizedMessage = sanitizeEditorHTML(template.message);
-  
-  // Create notifications for each user
-  const notifications = targetUserIds.map((userId) => ({
-    user_id: userId,
-    customer_id: template.customer_id || data.customerId || null,
-    sender_id: currentUser.user_id,
-    type: template.type,
-    title: template.title,
-    message: sanitizedMessage,
-    template_id: notificationTemplateId,
-    channel: template.channel,
-    read_at: null,
-    generated_by: 'user (notifications api)',
-  }));
-  
-  const { error: insertError } = await supabase
-    .from('notifications')
-    .insert(notifications);
-  
-  if (insertError) {
-    throw new Error(`Failed to create notifications: ${insertError.message}`);
   }
 }
 

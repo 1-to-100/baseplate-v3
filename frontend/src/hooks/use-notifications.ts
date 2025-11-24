@@ -26,8 +26,19 @@ export function useUnreadNotificationsChannel(
       })
       .subscribe();
 
+    // Also listen for custom events (for self-notifications that can't use broadcast)
+    const handleCustomEvent = (event: CustomEvent) => {
+      const { event: eventType, payload } = event.detail;
+      if (eventType === 'unread_count' && payload && payload.count !== undefined) {
+        handleNotification({ count: payload.count });
+      }
+    };
+
+    window.addEventListener('supabase:notification', handleCustomEvent as EventListener);
+
     return () => {
       supabaseClient.removeChannel(channel).then();
+      window.removeEventListener('supabase:notification', handleCustomEvent as EventListener);
     };
   }, [userInfo, supabaseClient, handleNotification]);
 
@@ -62,8 +73,19 @@ export function useInAppNotificationsChannel(
       })
       .subscribe();
 
+    // Also listen for custom events (for self-notifications that can't use broadcast)
+    const handleCustomEvent = (event: CustomEvent) => {
+      const { event: eventType, payload } = event.detail;
+      if (eventType === 'new' && payload && payload.title && payload.message) {
+        handleNotification(payload as NotificationPayload);
+      }
+    };
+
+    window.addEventListener('supabase:notification', handleCustomEvent as EventListener);
+
     return () => {
       supabaseClient.removeChannel(channel).then();
+      window.removeEventListener('supabase:notification', handleCustomEvent as EventListener);
     };
   }, [userInfo, supabaseClient, handleNotification]);
 }

@@ -4,6 +4,7 @@ import { supabaseDB } from "@/lib/supabase/database";
 import { generateSlug } from "@/lib/helpers/string-helpers";
 import { NotificationTypes } from "@/lib/constants/notification-types";
 import { NotificationChannel } from "@/lib/constants/notification-channel";
+import { createUserNotification } from "@/lib/api/notifications";
 
 interface CreateArticlePayload {
   title?: string;
@@ -39,47 +40,18 @@ async function createArticlePublishedNotification(
   articleTitle: string,
   customerId: string
 ): Promise<void> {
-  const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
 
-  // Get all users for the customer
-  const { data: users, error: usersError } = await supabase
-    .from('users')
-    .select('user_id')
-    .eq('customer_id', customerId)
-    .is('deleted_at', null);
-
-  if (usersError) {
-    throw new Error(`Failed to fetch users for customer: ${usersError.message}`);
-  }
-
-  if (!users || users.length === 0) {
-    // No users to notify, but this is not an error
-    return;
-  }
-
-  const targetUserIds = users.map((user) => user.user_id);
-
-  // Create notifications for each user
-  const notifications = targetUserIds.map((userId) => ({
-    user_id: userId,
-    customer_id: customerId,
-    sender_id: currentUser.user_id,
+  // Use the reusable createUserNotification function (matches backend logic)
+  await createUserNotification({
+    customerId,
     type: [NotificationTypes.in_app],
     title: 'New Article Published',
     message: `A new article "${articleTitle}" has been published.`,
     channel: NotificationChannel.article,
-    read_at: null,
-    generated_by: 'system (article service)',
-  }));
-
-  const { error: insertError } = await supabase
-    .from('notifications')
-    .insert(notifications);
-
-  if (insertError) {
-    throw new Error(`Failed to create notifications: ${insertError.message}`);
-  }
+    senderId: currentUser.user_id,
+    generatedBy: 'system (article service)',
+  });
 }
 
 interface ArticleWithRelations {
