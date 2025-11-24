@@ -5,6 +5,8 @@ import { generateSlug } from "@/lib/helpers/string-helpers";
 import { NotificationTypes } from "@/lib/constants/notification-types";
 import { NotificationChannel } from "@/lib/constants/notification-channel";
 import { createUserNotification } from "@/lib/api/notifications";
+import { SYSTEM_ROLES } from "@/lib/user-utils";
+import { authService } from "@/lib/auth/auth-service";
 
 interface CreateArticlePayload {
   title?: string;
@@ -104,9 +106,18 @@ export interface GetArticlesParams {
 export async function getArticlesList(params: GetArticlesParams = {}): Promise<GetArticlesResponse> {
     const supabase = createClient();
     const currentUser = await supabaseDB.getCurrentUser();
+
+    console.log("currentUser ", currentUser);
     
-    if (!currentUser.customer_id) {
-      throw new Error('User must have a customer_id');
+    // For system admins, get customerId from JWT context
+    let customerId = currentUser.customer_id;
+    if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+      const context = await authService.getCurrentContext();
+      customerId = context.customerId || undefined;
+    }
+    
+    if (!customerId) {
+      throw new Error('User must have a customer_id or select a customer context');
     }
 
     const page = params.page || 1;
@@ -122,7 +133,7 @@ export async function getArticlesList(params: GetArticlesParams = {}): Promise<G
         help_article_categories!category_id(*),
         users!created_by(user_id, full_name)
       `, { count: 'exact' })
-      .eq('customer_id', currentUser.customer_id)
+      .eq('customer_id', customerId)
       .range(from, to);
 
     // Apply filters
@@ -202,8 +213,15 @@ export async function createArticle(
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   if (!payload.title) {
@@ -226,7 +244,7 @@ export async function createArticle(
       status: payload.status || 'draft',
       content: payload.content || null,
       video_url: payload.videoUrl || null,
-      customer_id: currentUser.customer_id,
+      customer_id: customerId,
       created_by: currentUser.user_id,
     })
     .select(`
@@ -240,7 +258,7 @@ export async function createArticle(
 
   // Create notification if article is published
   if (data.status === 'published') {
-    await createArticlePublishedNotification(data.title, currentUser.customer_id);
+    await createArticlePublishedNotification(data.title, customerId);
   }
 
   const { firstName, lastName } = parseUserName(data.users?.full_name || null);
@@ -276,8 +294,15 @@ export async function getArticleById(id: string): Promise<Article> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   const { data, error } = await supabase
@@ -288,7 +313,7 @@ export async function getArticleById(id: string): Promise<Article> {
       users!created_by(user_id, full_name)
     `)
     .eq('help_article_id', id)
-    .eq('customer_id', currentUser.customer_id)
+    .eq('customer_id', customerId)
     .single();
 
   if (error) throw error;
@@ -327,8 +352,15 @@ export async function deleteArticle(id: string): Promise<Article> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   // First, get the article to return it
@@ -339,7 +371,7 @@ export async function deleteArticle(id: string): Promise<Article> {
     .from('help_articles')
     .delete()
     .eq('help_article_id', id)
-    .eq('customer_id', currentUser.customer_id);
+    .eq('customer_id', customerId);
 
   if (error) throw error;
 
@@ -353,8 +385,15 @@ export async function editArticle(
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
   
-  if (!currentUser.customer_id) {
-    throw new Error('User must have a customer_id');
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+  
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
   }
 
   // Get the current article to check if status is changing to published
@@ -398,14 +437,14 @@ export async function editArticle(
     .from('help_articles')
     .update(updateData)
     .eq('help_article_id', articleId)
-    .eq('customer_id', currentUser.customer_id);
+    .eq('customer_id', customerId);
 
   if (error) throw error;
 
   // Create notification if status is changing to published
   if (isStatusChangingToPublished) {
     const articleTitle = updateData.title || currentArticle.title;
-    await createArticlePublishedNotification(articleTitle, currentUser.customer_id);
+    await createArticlePublishedNotification(articleTitle, customerId);
   }
 
   // Fetch and return updated article
