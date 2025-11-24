@@ -47,6 +47,13 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     const user = session?.user;
     if(!user) return;
     
+    // Check if this is an invite or password recovery flow - skip status checks for these
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const hashParams = new URLSearchParams(hash.slice(1));
+    const type = hashParams.get('type');
+    const isInviteFlow = type === 'invite';
+    const isRecoveryFlow = type === 'recovery';
+    
     // Activate user if they just confirmed their email
     // This will set status to 'active' and assign standard_user role if missing
     // The function is idempotent - it only activates if user is inactive and email is confirmed
@@ -59,6 +66,12 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     } catch (err) {
       logger.debug('Error calling activate_user_on_email_confirmation:', err);
       // Don't block the flow if activation fails
+    }
+
+    // Skip status checks for invite and recovery flows
+    // Invited users need to set their password first, and recovery flows are handled separately
+    if (isInviteFlow || isRecoveryFlow) {
+      return;
     }
 
     // Check user status after authentication

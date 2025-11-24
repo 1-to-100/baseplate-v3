@@ -77,7 +77,7 @@ export default function Page(): React.JSX.Element | null {
       try {
         const dbUser = await supabaseDB.getCurrentUser();
         
-        // Check if user is soft-deleted
+        // Always check if user is soft-deleted (even for invites)
         if (dbUser.deleted_at) {
           await supabaseClient.auth.signOut();
           toast.error('Your account has been deleted. Please contact support.');
@@ -85,6 +85,14 @@ export default function Page(): React.JSX.Element | null {
           return;
         }
         
+        // If this is an invite, skip inactive/suspended checks and redirect to set password page
+        // Invited users have 'inactive' status and need to set their password first
+        if (type === 'invite') {
+          router.replace(paths.auth.supabase.setNewPassword);
+          return;
+        }
+        
+        // For non-invite flows, check if user is inactive or suspended
         if (
           dbUser.status === UserStatus.INACTIVE ||
           dbUser.status === UserStatus.SUSPENDED
@@ -100,12 +108,6 @@ export default function Page(): React.JSX.Element | null {
         // The backend guard will catch this on API calls
         logger.debug('Failed to check user status in callback:', dbError);
       }
-    }
-
-    // If this is an invite, redirect to set password page
-    if (type === 'invite' && data?.user) {
-      router.replace(paths.auth.supabase.setNewPassword);
-      return;
     }
 
     // Otherwise, redirect to dashboard or next parameter
