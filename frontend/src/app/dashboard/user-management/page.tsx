@@ -532,10 +532,21 @@ export default function Page(): React.JSX.Element {
     queryClient.invalidateQueries({ queryKey: ["users"] });
   };
 
-  const handleImpersonateUser = (userId: string) => {
-    setImpersonatedUserId(userId);
-    handleMenuClose();
-    // Note: Page reload is handled automatically by the impersonation context after JWT update
+  const handleImpersonateUser = async (userId: string) => {
+    try {
+      // Close menu immediately for better UX
+      handleMenuClose();
+      
+      // Start impersonation (error handling and toast notifications are done in ImpersonationContext)
+      await setImpersonatedUserId(userId);
+      
+      // Note: Page reload is handled automatically by the impersonation context after JWT update
+    } catch (error) {
+      // Error handling and toast notifications are done in ImpersonationContext
+      // Just ensure menu is closed and log the error
+      handleMenuClose();
+      console.error('[USER MANAGEMENT] Failed to impersonate user:', error);
+    }
   };
 
   if (error) {

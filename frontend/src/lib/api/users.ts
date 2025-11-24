@@ -2,7 +2,7 @@ import { ApiUser, Status, TaxonomyItem } from '@/contexts/auth/types';
 import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
-import { SYSTEM_ROLES } from '@/lib/user-utils';
+import { SYSTEM_ROLES, isSystemAdministrator, isCustomerSuccess } from '@/lib/user-utils';
 import { paths } from '@/paths';
 import { config } from '@/config';
 
@@ -837,6 +837,28 @@ export async function updateUser(payload: UpdateUserPayload): Promise<ApiUser> {
 export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
   const supabase = createClient();
   
+  // Get current user (will be impersonated user if impersonating)
+  const dbCurrentUser = await supabaseDB.getCurrentUser();
+  
+  // Convert to ApiUser format for role checking
+  const currentUser: ApiUser = {
+    id: dbCurrentUser.user_id,
+    uid: dbCurrentUser.auth_user_id,
+    email: dbCurrentUser.email,
+    name: dbCurrentUser.full_name || '',
+    firstName: dbCurrentUser.full_name?.split(' ')[0] || '',
+    lastName: dbCurrentUser.full_name?.split(' ').slice(1).join(' ') || '',
+    customerId: dbCurrentUser.customer_id || undefined,
+    roleId: dbCurrentUser.role_id || undefined,
+    managerId: dbCurrentUser.manager_id || undefined,
+    status: dbCurrentUser.status as Status,
+    role: dbCurrentUser.role ? {
+      id: dbCurrentUser.role.role_id,
+      name: dbCurrentUser.role.name,
+      displayName: dbCurrentUser.role.display_name || '',
+    } : undefined,
+  } as ApiUser;
+  
   // Determine which role IDs to filter by
   let roleIdsToFilter: string[] | undefined;
   
@@ -911,7 +933,40 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
   }
   
-  if (params.customerId && params.customerId.length > 0) {
+  // SECURITY: Filter by customer_id if current user is not a system admin or customer success
+  // Customer admins and managers should only see users from their own customer
+  const isSystemAdmin = isSystemAdministrator(currentUser);
+  const isCS = isCustomerSuccess(currentUser);
+  
+  // If user is customer admin or manager, restrict to their customer
+  if (!isSystemAdmin && !isCS && currentUser.customerId) {
+    // If params.customerId is provided, intersect it with current user's customer
+    if (params.customerId && params.customerId.length > 0) {
+      // Only allow filtering by customer if it matches the current user's customer
+      const allowedCustomerIds = params.customerId.filter(id => id === currentUser.customerId);
+      if (allowedCustomerIds.length > 0) {
+        query = query.in('customer_id', allowedCustomerIds);
+      } else {
+        // If no matching customer IDs, return empty result
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            lastPage: 1,
+            perPage,
+            currentPage: page,
+            prev: null,
+            next: null,
+          },
+        };
+      }
+    } else {
+      // No customer filter in params, restrict to current user's customer
+      query = query.eq('customer_id', currentUser.customerId);
+    }
+  } else if (params.customerId && params.customerId.length > 0) {
+    // System admin or customer success - can filter by any customer
     query = query.in('customer_id', params.customerId);
   }
   

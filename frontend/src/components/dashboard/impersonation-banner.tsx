@@ -15,7 +15,7 @@ export function ImpersonationBanner(): React.JSX.Element | null {
   const { impersonatedUserId, setImpersonatedUserId, isImpersonating } =
     useImpersonation();
 
-  const { data: _impersonatedUser } = useQuery({
+  const { data: impersonatedUser } = useQuery({
     queryKey: ["user", impersonatedUserId],
     queryFn: () => getUserById(impersonatedUserId!),
     enabled: !!impersonatedUserId,
@@ -25,9 +25,14 @@ export function ImpersonationBanner(): React.JSX.Element | null {
     return null;
   }
 
-  const handleStopImpersonation = () => {
-    setImpersonatedUserId(null);
-    // Note: Page reload is handled automatically by the impersonation context after JWT is cleared
+  const handleStopImpersonation = async () => {
+    try {
+      await setImpersonatedUserId(null);
+      // Note: Page reload is handled automatically by the impersonation context after JWT is cleared
+    } catch (error) {
+      // Error handling and toast notifications are done in ImpersonationContext
+      console.error('[IMPERSONATION BANNER] Failed to exit impersonation:', error);
+    }
   };
 
   return (
@@ -56,7 +61,9 @@ export function ImpersonationBanner(): React.JSX.Element | null {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-xs" sx={{ color: "#000" }}>
-            Impersonating mode is currently enabled
+            {impersonatedUser 
+              ? `Impersonating: ${impersonatedUser.firstName} ${impersonatedUser.lastName}`.trim() || impersonatedUser.email
+              : 'Impersonating mode is currently enabled'}
           </Typography>
         </Box>
         <Link

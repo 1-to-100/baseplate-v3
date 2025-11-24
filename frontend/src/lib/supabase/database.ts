@@ -15,6 +15,15 @@ export class SupabaseDatabase {
     return user
   }
 
+  // Helper to get impersonated user ID from JWT app_metadata
+  private async getImpersonatedUserId(): Promise<string | null> {
+    const { data: { session } } = await this.client.auth.getSession()
+    if (!session?.user) return null
+    
+    const appMetadata = session.user.app_metadata || {}
+    return appMetadata.impersonated_user_id || null
+  }
+
   // ============================================================================
   // USERS
   // ============================================================================
@@ -22,7 +31,55 @@ export class SupabaseDatabase {
   async getCurrentUser() {
     const user = await this.getAuthUser()
     
-    // First try to find by auth_user_id
+    // Check if impersonation is active
+    const impersonatedUserId = await this.getImpersonatedUserId()
+    
+    // If impersonating, query by user_id (the impersonated user's ID)
+    if (impersonatedUserId) {
+      const { data, error } = await this.client
+        .from('users')
+        .select(`
+          user_id,
+          auth_user_id,
+          email,
+          full_name,
+          avatar_url,
+          phone_number,
+          customer_id,
+          role_id,
+          manager_id,
+          status,
+          last_login_at,
+          preferences,
+          created_at,
+          updated_at,
+          deleted_at,
+          customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
+          role:roles(role_id, name, display_name)
+        `)
+        .eq('user_id', impersonatedUserId)
+        .is('deleted_at', null)
+        .single()
+
+      if (error) {
+        throw new Error(`Impersonated user not found: ${error.message}`)
+      }
+      
+      if (!data) {
+        throw new Error('Impersonated user not found in database')
+      }
+
+      // Handle array responses from Supabase (should be single objects for these relationships)
+      const result = {
+        ...data,
+        customer: Array.isArray(data.customer) ? data.customer[0] || null : data.customer,
+        role: Array.isArray(data.role) ? data.role[0] || null : data.role,
+      }
+      
+      return result
+    }
+    
+    // Not impersonating - use normal flow: first try to find by auth_user_id
     let { data, error } = await this.client
       .from('users')
       .select(`

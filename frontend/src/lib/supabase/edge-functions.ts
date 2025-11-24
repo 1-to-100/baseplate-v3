@@ -136,29 +136,117 @@ export class EdgeFunctions {
     customerId?: string
     impersonatedUserId?: string
   }) {
-    const { data, error } = await this.client.functions.invoke('auth-context', {
-      body: { action: 'refresh', ...context }
-    })
+    try {
+      const { data, error } = await this.client.functions.invoke('auth-context', {
+        body: { action: 'refresh', ...context }
+      })
 
-    if (error) throw new Error(error.message)
+      if (error) {
+        // Extract meaningful error message from edge function response
+        let errorMessage = error.message || 'Failed to update context';
+        
+        // Check if error has additional details in different formats
+        if (error.context) {
+          const contextError = error.context as { message?: string; error?: string };
+          errorMessage = contextError.message || contextError.error || errorMessage;
+        }
+        
+        // Check if data contains error information
+        if (data && typeof data === 'object' && 'error' in data) {
+          const dataError = (data as { error?: string; message?: string });
+          errorMessage = dataError.error || dataError.message || errorMessage;
+        }
+        
+        // Provide user-friendly error messages based on common patterns
+        const lowerMessage = errorMessage.toLowerCase();
+        if (lowerMessage.includes('permission') || lowerMessage.includes('forbidden') || lowerMessage.includes('403')) {
+          errorMessage = 'You do not have permission to perform this action';
+        } else if (lowerMessage.includes('not found') || lowerMessage.includes('404')) {
+          errorMessage = 'User or resource not found';
+        } else if (lowerMessage.includes('inactive') || lowerMessage.includes('suspended')) {
+          errorMessage = 'Cannot impersonate inactive or suspended users';
+        } else if (lowerMessage.includes('system administrator') || lowerMessage.includes('admin')) {
+          errorMessage = 'Cannot impersonate system administrators';
+        } else if (lowerMessage.includes('customer') && (lowerMessage.includes('scope') || lowerMessage.includes('access'))) {
+          errorMessage = 'You do not have access to this customer';
+        } else if (lowerMessage.includes('session') || lowerMessage.includes('authenticated')) {
+          errorMessage = 'Authentication error. Please try logging in again';
+        }
+        
+        throw new Error(errorMessage);
+      }
 
-    // Refresh session to get new JWT with updated app_metadata
-    await this.client.auth.refreshSession()
+      // Verify the response indicates success
+      if (data && typeof data === 'object' && 'updated' in data) {
+        const responseData = data as { updated?: boolean; message?: string };
+        if (responseData.updated === false) {
+          throw new Error(responseData.message || 'Context was not updated');
+        }
+      }
 
-    return data
+      // Refresh session to get new JWT with updated app_metadata
+      await this.client.auth.refreshSession()
+
+      return data
+    } catch (err: unknown) {
+      // If it's already our error, re-throw it
+      if (err instanceof Error) {
+        throw err;
+      }
+      
+      // Otherwise, wrap it
+      console.error('Unexpected error in refreshWithContext:', err);
+      throw new Error(err instanceof Error ? err.message : 'Failed to update context');
+    }
   }
 
   async clearContext() {
-    const { data, error } = await this.client.functions.invoke('auth-context', {
-      body: { action: 'clear' }
-    })
+    try {
+      const { data, error } = await this.client.functions.invoke('auth-context', {
+        body: { action: 'clear' }
+      })
 
-    if (error) throw new Error(error.message)
+      if (error) {
+        // Extract meaningful error message from edge function response
+        let errorMessage = error.message || 'Failed to clear context';
+        
+        // Check if error has additional details in different formats
+        if (error.context) {
+          const contextError = error.context as { message?: string; error?: string };
+          errorMessage = contextError.message || contextError.error || errorMessage;
+        }
+        
+        // Check if data contains error information
+        if (data && typeof data === 'object' && 'error' in data) {
+          const dataError = (data as { error?: string; message?: string });
+          errorMessage = dataError.error || dataError.message || errorMessage;
+        }
+        
+        // Provide user-friendly error messages based on common patterns
+        const lowerMessage = errorMessage.toLowerCase();
+        if (lowerMessage.includes('permission') || lowerMessage.includes('forbidden') || lowerMessage.includes('403')) {
+          errorMessage = 'You do not have permission to clear context';
+        } else if (lowerMessage.includes('session') || lowerMessage.includes('authenticated')) {
+          errorMessage = 'Authentication error. Please try logging in again';
+        }
+        
+        throw new Error(errorMessage);
+      }
 
-    // Refresh session
-    await this.client.auth.refreshSession()
+      // Refresh session
+      await this.client.auth.refreshSession()
 
-    return data
+      return data
+    } catch (err: unknown) {
+      // If it's already our error, re-throw it
+      if (err instanceof Error) {
+        throw err;
+      }
+      
+      // Otherwise, wrap it
+      console.error('Unexpected error in clearContext:', err);
+      throw new Error(err instanceof Error ? err.message : 'Failed to clear context');
+    }
   }
 
   // ============================================================================

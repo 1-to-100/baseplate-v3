@@ -150,12 +150,19 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
     handleMenuClose();
   };
 
-  const handleImpersonateUser = () => {
+  const handleImpersonateUser = async () => {
     if (userData) {
-      setImpersonatedUserId(userData.id);
-      handleMenuClose();
-      onClose();
-      // Note: Page reload is handled automatically by the impersonation context after JWT update
+      try {
+        setImpersonatedUserId(userData.id);
+        handleMenuClose();
+        onClose();
+        // Note: Page reload is handled automatically by the impersonation context after JWT update
+      } catch (error) {
+        // Error handling is done in ImpersonationContext, but we ensure menu closes
+        handleMenuClose();
+        onClose();
+        console.error('[USER DETAILS] Failed to impersonate user:', error);
+      }
     }
   };
 

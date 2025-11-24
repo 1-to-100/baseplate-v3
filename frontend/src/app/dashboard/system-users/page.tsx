@@ -313,10 +313,16 @@ export default function Page(): React.JSX.Element {
     handleMenuClose();
   };
 
-  const handleImpersonateUser = (userId: string, redirectTo?: string) => {
-    setImpersonatedUserId(userId);
-    handleMenuClose();
-    // Note: Page reload is handled automatically by the impersonation context after JWT update
+  const handleImpersonateUser = async (userId: string, redirectTo?: string) => {
+    try {
+      setImpersonatedUserId(userId);
+      handleMenuClose();
+      // Note: Page reload is handled automatically by the impersonation context after JWT update
+    } catch (error) {
+      // Error handling is done in ImpersonationContext, but we ensure menu closes
+      handleMenuClose();
+      console.error('[SYSTEM USERS] Failed to impersonate user:', error);
+    }
   };
 
   const handleCloseEditModal = () => {
