@@ -289,7 +289,7 @@ export interface CreateNotificationInput {
   message: string;
   channel: string;
   templateId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   senderId?: string;
   generatedBy?: string;
 }
