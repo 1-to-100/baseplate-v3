@@ -85,9 +85,24 @@ export default function Page(): React.JSX.Element | null {
           return;
         }
         
-        // If this is an invite, skip inactive/suspended checks and redirect to set password page
-        // Invited users have 'inactive' status and need to set their password first
+        // If this is an invite, activate the user and redirect to set password page
+        // Users become active as soon as they open the invitation link
         if (type === 'invite') {
+          // Activate user if they are currently inactive or invited
+          if (
+            dbUser.status === UserStatus.INACTIVE ||
+            dbUser.status === 'invited'
+          ) {
+            try {
+              await supabaseDB.updateUser(dbUser.user_id, {
+                status: UserStatus.ACTIVE,
+              });
+              logger.debug(`User ${dbUser.user_id} activated on invitation link open`);
+            } catch (activateError) {
+              // Log error but don't block the flow - user can still set password
+              logger.debug('Failed to activate user on invitation:', activateError);
+            }
+          }
           router.replace(paths.auth.supabase.setNewPassword);
           return;
         }

@@ -150,10 +150,14 @@ export function UpdatePasswordForm({
           return;
         }
 
-        // Update user status to 'active' if they were invited
+        // Update user status to 'active' if they were invited or inactive
+        // This serves as a safety net in case the callback activation failed
         try {
           const currentUser = await supabaseDB.getCurrentUser();
-          if (currentUser.status === 'invited') {
+          if (
+            currentUser.status === 'invited' ||
+            currentUser.status === 'inactive'
+          ) {
             await supabaseDB.updateUser(currentUser.user_id, { status: 'active' });
           }
         } catch (statusError) {
