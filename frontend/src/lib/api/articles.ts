@@ -2,6 +2,8 @@ import { Article } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 import { supabaseDB } from "@/lib/supabase/database";
 import { generateSlug } from "@/lib/helpers/string-helpers";
+import { NotificationTypes } from "@/lib/constants/notification-types";
+import { NotificationChannel } from "@/lib/constants/notification-channel";
 
 interface CreateArticlePayload {
   title?: string;
@@ -29,6 +31,54 @@ function parseUserName(fullName: string | null): {
       firstName: parts[0] || '',
       lastName: parts.slice(1).join(' '),
     };
+  }
+}
+
+// Helper function to create notification for all users of a customer when article is published
+async function createArticlePublishedNotification(
+  articleTitle: string,
+  customerId: string
+): Promise<void> {
+  const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
+
+  // Get all users for the customer
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('user_id')
+    .eq('customer_id', customerId)
+    .is('deleted_at', null);
+
+  if (usersError) {
+    throw new Error(`Failed to fetch users for customer: ${usersError.message}`);
+  }
+
+  if (!users || users.length === 0) {
+    // No users to notify, but this is not an error
+    return;
+  }
+
+  const targetUserIds = users.map((user) => user.user_id);
+
+  // Create notifications for each user
+  const notifications = targetUserIds.map((userId) => ({
+    user_id: userId,
+    customer_id: customerId,
+    sender_id: currentUser.user_id,
+    type: [NotificationTypes.in_app],
+    title: 'New Article Published',
+    message: `A new article "${articleTitle}" has been published.`,
+    channel: NotificationChannel.article,
+    read_at: null,
+    generated_by: 'system (article service)',
+  }));
+
+  const { error: insertError } = await supabase
+    .from('notifications')
+    .insert(notifications);
+
+  if (insertError) {
+    throw new Error(`Failed to create notifications: ${insertError.message}`);
   }
 }
 
@@ -216,6 +266,11 @@ export async function createArticle(
 
   if (error) throw error;
 
+  // Create notification if article is published
+  if (data.status === 'published') {
+    await createArticlePublishedNotification(data.title, currentUser.customer_id);
+  }
+
   const { firstName, lastName } = parseUserName(data.users?.full_name || null);
 
   return {
@@ -330,6 +385,12 @@ export async function editArticle(
     throw new Error('User must have a customer_id');
   }
 
+  // Get the current article to check if status is changing to published
+  const currentArticle = await getArticleById(articleId);
+  const isStatusChangingToPublished = 
+    currentArticle.status !== 'published' && 
+    payload.status === 'published';
+
   // Build update data
   const updateData: {
     title?: string;
@@ -368,6 +429,12 @@ export async function editArticle(
     .eq('customer_id', currentUser.customer_id);
 
   if (error) throw error;
+
+  // Create notification if status is changing to published
+  if (isStatusChangingToPublished) {
+    const articleTitle = updateData.title || currentArticle.title;
+    await createArticlePublishedNotification(articleTitle, currentUser.customer_id);
+  }
 
   // Fetch and return updated article
   return getArticleById(articleId);
