@@ -22,7 +22,7 @@ import { useUnreadNotificationsChannel } from "@/hooks/use-notifications";
 import { useImpersonation } from "@/contexts/impersonation-context";
 import { useSearch } from "@/contexts/search-context";
 import SearchInput from "./search-input";
-import { isSystemAdministrator, isCustomerSuccess } from "@/lib/user-utils";
+import { isSystemAdministrator } from "@/lib/user-utils";
 
 export interface MainNavProps {
   items: NavItemConfig[];
@@ -104,7 +104,7 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
               justifyContent: "flex-end",
             }}
           >
-            {isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo) ? (
+            {isSystemAdministrator(userInfo) ? (
               <Box sx={{ display: { xs: "none", md: "block" } }} >
                 <CustomerSelect />
               </Box>

@@ -1122,10 +1122,40 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
   }
   
-  // SECURITY: Filter by customer_id if current user is not a system admin or customer success
-  // Customer admins and managers should only see users from their own customer
+  // SECURITY: Filter by customer_id based on user role
   const isSystemAdmin = isSystemAdministrator(currentUser);
   const isCS = isCustomerSuccess(currentUser);
+  
+  // If user is customer success, get their assigned customers
+  let assignedCustomerIds: string[] | null = null;
+  if (isCS && dbCurrentUser.user_id) {
+    const { data: csAssignments, error: csError } = await supabase
+      .from('customer_success_owned_customers')
+      .select('customer_id')
+      .eq('user_id', dbCurrentUser.user_id);
+    
+    if (csError) {
+      throw csError;
+    }
+    
+    assignedCustomerIds = (csAssignments || []).map((assignment: { customer_id: string }) => assignment.customer_id);
+    
+    // If no assigned customers, return empty result
+    if (assignedCustomerIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page,
+          lastPage: 1,
+          perPage,
+          currentPage: page,
+          prev: null,
+          next: null,
+        },
+      };
+    }
+  }
   
   // If user is customer admin or manager, restrict to their customer
   if (!isSystemAdmin && !isCS && currentUser.customerId) {
@@ -1154,8 +1184,34 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       // No customer filter in params, restrict to current user's customer
       query = query.eq('customer_id', currentUser.customerId);
     }
-  } else if (params.customerId && params.customerId.length > 0) {
-    // System admin or customer success - can filter by any customer
+  } else if (isCS && assignedCustomerIds && assignedCustomerIds.length > 0) {
+    // Customer success - filter by assigned customers
+    if (params.customerId && params.customerId.length > 0) {
+      // Intersect params.customerId with assigned customer IDs
+      const allowedCustomerIds = params.customerId.filter(id => assignedCustomerIds!.includes(id));
+      if (allowedCustomerIds.length > 0) {
+        query = query.in('customer_id', allowedCustomerIds);
+      } else {
+        // If no matching customer IDs, return empty result
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page,
+            lastPage: 1,
+            perPage,
+            currentPage: page,
+            prev: null,
+            next: null,
+          },
+        };
+      }
+    } else {
+      // No customer filter in params, restrict to assigned customers
+      query = query.in('customer_id', assignedCustomerIds);
+    }
+  } else if (isSystemAdmin && params.customerId && params.customerId.length > 0) {
+    // System admin - can filter by any customer
     query = query.in('customer_id', params.customerId);
   }
   

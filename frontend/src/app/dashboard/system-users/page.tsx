@@ -394,16 +394,17 @@ export default function Page(): React.JSX.Element {
     };
   };
 
-  if (error) {
+  // Check access control - only system administrators can access this page
+  if (error || !isSystemAdministrator(userInfo)) {
     const httpError = error as HttpError;
-    let status: number | undefined = httpError.response?.status;
+    let status: number | undefined = httpError?.response?.status;
 
-    if (!status && httpError.message.includes("status:")) {
+    if (!status && httpError?.message?.includes("status:")) {
       const match = httpError.message.match(/status: (\d+)/);
       status = match ? parseInt(match[1] ?? "0", 10) : undefined;
     }
 
-    if (status === 403) {
+    if (status === 403 || !isSystemAdministrator(userInfo)) {
       return (
         <Box sx={{ textAlign: "center", mt: { xs: 10, sm: 20, md: 35 } }}>
           <Typography

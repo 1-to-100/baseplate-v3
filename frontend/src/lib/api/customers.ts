@@ -1,6 +1,7 @@
 import { Customer, TaxonomyItem } from "@/contexts/auth/types";
 import { createClient } from "@/lib/supabase/client";
 import { SYSTEM_ROLES } from "@/lib/user-utils";
+import { supabaseDB } from "@/lib/supabase/database";
 
 interface CustomerData {
   customer_id: string;
@@ -322,10 +323,43 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
 export async function getCustomers(): Promise<TaxonomyItem[]> {
   const supabase = createClient();
   
-  const { data, error } = await supabase
+  // Get current user (returns impersonated user when impersonating)
+  const currentUser = await supabaseDB.getCurrentUser();
+  
+  // Check if user is customer success
+  const userRoleName = currentUser.role?.name;
+  const isCS = userRoleName === SYSTEM_ROLES.CUSTOMER_SUCCESS;
+  
+  let query = supabase
     .from('customers')
     .select('customer_id, name')
     .order('name');
+  
+  // Filter by assigned customers if user is customer success
+  if (isCS && currentUser.user_id) {
+    // Get assigned customers from customer_success_owned_customers
+    const { data: csAssignments, error: csError } = await supabase
+      .from('customer_success_owned_customers')
+      .select('customer_id')
+      .eq('user_id', currentUser.user_id);
+    
+    if (csError) {
+      throw csError;
+    }
+    
+    // Extract customer IDs
+    const assignedCustomerIds = (csAssignments || []).map((assignment: { customer_id: string }) => assignment.customer_id);
+    
+    // If no assigned customers, return empty array
+    if (assignedCustomerIds.length === 0) {
+      return [];
+    }
+    
+    // Filter customers by assigned customer IDs
+    query = query.in('customer_id', assignedCustomerIds);
+  }
+  
+  const { data, error } = await query;
   
   if (error) throw error;
   
@@ -354,6 +388,44 @@ export async function getSubscriptions(): Promise<TaxonomyItem[]> {
 export async function getCustomersList(params: GetCustomersParams = {}): Promise<GetCustomersResponse> {
   const supabase = createClient();
   
+  // Get current user (returns impersonated user when impersonating)
+  const currentUser = await supabaseDB.getCurrentUser();
+  
+  // Check if user is customer success
+  const userRoleName = currentUser.role?.name;
+  const isCS = userRoleName === SYSTEM_ROLES.CUSTOMER_SUCCESS;
+  
+  // Get assigned customer IDs if user is customer success
+  let assignedCustomerIds: string[] | null = null;
+  if (isCS && currentUser.user_id) {
+    const { data: csAssignments, error: csError } = await supabase
+      .from('customer_success_owned_customers')
+      .select('customer_id')
+      .eq('user_id', currentUser.user_id);
+    
+    if (csError) {
+      throw csError;
+    }
+    
+    assignedCustomerIds = (csAssignments || []).map((assignment: { customer_id: string }) => assignment.customer_id);
+    
+    // If no assigned customers, return empty result set
+    if (assignedCustomerIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page: params.page || 1,
+          lastPage: 1,
+          perPage: params.perPage || 10,
+          currentPage: params.page || 1,
+          prev: null,
+          next: null,
+        },
+      };
+    }
+  }
+  
   const page = params.page || 1;
   const perPage = params.perPage || 10;
   const from = (page - 1) * perPage;
@@ -377,6 +449,11 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       subscription:subscription_types(subscription_type_id, name)
     `, { count: 'exact' })
     .range(from, to);
+  
+  // Filter by assigned customers if user is customer success
+  if (assignedCustomerIds && assignedCustomerIds.length > 0) {
+    query = query.in('customer_id', assignedCustomerIds);
+  }
   
   // Apply filters
   if (params.search) {

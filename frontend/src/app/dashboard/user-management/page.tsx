@@ -549,16 +549,24 @@ export default function Page(): React.JSX.Element {
     }
   };
 
-  if (error) {
-    const httpError = error as HttpError;
-    let status: number | undefined = httpError.response?.status;
+  // Check access control - standard users should not have access
+  // Allowed roles: System Administrators, Customer Success, Customer Administrators, Managers
+  const hasAccess = userInfo && (
+    isSystemAdministrator(userInfo) ||
+    isCustomerSuccess(userInfo) ||
+    isCustomerAdminOrManager(userInfo)
+  );
 
-    if (!status && httpError.message.includes("status:")) {
+  if (error || !hasAccess) {
+    const httpError = error as HttpError;
+    let status: number | undefined = httpError?.response?.status;
+
+    if (!status && httpError?.message?.includes("status:")) {
       const match = httpError.message.match(/status: (\d+)/);
       status = match ? parseInt(match[1] ?? "0", 10) : undefined;
     }
 
-    if (status === 403) {
+    if (status === 403 || !hasAccess) {
       return (
         <Box sx={{ textAlign: "center", mt: { xs: 10, sm: 20, md: 35 } }}>
           <Typography

@@ -121,7 +121,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo) ? (
+        {isSystemAdministrator(userInfo) ? (
           <Box sx={{ mt: '10px' }}>
             <CustomerSelect />
           </Box>
