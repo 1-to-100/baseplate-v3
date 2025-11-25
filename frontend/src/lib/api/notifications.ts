@@ -464,11 +464,12 @@ export async function createUserNotification(
   const { userId, customerId } = input;
 
   if (!userId && customerId) {
-    // Case 1: customerId provided (no userId) - create notifications for all users in customer
+    // Case 1: customerId provided (no userId) - create notifications for all active users in customer
     const users = await supabase
       .from('users')
       .select('user_id')
       .eq('customer_id', customerId)
+      .eq('status', 'active')
       .is('deleted_at', null);
 
     if (users.error) {
@@ -525,6 +526,24 @@ export async function createUserNotification(
     }, 100);
   } else if (userId) {
     // Case 2: userId provided - create single notification
+    // Check if user exists and is active before sending notification
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('user_id, status')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .single();
+
+    if (userError || !user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    if (user.status !== 'active') {
+      throw new Error(
+        `Cannot send notification to user with status ${user.status}. Only active users can receive notifications.`,
+      );
+    }
+
     const notificationData = {
       user_id: userId,
       customer_id: customerId || null,
