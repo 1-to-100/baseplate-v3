@@ -6,6 +6,17 @@ import {paths} from "@/paths";
 type ResponseCookie = Pick<CookieOptions, 'httpOnly' | 'maxAge' | 'priority'>;
 
 export async function updateSession(request: NextRequest) {
+  // Early return for static files to avoid interfering with chunk loading
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/static/') ||
+    pathname.startsWith('/favicon.ico') ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|gif|webp|woff|woff2|ttf|eot)$/)
+  ) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
