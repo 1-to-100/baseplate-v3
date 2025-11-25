@@ -5,6 +5,7 @@ import { edgeFunctions } from '@/lib/supabase/edge-functions';
 import { SYSTEM_ROLES, isSystemAdministrator, isCustomerSuccess } from '@/lib/user-utils';
 import { paths } from '@/paths';
 import { config } from '@/config';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Helper function to extract domain from email
 function getDomainFromEmail(email: string): string {
@@ -176,6 +177,214 @@ export async function resetPassword(email: string): Promise<{status: string, mes
   };
 }
 
+// Helper function to find or create customer for a user
+async function findOrCreateCustomerForUser(
+  supabase: SupabaseClient,
+  domain: string,
+  userId: string
+): Promise<{ customerId: string | null; isNewCustomer: boolean }> {
+  
+  // Find existing customer by domain using RPC function (bypasses RLS)
+  const { data: customerId, error: customerError } = await supabase.rpc(
+    'find_customer_by_domain',
+    { p_email_domain: domain }
+  );
+
+  if (customerError) {
+    throw new Error(`Failed to check existing customer: ${customerError.message}`);
+  }
+
+  if (customerId) {
+    return { customerId, isNewCustomer: false };
+  }
+
+  // Create new customer using database function
+  const { data: functionResult, error: functionError } = await supabase.rpc(
+    'create_customer_for_registration',
+    {
+      p_owner_id: userId,
+      p_name: domain,
+      p_email_domain: domain,
+    }
+  );
+
+  if (functionError || !functionResult) {
+    return { customerId: null, isNewCustomer: false };
+  }
+
+  return { customerId: functionResult, isNewCustomer: true };
+}
+
+// Helper function to assign role to user
+async function assignUserRole(
+  supabase: SupabaseClient,
+  userId: string,
+  customerId: string | null,
+  isNewCustomer: boolean
+): Promise<string | null> {
+  let roleId: string | null = null;
+
+  if (isNewCustomer) {
+    // Get CUSTOMER_ADMINISTRATOR role ID
+    const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
+    if (!customerAdminRoleId) {
+      throw new Error('Could not find customer_admin role. Please ensure the role exists in the database.');
+    }
+    roleId = customerAdminRoleId;
+  } else {
+    // User is joining an existing customer - assign standard_user role
+    const standardUserRoleId = await getRoleIdByName(SYSTEM_ROLES.STANDARD_USER);
+    if (!standardUserRoleId) {
+      throw new Error('Could not find standard_user role. Please ensure the role exists in the database.');
+    }
+    roleId = standardUserRoleId;
+  }
+
+  // Always update customer_id if provided
+  // We ensure roleId is always set (throw error if not), so we can always use the RPC function
+  if (customerId && roleId) {
+    // Update both customer_id and role_id using database function (bypasses RLS)
+    const { error: updateUserError } = await supabase.rpc(
+      'update_user_customer_and_role',
+      {
+        p_user_id: userId,
+        p_customer_id: customerId,
+        p_role_id: roleId,
+      }
+    );
+
+    if (updateUserError) {
+      throw new Error(`Failed to assign customer and role: ${updateUserError.message}`);
+    }
+  } else if (customerId && !roleId) {
+    // This should never happen now since we throw if roleId is null
+    throw new Error('Role ID is required to assign customer');
+  } else if (!customerId) {
+    console.warn('[assignUserRole] No customer ID provided, skipping customer assignment');
+  }
+
+  return roleId;
+}
+
+// Helper function to fetch user with relations
+async function fetchUserWithRelations(
+  supabase: SupabaseClient,
+  userId: string,
+  customerId: string | null,
+  roleId: string | null,
+  authUserId: string,
+  email: string,
+  fullName: string,
+  status: string
+): Promise<UserWithRelations> {
+  // Try to fetch the user (without relations first to avoid RLS issues with joins)
+  const { data: userBasic, error: userFetchError } = await supabase
+    .from('users')
+    .select(`
+      user_id,
+      auth_user_id,
+      email,
+      full_name,
+      phone_number,
+      avatar_url,
+      customer_id,
+      role_id,
+      manager_id,
+      status,
+      created_at,
+      updated_at,
+      deleted_at
+    `)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  let userData: UserWithRelations | null = null;
+
+  if (!userFetchError && userBasic) {
+    // Initialize userData with customer and role as null
+    userData = {
+      ...userBasic,
+      customer: null,
+      role: null,
+    };
+    
+    // Try to fetch relations separately to avoid RLS issues with joins
+    if (customerId) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('customer_id, name, email_domain')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+      if (customerData) {
+        userData.customer = customerData;
+      }
+    }
+    
+    if (roleId) {
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('role_id, name, display_name')
+        .eq('role_id', roleId)
+        .maybeSingle();
+      if (roleData) {
+        userData.role = roleData;
+      }
+    }
+  } else {
+    console.warn('Failed to fetch user, constructing from known data:', userFetchError);
+  }
+  
+  // If we couldn't fetch, construct the user data from what we know
+  if (!userData) {
+    // Fetch customer and role separately if needed
+    let customer: CustomerData | null = null;
+    let role: RoleData | null = null;
+    
+    if (customerId) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('customer_id, name, email_domain')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+      if (customerData) {
+        customer = customerData as CustomerData;
+      }
+    }
+    
+    if (roleId) {
+      const { data: roleData } = await supabase
+        .from('roles')
+        .select('role_id, name, display_name')
+        .eq('role_id', roleId)
+        .maybeSingle();
+      if (roleData) {
+        role = roleData as RoleData;
+      }
+    }
+    
+    // Construct user data from known values
+    userData = {
+      user_id: userId,
+      auth_user_id: authUserId,
+      email,
+      full_name: fullName,
+      phone_number: null,
+      avatar_url: null,
+      customer_id: customerId,
+      role_id: roleId,
+      manager_id: null,
+      status,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted_at: null,
+      customer,
+      role,
+    };
+  }
+
+  return userData;
+}
+
 export async function registerUser(payload: RegisterUserPayload): Promise<ApiUser> {
   try {
     const { firstName, lastName, email, password } = payload;
@@ -199,17 +408,7 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
       throw new Error('User with this email already exists');
     }
 
-    // Find existing customer by domain
-    const { data: existingCustomer, error: customerError } = await supabase
-      .from('customers')
-      .select('customer_id')
-      .eq('email_domain', domain)
-      .maybeSingle();
-
-    if (customerError && customerError.code !== 'PGRST116') {
-      // PGRST116 = not found, which is fine
-      throw new Error(`Failed to check existing customer: ${customerError.message}`);
-    }
+    // Find existing customer by domain (will be handled in helper function after user creation)
 
     // Sign up user in Supabase Auth
     const redirectToUrl = `${config.site.url}${paths.auth.supabase.callback.implicit}`;
@@ -248,7 +447,7 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
           auth_user_id: authUserId,
           email,
           full_name: fullName,
-          customer_id: existingCustomer?.customer_id || null,
+          customer_id: null, // Will be set after customer creation
           status: 'inactive', // Will be activated after email confirmation
         })
         .select('user_id')
@@ -267,7 +466,7 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
           p_auth_user_id: authUserId,
           p_email: email,
           p_full_name: fullName,
-          p_customer_id: existingCustomer?.customer_id || null,
+          p_customer_id: null, // Will be set after customer creation
         }
       );
 
@@ -278,189 +477,23 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
       userId = functionResult;
     }
 
-    let customerId = existingCustomer?.customer_id || null;
-    let roleId: string | null = null;
+    // Find or create customer for user
+    const { customerId, isNewCustomer } = await findOrCreateCustomerForUser(supabase, domain, userId);
 
-    // If no existing customer, create new customer and assign role
-    if (!existingCustomer) {
-      // Get CUSTOMER_ADMINISTRATOR role ID
-      const customerAdminRoleId = await getRoleIdByName(SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR);
-      if (!customerAdminRoleId) {
-        throw new Error('Could not find customer_admin role. Please ensure the role exists in the database.');
-      }
-      roleId = customerAdminRoleId;
+    // Assign appropriate role
+    const roleId = await assignUserRole(supabase, userId, customerId, isNewCustomer);
 
-      // Create new customer using database function (more reliable than direct insert with RLS)
-      let newCustomerId: string | null = null;
-      
-      const { data: functionResult, error: functionError } = await supabase.rpc(
-        'create_customer_for_registration',
-        {
-          p_owner_id: userId,
-          p_name: domain,
-          p_email_domain: domain,
-        }
-      );
-
-      if (functionError || !functionResult) {
-        console.warn('Failed to create customer:', functionError);
-      } else {
-        newCustomerId = functionResult;
-      }
-
-      if (newCustomerId) {
-        customerId = newCustomerId;
-
-        // Update user with customer_id and role_id using database function (bypasses RLS)
-        const { error: updateUserError } = await supabase.rpc(
-          'update_user_customer_and_role',
-          {
-            p_user_id: userId,
-            p_customer_id: customerId,
-            p_role_id: roleId,
-          }
-        );
-
-        if (updateUserError) {
-          console.warn('Failed to update user with customer and role:', updateUserError);
-        }
-      }
-    } else {
-      // User is joining an existing customer - assign standard_user role
-      const standardUserRoleId = await getRoleIdByName(SYSTEM_ROLES.STANDARD_USER);
-      if (!standardUserRoleId) {
-        console.warn('Could not find standard_user role. User will be created without a role.');
-      } else {
-        roleId = standardUserRoleId;
-
-        // Update user with role_id using database function (bypasses RLS)
-        // Note: customer_id is already set from existingCustomer, so we pass it again
-        const { error: updateUserError } = await supabase.rpc(
-          'update_user_customer_and_role',
-          {
-            p_user_id: userId,
-            p_customer_id: customerId, // Already set from existingCustomer
-            p_role_id: roleId,
-          }
-        );
-
-        if (updateUserError) {
-          console.warn('Failed to update user with standard_user role:', updateUserError);
-        }
-      }
-    }
-
-    // Fetch and return created user with relations
-    // Try to fetch with relations, but if RLS blocks it, construct from known data
-    let userData: UserWithRelations | null = null;
-    
-    // Try to fetch the user (without relations first to avoid RLS issues with joins)
-    const { data: userBasic, error: userFetchError } = await supabase
-      .from('users')
-      .select(`
-        user_id,
-        auth_user_id,
-        email,
-        full_name,
-        phone_number,
-        avatar_url,
-        customer_id,
-        role_id,
-        manager_id,
-        status,
-        created_at,
-        updated_at,
-        deleted_at
-      `)
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!userFetchError && userBasic) {
-      // Initialize userData with customer and role as null
-      userData = {
-        ...userBasic,
-        customer: null,
-        role: null,
-      };
-      
-      // Try to fetch relations separately to avoid RLS issues with joins
-      if (customerId) {
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('customer_id, name, email_domain')
-          .eq('customer_id', customerId)
-          .maybeSingle();
-        if (customerData) {
-          userData.customer = customerData;
-        }
-      }
-      
-      if (roleId) {
-        const { data: roleData } = await supabase
-          .from('roles')
-          .select('role_id, name, display_name')
-          .eq('role_id', roleId)
-          .maybeSingle();
-        if (roleData) {
-          userData.role = roleData;
-        }
-      }
-    } else {
-      console.warn('Failed to fetch user, constructing from known data:', userFetchError);
-    }
-    
-    // If we couldn't fetch, construct the user data from what we know
-    if (!userData) {
-      // Fetch customer and role separately if needed
-      let customer: CustomerData | null = null;
-      let role: RoleData | null = null;
-      
-      if (customerId) {
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('customer_id, name, email_domain')
-          .eq('customer_id', customerId)
-          .maybeSingle();
-        if (customerData) {
-          customer = customerData as CustomerData;
-        }
-      }
-      
-      if (roleId) {
-        const { data: roleData } = await supabase
-          .from('roles')
-          .select('role_id, name, display_name')
-          .eq('role_id', roleId)
-          .maybeSingle();
-        if (roleData) {
-          role = roleData as RoleData;
-        }
-      }
-      
-      // Construct user data from known values
-      userData = {
-        user_id: userId,
-        auth_user_id: authUserId,
-        email,
-        full_name: fullName,
-        phone_number: null,
-        avatar_url: null,
-        customer_id: customerId,
-        role_id: roleId,
-        manager_id: null,
-        status: 'inactive',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: null,
-        customer,
-        role,
-      };
-    }
-
-    // Ensure userData is not null (should never happen, but TypeScript needs this)
-    if (!userData) {
-      throw new Error('Failed to create or fetch user data');
-    }
+    // Fetch user with relations
+    const userData = await fetchUserWithRelations(
+      supabase,
+      userId,
+      customerId,
+      roleId,
+      authUserId,
+      email,
+      fullName,
+      'inactive'
+    );
 
     // Map to ApiUser format
     const customer = userData.customer as CustomerData | CustomerData[] | null;
@@ -504,6 +537,162 @@ export async function registerUser(payload: RegisterUserPayload): Promise<ApiUse
   } catch (error: unknown) {
     console.error('Error in registerUser:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to register user';
+    throw new Error(errorMessage);
+  }
+}
+
+interface CreateOAuthUserParams {
+  supabase: SupabaseClient;
+  authUserId: string;
+  email: string;
+  userMetadata?: {
+    firstName?: string;
+    lastName?: string;
+    full_name?: string;
+  };
+  name?: string;
+  avatarUrl?: string;
+}
+
+export async function createOAuthUser(params: CreateOAuthUserParams): Promise<ApiUser | null> {
+  try {
+    const { supabase, authUserId, email, userMetadata, name, avatarUrl } = params;
+
+    // Check if user already exists in database
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('user_id, auth_user_id, email, full_name, customer_id, role_id, status')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle();
+
+    if (existingUser) {
+      // User already exists, return null to indicate no action needed
+      return null;
+    }
+
+    // Extract domain from email
+    const domain = getDomainFromEmail(email);
+    if (!domain) {
+      throw new Error('Email address does not contain a valid domain');
+    }
+
+    // Check if it's a public email domain
+    if (isPublicEmailDomain(domain)) {
+      throw new Error('Please use your work email instead of a personal one (@gmail, @yahoo, etc.) to connect with your company. Personal email domains cannot join existing companies.');
+    }
+
+    // Extract firstName and lastName from user_metadata or name
+    let firstName = '';
+    let lastName = '';
+    
+    if (userMetadata?.firstName && userMetadata?.lastName) {
+      firstName = userMetadata.firstName;
+      lastName = userMetadata.lastName;
+    } else if (userMetadata?.full_name) {
+      const nameParts = userMetadata.full_name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    } else if (name) {
+      const nameParts = name.trim().split(/\s+/);
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    } else {
+      // Fallback: use email prefix as first name
+      firstName = email.split('@')[0] || '';
+      lastName = '';
+    }
+
+    const fullName = `${firstName} ${lastName}`.trim() || email.split('@')[0] || 'User';
+
+    // Create user record in database using RPC function to bypass RLS
+    // Even though we have a session, using the RPC function is more reliable in server-side contexts
+    const { data: userId, error: createUserError } = await supabase.rpc(
+      'create_user_for_registration',
+      {
+        p_auth_user_id: authUserId,
+        p_email: email,
+        p_full_name: fullName,
+        p_customer_id: null, // Will be set after customer creation
+      }
+    );
+
+    if (createUserError || !userId) {
+      throw new Error(`Failed to create user: ${createUserError?.message || 'Unknown error'}`);
+    }
+
+    // Update user status to 'active' and set avatar_url since OAuth users don't need email confirmation
+    // The RPC function creates users as 'inactive' by default and doesn't support avatar_url
+    const { error: updateStatusError } = await supabase
+      .from('users')
+      .update({ 
+        status: 'active',
+        avatar_url: avatarUrl || null
+      })
+      .eq('user_id', userId);
+
+    if (updateStatusError) {
+      // Don't throw - continue with customer/role assignment
+    }
+
+    // Find or create customer for user
+    const { customerId, isNewCustomer } = await findOrCreateCustomerForUser(supabase, domain, userId);
+
+    // Assign appropriate role
+    const roleId = await assignUserRole(supabase, userId, customerId, isNewCustomer);
+
+    // Fetch user with relations
+    const userData = await fetchUserWithRelations(
+      supabase,
+      userId,
+      customerId,
+      roleId,
+      authUserId,
+      email,
+      fullName,
+      'active'
+    );
+
+    // Map to ApiUser format
+    const customer = userData.customer as CustomerData | CustomerData[] | null;
+    const role = userData.role as RoleData | RoleData[] | null;
+
+    return {
+      id: userData.user_id,
+      uid: userData.auth_user_id || undefined,
+      email: userData.email,
+      name: userData.full_name || fullName,
+      firstName,
+      lastName,
+      avatar: userData.avatar_url || avatarUrl || undefined,
+      phoneNumber: userData.phone_number || undefined,
+      customerId: userData.customer_id || undefined,
+      roleId: userData.role_id || undefined,
+      managerId: userData.manager_id || undefined,
+      status: userData.status as Status,
+      createdAt: userData.created_at,
+      updatedAt: userData.updated_at || undefined,
+      deletedAt: userData.deleted_at || undefined,
+      customer: customer ? (Array.isArray(customer) ? {
+        id: customer[0]?.customer_id || '',
+        name: customer[0]?.name || '',
+        domain: customer[0]?.email_domain || '',
+      } : {
+        id: customer.customer_id,
+        name: customer.name,
+        domain: customer.email_domain,
+      }) : undefined,
+      role: role ? (Array.isArray(role) ? {
+        id: role[0]?.role_id || '',
+        name: role[0]?.name || '',
+        displayName: role[0]?.display_name || '',
+      } : {
+        id: role.role_id,
+        name: role.name,
+        displayName: role.display_name,
+      }) : undefined,
+    } as ApiUser;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create OAuth user';
     throw new Error(errorMessage);
   }
 }

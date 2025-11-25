@@ -105,7 +105,17 @@ export class SupabaseDatabase {
       .single()
 
     // If not found by auth_user_id, try to find by email and link it
-    if (error && error.code === 'PGRST116' && user.email) {
+    // 406 (PGRST116) means no rows found when using .single()
+    // Also check for HTTP 406 status code
+    const isNotFoundError = error && (
+      error.code === 'PGRST116' || 
+      error.code === '406' || 
+      error.message?.includes('0 rows') ||
+      error.message?.includes('Cannot coerce') ||
+      (error as any).status === 406
+    );
+    
+    if (isNotFoundError && user.email) {
       const { data: userByEmail, error: emailError } = await this.client
         .from('users')
         .select(`
