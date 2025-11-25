@@ -112,7 +112,7 @@ export class SupabaseDatabase {
       error.code === '406' || 
       error.message?.includes('0 rows') ||
       error.message?.includes('Cannot coerce') ||
-      (error as any).status === 406
+      ('status' in error && (error as { status: number }).status === 406)
     );
     
     if (isNotFoundError && user.email) {
