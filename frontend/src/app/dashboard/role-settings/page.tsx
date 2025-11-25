@@ -70,7 +70,7 @@ export default function Page(): React.JSX.Element {
       status = match ? parseInt(match[1] ?? "0", 10) : undefined;
     }
 
-    if (status === 403) {
+    if (status === 403 || !status) {
       return (
         <Box sx={{ textAlign: "center", mt: 35 }}>
           <Typography

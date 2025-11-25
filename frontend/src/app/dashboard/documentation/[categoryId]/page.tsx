@@ -380,7 +380,7 @@ const CategoryInfo: React.FC = () => {
       <Stack sx={{ mt: 4 }}>
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
           <BreadcrumbsItem
-            href={paths.dashboard.roleSettings.list}
+            href={paths.dashboard.documentation.list}
             type="start"
           />
           <BreadcrumbsItem href={paths.dashboard.documentation.list}>

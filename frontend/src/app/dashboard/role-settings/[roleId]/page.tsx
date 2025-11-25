@@ -56,6 +56,14 @@ import { getRoleById } from "../../../../lib/api/roles";
 import Tooltip from "@mui/joy/Tooltip";
 import { ApiUser } from "@/contexts/auth/types";
 import AddRoleModal from "@/components/dashboard/modals/AddRoleModal";
+import { useUserInfo } from "@/hooks/use-user-info";
+import { isSystemAdministrator } from "@/lib/user-utils";
+
+interface HttpError extends Error {
+  response?: {
+    status: number;
+  };
+}
 
 const RouterLink = Link;
 
@@ -99,9 +107,11 @@ const SystemAdminSettings: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<keyof ApiUser | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [accessError, setAccessError] = useState<HttpError | null>(null);
 
   const queryClient = useQueryClient();
   const { debouncedSearchValue } = useGlobalSearch();
+  const { userInfo } = useUserInfo();
   const params = useParams();
   const roleId = params.roleId as string;
 
@@ -410,6 +420,43 @@ const SystemAdminSettings: React.FC = () => {
       variant: "soft" as VariantProp,
     };
   };
+
+  if (accessError || !isSystemAdministrator(userInfo)) {
+    const httpError = accessError as HttpError;
+    let status: number | undefined = httpError?.response?.status;
+
+    if (!status && httpError?.message?.includes("status:")) {
+      const match = httpError.message.match(/status: (\d+)/);
+      status = match ? parseInt(match[1] ?? "0", 10) : undefined;
+    }
+
+    if (status === 403 || !status) {
+      return (
+        <Box sx={{ textAlign: "center", mt: 35 }}>
+          <Typography
+            sx={{
+              fontSize: "24px",
+              fontWeight: "600",
+              color: "var(--joy-palette-text-primary)",
+            }}
+          >
+            Access Denied
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: "14px",
+              fontWeight: "300",
+              color: "var(--joy-palette-text-secondary)",
+              mt: 1,
+            }}
+          >
+            You do not have the required permissions to view this page. <br />{" "}
+            Please contact your administrator if you believe this is a mistake.
+          </Typography>
+        </Box>
+      );
+    }
+  }
 
   if (roleError || error) {
     return <Typography>Error: {(roleError || error)?.message}</Typography>;
