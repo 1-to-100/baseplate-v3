@@ -47,3 +47,11 @@ export const generateFormattedDate = (): string => {
   const year = date.getFullYear();
   return `${month} ${day}, ${year}`;
 };
+
+export const generateNotificationTitle = (): string => {
+  return `Test notification ${faker.word.noun()} ${Date.now()}`;
+};
+
+export const generateNotificationMessage = (): string => {
+  return faker.lorem.sentence();
+};

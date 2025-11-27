@@ -13,8 +13,6 @@ export class DocumentationPage {
   readonly categoryCards: Locator;
   readonly buttonsOnPage: (name: string) => Locator;
   readonly moreButtonForCategory: (number: number) => Locator;
-  readonly documentationDropdown: (name: string) => Locator;
-  readonly documentationDropdownValue: (name: string) => Locator;
   readonly categoryByName: (name: string) => Locator;
   readonly categoryTitle: (name: string) => Locator;
   readonly categoryTitleByIndex: (index: number) => Locator;
@@ -41,16 +39,13 @@ export class DocumentationPage {
     this.categoryCards = page.locator('.MuiCard-root');
     this.buttonsOnPage = (name: string) => page.locator('.MuiButton-sizeMd').getByText(name);
     this.moreButtonForCategory = (number: number) => this.categoryCards.nth(number).locator('.MuiIconButton-variantPlain');
-    this.documentationDropdown = (name: string) =>
-      page.locator('.MuiTypography-body-sm').getByText(name, { exact: true }).locator('+ div');
-    this.documentationDropdownValue = (name: string) => page.getByRole('option', { name });
     this.categoryByName = (name: string) => this.categoryCards.filter({ hasText: name });
     this.categoryTitle = (name: string) => this.categoryByName(name).locator('.MuiTypography-title-md');
     this.categoryTitleByIndex = (index: number) => this.categoryCards.nth(index).locator('.MuiTypography-title-md');
     this.categorySubCategory = (name: string) => this.categoryByName(name).locator('.MuiTypography-body-xs');
     this.categoryArticlesCount = (name: string) => this.categoryByName(name).locator('.MuiTypography-body-md').first();
     this.categoryIcon = (name: string) => this.categoryByName(name).locator('div > svg path');
-    this.selectedIconPath = this.documentationDropdown(categoryModal.addIconDropdown).locator('.MuiStack-root path');
+    this.selectedIconPath = this.commonPage.dropdownByLabel(categoryModal.addIconDropdown).locator('.MuiStack-root path');
     this.moreButtonForCategoryByName = (name: string) => this.categoryByName(name).locator('.MuiIconButton-variantPlain');
     this.addNewCategoryButton = page.getByText(categoryModal.addNewCategory);
     this.saveSubcategoryButton = page.locator('svg[style*="cursor: pointer"]').first();
@@ -80,15 +75,9 @@ export class DocumentationPage {
     await this.buttonsOnPage(button).first().click();
   }
 
-  async selectValueInDropdown(dropdown: string, value: string) {
-    await this.documentationDropdown(dropdown).click();
-    await this.documentationDropdownValue(value).scrollIntoViewIfNeeded();
-    await this.documentationDropdownValue(value).click();
-  }
-
   async selectSubcategory(name: string) {
-    await this.documentationDropdown(categoryModal.subcategoryDropdown).click();
-    const existingOption = this.documentationDropdownValue(name);
+    await this.commonPage.dropdownByLabel(categoryModal.subcategoryDropdown).click();
+    const existingOption = this.commonPage.dropdownOption(name);
     if (await existingOption.isVisible()) {
       await existingOption.scrollIntoViewIfNeeded();
       await existingOption.click();

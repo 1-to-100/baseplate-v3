@@ -20,6 +20,7 @@ export class LoginPage {
   readonly errorsMessageForInput: (name: string) => Locator;
   readonly termsAndConditionsError: Locator;
   readonly alert: (name: string) => Locator;
+  readonly forgotPasswordLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -32,6 +33,7 @@ export class LoginPage {
       .locator('..')
       .locator('.MuiFormHelperText-root');
     this.alert = (name: string) => page.locator('section li').getByText(name);
+    this.forgotPasswordLink = page.locator('[href*="reset-password"]');
   }
 
   async login(userData: { user: string; password: string }): Promise<void> {

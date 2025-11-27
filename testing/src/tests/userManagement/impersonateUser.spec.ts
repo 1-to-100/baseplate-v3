@@ -98,7 +98,7 @@ test.describe('Impersonate user', () => {
       await commonPage.fillFieldWithPlaceholder(editUserData.firstName, newUser.firstName);
       await commonPage.fillFieldWithPlaceholder(editUserData.lastName, newUser.lastName);
       await commonPage.fillFieldWithPlaceholder(editUserData.email, emailHelper.email);
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
+      await commonPage.selectValueInDropdown(editUserData.role, roleName);
     });
 
     await test.step('Save user', async () => {
@@ -188,7 +188,7 @@ test.describe('Impersonate user', () => {
       await commonPage.fillFieldWithPlaceholder(editUserData.firstName, newUser.firstName);
       await commonPage.fillFieldWithPlaceholder(editUserData.lastName, newUser.lastName);
       await commonPage.fillFieldWithPlaceholder(editUserData.email, emailHelper.email);
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
+      await commonPage.selectValueInDropdown(editUserData.role, roleName);
     });
 
     await test.step('Save user', async () => {
@@ -273,7 +273,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, viewerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, viewerRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -433,7 +433,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, creatorRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, creatorRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -602,7 +602,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, editorRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, editorRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -784,7 +784,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, managerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, managerRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -942,7 +942,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, viewerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, viewerRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -1102,7 +1102,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, creatorRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, creatorRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -1271,7 +1271,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, editorRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, editorRoleName);
     });
 
     await test.step('Save changes', async () => {
@@ -1453,7 +1453,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, managerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, managerRoleName);
     });
 
     await test.step('Save changes', async () => {

@@ -73,7 +73,7 @@ test.describe('Create new category', () => {
     await test.step('Select random icon', async () => {
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
       selectedIconPath = await documentationPage.getSelectedIconPath();
     });
 
@@ -131,7 +131,7 @@ test.describe('Create new category', () => {
     await test.step('Select random icon', async () => {
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
       selectedIconPath = await documentationPage.getSelectedIconPath();
     });
 
@@ -183,7 +183,7 @@ test.describe('Create new category', () => {
     await test.step('Select random icon', async () => {
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
       selectedIconPath = await documentationPage.getSelectedIconPath();
     });
 

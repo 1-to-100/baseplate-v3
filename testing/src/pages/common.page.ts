@@ -22,6 +22,10 @@ export class CommonPage {
   readonly checkboxButton: (user: string) => Locator;
   readonly selectAllItemsInTable: Locator;
   readonly breadcrumbItems: Locator;
+  readonly dropdownByLabel: (label: string) => Locator;
+  readonly dropdownOption: (option: string) => Locator;
+  readonly emptyTable: (text: string) => Locator;
+  readonly deleteAllButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -44,6 +48,11 @@ export class CommonPage {
     this.checkboxButton = (user: string) => this.tableData.filter({ hasText: user }).locator('[type="checkbox"]');
     this.selectAllItemsInTable = this.tableTitleColumns.first().locator('input[type="checkbox"]');
     this.breadcrumbItems = page.locator('.MuiBreadcrumbs-root .MuiBreadcrumbs-li');
+    this.dropdownByLabel = (label: string) =>
+      page.locator('.MuiTypography-body-sm').getByText(label, { exact: true }).locator('+ div');
+    this.dropdownOption = (option: string) => page.getByRole('option', { name: option });
+    this.emptyTable = (text: string) => page.locator('.MuiTypography-colorNeutral').getByText(text);
+    this.deleteAllButton = page.locator('.MuiTypography-body-sm').locator('..').locator('button').first();
   }
 
   async waitForLoader(waitVisible: number = 10000, waitHidden: number = 30000): Promise<void> {
@@ -149,5 +158,11 @@ export class CommonPage {
       }
     }
     return actualPath;
+  }
+
+  async selectValueInDropdown(dropdownLabel: string, option: string): Promise<void> {
+    await this.dropdownByLabel(dropdownLabel).click();
+    await this.dropdownOption(option).scrollIntoViewIfNeeded();
+    await this.dropdownOption(option).click();
   }
 }

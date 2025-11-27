@@ -9,6 +9,9 @@ export interface AppData {
     confirmEmailModal: string;
     profileUpdateAlert: string;
     setNewPasswordModal: string;
+    resetPassword: string;
+    sendRecoveryLink: string;
+    recoveryLinkSent: string;
   };
   pages: {
     userManagement: string;
@@ -16,6 +19,7 @@ export interface AppData {
     roleSettings: string;
     customerManagement: string;
     systemUsers: string;
+    notificationManagement: string;
   };
   userManagementTable: {
     userName: string;
@@ -88,6 +92,7 @@ export interface AppData {
   actions: {
     openDetail: string;
     edit: string;
+    send: string;
     delete: string;
   };
   userManagementPageData: {
@@ -176,5 +181,102 @@ export interface AppData {
     permissionRequired: string;
     selectedPermissionRequired: string;
     roleNameLength: string;
+  };
+  notificationManagementPageData: {
+    filterButton: string;
+    notificationHistory: string;
+    addNotification: string;
+    editNotification: string;
+    notificationDetails: string;
+    notificationTypes: {
+      inApp: string;
+      email: string;
+    };
+    notificationChannels: {
+      warning: string;
+      alert: string;
+      info: string;
+      article: string;
+    };
+    addNotificationModal: {
+      typeDropdown: string;
+      channelDropdown: string;
+      enterTitleField: string;
+      saveButton: string;
+    };
+    notificationDeleteButton: string;
+    notificationAddedAlert: string;
+    notificationUpdatedAlert: string;
+    notificationDeletedAlert: string;
+    notificationSentAlert: string;
+    notificationTable: {
+      title: string;
+      message: string;
+      type: string;
+      channel: string;
+    };
+    sendNotificationsModal: {
+      modalTitle: string;
+      sendToDropdown: string;
+      selectRecipientsDropdown: string;
+      sendToOptions: {
+        users: string;
+        customers: string;
+      };
+    };
+    validationErrors: {
+      isRequired: string;
+    };
+    notificationHistoryTable: {
+      date: string;
+      user: string;
+      customer: string;
+      type: string;
+      channel: string;
+      message: string;
+    };
+    filterButtons: {
+      filter: string;
+      apply: string;
+    };
+  };
+  systemUsersPageData: {
+    pageTitle: string;
+    addSystemUser: string;
+    systemUsersTable: {
+      userName: string;
+      email: string;
+      customer: string;
+      systemRole: string;
+    };
+    addSystemUserModal: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      customer: string;
+      systemRole: string;
+      saveButton: string;
+    };
+    systemRoles: {
+      customerSuccess: string;
+      systemAdministrator: string;
+    };
+    userCreatedAlert: string;
+    userUpdatedAlert: string;
+  };
+  customerManagementPageData: {
+    pageTitle: string;
+    addCustomer: string;
+    addCustomerModal: {
+      customerName: string;
+      customerAdministrator: string;
+      email: string;
+      subscription: string;
+      customerSuccessManager: string;
+    };
+    subscriptions: {
+      basic: string;
+    };
+    customerCreatedAlert: string;
   };
 }

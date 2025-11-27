@@ -73,7 +73,7 @@ test.describe('Create new article', () => {
 
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
 
       await commonPage.clickButtonInModal(documentationData.addCategoryButton);
       await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
@@ -112,8 +112,8 @@ test.describe('Create new article', () => {
 
     await test.step('Fill article data', async () => {
       await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
-      await documentationPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
-      await documentationPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+      await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+      await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
       await commonPage.fillFieldWithPlaceholder(addArticleModal.pasteLinkPlaceholder, videoUrl);
       await documentationPage.fillArticleText(articleText);
     });
@@ -206,7 +206,7 @@ test.describe('Create new article', () => {
 
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
 
       await commonPage.clickButtonInModal(documentationData.addCategoryButton);
       await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
@@ -245,8 +245,8 @@ test.describe('Create new article', () => {
 
     await test.step('Fill article data', async () => {
       await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
-      await documentationPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
-      await documentationPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+      await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+      await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
       await commonPage.fillFieldWithPlaceholder(addArticleModal.pasteLinkPlaceholder, videoUrl);
       await documentationPage.fillArticleText(articleText);
     });
@@ -333,7 +333,7 @@ test.describe('Create new article', () => {
 
       const iconOptions = Object.values(addCategoryModal.addIcons);
       const randomIcon = UserPageHelper.getRandomValue(iconOptions);
-      await documentationPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+      await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
 
       await commonPage.clickButtonInModal(documentationData.addCategoryButton);
       await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
@@ -372,8 +372,8 @@ test.describe('Create new article', () => {
 
     await test.step('Fill article data', async () => {
       await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
-      await documentationPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
-      await documentationPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+      await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+      await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
       await commonPage.fillFieldWithPlaceholder(addArticleModal.pasteLinkPlaceholder, videoUrl);
       await documentationPage.fillArticleText(articleText);
     });

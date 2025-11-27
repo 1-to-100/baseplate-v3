@@ -13,4 +13,8 @@ export class UserPageHelper {
   static getRandomValue<T>(options: T[]): T {
     return options[Math.floor(Math.random() * options.length)];
   }
+
+  static toConstantCase(text: string): string {
+    return text.replace(/[\s-]/g, '_').toUpperCase();
+  }
 }

@@ -90,8 +90,8 @@ test.describe('Create multiple users', () => {
 
     await test.step('Fill all user inputs and invite users', async () => {
       customer = emailData[0].email.split('@').pop()!;
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
-      await userManagementPage.selectValueInDropdown(editUserData.customer, customer);
+      await commonPage.selectValueInDropdown(editUserData.role, roleName);
+      await commonPage.selectValueInDropdown(editUserData.customer, customer);
 
       for (const data of emailData) {
         await commonPage.fillFieldWithPlaceholder(editUserData.email, data.email);
@@ -192,8 +192,8 @@ test.describe('Create multiple users', () => {
 
     await test.step('Fill all user inputs and invite users', async () => {
       customer = emailData[0].email.split('@').pop()!;
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
-      await userManagementPage.selectValueInDropdown(editUserData.customer, customer);
+      await commonPage.selectValueInDropdown(editUserData.role, roleName);
+      await commonPage.selectValueInDropdown(editUserData.customer, customer);
 
       for (const data of emailData) {
         await commonPage.fillFieldWithPlaceholder(editUserData.email, data.email);
@@ -294,8 +294,8 @@ test.describe('Create multiple users', () => {
 
     await test.step('Fill all user inputs and invite users', async () => {
       customer = emailData[0].email.split('@').pop()!;
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
-      await userManagementPage.selectValueInDropdown(editUserData.customer, customer);
+      await commonPage.selectValueInDropdown(editUserData.role, roleName);
+      await commonPage.selectValueInDropdown(editUserData.customer, customer);
 
       for (const data of emailData) {
         await commonPage.fillFieldWithPlaceholder(editUserData.email, data.email);

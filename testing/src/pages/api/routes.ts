@@ -5,4 +5,5 @@ export const APIRoutes = {
   Users: '/users',
   Categories: '/documents/categories',
   Articles: '/documents/articles',
+  User: '/users/me',
 } as const;

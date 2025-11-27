@@ -9,6 +9,10 @@ export class NavPagePage {
   readonly selectCustomerDropdown: Locator;
   readonly selectCustomerValue: (text: string) => Locator;
   readonly exitFromImpersonateMode: Locator;
+  readonly notificationButton: Locator;
+  readonly newNotificationIcon: Locator;
+  readonly markAsReadButton: Locator;
+  readonly firstNotificationSection: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -20,6 +24,10 @@ export class NavPagePage {
     this.selectCustomerDropdown = page.getByPlaceholder('Select customer').nth(0);
     this.selectCustomerValue = (text: string) => page.locator('.base-Popper-root li').getByText(text);
     this.exitFromImpersonateMode = page.getByRole('alert').locator('svg');
+    this.notificationButton = page.locator('.MuiBadge-root button.MuiIconButton-variantPlain');
+    this.newNotificationIcon = this.notificationButton.locator('+ .MuiBadge-anchorOriginTopRight');
+    this.markAsReadButton = page.locator('.MuiSheet-variantPlain .MuiButton-variantOutlined');
+    this.firstNotificationSection = page.locator('.base-Popper-root .MuiTypography-body-md').locator('..').first();
   }
 
   async openNavMenuTab(tabName: string): Promise<void> {
@@ -43,5 +51,13 @@ export class NavPagePage {
 
   async clickExitFromImpersonateMode(): Promise<void> {
     await this.exitFromImpersonateMode.click();
+  }
+
+  async openNotificationsModal(): Promise<void> {
+    await this.notificationButton.click();
+  }
+
+  async clickMarkAsReadButton(): Promise<void> {
+    await this.markAsReadButton.click();
   }
 }
