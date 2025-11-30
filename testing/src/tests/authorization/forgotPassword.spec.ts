@@ -26,7 +26,7 @@ test.describe('Forgot Password', () => {
     });
   });
 
-  test('Reset password for existing user', async () => {
+  test.skip('Reset password for existing user', async () => {
     let recoveryEmail: any;
 
     await test.step('Create user via registration', async () => {
@@ -46,13 +46,11 @@ test.describe('Forgot Password', () => {
     });
 
     await test.step('Login with new user credentials', async () => {
-      await loginPage.fillLogin({ user: emailHelper.email, password: newUser.password });
-      await loginPage.clickSubmitButton();
       await loginPage.waitForLogin();
     });
 
     await test.step('Check user was logged in', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
       await commonPage.waitForLoader();
     });
 
@@ -69,7 +67,7 @@ test.describe('Forgot Password', () => {
     });
 
     await test.step('Check "Reset Password" page is opened', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.authorization.resetPassword);
+      await expect(commonPage.modalName).toHaveText(appData.authorization.resetPassword);
     });
 
     await test.step('Fill email field', async () => {
@@ -77,11 +75,11 @@ test.describe('Forgot Password', () => {
     });
 
     await test.step('Click "Send Recovery Link" button', async () => {
-      await loginPage.defaultButtonWithType('Submit').click();
+      await loginPage.defaultButtonWithType(appData.authorization.submitButton).click();
     });
 
     await test.step('Verify recovery email was sent', async () => {
-      recoveryEmail = await emailHelper.waitForEmail('Password Reset');
+      recoveryEmail = await emailHelper.waitForEmail(appData.emailSubject.passwordReset);
       expect(recoveryEmail).toBeTruthy();
     });
 

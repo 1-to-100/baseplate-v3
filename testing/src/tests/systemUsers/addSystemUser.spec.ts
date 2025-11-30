@@ -41,10 +41,6 @@ test.describe('Add System User', () => {
       await loginPage.login(admin);
     });
 
-    await test.step('Select customer based on generated email domain', async () => {
-      await navPagePage.selectCustomer(emailDomain);
-    });
-
     await test.step('Navigate to System Users page', async () => {
       await navPagePage.openNavMenuTab(appData.pages.systemUsers);
       await commonPage.waitForLoader();
@@ -126,11 +122,7 @@ test.describe('Add System User', () => {
     });
 
     await test.step('Check user was logged in', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-    });
-
-    await test.step('Verify user can select their customer domain', async () => {
-      await navPagePage.selectCustomer(emailDomain);
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
     await test.step('Check that user sees only 4 navigation tabs', async () => {
@@ -291,7 +283,7 @@ test.describe('Add System User', () => {
     });
 
     await test.step('Check user was logged in', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
     await test.step('Check that user sees all 6 navigation tabs', async () => {

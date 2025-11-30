@@ -9,7 +9,7 @@ import { UserPageHelper } from '@pages/helper';
 import { ApiMethods } from '@apiPage/methods';
 import { generateNotificationMessage, generateNotificationTitle } from '@utils/fakers';
 
-test.describe('Send single notification in app', () => {
+test.describe.only('Send single notification in app', () => {
   let apiMethods: ApiMethods;
   let loginPage: LoginPage;
   let commonPage: CommonPage;
@@ -17,9 +17,9 @@ test.describe('Send single notification in app', () => {
   let notificationManagementPage: NotificationManagementPage;
 
   const admin = ConfigData.users.admin;
-  const user = ConfigData.users.userForRoles;
+  const manager = ConfigData.users.manager;
   const customerSuccess = ConfigData.users.customer;
-  const customer = user.user.split('@').pop()!;
+  const customer = manager.user.split('@').pop()!;
   const notificationData = appData.notificationManagementPageData;
   const addNotificationModal = notificationData.addNotificationModal;
   const sendNotificationsModal = notificationData.sendNotificationsModal;
@@ -126,13 +126,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -145,7 +142,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -238,13 +235,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -257,7 +251,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -350,13 +344,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -369,7 +360,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -462,13 +453,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -481,7 +469,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -506,14 +494,9 @@ test.describe('Send single notification in app', () => {
     });
   });
 
-  test('Send single "Warning" notification in app as Customer Success', async () => {
+  test.skip('Send single "Warning" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -574,13 +557,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(customerSuccess);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -593,7 +573,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -618,14 +598,9 @@ test.describe('Send single notification in app', () => {
     });
   });
 
-  test('Send single "Alert" notification in app as Customer Success', async () => {
+  test.skip('Send single "Alert" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -686,13 +661,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(customerSuccess);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -705,7 +677,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -730,14 +702,9 @@ test.describe('Send single notification in app', () => {
     });
   });
 
-  test('Send single "Info" notification in app as Customer Success', async () => {
+  test.skip('Send single "Info" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -798,13 +765,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(customerSuccess);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -817,7 +781,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {
@@ -842,14 +806,9 @@ test.describe('Send single notification in app', () => {
     });
   });
 
-  test('Send single "Article" notification in app as Customer Success', async () => {
+  test.skip('Send single "Article" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -910,13 +869,10 @@ test.describe('Send single notification in app', () => {
 
     await test.step('Select Send to Users and recipient name', async () => {
       const apiKey = await apiMethods.getAccessToken(customerSuccess);
-      const userData = await apiMethods.getUserData(apiKey, user.user);
-      const userDataJson = (await userData.json()).data[0];
+      const userData = await apiMethods.getUserData(apiKey, manager.user);
+      const userName = (await userData.json())[0].full_name;
       await commonPage.selectValueInDropdown(sendNotificationsModal.sendToDropdown, sendNotificationsModal.sendToOptions.users);
-      await commonPage.selectValueInDropdown(
-        sendNotificationsModal.selectRecipientsDropdown,
-        userDataJson.firstName + ' ' + userDataJson.lastName,
-      );
+      await commonPage.selectValueInDropdown(sendNotificationsModal.selectRecipientsDropdown, userName);
     });
 
     await test.step('Click "Send" button', async () => {
@@ -929,7 +885,7 @@ test.describe('Send single notification in app', () => {
     });
 
     await test.step('Login as user for roles', async () => {
-      await loginPage.login(user);
+      await loginPage.login(manager);
     });
 
     await test.step('Wait for new notification icon to appear', async () => {

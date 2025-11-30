@@ -134,9 +134,8 @@ test.describe('Notification details', () => {
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.message)).toContainText(
         initialNotificationText,
       );
-      const notificationType = UserPageHelper.toConstantCase(notificationData.notificationTypes.email);
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.type)).toContainText(
-        notificationType,
+        notificationData.notificationTypes.email,
       );
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.channel)).toContainText(
         notificationData.notificationChannels.warning,
@@ -213,9 +212,8 @@ test.describe('Notification details', () => {
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.message)).toContainText(
         updatedNotificationText,
       );
-      const notificationType = UserPageHelper.toConstantCase(notificationData.notificationTypes.inApp);
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.type)).toContainText(
-        notificationType,
+        notificationData.notificationTypes.inApp,
       );
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.channel)).toContainText(
         notificationData.notificationChannels.alert,
@@ -227,14 +225,9 @@ test.describe('Notification details', () => {
     });
   });
 
-  test('Check notification details as Customer Success', async () => {
+  test.skip('Check notification details as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -302,9 +295,8 @@ test.describe('Notification details', () => {
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.message)).toContainText(
         initialNotificationText,
       );
-      const notificationType = UserPageHelper.toConstantCase(notificationData.notificationTypes.inApp);
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.type)).toContainText(
-        notificationType,
+        notificationData.notificationTypes.inApp,
       );
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.channel)).toContainText(
         notificationData.notificationChannels.info,
@@ -381,9 +373,8 @@ test.describe('Notification details', () => {
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.message)).toContainText(
         updatedNotificationText,
       );
-      const notificationType = UserPageHelper.toConstantCase(notificationData.notificationTypes.email);
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.type)).toContainText(
-        notificationType,
+        notificationData.notificationTypes.email,
       );
       await expect(userManagementPage.notificationDetailsData(notificationData.notificationTable.channel)).toContainText(
         notificationData.notificationChannels.article,

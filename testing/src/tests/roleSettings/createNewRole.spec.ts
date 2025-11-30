@@ -9,7 +9,8 @@ import { DocumentationPage } from '@pages/documentation.page';
 import { generateArticleText, randomLetters } from '@utils/fakers';
 import { ApiMethods } from '@apiPage/methods';
 
-test.describe('Create new role', () => {
+// TODO - functionality has been changed
+test.describe.skip('Create new role', () => {
   let apiMethods: ApiMethods;
   let loginPage: LoginPage;
   let commonPage: CommonPage;

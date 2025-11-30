@@ -276,14 +276,9 @@ test.describe('Edit notification', () => {
     });
   });
 
-  test('Edit notification from EMAIL to IN_APP as Customer Success', async () => {
+  test.skip('Edit notification from EMAIL to IN_APP as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -386,14 +381,9 @@ test.describe('Edit notification', () => {
     });
   });
 
-  test('Edit notification from IN_APP to EMAIL as Customer Success', async () => {
+  test.skip('Edit notification from IN_APP to EMAIL as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customer);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {

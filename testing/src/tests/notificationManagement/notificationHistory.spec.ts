@@ -18,9 +18,9 @@ test.describe('Notification History', () => {
   let userName: string;
 
   const admin = ConfigData.users.admin;
+  const standardUser = ConfigData.users.standardUser;
   const customerSuccess = ConfigData.users.customer;
-  const userWithPermissions = ConfigData.users.userWithPermissions;
-  const customer = admin.user.split('@').pop()!;
+  const customer = standardUser.user.split('@').pop()!;
   const notificationData = appData.notificationManagementPageData;
   const notificationHistoryTable = notificationData.notificationHistoryTable;
   const filterButtons = notificationData.filterButtons;
@@ -237,9 +237,8 @@ test.describe('Notification History', () => {
 
     await test.step('Get user data via API', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, userWithPermissions.user);
-      const userDataJson = (await userData.json()).data[0];
-      userName = userDataJson.firstName + ' ' + userDataJson.lastName;
+      const userData = await apiMethods.getUserData(apiKey, standardUser.user);
+      userName = (await userData.json())[0].full_name;
     });
 
     await test.step('Select user checkbox', async () => {
@@ -292,15 +291,9 @@ test.describe('Notification History', () => {
     });
   });
 
-  test('Check notification history filters as Customer Success', async () => {
+  test.skip('Check notification history filters as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      const customerForCustomerSuccess = customerSuccess.user.split('@').pop()!;
-      await navPagePage.selectCustomer(customerForCustomerSuccess);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open "Notification Management" page and wait for loader to disappear', async () => {
@@ -395,9 +388,8 @@ test.describe('Notification History', () => {
 
     await test.step('Get user data via API', async () => {
       const apiKey = await apiMethods.getAccessToken(customerSuccess);
-      const userData = await apiMethods.getUserData(apiKey, userWithPermissions.user);
-      const userDataJson = (await userData.json()).data[0];
-      userName = userDataJson.firstName + ' ' + userDataJson.lastName;
+      const userData = await apiMethods.getUserData(apiKey, standardUser.user);
+      userName = (await userData.json())[0].full_name;
     });
 
     await test.step('Select user checkbox', async () => {

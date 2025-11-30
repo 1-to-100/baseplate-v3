@@ -49,7 +49,7 @@ export class LoginPage {
   }
 
   async clickSubmitButton(): Promise<void> {
-    await this.defaultButtonWithType('Submit').click();
+    await this.defaultButtonWithType(appData.authorization.submitButton).click();
   }
 
   async waitForLogin(): Promise<void> {
@@ -69,7 +69,7 @@ export class LoginPage {
     await this.defaultInputWithName(appData.authorization.email).fill(email);
     await this.defaultInputWithName(appData.authorization.password).fill(password);
     if (acceptTerms) {
-      await this.defaultButtonWithType('Checkbox').click();
+      await this.defaultButtonWithType(appData.authorization.checkbox).click();
     }
     await this.clickSubmitButton();
   }

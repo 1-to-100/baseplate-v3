@@ -14,6 +14,8 @@ export const appData: AppData = {
     resetPassword: 'Reset Password',
     sendRecoveryLink: 'Send Recovery Link',
     recoveryLinkSent: 'Recovery link sent successfully.',
+    submitButton: 'Submit',
+    checkbox: 'Checkbox',
   },
   pages: {
     userManagement: 'User Management',
@@ -28,6 +30,12 @@ export const appData: AppData = {
     email: 'Email',
     customer: 'Customer',
     role: 'Role',
+  },
+  userRole: {
+    user: 'Standard User',
+    manager: 'Manager',
+    customer: 'Customer Success',
+    administrator: 'System Administrator',
   },
   customerManagementTable: {
     customer: 'Customer',
@@ -47,6 +55,7 @@ export const appData: AppData = {
   emailSubject: {
     completeRegistration: 'Confirm Your Signup',
     invitation: 'You have been invited',
+    passwordReset: 'Password Reset',
   },
   messages: {
     emptyTable: 'No items found',

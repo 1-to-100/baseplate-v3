@@ -25,6 +25,14 @@ export class ConfigData {
       user: process.env.USER_WITH_PERMISSIONS as string,
       password: process.env.BASE_PASSWORD as string,
     },
+    manager: {
+      user: process.env.MANAGER as string,
+      password: process.env.BASE_PASSWORD as string,
+    },
+    standardUser: {
+      user: process.env.STANDARD_USER as string,
+      password: process.env.BASE_PASSWORD as string,
+    },
     userForRoles: {
       user: process.env.USER_FOR_ROLES as string,
       password: process.env.BASE_PASSWORD as string,

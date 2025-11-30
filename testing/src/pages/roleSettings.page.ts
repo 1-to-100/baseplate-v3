@@ -50,7 +50,7 @@ export class RoleSettingsPage {
   }
 
   async hideTooltip() {
-    await this.commonPage.buttonsInModal('Cancel').hover();
+    await this.commonPage.buttonsInModal(addRoleModal.cancelCreateRoleButton).hover();
   }
 
   async toggleSwitcher(name: string): Promise<void> {

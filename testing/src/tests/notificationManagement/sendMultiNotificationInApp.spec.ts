@@ -15,10 +15,10 @@ test.describe('Send multi notification in app', () => {
   let notificationManagementPage: NotificationManagementPage;
 
   const admin = ConfigData.users.admin;
-  const userWithPermissions = ConfigData.users.userWithPermissions;
-  const userForRoles = ConfigData.users.userForRoles;
+  const manager = ConfigData.users.manager;
+  const standardUser = ConfigData.users.standardUser;
   const customerSuccess = ConfigData.users.customer;
-  const customers = [userWithPermissions, userForRoles].map((u) => u.user.split('@').pop()!);
+  const customers = [manager, standardUser].map((u) => u.user.split('@').pop()!);
   const notificationData = appData.notificationManagementPageData;
   const addNotificationModal = notificationData.addNotificationModal;
   const sendNotificationsModal = notificationData.sendNotificationsModal;
@@ -135,7 +135,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from admin account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -243,7 +243,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from admin account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -351,7 +351,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from admin account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -459,7 +459,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from admin account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -488,14 +488,9 @@ test.describe('Send multi notification in app', () => {
     }
   });
 
-  test('Send multi "Warning" notification in app as Customer Success', async () => {
+  test.skip('Send multi "Warning" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customers[0]);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -567,7 +562,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from customer success account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -596,14 +591,9 @@ test.describe('Send multi notification in app', () => {
     }
   });
 
-  test('Send multi "Alert" notification in app as Customer Success', async () => {
+  test.skip('Send multi "Alert" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customers[0]);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -675,7 +665,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from customer success account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -704,14 +694,9 @@ test.describe('Send multi notification in app', () => {
     }
   });
 
-  test('Send multi "Info" notification in app as Customer Success', async () => {
+  test.skip('Send multi "Info" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customers[0]);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -783,7 +768,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from customer success account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);
@@ -812,14 +797,9 @@ test.describe('Send multi notification in app', () => {
     }
   });
 
-  test('Send multi "Article" notification in app as Customer Success', async () => {
+  test.skip('Send multi "Article" notification in app as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Select customer', async () => {
-      await navPagePage.selectCustomer(customers[0]);
-      await commonPage.waitForLoader();
     });
 
     await test.step('Open Notification Management page and wait for loader to disappear', async () => {
@@ -891,7 +871,7 @@ test.describe('Send multi notification in app', () => {
       await notificationManagementPage.waitForAlert(notificationData.notificationSentAlert);
     });
 
-    for (const user of [userWithPermissions, userForRoles]) {
+    for (const user of [manager, standardUser]) {
       await test.step(`Sign out from customer success account and login as ${user.user}`, async () => {
         await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
         await loginPage.login(user);

@@ -12,6 +12,8 @@ export interface AppData {
     resetPassword: string;
     sendRecoveryLink: string;
     recoveryLinkSent: string;
+    submitButton: string;
+    checkbox: string;
   };
   pages: {
     userManagement: string;
@@ -26,6 +28,12 @@ export interface AppData {
     email: string;
     customer: string;
     role: string;
+  };
+  userRole: {
+    user: string;
+    manager: string;
+    customer: string;
+    administrator: string;
   };
   customerManagementTable: {
     customer: string;
@@ -45,6 +53,7 @@ export interface AppData {
   emailSubject: {
     completeRegistration: string;
     invitation: string;
+    passwordReset: string;
   };
   messages: {
     emptyTable: string;
