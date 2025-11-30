@@ -9,7 +9,7 @@ import { UserPageHelper } from '@pages/helper';
 import { ApiMethods } from '@apiPage/methods';
 import { generateNotificationMessage, generateNotificationTitle } from '@utils/fakers';
 
-test.describe.only('Send single notification in app', () => {
+test.describe('Send single notification in app', () => {
   let apiMethods: ApiMethods;
   let loginPage: LoginPage;
   let commonPage: CommonPage;
