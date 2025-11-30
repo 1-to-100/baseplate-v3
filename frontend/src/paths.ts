@@ -55,6 +55,10 @@ export const paths = {
       user: '/dashboard/role-settings/user',
     },
     userManagement: '/dashboard/user-management',
+    teamManagement: {
+      list: '/dashboard/team-management',
+      details: (teamId: string) => `/dashboard/team-management/${teamId}`,
+    },
     notificationManagement: {
       list: '/dashboard/notification-management',
       history:  `/dashboard/notification-management/history`,

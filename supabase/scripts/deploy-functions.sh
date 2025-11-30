@@ -51,6 +51,10 @@ echo "→ Deploying admin-operations..."
 npx supabase functions deploy admin-operations
 
 echo ""
+echo "→ Deploying team-management..."
+npx supabase functions deploy team-management
+
+echo ""
 echo "✅ All Edge Functions deployed successfully!"
 echo ""
 echo "📝 Next steps:"

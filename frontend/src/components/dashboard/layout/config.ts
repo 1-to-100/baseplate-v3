@@ -18,6 +18,7 @@ export const layoutConfig: LayoutConfig = {
       items: [
         // { key: 'overview', title: 'Dashboard', href: paths.dashboard.overview, icon: 'grid-four' },
         { key: 'management', title: 'User Management', href: paths.dashboard.userManagement, icon: 'user-list' },
+        { key: 'team-management', title: 'Team Management', href: paths.dashboard.teamManagement.list, icon: 'team-management' },
         { key: 'documentation', title: 'Documentation', href: paths.dashboard.documentation.list, icon: 'documentation' },
         { key: 'divider1', type: 'divider' },
         { key: 'role', title: 'Role Settings', href: paths.dashboard.roleSettings.list, icon: 'role' },

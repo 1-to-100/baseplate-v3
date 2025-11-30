@@ -265,6 +265,58 @@ export class EdgeFunctions {
     if (error) throw new Error(error.message)
     return data
   }
+
+  // ============================================================================
+  // TEAM MANAGEMENT
+  // ============================================================================
+
+  async getManagers(customerId: string) {
+    try {
+      const { data: sessionData } = await this.client.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
+      const supabaseUrl = config.supabase.url;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL is not configured');
+      }
+      const functionUrl = `${supabaseUrl}/functions/v1/team-management`;
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ 
+          action: 'get-managers',
+          customerId
+        }),
+      });
+
+      let responseData;
+      try {
+        const responseText = await response.text();
+        responseData = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('Failed to parse edge function response:', parseError);
+        throw new Error(`Edge function returned invalid JSON (status: ${response.status})`);
+      }
+
+      if (!response.ok) {
+        const errorMessage = responseData.error || responseData.message || `Edge function returned ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return responseData.data || responseData;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw err;
+      }
+      throw new Error(err instanceof Error ? err.message : 'Failed to get managers');
+    }
+  }
 }
 
 // Export singleton instance

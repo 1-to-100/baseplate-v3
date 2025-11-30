@@ -118,6 +118,11 @@ export interface TeamMemberWithRelations extends TeamMember {
     full_name: string;
     email: string;
     avatar_url?: string | null;
+    role?: {
+      role_id: string;
+      name: string;
+      display_name?: string | null;
+    };
   };
 }
 

@@ -27,6 +27,7 @@ import { UserList as UserListIcon } from '@phosphor-icons/react/dist/ssr/UserLis
 import { UserGear as UserGearIcon } from '@phosphor-icons/react/dist/ssr/UserGear';
 import { BagSimple as BagSimpleIcon } from '@phosphor-icons/react/dist/ssr/BagSimple';
 import { UserFocus as UserFocusIcon } from '@phosphor-icons/react/dist/ssr/UserFocus';
+import { UsersFour as UsersFourIcon } from '@phosphor-icons/react/dist/ssr/UsersFour';
 
 export const icons = {
   'chart-pie': ChartPieIcon,
@@ -44,6 +45,7 @@ export const icons = {
   'help': Headphones,
   'bell': BellIcon,
   'user-list': UserListIcon,
+  'team-management': UsersFourIcon,
   'user-gear': UserGearIcon,
   'bag-simple': BagSimpleIcon,
   'user-focus': UserFocusIcon,

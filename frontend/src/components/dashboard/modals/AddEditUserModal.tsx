@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
@@ -10,6 +10,8 @@ import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
 import Input from "@mui/joy/Input";
 import Autocomplete from "@mui/joy/Autocomplete";
+import Select from "@mui/joy/Select";
+import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import IconButton from "@mui/joy/IconButton";
 import Avatar from "@mui/joy/Avatar";
@@ -23,9 +25,11 @@ import { createUser, updateUser, getUserById } from "./../../../lib/api/users";
 import { getRolesList } from "./../../../lib/api/roles";
 import { getCustomers } from "./../../../lib/api/customers";
 import { getManagers } from "./../../../lib/api/managers";
+import { getTeams, getUserTeams, addTeamMember, removeTeamMember } from "./../../../lib/api/teams";
 import { toast } from "@/components/core/toaster";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { isSystemAdministrator } from "@/lib/user-utils";
+import type { TeamMemberWithRelations } from "@/types/database";
 
 interface HttpError {
   response?: {
@@ -62,6 +66,7 @@ export default function AddEditUser({
     customer: "",
     role: "",
     manager: "",
+    team: "",
   });
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -98,6 +103,49 @@ export default function AddEditUser({
   const { userInfo } = useUserInfo();
   const isCurrentUserSystemAdmin = useMemo(() => isSystemAdministrator(userInfo), [userInfo]);
 
+  // Get customer ID from customer name
+  const getCustomerId = useCallback((customerName: string): string | undefined => {
+    if (!customers) return undefined;
+    const customer = customers.find((c) => c.name === customerName);
+    return customer ? customer.id : undefined;
+  }, [customers]);
+
+  const customerId = useMemo(() => {
+    return formData.customer ? getCustomerId(formData.customer) : undefined;
+  }, [formData.customer, getCustomerId]);
+
+  // Fetch teams for the selected customer
+  const { data: teamsData, isLoading: isTeamsLoading } = useQuery({
+    queryKey: ["teams", customerId],
+    queryFn: async () => {
+      if (!customerId) return null;
+      const response = await getTeams(customerId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || [];
+    },
+    enabled: !!customerId && open,
+  });
+
+  const teams = teamsData || [];
+
+  // Fetch user's current teams when editing
+  const { data: userTeamsData } = useQuery({
+    queryKey: ["user-teams", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const response = await getUserTeams(userId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data || [];
+    },
+    enabled: !!userId && open,
+  });
+
+  const userTeams = userTeamsData || [];
+
   const roleOptions = useMemo(() => {
     // Only show Standard User and Manager roles
     const standardRoles = roles?.filter(
@@ -105,6 +153,12 @@ export default function AddEditUser({
     );
     return standardRoles?.map((role) => role.display_name).sort() || [];
   }, [roles]);
+
+  // Memoize the current team ID to avoid infinite loops
+  const currentTeamId = useMemo(() => {
+    if (!userTeamsData || userTeamsData.length === 0) return "";
+    return userTeamsData[0]?.team_id || "";
+  }, [userTeamsData]);
 
   useEffect(() => {
     if (userId && userData && open) {
@@ -115,6 +169,7 @@ export default function AddEditUser({
         customer: userData?.customer?.name || "",
         role: userData?.role?.displayName || "",
         manager: userData?.manager?.id.toString() || "",
+        team: currentTeamId,
       });
       setAvatarPreview(userData.avatar || null);
       setIsActive(userData.status === "active");
@@ -133,6 +188,7 @@ export default function AddEditUser({
         customer: initialCustomer,
         role: "",
         manager: "",
+        team: "",
       });
       setAdditionalEmails([]);
       setAvatarPreview(null);
@@ -140,12 +196,31 @@ export default function AddEditUser({
       setErrors(null);
       setEmailWarnings([]);
     }
-  }, [userId, userData, open, isCurrentUserSystemAdmin, userInfo]);
+  }, [userId, userData, open, isCurrentUserSystemAdmin, userInfo?.customer?.name, currentTeamId]);
 
   const createUserMutation = useMutation({
     mutationFn: createUser,
-    onSuccess: () => {
+    onSuccess: async (newUser) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      
+      // Add user to team if team is selected
+      if (formData.team && newUser?.id) {
+        try {
+          const response = await addTeamMember({
+            team_id: formData.team,
+            user_id: newUser.id,
+          });
+          if (response.error) {
+            toast.warning(`User created successfully, but failed to add to team: ${response.error}`);
+          } else {
+            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            queryClient.invalidateQueries({ queryKey: ["team-members"] });
+          }
+        } catch (error) {
+          toast.warning("User created successfully, but failed to add to team.");
+        }
+      }
+      
       onClose();
       toast.success("User created successfully.");
     },
@@ -166,9 +241,68 @@ export default function AddEditUser({
 
   const updateUserMutation = useMutation({
     mutationFn: updateUser,
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["user", userId] });
+      
+      if (!userId) return;
+      
+      // Handle team assignment changes
+      const previousTeamId = userTeams && userTeams.length > 0 ? userTeams[0]?.team_id || "" : "";
+      const newTeamId = formData.team || "";
+      
+      // If team changed or cleared
+      if (previousTeamId !== newTeamId) {
+        // Remove from old team if exists
+        if (previousTeamId) {
+          // Find the team member ID
+          const currentMembersData = await queryClient.fetchQuery({
+            queryKey: ["team-members", previousTeamId],
+            queryFn: async () => {
+              const { getTeamMembers } = await import("./../../../lib/api/teams");
+              const response = await getTeamMembers(previousTeamId);
+              if (response.error) {
+                throw new Error(response.error);
+              }
+              return response.data || [];
+            },
+          });
+          
+          const currentMember = currentMembersData?.find(
+            (member: TeamMemberWithRelations) => member.user_id === userId
+          );
+          
+          if (currentMember) {
+            try {
+              await removeTeamMember(currentMember.team_member_id);
+              queryClient.invalidateQueries({ queryKey: ["team-members"] });
+              queryClient.invalidateQueries({ queryKey: ["teams"] });
+            } catch (error) {
+              toast.warning("Failed to remove user from previous team.");
+            }
+          }
+        }
+        
+        // Add to new team if selected
+        if (newTeamId) {
+          try {
+            const response = await addTeamMember({
+              team_id: newTeamId,
+              user_id: userId,
+            });
+            if (response.error) {
+              toast.warning(`User updated successfully, but failed to add to team: ${response.error}`);
+            } else {
+              queryClient.invalidateQueries({ queryKey: ["teams"] });
+              queryClient.invalidateQueries({ queryKey: ["team-members"] });
+              queryClient.invalidateQueries({ queryKey: ["user-teams", userId] });
+            }
+          } catch (error) {
+            toast.warning("User updated successfully, but failed to add to team.");
+          }
+        }
+      }
+      
       onClose();
       toast.success("User updated successfully.");
     },
@@ -188,7 +322,7 @@ export default function AddEditUser({
     },
   });
 
-  const validateEmail = (email: string): string | null => {
+  const validateEmail = useCallback((email: string): string | null => {
     if (!email.trim()) {
       return "Email is required";
     }
@@ -216,9 +350,9 @@ export default function AddEditUser({
     }
 
     return null;
-  };
+  }, []);
 
-  const checkEmailUniqueness = async (
+  const checkEmailUniqueness = useCallback(async (
     email: string,
     index?: number
   ): Promise<boolean> => {
@@ -240,9 +374,9 @@ export default function AddEditUser({
       console.error("Error checking email uniqueness:", error);
       return false;
     }
-  };
+  }, [validateEmail]);
 
-  const validateForm = (): FormErrors => {
+  const validateForm = useCallback((): FormErrors => {
     const newErrors: FormErrors = {};
 
     if (!formData.firstName.trim()) {
@@ -274,9 +408,9 @@ export default function AddEditUser({
     }
 
     return newErrors;
-  };
+  }, [formData, additionalEmails, validateEmail]);
 
-  const handleInputChange = async (field: string, value: string) => {
+  const handleInputChange = useCallback(async (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({
       ...prev,
@@ -290,17 +424,19 @@ export default function AddEditUser({
         setErrors((prev) => ({ ...prev, email: emailError }));
       }
     }
-  };
+  }, [validateEmail]);
 
-  const handleCustomerChange = (event: React.SyntheticEvent, newValue: string | null) => {
+  const handleCustomerChange = useCallback((event: React.SyntheticEvent, newValue: string | null) => {
     handleInputChange("customer", newValue || "");
-  };
+    // Clear team selection when customer changes
+    setFormData((prev) => ({ ...prev, team: "" }));
+  }, [handleInputChange]);
 
-  const handleRoleChange = (event: React.SyntheticEvent, newValue: string | null) => {
+  const handleRoleChange = useCallback((event: React.SyntheticEvent, newValue: string | null) => {
     handleInputChange("role", newValue || "");
-  };
+  }, [handleInputChange]);
 
-  const handleAdditionalEmailChange = async (index: number, value: string) => {
+  const handleAdditionalEmailChange = useCallback(async (index: number, value: string) => {
     const updatedEmails = [...additionalEmails];
     updatedEmails[index] = value;
     setAdditionalEmails(updatedEmails);
@@ -319,9 +455,9 @@ export default function AddEditUser({
     if (value) {
       await checkEmailUniqueness(value, index);
     }
-  };
+  }, [additionalEmails, checkEmailUniqueness, validateEmail]);
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.size <= 3 * 1024 * 1024) {
       const fileTypes = ["image/png", "image/jpeg", "image/gif"];
@@ -337,26 +473,21 @@ export default function AddEditUser({
     } else {
       alert("File size must be less than 3MB.");
     }
-  };
+  }, []);
 
-  const handleDeleteAvatar = () => {
+  const handleDeleteAvatar = useCallback(() => {
     setAvatarPreview(null);
     setShowDeleteConfirmation(false);
-  };
+  }, []);
 
-  const getCustomerId = (customerName: string): string => {
-    if (!customers) return "";
-    const customer = customers.find((c) => c.name === customerName);
-    return customer ? customer.id : "";
-  };
 
-  const getRoleId = (roleName: string): string | undefined => {
+  const getRoleId = useCallback((roleName: string): string | undefined => {
     if (!roles) return undefined;
     const role = roles.find((r) => r.display_name === roleName);
     return role?.role_id;
-  };
+  }, [roles]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     const validationErrors = validateForm();
     setErrors(validationErrors);
 
@@ -384,7 +515,7 @@ export default function AddEditUser({
         createUserMutation.mutate(payload);
       }
     }
-  };
+  }, [formData, isActive, additionalEmails, userId, emailWarnings, updateUserMutation, createUserMutation, getCustomerId, getRoleId, validateForm]);
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -737,7 +868,7 @@ export default function AddEditUser({
             direction={{ xs: "column", sm: "row" }}
             spacing={{ xs: 1.5, sm: 2 }}
           >
-            <Stack sx={{ flex: 0.49 }}>
+            <Stack sx={{ flex: 1 }}>
               <Typography
                 level="body-sm"
                 sx={{
@@ -777,6 +908,44 @@ export default function AddEditUser({
                   {errors.role}
                 </FormHelperText>
               )}
+            </Stack>
+            <Stack sx={{ flex: 1 }}>
+              <Typography
+                level="body-sm"
+                sx={{
+                  fontSize: { xs: "12px", sm: "14px" },
+                  color: "var(--joy-palette-text-primary)",
+                  mb: 0.5,
+                  fontWeight: 500,
+                }}
+              >
+                Team
+              </Typography>
+              <Select
+                placeholder="Select team"
+                value={formData.team}
+                onChange={(e, newValue) => {
+                  const teamValue = newValue === null ? "" : String(newValue);
+                  handleInputChange("team", teamValue);
+                }}
+                disabled={!customerId || isTeamsLoading}
+                slotProps={{
+                  listbox: {
+                    placement: 'top',
+                  },
+                }}
+                sx={{
+                  borderRadius: "6px",
+                  fontSize: { xs: "12px", sm: "14px" },
+                }}
+              >
+                <Option value="">None</Option>
+                {teams.map((team) => (
+                  <Option key={team.team_id} value={String(team.team_id)}>
+                    {team.team_name}
+                  </Option>
+                ))}
+              </Select>
             </Stack>
             {/* <Stack sx={{ flex: 1 }}>
               <Box display="flex" alignItems="center" gap={1}>
