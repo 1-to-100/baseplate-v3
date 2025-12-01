@@ -75,11 +75,6 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
           }}
         >
           <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: "center", flex: "1 1 auto" }}
-          >
             <IconButton
               color="neutral"
               onClick={(): void => {
@@ -90,10 +85,7 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
             >
               <ListIcon fontSize="var(--Icon-fontSize)" weight="bold" />
             </IconButton>
-          </Stack>
-          <Stack direction="row" sx={{ alignItems: "left" }}>
             <SearchInput onSearch={handleSearch} />
-          </Stack>
           </Stack>
           <Stack
             direction="row"
