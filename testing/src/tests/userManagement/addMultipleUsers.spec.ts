@@ -7,6 +7,7 @@ import { NavPagePage } from '@pages/navPage.page';
 import { UserManagementPage } from '@pages/userManagement.page';
 import { EmailHelper } from '@pages/email/helper';
 import { generateNewUser } from '@utils/fakers';
+import { ApiMethods } from '@apiPage/methods';
 
 test.describe('Create multiple users', () => {
   let emailHelper: EmailHelper;
@@ -78,6 +79,11 @@ test.describe('Create multiple users', () => {
       await expect(commonPage.popUp).toHaveText(`${userManagementData.usersInvitedAlert}
         ${emailData[0].email}
         ${emailData[1].email}`);
+    });
+
+    await test.step('Select customer', async () => {
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Verify all users were added', async () => {
@@ -201,6 +207,11 @@ test.describe('Create multiple users', () => {
       await expect(commonPage.popUp).toHaveText(`${userManagementData.usersInvitedAlert}
         ${emailData[0].email}
         ${emailData[1].email}`);
+    });
+
+    await test.step('Select customer', async () => {
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Verify all users were added', async () => {

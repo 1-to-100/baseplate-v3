@@ -221,6 +221,7 @@ export class DocumentationPage {
     await expect(this.commonPage.popUp.first()).toHaveText(
       appData.documentationPageData.deleteCategoryModal.categoryDeletedAlert,
     );
+    await this.page.reload(); // TODO - bug
     await this.moreButtonForCategoryByName(categoryName).waitFor({ state: 'hidden', timeout: 15000 });
   }
 }

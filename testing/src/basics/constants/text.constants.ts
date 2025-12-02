@@ -142,7 +142,7 @@ export const appData: AppData = {
       newSubcategoryInput: 'Enter new subcategory',
       addIcons: {
         star: 'Star',
-        rocketLaunch: 'RocketLaunch',
+        rocketLaunch: 'Rocket',
         api: 'Api',
         code: 'Code',
         settings: 'Settings',

@@ -89,6 +89,11 @@ test.describe('Impersonate user', () => {
       await expect(commonPage.popUp).toHaveText(userManagementData.usersCreatedAlert);
     });
 
+    await test.step('Select customer', async () => {
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
+    });
+
     await test.step('Search created user', async () => {
       await navPagePage.searchValue(emailHelper.email);
       await commonPage.waitForLoader();
@@ -100,7 +105,6 @@ test.describe('Impersonate user', () => {
         [userManagementTable.userName]: userName,
         [userManagementTable.email]: emailHelper.email,
         [userManagementTable.customer]: customer,
-        [userManagementTable.role]: role.user,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
       const cell = commonPage.getRowColumnValue(1, await commonPage.getHeaderIndex(userManagementTable.userName));
@@ -204,6 +208,12 @@ test.describe('Impersonate user', () => {
       await navPagePage.openNavMenuTab(appData.pages.userManagement);
       await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    });
+
+    await test.step('Select customer', async () => {
+      const customer = admin.user.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Search for existing user', async () => {
@@ -359,6 +369,12 @@ test.describe('Impersonate user', () => {
       await navPagePage.openNavMenuTab(appData.pages.userManagement);
       await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    });
+
+    await test.step('Select customer', async () => {
+      const customer = admin.user.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Search for existing user', async () => {
