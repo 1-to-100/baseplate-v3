@@ -4,7 +4,9 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { ApiUser } from '@/contexts/auth/types';
+import { supabaseDB } from '@/lib/supabase/database';
+import { isSystemAdministrator, SYSTEM_ROLES } from '@/lib/user-utils';
+import type { ApiUser, Status } from '@/contexts/auth/types';
 import type {
   Team,
   TeamWithRelations,
@@ -62,6 +64,7 @@ interface UserData {
   full_name: string;
   email: string;
   avatar_url: string | null;
+  role?: { role_id: string; name: string; display_name: string | null } | { role_id: string; name: string; display_name: string | null }[] | null;
 }
 
 interface TeamMemberWithRelationsData extends TeamMemberData {
@@ -73,6 +76,61 @@ interface TeamMemberWithRelationsData extends TeamMemberData {
 export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWithRelations[]>> {
   try {
     const supabase = createClient();
+    
+    // Get current user (will be impersonated user if impersonating)
+    const dbCurrentUser = await supabaseDB.getCurrentUser();
+    
+    // Convert to ApiUser format for role checking
+    const currentUser: ApiUser = {
+      id: dbCurrentUser.user_id,
+      uid: dbCurrentUser.auth_user_id,
+      email: dbCurrentUser.email,
+      name: dbCurrentUser.full_name || '',
+      firstName: dbCurrentUser.full_name?.split(' ')[0] || '',
+      lastName: dbCurrentUser.full_name?.split(' ').slice(1).join(' ') || '',
+      customerId: dbCurrentUser.customer_id || undefined,
+      roleId: dbCurrentUser.role_id || undefined,
+      managerId: dbCurrentUser.manager_id || undefined,
+      status: dbCurrentUser.status as Status,
+      role: dbCurrentUser.role ? {
+        id: dbCurrentUser.role.role_id,
+        name: dbCurrentUser.role.name,
+        displayName: dbCurrentUser.role.display_name || '',
+      } : undefined,
+    } as ApiUser;
+    
+    // Check if user is system admin
+    const isSystemAdmin = isSystemAdministrator(currentUser);
+    
+    // Determine which customer ID to use for filtering
+    let targetCustomerId: string | undefined = customerId;
+    
+    if (!isSystemAdmin) {
+      // Non-system admins must filter by customer
+      // If customerId is not provided, use the current user's customerId
+      if (!targetCustomerId) {
+        targetCustomerId = currentUser.customerId;
+      }
+      
+      // If still no customerId, return error
+      if (!targetCustomerId) {
+        return { 
+          data: null, 
+          error: 'Customer ID is required for non-system administrators', 
+          status: 400 
+        };
+      }
+      
+      // Non-system admins can only access teams from their own customer
+      if (targetCustomerId !== currentUser.customerId) {
+        return { 
+          data: null, 
+          error: 'You can only access teams from your own customer', 
+          status: 403 
+        };
+      }
+    }
+    // System admins can access all teams if customerId is undefined, or specific customer if provided
     
     let query = supabase
       .from('teams')
@@ -91,8 +149,10 @@ export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWit
       `)
       .order('team_name');
     
-    if (customerId) {
-      query = query.eq('customer_id', customerId);
+    // Apply customer filter only if targetCustomerId is provided
+    // System admins can pass undefined to get all teams
+    if (targetCustomerId) {
+      query = query.eq('customer_id', targetCustomerId);
     }
     
     const { data, error } = await query;
@@ -419,7 +479,7 @@ export async function getTeamMembers(teamId: string): Promise<ApiResponse<TeamMe
       const memberData = member as unknown as TeamMemberWithRelationsData;
       const user = Array.isArray(memberData.user) ? memberData.user[0] : memberData.user;
       const team = Array.isArray(memberData.team) ? memberData.team[0] : memberData.team;
-      
+
       return {
         team_member_id: memberData.team_member_id,
         team_id: memberData.team_id,
@@ -427,13 +487,7 @@ export async function getTeamMembers(teamId: string): Promise<ApiResponse<TeamMe
         created_at: memberData.created_at,
         updated_at: memberData.updated_at,
         team: team || undefined,
-        user: user ? {
-          user_id: user.user_id,
-          full_name: user.full_name,
-          email: user.email,
-          avatar_url: user.avatar_url,
-          role: memberData.role ? (Array.isArray(memberData.role) ? memberData.role[0] : memberData.role) : undefined,
-        } : undefined,
+        user,
       };
     });
     
@@ -526,7 +580,7 @@ export async function getAvailableUsersForTeam(customerId: string, teamId?: stri
     const { data: roles, error: rolesError } = await supabase
       .from('roles')
       .select('role_id, name')
-      .in('name', ['standard_user', 'manager']);
+      .in('name', [SYSTEM_ROLES.STANDARD_USER, SYSTEM_ROLES.MANAGER]);
     
     if (rolesError) {
       return { data: null, error: `Failed to fetch roles: ${rolesError.message}`, status: 500 };
@@ -537,38 +591,6 @@ export async function getAvailableUsersForTeam(customerId: string, teamId?: stri
     }
     
     const roleIds = roles.map((r: { role_id: string; name: string }) => r.role_id);
-    
-    // Get all team IDs for the customer
-    const { data: teams, error: teamsError } = await supabase
-      .from('teams')
-      .select('team_id')
-      .eq('customer_id', customerId);
-    
-    if (teamsError) {
-      return { data: null, error: `Failed to fetch teams: ${teamsError.message}`, status: 500 };
-    }
-    
-    const teamIds = (teams || []).map((t: { team_id: string }) => t.team_id);
-    
-    // If teamId is provided, exclude it from the list
-    const teamIdsToCheck = teamId ? teamIds.filter((id: string) => id !== teamId) : teamIds;
-    
-    // Get all team members for teams in the customer (excluding current team if provided)
-    let teamMembers: { user_id: string }[] = [];
-    if (teamIdsToCheck.length > 0) {
-      const { data: membersData, error: membersError } = await supabase
-        .from('team_members')
-        .select('user_id')
-        .in('team_id', teamIdsToCheck);
-      
-      if (membersError) {
-        return { data: null, error: `Failed to fetch team members: ${membersError.message}`, status: 500 };
-      }
-      
-      teamMembers = membersData || [];
-    }
-    
-    const teamMemberUserIds = new Set(teamMembers.map((tm) => tm.user_id));
     
     // Get all users for the customer with standard_user or manager roles
     const { data: users, error: usersError } = await supabase
@@ -598,7 +620,24 @@ export async function getAvailableUsersForTeam(customerId: string, teamId?: stri
       return { data: null, error: `Failed to fetch users: ${usersError.message}`, status: 500 };
     }
     
-    // Filter out users who are already team members
+    // If teamId is provided, get users who are already members of this specific team
+    // Users can be in multiple teams, so we only exclude users already in THIS team
+    let currentTeamMemberUserIds = new Set<string>();
+    if (teamId) {
+      const { data: currentTeamMembers, error: membersError } = await supabase
+        .from('team_members')
+        .select('user_id')
+        .eq('team_id', teamId);
+      
+      if (membersError) {
+        return { data: null, error: `Failed to fetch team members: ${membersError.message}`, status: 500 };
+      }
+      
+      currentTeamMemberUserIds = new Set((currentTeamMembers || []).map((tm: { user_id: string }) => tm.user_id));
+    }
+    
+    // Filter out only users who are already members of the current team (if teamId provided)
+    // This allows users to be in multiple teams
     interface UserWithRelations {
       user_id: string;
       auth_user_id: string;
@@ -617,7 +656,11 @@ export async function getAvailableUsersForTeam(customerId: string, teamId?: stri
       role?: { role_id: string; name: string; display_name: string | null } | { role_id: string; name: string; display_name: string | null }[] | null;
     }
     
-    const availableUsers = (users || []).filter((user: UserWithRelations) => !teamMemberUserIds.has(user.user_id));
+    const availableUsers = (users || []).filter((user: UserWithRelations) => {
+      // If teamId is provided, exclude only users already in that specific team
+      // Otherwise, include all users (they can be added to any team)
+      return !teamId || !currentTeamMemberUserIds.has(user.user_id);
+    });
     
     // Convert to ApiUser format
     const apiUsers: ApiUser[] = availableUsers.map((user: UserWithRelations) => {

@@ -113,17 +113,7 @@ export interface TeamWithRelations extends Team {
 
 export interface TeamMemberWithRelations extends TeamMember {
   team?: Team;
-  user?: {
-    user_id: string;
-    full_name: string;
-    email: string;
-    avatar_url?: string | null;
-    role?: {
-      role_id: string;
-      name: string;
-      display_name?: string | null;
-    };
-  };
+  user?: User;
 }
 
 export interface CustomerSuccessOwnedCustomerWithRelations extends CustomerSuccessOwnedCustomer {

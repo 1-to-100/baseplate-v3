@@ -777,6 +777,10 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
     
     // Use edge function to create user and send invitation email
     // This handles: creating auth user, creating db user, and sending invite email
+    // Track email status (declared outside if block so it's accessible later)
+    let emailSent = true; // Default to true for backward compatibility
+    let emailError: string | null = null;
+    
     if (customerId) {
       // Determine roleId - use customer_admin if new customer, otherwise use provided roleId
       let roleIdToUse: string;
@@ -794,17 +798,52 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
       }
       
       // Call edge function to create auth user, db user, and send invite
-      const inviteResult = await edgeFunctions.inviteUser({
-        email: payload.email,
-        customerId: customerId,
-        roleId: roleIdToUse,
-        managerId: payload.managerId,
-        fullName: fullName,
-      });
+      let inviteResult: any;
       
-      // Verify the edge function completed successfully
-      if (!inviteResult) {
-        throw new Error('Edge function did not return a result');
+      try {
+        inviteResult = await edgeFunctions.inviteUser({
+          email: payload.email,
+          customerId: customerId,
+          roleId: roleIdToUse,
+          managerId: payload.managerId,
+          fullName: fullName,
+        });
+        
+        // Verify the edge function completed successfully
+        if (!inviteResult) {
+          console.error('Edge function inviteUser returned no result', { email: payload.email, customerId, roleId: roleIdToUse });
+          throw new Error('Edge function did not return a result - invitation email may not have been sent');
+        }
+        
+        console.log('Edge function inviteUser completed successfully', { 
+          email: payload.email, 
+          result: inviteResult,
+          emailSent: inviteResult?.emailSent,
+          emailError: inviteResult?.emailError
+        });
+        
+        // Check if email was actually sent
+        // The edge function now returns emailSent status in the response
+        emailSent = inviteResult?.emailSent !== false; // Default to true if not specified (backward compatibility)
+        emailError = inviteResult?.emailError || null;
+        
+        if (!emailSent) {
+          console.warn('User created but invitation email was not sent', { 
+            email: payload.email, 
+            emailError 
+          });
+          // Don't throw - user is created, but log warning
+          // Frontend can handle this by showing a warning or allowing manual resend
+        } else {
+          console.log('Invitation email sent successfully', { email: payload.email });
+        }
+      } catch (inviteError) {
+        console.error('Error calling edge function inviteUser:', inviteError);
+        // Re-throw with more context
+        const errorMessage = inviteError instanceof Error 
+          ? inviteError.message 
+          : 'Failed to send invitation email';
+        throw new Error(`User creation failed: ${errorMessage}`);
       }
       
       // Wait a moment for the user to be created in the database
@@ -955,7 +994,8 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
     const customer = userData.customer as CustomerData | CustomerData[] | null;
     const role = userData.role as RoleData | RoleData[] | null;
     
-    return {
+    // Map to ApiUser format and add email status
+    const apiUser = {
       id: userData.user_id,
       uid: userData.auth_user_id || undefined,
       email: userData.email,
@@ -989,7 +1029,12 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
         name: role.name,
         displayName: role.display_name,
       }) : undefined,
-    } as ApiUser;
+      // Add email status if available (extended property)
+      emailSent: emailSent,
+      emailError: emailError,
+    };
+    
+    return apiUser as ApiUser & { emailSent?: boolean; emailError?: string | null };
   } catch (error: unknown) {
     console.error('Error in createUser:', error);
     // If edge function fails, throw the error with more context

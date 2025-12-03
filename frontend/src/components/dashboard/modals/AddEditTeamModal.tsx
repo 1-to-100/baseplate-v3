@@ -20,6 +20,8 @@ import type { UpdateTeamInput } from "@/types/database";
 import { toast } from "@/components/core/toaster";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { edgeFunctions } from "@/lib/supabase/edge-functions";
+import { isSystemAdministrator } from "@/lib/user-utils";
+import { getCustomers } from "@/lib/api/customers";
 
 interface AddEditTeamModalProps {
   open: boolean;
@@ -31,11 +33,12 @@ interface FormData {
   name: string;
   description: string;
   managerId: string;
+  customerId: string;
 }
 
 interface FormErrors {
   name?: string;
-  managerId?: string;
+  customerId?: string;
 }
 
 export default function AddEditTeamModal({
@@ -47,11 +50,13 @@ export default function AddEditTeamModal({
     name: "",
     description: "",
     managerId: "",
+    customerId: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const queryClient = useQueryClient();
   const { userInfo } = useUserInfo();
   const customerId = userInfo?.customerId;
+  const isSystemAdmin = isSystemAdministrator(userInfo);
 
   // Get team data when editing
   const { data: teamData, isLoading: isTeamLoading } = useQuery({
@@ -67,16 +72,40 @@ export default function AddEditTeamModal({
     enabled: !!teamId && open,
   });
 
-  // Get managers using edge function
+  // Get customers for system admin
+  const { data: customersData, isLoading: isCustomersLoading } = useQuery({
+    queryKey: ["customers"],
+    queryFn: getCustomers,
+    enabled: isSystemAdmin && open,
+  });
+
+  // Build customers list: for system admin use all customers, for others use only current customer
+  const customers = React.useMemo(() => {
+    if (isSystemAdmin) {
+      return customersData || [];
+    } else {
+      // For non-system admin, show only current customer
+      if (customerId && userInfo?.customer) {
+        return [{
+          id: customerId,
+          name: userInfo.customer.name,
+        }];
+      }
+      return [];
+    }
+  }, [isSystemAdmin, customersData, customerId, userInfo?.customer]);
+
+  // Get managers using edge function - use formData.customerId if available, otherwise fallback to user's customerId
+  const managerCustomerId = formData.customerId || customerId;
   const { data: managersData, isLoading: isManagersLoading } = useQuery({
-    queryKey: ["managers", customerId],
+    queryKey: ["managers", managerCustomerId],
     queryFn: async () => {
-      if (!customerId) {
+      if (!managerCustomerId) {
         return [];
       }
-      return edgeFunctions.getManagers(customerId);
+      return edgeFunctions.getManagers(managerCustomerId);
     },
-    enabled: !!customerId && open,
+    enabled: !!managerCustomerId && open,
   });
 
   const managerUsers = managersData || [];
@@ -88,20 +117,28 @@ export default function AddEditTeamModal({
         name: teamData.team_name,
         description: teamData.description || "",
         managerId: teamData.manager_id || "",
+        customerId: teamData.customer_id || "",
       });
       setErrors({});
     } else if (!teamId && open) {
-      setFormData({ name: "", description: "", managerId: "" });
+      // For new team, set customerId based on user role
+      const initialCustomerId = isSystemAdmin ? "" : (customerId || "");
+      setFormData({ 
+        name: "", 
+        description: "", 
+        managerId: "",
+        customerId: initialCustomerId,
+      });
       setErrors({});
     }
-  }, [teamId, teamData, open]);
+  }, [teamId, teamData, open, isSystemAdmin, customerId]);
 
   const createTeamMutation = useMutation({
     mutationFn: createTeam,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       onClose();
-      setFormData({ name: "", description: "", managerId: "" });
+      setFormData({ name: "", description: "", managerId: "", customerId: "" });
       setErrors({});
       toast.success("Team created successfully.");
     },
@@ -122,7 +159,7 @@ export default function AddEditTeamModal({
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["team", teamId] });
       onClose();
-      setFormData({ name: "", description: "", managerId: "" });
+      setFormData({ name: "", description: "", managerId: "", customerId: "" });
       setErrors({});
       toast.success("Team updated successfully.");
     },
@@ -138,7 +175,14 @@ export default function AddEditTeamModal({
   });
 
   const handleInputChange = useCallback((field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      // Clear manager when customer changes (managers are customer-specific)
+      if (field === "customerId" && value !== prev.customerId) {
+        updated.managerId = "";
+      }
+      return updated;
+    });
     // Clear error when user starts typing
     setErrors((prev) => {
       if (prev[field as keyof FormErrors]) {
@@ -155,8 +199,8 @@ export default function AddEditTeamModal({
       newErrors.name = "Name is required";
     }
 
-    if (!formData.managerId) {
-      newErrors.managerId = "Manager is required";
+    if (!formData.customerId) {
+      newErrors.customerId = "Customer is required";
     }
 
     setErrors(newErrors);
@@ -164,7 +208,7 @@ export default function AddEditTeamModal({
   }, [formData]);
 
   const handleSave = useCallback(async () => {
-    if (!validateForm() || !customerId) {
+    if (!validateForm() || !formData.customerId) {
       return;
     }
 
@@ -177,9 +221,18 @@ export default function AddEditTeamModal({
     if (teamId) {
       // Update existing team
       try {
+        const updatePayload: UpdateTeamInput = {
+          ...payload,
+        };
+        
+        // Only include customer_id in update if system admin and it changed
+        if (isSystemAdmin && formData.customerId) {
+          updatePayload.customer_id = formData.customerId;
+        }
+
         const response = await updateTeamMutation.mutateAsync({
           teamId,
-          input: payload,
+          input: updatePayload,
         });
 
         if (response.error) {
@@ -192,7 +245,7 @@ export default function AddEditTeamModal({
       // Create new team
       try {
         const response = await createTeamMutation.mutateAsync({
-          customer_id: customerId,
+          customer_id: formData.customerId,
           ...payload,
           is_primary: false,
         });
@@ -204,9 +257,9 @@ export default function AddEditTeamModal({
         // Error is handled in mutation onError
       }
     }
-  }, [formData, customerId, teamId, validateForm, updateTeamMutation, createTeamMutation]);
+  }, [formData, teamId, validateForm, updateTeamMutation, createTeamMutation, isSystemAdmin]);
 
-  const isLoading = isTeamLoading || isManagersLoading;
+  const isLoading = isTeamLoading || isManagersLoading || (isSystemAdmin && isCustomersLoading);
   const isSaving = createTeamMutation.isPending || updateTeamMutation.isPending;
 
   return (
@@ -218,6 +271,7 @@ export default function AddEditTeamModal({
           p: { xs: 2, sm: 3 },
           borderRadius: "8px",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          minHeight: { xs: "400px", sm: "450px" },
           maxHeight: "90vh",
           overflowY: "auto",
         }}
@@ -235,11 +289,11 @@ export default function AddEditTeamModal({
           {teamId ? "Edit Team" : "Add Team"}
         </Typography>
         {isLoading ? (
-          <Stack sx={{ alignItems: "center", justifyContent: "center", minHeight: "150px" }}>
+          <Stack sx={{ alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
             <CircularProgress size="md" />
           </Stack>
         ) : (
-          <Stack spacing={{ xs: 1.5, sm: 2 }}>
+          <Stack spacing={{ xs: 1.5, sm: 2 }} sx={{ minHeight: "300px" }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
               spacing={{ xs: 1.5, sm: 2 }}
@@ -288,7 +342,55 @@ export default function AddEditTeamModal({
                     fontWeight: 500,
                   }}
                 >
-                  Manager <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
+                  Customer <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
+                </Typography>
+                <Select
+                  placeholder="Select customer"
+                  value={formData.customerId}
+                  onChange={(e, newValue) =>
+                    handleInputChange("customerId", (newValue as string) || "")
+                  }
+                  color={errors?.customerId ? "danger" : undefined}
+                  disabled={!isSystemAdmin || isCustomersLoading || !!teamId}
+                  sx={{
+                    borderRadius: "6px",
+                    fontSize: { xs: "12px", sm: "14px" },
+                  }}
+                >
+                  {customers.map((customer: { id: string; name: string }) => (
+                    <Option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </Option>
+                  ))}
+                </Select>
+                {errors?.customerId && (
+                  <FormHelperText
+                    sx={{
+                      color: "var(--joy-palette-danger-500)",
+                      fontSize: { xs: "10px", sm: "12px" },
+                    }}
+                  >
+                    {errors.customerId}
+                  </FormHelperText>
+                )}
+              </Stack>
+            </Stack>
+
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={{ xs: 1.5, sm: 2 }}
+            >
+              <Stack sx={{ flex: 1 }}>
+                <Typography
+                  level="body-sm"
+                  sx={{
+                    fontSize: { xs: "12px", sm: "14px" },
+                    color: "var(--joy-palette-text-primary)",
+                    mb: 0.5,
+                    fontWeight: 500,
+                  }}
+                >
+                  Manager
                 </Typography>
                 <Select
                   placeholder="Select manager"
@@ -296,8 +398,7 @@ export default function AddEditTeamModal({
                   onChange={(e, newValue) =>
                     handleInputChange("managerId", (newValue as string) || "")
                   }
-                  color={errors?.managerId ? "danger" : undefined}
-                  disabled={isManagersLoading}
+                  disabled={isManagersLoading || !managerCustomerId}
                   sx={{
                     borderRadius: "6px",
                     fontSize: { xs: "12px", sm: "14px" },
@@ -310,16 +411,9 @@ export default function AddEditTeamModal({
                     </Option>
                   ))}
                 </Select>
-                {errors?.managerId && (
-                  <FormHelperText
-                    sx={{
-                      color: "var(--joy-palette-danger-500)",
-                      fontSize: { xs: "10px", sm: "12px" },
-                    }}
-                  >
-                    {errors.managerId}
-                  </FormHelperText>
-                )}
+              </Stack>
+              <Stack sx={{ flex: 1 }}>
+                {/* Empty space to align with Customer field */}
               </Stack>
             </Stack>
 

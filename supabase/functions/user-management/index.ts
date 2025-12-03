@@ -115,16 +115,32 @@ async function handleInvite(user: any, body: any) {
 
   // Send invitation email
   const redirectUrl = (siteUrl && siteUrl.trim()) || Deno.env.get('SITE_URL') || 'http://localhost:3000'
-  const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+  const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
 
+  let emailSent = true
+  let emailError: string | null = null
+  
   if (inviteError) {
     console.error('Failed to send invite email:', inviteError)
+    emailSent = false
+    emailError = inviteError.message || 'Unknown error sending invitation email'
     // Don't throw - user is created, email failure is not critical
+    // But we'll return the status so frontend can handle it appropriately
+  } else if (!inviteData) {
+    // inviteUserByEmail might succeed but not return data - this could indicate email wasn't sent
+    console.warn('inviteUserByEmail returned no error but also no data - email may not have been sent', { email })
+    // Still mark as sent since no error was returned (could be a false positive)
+  } else {
+    console.log('Invitation email sent successfully', { email, inviteData })
   }
 
-  return createSuccessResponse({ data: dbUser })
+  return createSuccessResponse({ 
+    data: dbUser,
+    emailSent: emailSent,
+    emailError: emailError
+  })
 }
 
 async function handleInviteMultiple(user: any, body: any) {
@@ -261,9 +277,14 @@ async function inviteUser(supabase: any, email: string, customerId: string | nul
   }
 
   const redirectUrl = (siteUrl && siteUrl.trim()) || Deno.env.get('SITE_URL') || 'http://localhost:3000'
-  await supabase.auth.admin.inviteUserByEmail(email, {
+  const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${redirectUrl}/auth/callback`
   })
+
+  if (inviteError) {
+    console.error('Failed to send invite email:', inviteError)
+    // Don't throw - user is created, email failure is not critical
+  }
 
   return dbUser
 }

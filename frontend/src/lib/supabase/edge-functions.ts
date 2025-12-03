@@ -63,8 +63,18 @@ export class EdgeFunctions {
         throw new Error(errorMessage);
       }
 
-      // Edge function returns { data: ... } structure
-      return responseData.data || responseData;
+      // Edge function returns { data: dbUser, emailSent: boolean, emailError: string | null } structure
+      // We need to preserve emailSent and emailError from the response
+      if (responseData.data) {
+        // If response has data property, merge email status with user data
+        return {
+          ...responseData.data,
+          emailSent: responseData.emailSent !== undefined ? responseData.emailSent : true,
+          emailError: responseData.emailError || null,
+        };
+      }
+      // If no data property, return response as-is (backward compatibility)
+      return responseData;
     } catch (err: unknown) {
       // If it's already our error, re-throw it
       if (err instanceof Error && err.message && !err.message.includes('Edge Function returned')) {

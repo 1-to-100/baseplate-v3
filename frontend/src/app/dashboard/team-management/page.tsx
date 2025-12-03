@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { getTeams } from "@/lib/api/teams";
 import { useUserInfo } from "@/hooks/use-user-info";
+import { isSystemAdministrator } from "@/lib/user-utils";
 import type { TeamWithRelations } from "@/types/database";
 import AddEditTeamModal from "@/components/dashboard/modals/AddEditTeamModal";
 import { paths } from "@/paths";
@@ -27,16 +28,20 @@ export default function Page(): React.JSX.Element {
   const [openAddModal, setOpenAddModal] = React.useState(false);
   const [teamIdToEdit, setTeamIdToEdit] = React.useState<string | undefined>(undefined);
 
+  const isSystemAdmin = isSystemAdministrator(userInfo);
+  // For system admin, pass undefined to get all teams; otherwise pass customerId
+  const teamsCustomerId = isSystemAdmin ? undefined : customerId;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ["teams", customerId],
+    queryKey: ["teams", teamsCustomerId, isSystemAdmin],
     queryFn: async () => {
-      const response = await getTeams(customerId);
+      const response = await getTeams(teamsCustomerId);
       if (response.error) {
         throw new Error(response.error);
       }
       return response.data || [];
     },
-    enabled: !!customerId,
+    enabled: isSystemAdmin || !!customerId,
   });
 
   const teams = data || [];
@@ -139,9 +144,12 @@ export default function Page(): React.JSX.Element {
           >
             <thead>
               <tr>
-                <th style={{ width: "40%" }}>Team</th>
-                <th style={{ width: "20%", textAlign: "center" }}>Users</th>
-                <th style={{ width: "30%" }}>Manager Name</th>
+                <th style={{ width: isSystemAdmin ? "30%" : "40%" }}>Team</th>
+                {isSystemAdmin && (
+                  <th style={{ width: "20%" }}>Customer</th>
+                )}
+                <th style={{ width: isSystemAdmin ? "15%" : "20%", textAlign: "center" }}>Users</th>
+                <th style={{ width: isSystemAdmin ? "25%" : "30%" }}>Manager Name</th>
                 <th style={{ width: "10%", textAlign: "right" }}></th>
               </tr>
             </thead>
@@ -149,7 +157,7 @@ export default function Page(): React.JSX.Element {
               {teams.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={isSystemAdmin ? 5 : 4}
                     style={{ textAlign: "center", padding: "20px" }}
                   >
                     <Typography level="body-md" color="neutral">
@@ -161,6 +169,7 @@ export default function Page(): React.JSX.Element {
                 teams.map((team: TeamWithRelations) => {
                   const memberCount = team.team_members?.length || 0;
                   const managerName = team.manager?.full_name || "";
+                  const customerName = team.customer?.name || "-";
 
                   return (
                     <tr key={team.team_id}>
@@ -177,6 +186,21 @@ export default function Page(): React.JSX.Element {
                           {team.team_name}
                         </Typography>
                       </td>
+                      {isSystemAdmin && (
+                        <td
+                          style={{ cursor: "pointer" }}
+                          onClick={() => router.push(paths.dashboard.teamManagement.details(team.team_id))}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: { xs: "12px", sm: "14px" },
+                              color: "var(--joy-palette-text-secondary)",
+                            }}
+                          >
+                            {customerName}
+                          </Typography>
+                        </td>
+                      )}
                       <td
                         style={{ textAlign: "center", cursor: "pointer" }}
                         onClick={() => router.push(paths.dashboard.teamManagement.details(team.team_id))}

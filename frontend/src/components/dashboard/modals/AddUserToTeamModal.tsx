@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
@@ -9,14 +9,16 @@ import ModalClose from "@mui/joy/ModalClose";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
 import Button from "@mui/joy/Button";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Chip from "@mui/joy/Chip";
-import Box from "@mui/joy/Box";
 import { Tabs, TabList, Tab } from "@mui/joy";
 import { getAvailableUsersForTeam, addTeamMember } from "@/lib/api/teams";
 import { toast } from "@/components/core/toaster";
-import type { ApiUser } from "@/contexts/auth/types";
+import { SelectUser } from "./AddUserToTeamModal/SelectUser";
+import { AddUser } from "./AddUserToTeamModal/AddUser";
+
+enum TabName {
+  SELECT = "select",
+  CREATE = "create",
+}
 
 interface AddUserToTeamModalProps {
   open: boolean;
@@ -31,9 +33,11 @@ export default function AddUserToTeamModal({
   teamId,
   customerId,
 }: AddUserToTeamModalProps): React.JSX.Element {
-  const [selectedTab, setSelectedTab] = useState<"select" | "create">("select");
+  const [selectedTab, setSelectedTab] = useState<TabName>(TabName.SELECT);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isAddUserSaving, setIsAddUserSaving] = useState(false);
   const queryClient = useQueryClient();
+  const addUserSaveRef = useRef<(() => void) | null>(null);
 
   // Fetch available users
   const { data: availableUsersData, isLoading: isUsersLoading } = useQuery({
@@ -72,18 +76,18 @@ export default function AddUserToTeamModal({
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
-      setSelectedTab("select");
+      setSelectedTab(TabName.SELECT);
       setSelectedUsers([]);
     }
   }, [open]);
 
   const handleSave = useCallback(async () => {
-    if (selectedTab === "select" && selectedUsers.length === 0) {
-      toast.error("Please select at least one user");
-      return;
-    }
+    if (selectedTab === TabName.SELECT) {
+      if (selectedUsers.length === 0) {
+        toast.error("Please select at least one user");
+        return;
+      }
 
-    if (selectedTab === "select") {
       // Add all selected users to the team
       try {
         const promises = selectedUsers.map((userId) =>
@@ -104,20 +108,31 @@ export default function AddUserToTeamModal({
         );
       }
     } else {
-      // Create new one tab - placeholder for now
-      toast.info("Create new user functionality coming soon");
+      // Delegate to AddUser component's save handler
+      if (addUserSaveRef.current) {
+        addUserSaveRef.current();
+      } else {
+        toast.error("Please fill in all required fields");
+      }
     }
   }, [selectedTab, selectedUsers, addTeamMemberMutation, queryClient, customerId, teamId, onClose]);
 
-  const isSaving = addTeamMemberMutation.isPending;
+  const isSaving = addTeamMemberMutation.isPending || isAddUserSaving;
 
   const handleTabChange = useCallback((event: React.SyntheticEvent, newValue: string | null) => {
-    setSelectedTab((newValue as "select" | "create") || "select");
+    setSelectedTab((newValue as TabName) || TabName.SELECT);
   }, []);
 
-  const handleUsersChange = useCallback((event: React.SyntheticEvent | null, newValue: string | string[] | null) => {
-    setSelectedUsers(newValue as string[]);
+  const handleUsersChange = useCallback((users: string[]) => {
+    setSelectedUsers(users);
   }, []);
+
+  const handleAddUserSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["available-users", customerId, teamId] });
+    queryClient.invalidateQueries({ queryKey: ["team-members", teamId] });
+    queryClient.invalidateQueries({ queryKey: ["team", teamId] });
+    onClose();
+  }, [queryClient, customerId, teamId, onClose]);
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -168,75 +183,29 @@ export default function AddUserToTeamModal({
               },
             }}
           >
-            <Tab value="select">Select user</Tab>
-            <Tab value="create">Create new one</Tab>
+            <Tab value={TabName.SELECT}>Select user</Tab>
+            <Tab value={TabName.CREATE}>Create new one</Tab>
           </TabList>
         </Tabs>
 
         <Stack spacing={{ xs: 1.5, sm: 2 }}>
-          {selectedTab === "select" ? (
-            <Stack>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Users
-              </Typography>
-              <Select
-                multiple
-                placeholder="Select users"
-                value={selectedUsers}
-                onChange={handleUsersChange}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {selected.map((item) => {
-                      const user = availableUsers.find((u) => u.id.toString() === item.value);
-                      return (
-                        <Chip key={item.value} size="sm">
-                          {user?.name || user?.email || item.value}
-                        </Chip>
-                      );
-                    })}
-                  </Box>
-                )}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-                disabled={isUsersLoading}
-                slotProps={{
-                  listbox: {
-                    placement: 'top',
-                  },
-                }}
-              >
-                {availableUsers
-                  .sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || ''))
-                  .map((user) => (
-                    <Option key={user.id} value={user.id.toString()}>
-                      {user.name || user.email}
-                    </Option>
-                  ))}
-              </Select>
-            </Stack>
+          {selectedTab === TabName.SELECT ? (
+            <SelectUser
+              availableUsers={availableUsers}
+              selectedUsers={selectedUsers}
+              onUsersChange={handleUsersChange}
+              isLoading={isUsersLoading}
+            />
           ) : (
-            <Stack>
-              <Typography
-                level="body-md"
-                sx={{
-                  color: "var(--joy-palette-text-secondary)",
-                  textAlign: "center",
-                  py: 4,
-                }}
-              >
-                Create new user functionality coming soon
-              </Typography>
-            </Stack>
+            <AddUser
+              teamId={teamId}
+              customerId={customerId}
+              onSuccess={handleAddUserSuccess}
+              onSaveReady={(saveHandler) => {
+                addUserSaveRef.current = saveHandler;
+              }}
+              onSavingChange={setIsAddUserSaving}
+            />
           )}
 
           <Stack
@@ -259,7 +228,7 @@ export default function AddUserToTeamModal({
             <Button
               variant="solid"
               onClick={handleSave}
-              disabled={isSaving || (selectedTab === "select" && selectedUsers.length === 0)}
+              disabled={isSaving || (selectedTab === TabName.SELECT && selectedUsers.length === 0)}
               sx={{
                 borderRadius: "20px",
                 bgcolor: "#4F46E5",
@@ -272,7 +241,7 @@ export default function AddUserToTeamModal({
                 width: { xs: "100%", sm: "auto" },
               }}
             >
-              {selectedTab === "select" ? "Save to list" : "Save"}
+              {selectedTab === TabName.SELECT ? "Save to list" : "Save"}
             </Button>
           </Stack>
         </Stack>

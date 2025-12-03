@@ -30,6 +30,12 @@ import { toast } from "@/components/core/toaster";
 import { useUserInfo } from "@/hooks/use-user-info";
 import { isSystemAdministrator } from "@/lib/user-utils";
 import type { TeamMemberWithRelations } from "@/types/database";
+import { FirstNameField } from "./user-form-fields/FirstNameField";
+import { LastNameField } from "./user-form-fields/LastNameField";
+import { EmailField } from "./user-form-fields/EmailField";
+import { CustomerField } from "./user-form-fields/CustomerField";
+import { RoleField } from "./user-form-fields/RoleField";
+import { TeamField } from "./user-form-fields/TeamField";
 
 interface HttpError {
   response?: {
@@ -700,253 +706,64 @@ export default function AddEditUser({
             direction={{ xs: "column", sm: "row" }}
             spacing={{ xs: 1.5, sm: 2 }}
           >
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                First Name
-              </Typography>
-              <Input
-                placeholder="Enter first name"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
-                error={!!errors?.firstName}
-                slotProps={{ input: { maxLength: 255 } }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-              />
-              {errors?.firstName && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {errors.firstName}
-                </FormHelperText>
-              )}
-            </Stack>
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Last Name
-              </Typography>
-              <Input
-                placeholder="Enter last name"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
-                error={!!errors?.lastName}
-                slotProps={{ input: { maxLength: 255 } }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-              />
-              {errors?.lastName && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {errors.lastName}
-                </FormHelperText>
-              )}
-            </Stack>
+            <FirstNameField
+              value={formData.firstName}
+              onChange={(value) => handleInputChange("firstName", value)}
+              error={errors?.firstName}
+            />
+            <LastNameField
+              value={formData.lastName}
+              onChange={(value) => handleInputChange("lastName", value)}
+              error={errors?.lastName}
+            />
           </Stack>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={{ xs: 1.5, sm: 2 }}
           >
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Email
-              </Typography>
-              <Input
-                placeholder="Enter email"
-                type="email"
-                disabled={!!userId} 
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                error={!!errors?.email}
-                slotProps={{ input: { maxLength: 255 } }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-              />
-              {errors?.email && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {errors.email}
-                </FormHelperText>
-              )}
-              {emailWarnings[0] && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-warning-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {emailWarnings[0]}
-                </FormHelperText>
-              )}
-            </Stack>
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Customer
-              </Typography>
-              <Autocomplete
-                placeholder="Select customer"
-                value={formData.customer}
-                onChange={handleCustomerChange}
-                options={customers?.sort((a, b) => a.name.localeCompare(b.name)).map((customer) => customer.name) || []}
-                disabled={!isCurrentUserSystemAdmin}
-                slotProps={{
-                  listbox: {
-                    placement: 'top',
-                  },
-                }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                  border: errors?.customer
-                    ? "1px solid var(--joy-palette-danger-500)"
-                    : undefined,
-                }}
-              />
-              {errors?.customer && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {errors.customer}
-                </FormHelperText>
-              )}
-            </Stack>
+            <EmailField
+              value={formData.email}
+              onChange={(value) => handleInputChange("email", value)}
+              error={errors?.email}
+              warning={emailWarnings[0]}
+              disabled={!!userId}
+            />
+            <CustomerField
+              value={formData.customer}
+              onChange={(value) => {
+                handleInputChange("customer", value || "");
+                // Clear team selection when customer changes
+                setFormData((prev) => ({ ...prev, team: "" }));
+              }}
+              options={customers?.sort((a, b) => a.name.localeCompare(b.name)).map((customer) => customer.name) || []}
+              error={errors?.customer}
+              disabled={!isCurrentUserSystemAdmin}
+              isLoading={isCustomersLoading}
+            />
           </Stack>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={{ xs: 1.5, sm: 2 }}
           >
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Role <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
-              </Typography>
-              <Autocomplete
-                placeholder="Select role"
-                value={formData.role}
-                onChange={handleRoleChange}
-                options={roleOptions}
-                slotProps={{
-                  listbox: {
-                    placement: 'top',
-                  },
-                }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                  border: errors?.role
-                    ? "1px solid var(--joy-palette-danger-500)"
-                    : undefined,
-                }}
-              />
-              {errors?.role && (
-                <FormHelperText
-                  sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  {errors.role}
-                </FormHelperText>
-              )}
-            </Stack>
-            <Stack sx={{ flex: 1 }}>
-              <Typography
-                level="body-sm"
-                sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
-                  mb: 0.5,
-                  fontWeight: 500,
-                }}
-              >
-                Team
-              </Typography>
-              <Select
-                placeholder="Select team"
-                value={formData.team}
-                onChange={(e, newValue) => {
-                  const teamValue = newValue === null ? "" : String(newValue);
-                  handleInputChange("team", teamValue);
-                }}
-                disabled={!customerId || isTeamsLoading}
-                slotProps={{
-                  listbox: {
-                    placement: 'top',
-                  },
-                }}
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-              >
-                <Option value="">None</Option>
-                {teams.map((team) => (
-                  <Option key={team.team_id} value={String(team.team_id)}>
-                    {team.team_name}
-                  </Option>
-                ))}
-              </Select>
-            </Stack>
+            <RoleField
+              value={formData.role}
+              onChange={(value) => handleInputChange("role", value || "")}
+              options={roleOptions}
+              error={errors?.role}
+              isLoading={isRolesLoading}
+            />
+            <TeamField
+              value={formData.team}
+              onChange={(value) => handleInputChange("team", value)}
+              options={teams.map((team) => ({
+                team_id: team.team_id,
+                team_name: team.team_name,
+              }))}
+              disabled={!customerId || isTeamsLoading}
+              isLoading={isTeamsLoading}
+            />
             {/* <Stack sx={{ flex: 1 }}>
               <Box display="flex" alignItems="center" gap={1}>
                 <Typography
