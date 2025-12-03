@@ -13,17 +13,25 @@ import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import CircularProgress from "@mui/joy/CircularProgress";
 import { Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { useQuery } from "@tanstack/react-query";
-import { getTeamById, getTeamMembers } from "@/lib/api/teams";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTeamById, getTeamMembers, removeTeamMember } from "@/lib/api/teams";
 import { paths } from "@/paths";
 import { BreadcrumbsItem } from "@/components/core/breadcrumbs-item";
 import { BreadcrumbsSeparator } from "@/components/core/breadcrumbs-separator";
 import AddUserToTeamModal from "@/components/dashboard/modals/AddUserToTeamModal";
+import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
+import { toast } from "@/components/core/toaster";
 
 export default function Page(): React.JSX.Element {
   const params = useParams();
   const teamId = params.teamId as string;
   const [openAddUserModal, setOpenAddUserModal] = React.useState(false);
+  const [openRemoveModal, setOpenRemoveModal] = React.useState(false);
+  const [memberToRemove, setMemberToRemove] = React.useState<{
+    teamMemberId: string;
+    userName: string;
+  } | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: teamData, isLoading, error } = useQuery({
     queryKey: ["team", teamId],
@@ -53,9 +61,43 @@ export default function Page(): React.JSX.Element {
     setOpenAddUserModal(true);
   }, []);
 
+  const removeMemberMutation = useMutation({
+    mutationFn: async (teamMemberId: string) => {
+      const response = await removeTeamMember(teamMemberId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["team-members", teamId] });
+      await queryClient.invalidateQueries({ queryKey: ["team", teamId] });
+      toast.success("User successfully removed from team");
+      setOpenRemoveModal(false);
+      setMemberToRemove(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to remove user from team");
+    },
+  });
+
   const handleRemoveMember = useCallback((teamMemberId: string) => {
-    // Handler will be implemented later
-  }, []);
+    const member = teamMembersData?.find((m) => m.team_member_id === teamMemberId);
+    if (member) {
+      const userName = member.user?.full_name || member.user?.email || "this user";
+      setMemberToRemove({
+        teamMemberId,
+        userName,
+      });
+      setOpenRemoveModal(true);
+    }
+  }, [teamMembersData]);
+
+  const confirmRemove = useCallback(() => {
+    if (memberToRemove) {
+      removeMemberMutation.mutate(memberToRemove.teamMemberId);
+    }
+  }, [memberToRemove, removeMemberMutation]);
 
   const handleCloseAddUserModal = useCallback(() => {
     setOpenAddUserModal(false);
@@ -277,6 +319,17 @@ export default function Page(): React.JSX.Element {
         onClose={handleCloseAddUserModal}
         teamId={teamId}
         customerId={teamData?.customer_id || ""}
+      />
+      <DeleteDeactivateUserModal
+        open={openRemoveModal}
+        onClose={() => {
+          setOpenRemoveModal(false);
+          setMemberToRemove(null);
+        }}
+        onConfirm={confirmRemove}
+        usersToDelete={memberToRemove ? [memberToRemove.userName] : []}
+        title="Remove user from team"
+        description={`Are you sure you want to remove ${memberToRemove?.userName || "this user"} from the team?`}
       />
     </Box>
   );
