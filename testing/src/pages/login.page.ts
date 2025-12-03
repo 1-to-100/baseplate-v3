@@ -20,6 +20,7 @@ export class LoginPage {
   readonly errorsMessageForInput: (name: string) => Locator;
   readonly termsAndConditionsError: Locator;
   readonly alert: (name: string) => Locator;
+  readonly forgotPasswordLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -32,6 +33,7 @@ export class LoginPage {
       .locator('..')
       .locator('.MuiFormHelperText-root');
     this.alert = (name: string) => page.locator('section li').getByText(name);
+    this.forgotPasswordLink = page.locator('[href*="reset-password"]');
   }
 
   async login(userData: { user: string; password: string }): Promise<void> {
@@ -47,7 +49,7 @@ export class LoginPage {
   }
 
   async clickSubmitButton(): Promise<void> {
-    await this.defaultButtonWithType('Submit').click();
+    await this.defaultButtonWithType(appData.authorization.submitButton).click();
   }
 
   async waitForLogin(): Promise<void> {
@@ -67,7 +69,7 @@ export class LoginPage {
     await this.defaultInputWithName(appData.authorization.email).fill(email);
     await this.defaultInputWithName(appData.authorization.password).fill(password);
     if (acceptTerms) {
-      await this.defaultButtonWithType('Checkbox').click();
+      await this.defaultButtonWithType(appData.authorization.checkbox).click();
     }
     await this.clickSubmitButton();
   }

@@ -11,14 +11,14 @@ export default defineConfig({
   },
   fullyParallel: false,
   workers: process.env.CI ? 1 : 1,
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 1 : 1,
   reporter: [['list'], ['allure-playwright']],
 
   use: {
     baseURL: process.env.baseUrl,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    headless: false,
+    headless: true,
     launchOptions: {
       slowMo: 500,
     },

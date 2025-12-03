@@ -6,6 +6,7 @@ import {
   getArticlePayload,
   getCategoriesPayload,
   getCreateRolePayload,
+  getDeleteUserPayload,
   getPermissionsPayload,
   getSupabaseLoginPayload,
   getUsersPayload,
@@ -27,6 +28,15 @@ export class ApiMethods {
   public static headerWithBearerToken(accessToken: string) {
     return {
       headers: { Authorization: `Bearer ${accessToken}` },
+    };
+  }
+
+  public static headerWithSupabaseAuth(accessToken: string) {
+    return {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: ConfigData.supabaseApiKey,
+      },
     };
   }
 
@@ -60,17 +70,21 @@ export class ApiMethods {
   }
 
   async getUserData(apiKey: string, user: string): Promise<APIResponse> {
-    await this.createContext(ConfigData.apiUrl);
+    await this.createContext(ConfigData.supabaseApiUrl);
     return await this.requestContext.get(APIRoutes.Users, {
-      ...ApiMethods.headerWithBearerToken(apiKey),
+      ...ApiMethods.headerWithSupabaseAuth(apiKey),
       ...getUsersPayload(user),
     });
   }
 
   async deleteUser(apiKey: string, userId: string): Promise<number> {
-    await this.createContext(ConfigData.apiUrl);
-    const response = await this.requestContext.delete(APIRoutes.Users + '/' + userId, {
-      ...ApiMethods.headerWithBearerToken(apiKey),
+    await this.createContext(ConfigData.supabaseApiUrl);
+    const response = await this.requestContext.patch(APIRoutes.Users, {
+      ...ApiMethods.headerWithSupabaseAuth(apiKey),
+      params: {
+        user_id: `eq.${userId}`,
+      },
+      ...getDeleteUserPayload(),
     });
     return response.status();
   }

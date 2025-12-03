@@ -22,11 +22,23 @@ export const getPermissionsPayload = (permissions: string[]) => ({
   },
 });
 
-export const getUsersPayload = (user: string) => ({
-  params: {
-    search: user,
-  },
-});
+export const getUsersPayload = (user: string, customerId?: string, roleIds?: string[]) => {
+  const selectFields =
+    'user_id,auth_user_id,email,full_name,phone_number,avatar_url,customer_id,role_id,manager_id,status,created_at,updated_at,deleted_at,customer:customers!users_customer_id_fkey(customer_id,name,email_domain),role:roles(role_id,name,display_name)';
+
+  return {
+    params: {
+      select: selectFields,
+      deleted_at: 'is.null',
+      email: `ilike.%${user}%`,
+      order: 'created_at.asc',
+      offset: '0',
+      limit: '10',
+      ...(customerId && { customer_id: `in.(${customerId})` }),
+      ...(roleIds && roleIds.length > 0 && { role_id: `in.(${roleIds.join(',')})` }),
+    },
+  };
+};
 
 export const getCategoriesPayload = (icon: string, name: string, subcategory: string) => ({
   data: {
@@ -34,6 +46,13 @@ export const getCategoriesPayload = (icon: string, name: string, subcategory: st
     icon: icon,
     name: name,
     subcategory: subcategory,
+  },
+});
+
+export const getDeleteUserPayload = () => ({
+  data: {
+    deleted_at: new Date().toISOString(),
+    status: 'inactive',
   },
 });
 

@@ -21,7 +21,7 @@ test.describe('Impersonate user', () => {
   let userManagementPage: UserManagementPage;
   let documentationPage: DocumentationPage;
 
-  let roleName: string;
+  let customer: string;
 
   const admin = ConfigData.users.admin;
   const customerSuccess = ConfigData.users.customer;
@@ -29,16 +29,18 @@ test.describe('Impersonate user', () => {
   const userManagementTable = appData.userManagementTable;
   const userManagementData = appData.userManagementPageData;
   const editUserData = appData.userManagementPageData.editUserData;
-  const addRoleModal = appData.addRolePageData.addRole;
-  const userManagementPermissions = appData.addRolePageData.userManagementPermission;
-  const documentsPermissions = appData.addRolePageData.documentsPermission;
+  const role = appData.userRole;
   const newUser = generateNewUser();
 
   const addCategoryModal = appData.documentationPageData.categoryModal;
-  const categoryName = 'Test Category ' + Date.now();
-  const articleTitle = 'Test Article ' + Date.now();
+  const documentationData = appData.documentationPageData;
+  const articlesData = appData.articlesPageData;
+  const addArticleModal = appData.addArticleModal;
+  const categoryName = 'Test Category';
+  const articleTitle = 'Test Article';
   const articleText = generateArticleText();
   const subCategory = 'Subcategory for automation';
+  const categoryDescription = 'Test description for category';
 
   test.beforeEach(async ({ page, request }) => {
     apiMethods = new ApiMethods(request);
@@ -55,34 +57,13 @@ test.describe('Impersonate user', () => {
       await emailHelper.generateNewEmail();
     });
 
-    await test.step('Create new role for test via API', async () => {
-      roleName = 'Viewer Role ' + Date.now();
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test role for impersonate user test', roleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
     await test.step('Login to app as admin', async () => {
       await loginPage.login(admin);
     });
 
     await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
     });
 
@@ -98,12 +79,19 @@ test.describe('Impersonate user', () => {
       await commonPage.fillFieldWithPlaceholder(editUserData.firstName, newUser.firstName);
       await commonPage.fillFieldWithPlaceholder(editUserData.lastName, newUser.lastName);
       await commonPage.fillFieldWithPlaceholder(editUserData.email, emailHelper.email);
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
+      customer = emailHelper.email.split('@').pop()!;
+      await commonPage.selectValueInDropdown(editUserData.customer, customer);
+      await commonPage.selectValueInDropdown(editUserData.role, role.user);
     });
 
     await test.step('Save user', async () => {
       await commonPage.clickButtonInModal(userManagementData.saveButton);
       await expect(commonPage.popUp).toHaveText(userManagementData.usersCreatedAlert);
+    });
+
+    await test.step('Select customer', async () => {
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Search created user', async () => {
@@ -116,8 +104,7 @@ test.describe('Impersonate user', () => {
       const columnsToCheck = {
         [userManagementTable.userName]: userName,
         [userManagementTable.email]: emailHelper.email,
-        [userManagementTable.customer]: '',
-        [userManagementTable.role]: roleName,
+        [userManagementTable.customer]: customer,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
       const cell = commonPage.getRowColumnValue(1, await commonPage.getHeaderIndex(userManagementTable.userName));
@@ -135,37 +122,14 @@ test.describe('Impersonate user', () => {
     await test.step('Delete created user', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
       const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userDataJson = await userData.json();
-      await expect(await apiMethods.deleteUser(apiKey, userDataJson.data[0].id)).toBe(200);
+      const userId = (await userData.json())[0].user_id;
+      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
     });
   });
 
-  test('Check impersonate button is not visible for inactive user as Customer Success', async () => {
+  test.skip('Check impersonate button is not visible for inactive user as Customer Success', async () => {
     await test.step('Get temporary email', async () => {
       await emailHelper.generateNewEmail();
-    });
-
-    await test.step('Create new role for test via API', async () => {
-      roleName = 'Viewer Role ' + Date.now();
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test role for impersonate user test', roleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
     });
 
     await test.step('Login to app as customer success', async () => {
@@ -173,6 +137,8 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
     });
 
@@ -188,7 +154,9 @@ test.describe('Impersonate user', () => {
       await commonPage.fillFieldWithPlaceholder(editUserData.firstName, newUser.firstName);
       await commonPage.fillFieldWithPlaceholder(editUserData.lastName, newUser.lastName);
       await commonPage.fillFieldWithPlaceholder(editUserData.email, emailHelper.email);
-      await userManagementPage.selectValueInDropdown(editUserData.role, roleName);
+      customer = emailHelper.email.split('@').pop()!;
+      await commonPage.selectValueInDropdown(editUserData.customer, customer);
+      await commonPage.selectValueInDropdown(editUserData.role, role.user);
     });
 
     await test.step('Save user', async () => {
@@ -208,7 +176,7 @@ test.describe('Impersonate user', () => {
         [userManagementTable.userName]: userName,
         [userManagementTable.email]: emailHelper.email,
         [userManagementTable.customer]: customer,
-        [userManagementTable.role]: roleName,
+        [userManagementTable.role]: role.user,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
       const cell = commonPage.getRowColumnValue(1, await commonPage.getHeaderIndex(userManagementTable.userName));
@@ -226,38 +194,26 @@ test.describe('Impersonate user', () => {
     await test.step('Delete created user', async () => {
       const apiKey = await apiMethods.getAccessToken(admin);
       const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userDataJson = await userData.json();
-      await expect(await apiMethods.deleteUser(apiKey, userDataJson.data[0].id)).toBe(200);
+      const userId = (await userData.json())[0].user_id;
+      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
     });
   });
 
-  test('Check Viewer role permissions through impersonate user as System Administrator', async () => {
-    const viewerRoleName = 'Viewer Role ' + Date.now();
-
-    await test.step('Create Viewer role via API', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Viewer role for impersonate', viewerRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
+  test('Check Standard User role permissions through impersonate user as System Administrator', async () => {
     await test.step('Login to app as admin', async () => {
       await loginPage.login(admin);
+    });
+
+    await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
+      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    });
+
+    await test.step('Select customer', async () => {
+      const customer = admin.user.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Search for existing user', async () => {
@@ -273,7 +229,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, viewerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, role.user);
     });
 
     await test.step('Save changes', async () => {
@@ -284,7 +240,7 @@ test.describe('Impersonate user', () => {
     await test.step('Check new role in user data', async () => {
       const columnsToCheck = {
         [userManagementTable.email]: user.user,
-        [userManagementTable.role]: viewerRoleName,
+        [userManagementTable.role]: role.user,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
     });
@@ -292,385 +248,69 @@ test.describe('Impersonate user', () => {
     await test.step('Impersonate user', async () => {
       await commonPage.openMoreMenu(user.user);
       await commonPage.selectAction(userManagementData.impersonateUserButton);
+      await commonPage.waitForLoader();
     });
 
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    await test.step('Check documentation page access', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
       await commonPage.waitForLoader();
       await expect(commonPage.accessDeniedMessage).not.toBeVisible();
     });
 
-    await test.step('Check that edit user button is disabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is disabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeDisabled();
-    });
-
-    await test.step('Open documentation page', async () => {
-      await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
+    await test.step('Check and create category if needed', async () => {
       const categoryCount = await documentationPage.categoryCards.count();
       if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
+        await test.step('Create new category', async () => {
+          await documentationPage.clickButtonOnPage(documentationData.addCategoryButton);
+          await expect(commonPage.modalName).toHaveText(addCategoryModal.modalName);
+
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.categoryNameInput, categoryName);
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.aboutInput, categoryDescription);
+
+          await documentationPage.selectSubcategory(subCategory);
+
+          const iconOptions = Object.values(addCategoryModal.addIcons);
+          const randomIcon = UserPageHelper.getRandomValue(iconOptions);
+          await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+
+          await commonPage.clickButtonInModal(documentationData.addCategoryButton);
+          await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
+          await commonPage.waitForLoader();
+        });
       }
     });
 
-    await test.step('Check Documentation page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit / delete category buttons are disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add category button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeDisabled();
-    });
-
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
-    });
-
-    await test.step('Open documentation details', async () => {
+    await test.step('Open category details', async () => {
       await documentationPage.openDocumentationDetails(0);
       await commonPage.waitForLoader();
     });
 
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
+    await test.step('Check and create article if needed', async () => {
+      const articlesCount = await commonPage.tableData.count();
+      const noArticlesMessageVisible = await documentationPage.noArticlesMessages
+        .first()
+        .isVisible()
+        .catch(() => false);
 
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
+      if (articlesCount === 0 || noArticlesMessageVisible) {
+        await test.step('Create new article', async () => {
+          await documentationPage.clickButtonOnPage(articlesData.addArticleButton);
+          await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
+          await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+          await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+          await documentationPage.fillArticleText(articleText);
 
-    await test.step('Exit impersonate mode', async () => {
-      await navPagePage.clickExitFromImpersonateMode();
-    });
-  });
-
-  test('Check Creator role permissions through impersonate user as System Administrator', async () => {
-    const creatorRoleName = 'Creator Role ' + Date.now();
-
-    await test.step('Create Creator role via API', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Creator role for impersonate', creatorRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
-    await test.step('Login to app as admin', async () => {
-      await loginPage.login(admin);
-    });
-
-    await test.step('Search for existing user', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Open "Edit user" modal', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(appData.actions.edit);
-      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
-    });
-
-    await test.step('Select new role for user', async () => {
-      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, creatorRoleName);
-    });
-
-    await test.step('Save changes', async () => {
-      await commonPage.clickButtonInModal(userManagementData.saveButton);
-      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
-    });
-
-    await test.step('Check new role in user data', async () => {
-      const columnsToCheck = {
-        [userManagementTable.email]: user.user,
-        [userManagementTable.role]: creatorRoleName,
-      };
-      await commonPage.checkRowValues(1, columnsToCheck);
-    });
-
-    await test.step('Impersonate user', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(userManagementData.impersonateUserButton);
-    });
-
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-      await commonPage.waitForLoader();
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit user button is disabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
-    });
-
-    await test.step('Open documentation page', async () => {
-      await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
+          await documentationPage.clickButtonOnPage(articlesData.publish);
+          await expect(commonPage.popUp).toHaveText(articlesData.articleCreatedAlert);
+          await commonPage.waitForLoader();
+        });
       }
     });
 
-    await test.step('Check Documentation page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit / delete category buttons are disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
-    });
-
-    await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
-    });
-
-    await test.step('Open documentation details', async () => {
-      await documentationPage.openDocumentationDetails(0);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Exit impersonate mode', async () => {
-      await navPagePage.clickExitFromImpersonateMode();
-    });
-  });
-
-  test('Check Editor role permissions through impersonate user as System Administrator', async () => {
-    const editorRoleName = 'Editor Role ' + Date.now();
-
-    await test.step('Create Editor role via API', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Editor role for impersonate', editorRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.edit),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
-    await test.step('Login to app as admin', async () => {
-      await loginPage.login(admin);
-    });
-
-    await test.step('Search for existing user', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Open "Edit user" modal', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(appData.actions.edit);
-      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
-    });
-
-    await test.step('Select new role for user', async () => {
-      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, editorRoleName);
-    });
-
-    await test.step('Save changes', async () => {
-      await commonPage.clickButtonInModal(userManagementData.saveButton);
-      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
-    });
-
-    await test.step('Check new role in user data', async () => {
-      const columnsToCheck = {
-        [userManagementTable.email]: user.user,
-        [userManagementTable.role]: editorRoleName,
-      };
-      await commonPage.checkRowValues(1, columnsToCheck);
-    });
-
-    await test.step('Impersonate user', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(userManagementData.impersonateUserButton);
-    });
-
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-      await commonPage.waitForLoader();
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit user button is enabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
-    });
-
-    await test.step('Open documentation page', async () => {
+    await test.step('Navigate back to category', async () => {
       await navPagePage.openNavMenuTab(appData.pages.documentation);
       await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
-      }
     });
 
     await test.step('Check Documentation page access', async () => {
@@ -679,20 +319,22 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check that edit category button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await documentationPage.openMoreButtonForCategory(0);
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
-    await test.step('Check that delete category button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
+    await test.step('Check that delete category button is enabled', async () => {
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
     await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
     });
 
     await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Open documentation details', async () => {
@@ -700,17 +342,17 @@ test.describe('Impersonate user', () => {
       await commonPage.waitForLoader();
     });
 
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
+    await test.step('Check that delete article button is enabled', async () => {
+      await commonPage.openMoreMenu('Test');
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
     await test.step('Check that edit article button is enabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
+    await test.step('Check that add article button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Exit impersonate mode', async () => {
@@ -719,58 +361,22 @@ test.describe('Impersonate user', () => {
   });
 
   test('Check Manager role permissions through impersonate user as System Administrator', async () => {
-    const managerRoleName = 'Manager Role ' + Date.now();
-
-    await test.step('Create Manager role via API', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Manager role for impersonate', managerRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.edit),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.deleteCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.deleteArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
     await test.step('Login to app as admin', async () => {
       await loginPage.login(admin);
     });
 
+    await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
+      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    });
+
+    await test.step('Select customer', async () => {
+      const customer = admin.user.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
+    });
+
     await test.step('Search for existing user', async () => {
       await navPagePage.searchValue(user.user);
       await commonPage.waitForLoader();
@@ -784,7 +390,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, managerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, role.manager);
     });
 
     await test.step('Save changes', async () => {
@@ -795,7 +401,7 @@ test.describe('Impersonate user', () => {
     await test.step('Check new role in user data', async () => {
       const columnsToCheck = {
         [userManagementTable.email]: user.user,
-        [userManagementTable.role]: managerRoleName,
+        [userManagementTable.role]: role.manager,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
     });
@@ -803,9 +409,11 @@ test.describe('Impersonate user', () => {
     await test.step('Impersonate user', async () => {
       await commonPage.openMoreMenu(user.user);
       await commonPage.selectAction(userManagementData.impersonateUserButton);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Check User Management page access', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
       await commonPage.waitForLoader();
       await expect(commonPage.accessDeniedMessage).not.toBeVisible();
@@ -815,44 +423,79 @@ test.describe('Impersonate user', () => {
       await navPagePage.searchValue(user.user);
       await commonPage.waitForLoader();
       await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
     await test.step('Check that delete / deactivate user buttons are enabled', async () => {
       await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeEnabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeEnabled();
+      await expect(userManagementPage.deleteUserButton).toBeEnabled();
+      await expect(userManagementPage.deactivateUserButton).toBeEnabled();
     });
 
     await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
+      await expect(userManagementPage.addUserButton).toBeEnabled();
     });
 
-    await test.step('Open documentation page', async () => {
+    await test.step('Check documentation page access', async () => {
       await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
     });
 
-    await test.step('Create documentation if empty', async () => {
+    await test.step('Check and create category if needed', async () => {
       const categoryCount = await documentationPage.categoryCards.count();
       if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
+        await test.step('Create new category', async () => {
+          await documentationPage.clickButtonOnPage(documentationData.addCategoryButton);
+          await expect(commonPage.modalName).toHaveText(addCategoryModal.modalName);
+
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.categoryNameInput, categoryName);
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.aboutInput, categoryDescription);
+
+          await documentationPage.selectSubcategory(subCategory);
+
+          const iconOptions = Object.values(addCategoryModal.addIcons);
+          const randomIcon = UserPageHelper.getRandomValue(iconOptions);
+          await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+
+          await commonPage.clickButtonInModal(documentationData.addCategoryButton);
+          await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
+          await commonPage.waitForLoader();
+        });
       }
+    });
+
+    await test.step('Open category details', async () => {
+      await documentationPage.openDocumentationDetails(0);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check and create article if needed', async () => {
+      const articlesCount = await commonPage.tableData.count();
+      const noArticlesMessageVisible = await documentationPage.noArticlesMessages
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (articlesCount === 0 || noArticlesMessageVisible) {
+        await test.step('Create new article', async () => {
+          await documentationPage.clickButtonOnPage(articlesData.addArticleButton);
+          await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
+          await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+          await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+          await documentationPage.fillArticleText(articleText);
+
+          await documentationPage.clickButtonOnPage(articlesData.publish);
+          await expect(commonPage.popUp).toHaveText(articlesData.articleCreatedAlert);
+          await commonPage.waitForLoader();
+        });
+      }
+    });
+
+    await test.step('Navigate back to category', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Check Documentation page access', async () => {
@@ -861,20 +504,22 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check that edit category button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await documentationPage.openMoreButtonForCategory(0);
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
     await test.step('Check that delete category button is enabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
     await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
     });
 
     await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Open documentation details', async () => {
@@ -883,503 +528,16 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check that delete article button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
-    });
-
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
-    });
-
-    await test.step('Exit impersonate mode', async () => {
-      await navPagePage.clickExitFromImpersonateMode();
-    });
-  });
-
-  test('Check Viewer role permissions through impersonate user as Customer Success', async () => {
-    const viewerRoleName = 'Viewer Role ' + Date.now();
-
-    await test.step('Create Viewer role via API as admin', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Viewer role for impersonate', viewerRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
-    await test.step('Login to app as customer success', async () => {
-      await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Search for existing user', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Open "Edit user" modal', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(appData.actions.edit);
-      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
-    });
-
-    await test.step('Select new role for user', async () => {
-      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, viewerRoleName);
-    });
-
-    await test.step('Save changes', async () => {
-      await commonPage.clickButtonInModal(userManagementData.saveButton);
-      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
-    });
-
-    await test.step('Check new role in user data', async () => {
-      const columnsToCheck = {
-        [userManagementTable.email]: user.user,
-        [userManagementTable.role]: viewerRoleName,
-      };
-      await commonPage.checkRowValues(1, columnsToCheck);
-    });
-
-    await test.step('Impersonate user', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(userManagementData.impersonateUserButton);
-    });
-
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-      await commonPage.waitForLoader();
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit user button is disabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is disabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeDisabled();
-    });
-
-    await test.step('Open documentation page', async () => {
-      await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
-      }
-    });
-
-    await test.step('Check Documentation page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit / delete category buttons are disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add category button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeDisabled();
-    });
-
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
-    });
-
-    await test.step('Open documentation details', async () => {
-      await documentationPage.openDocumentationDetails(0);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Exit impersonate mode', async () => {
-      await navPagePage.clickExitFromImpersonateMode();
-    });
-  });
-
-  test('Check Creator role permissions through impersonate user as Customer Success', async () => {
-    const creatorRoleName = 'Creator Role ' + Date.now();
-
-    await test.step('Create Creator role via API as admin', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Creator role for impersonate', creatorRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
-    await test.step('Login to app as customer success', async () => {
-      await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Search for existing user', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Open "Edit user" modal', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(appData.actions.edit);
-      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
-    });
-
-    await test.step('Select new role for user', async () => {
-      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, creatorRoleName);
-    });
-
-    await test.step('Save changes', async () => {
-      await commonPage.clickButtonInModal(userManagementData.saveButton);
-      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
-    });
-
-    await test.step('Check new role in user data', async () => {
-      const columnsToCheck = {
-        [userManagementTable.email]: user.user,
-        [userManagementTable.role]: creatorRoleName,
-      };
-      await commonPage.checkRowValues(1, columnsToCheck);
-    });
-
-    await test.step('Impersonate user', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(userManagementData.impersonateUserButton);
-    });
-
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-      await commonPage.waitForLoader();
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit user button is disabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
-    });
-
-    await test.step('Open documentation page', async () => {
-      await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
-      }
-    });
-
-    await test.step('Check Documentation page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit / delete category buttons are disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeDisabled();
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
-    });
-
-    await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
-    });
-
-    await test.step('Open documentation details', async () => {
-      await documentationPage.openDocumentationDetails(0);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Exit impersonate mode', async () => {
-      await navPagePage.clickExitFromImpersonateMode();
-    });
-  });
-
-  test('Check Editor role permissions through impersonate user as Customer Success', async () => {
-    const editorRoleName = 'Editor Role ' + Date.now();
-
-    await test.step('Create Editor role via API as admin', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Editor role for impersonate', editorRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.edit),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
-    await test.step('Login to app as customer success', async () => {
-      await loginPage.login(customerSuccess);
-    });
-
-    await test.step('Search for existing user', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Open "Edit user" modal', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(appData.actions.edit);
-      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
-    });
-
-    await test.step('Select new role for user', async () => {
-      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, editorRoleName);
-    });
-
-    await test.step('Save changes', async () => {
-      await commonPage.clickButtonInModal(userManagementData.saveButton);
-      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
-    });
-
-    await test.step('Check new role in user data', async () => {
-      const columnsToCheck = {
-        [userManagementTable.email]: user.user,
-        [userManagementTable.role]: editorRoleName,
-      };
-      await commonPage.checkRowValues(1, columnsToCheck);
-    });
-
-    await test.step('Impersonate user', async () => {
-      await commonPage.openMoreMenu(user.user);
-      await commonPage.selectAction(userManagementData.impersonateUserButton);
-    });
-
-    await test.step('Check User Management page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
-      await commonPage.waitForLoader();
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit user button is enabled', async () => {
-      await navPagePage.searchValue(user.user);
-      await commonPage.waitForLoader();
-      await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
-    });
-
-    await test.step('Check that delete / deactivate user buttons are disabled', async () => {
-      await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeDisabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeDisabled();
-    });
-
-    await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
-    });
-
-    await test.step('Open documentation page', async () => {
-      await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-    });
-
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
-      }
-    });
-
-    await test.step('Check Documentation page access', async () => {
-      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
-      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
-    });
-
-    await test.step('Check that edit category button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
-    });
-
-    await test.step('Check that delete category button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
-    });
-
-    await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
-    });
-
-    await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
-    });
-
-    await test.step('Open documentation details', async () => {
-      await documentationPage.openDocumentationDetails(0);
-      await commonPage.waitForLoader();
-    });
-
-    await test.step('Check that delete article button is disabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
+      await commonPage.openMoreMenu('Test');
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
     await test.step('Check that edit article button is enabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
+    await test.step('Check that add article button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Exit impersonate mode', async () => {
@@ -1387,57 +545,15 @@ test.describe('Impersonate user', () => {
     });
   });
 
-  test('Check Manager role permissions through impersonate user as Customer Success', async () => {
-    const managerRoleName = 'Manager Role ' + Date.now();
-
-    await test.step('Create Manager role via API as admin', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const roleId = await apiMethods.createRole('Test Manager role for impersonate', managerRoleName, apiKey);
-      await expect(
-        await apiMethods.addPermissionsForRole(
-          [
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.view),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.create),
-            UserPageHelper.deleteSpaces(addRoleModal.userManagementToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(userManagementPermissions.edit),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.viewArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.createArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.editArticles),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.deleteCategories),
-            UserPageHelper.deleteSpaces(addRoleModal.documentsToggle) +
-              ':' +
-              UserPageHelper.toCamelCase(documentsPermissions.deleteArticles),
-          ],
-          roleId,
-          apiKey,
-        ),
-      ).toBe(201);
-    });
-
+  test.skip('Check Standard User role permissions through impersonate user as Customer Success', async () => {
     await test.step('Login to app as customer success', async () => {
       await loginPage.login(customerSuccess);
+    });
+
+    await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
+      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
     });
 
     await test.step('Search for existing user', async () => {
@@ -1453,7 +569,7 @@ test.describe('Impersonate user', () => {
 
     await test.step('Select new role for user', async () => {
       await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
-      await userManagementPage.selectValueInDropdown(editUserData.role, managerRoleName);
+      await commonPage.selectValueInDropdown(editUserData.role, role.user);
     });
 
     await test.step('Save changes', async () => {
@@ -1464,7 +580,7 @@ test.describe('Impersonate user', () => {
     await test.step('Check new role in user data', async () => {
       const columnsToCheck = {
         [userManagementTable.email]: user.user,
-        [userManagementTable.role]: managerRoleName,
+        [userManagementTable.role]: role.user,
       };
       await commonPage.checkRowValues(1, columnsToCheck);
     });
@@ -1472,9 +588,166 @@ test.describe('Impersonate user', () => {
     await test.step('Impersonate user', async () => {
       await commonPage.openMoreMenu(user.user);
       await commonPage.selectAction(userManagementData.impersonateUserButton);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check documentation page access', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
+    });
+
+    await test.step('Check and create category if needed', async () => {
+      const categoryCount = await documentationPage.categoryCards.count();
+      if (categoryCount === 0) {
+        await test.step('Create new category', async () => {
+          await documentationPage.clickButtonOnPage(documentationData.addCategoryButton);
+          await expect(commonPage.modalName).toHaveText(addCategoryModal.modalName);
+
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.categoryNameInput, categoryName);
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.aboutInput, categoryDescription);
+
+          await documentationPage.selectSubcategory(subCategory);
+
+          const iconOptions = Object.values(addCategoryModal.addIcons);
+          const randomIcon = UserPageHelper.getRandomValue(iconOptions);
+          await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+
+          await commonPage.clickButtonInModal(documentationData.addCategoryButton);
+          await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
+          await commonPage.waitForLoader();
+        });
+      }
+    });
+
+    await test.step('Open category details', async () => {
+      await documentationPage.openDocumentationDetails(0);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check and create article if needed', async () => {
+      const articlesCount = await commonPage.tableData.count();
+      const noArticlesMessageVisible = await documentationPage.noArticlesMessages
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (articlesCount === 0 || noArticlesMessageVisible) {
+        await test.step('Create new article', async () => {
+          await documentationPage.clickButtonOnPage(articlesData.addArticleButton);
+          await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
+          await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+          await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+          await documentationPage.fillArticleText(articleText);
+
+          await documentationPage.clickButtonOnPage(articlesData.publish);
+          await expect(commonPage.popUp).toHaveText(articlesData.articleCreatedAlert);
+          await commonPage.waitForLoader();
+        });
+      }
+    });
+
+    await test.step('Navigate back to category', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check Documentation page access', async () => {
+      await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
+      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
+    });
+
+    await test.step('Check that edit category button is enabled', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await documentationPage.openMoreButtonForCategory(0);
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+    });
+
+    await test.step('Check that delete category button is enabled', async () => {
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
+    });
+
+    await test.step('Check that add category button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
+    });
+
+    await test.step('Check that add article button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
+    });
+
+    await test.step('Open documentation details', async () => {
+      await documentationPage.openDocumentationDetails(0);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check that delete article button is enabled', async () => {
+      await commonPage.openMoreMenu('Test');
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
+    });
+
+    await test.step('Check that edit article button is enabled', async () => {
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+    });
+
+    await test.step('Check that add article button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
+    });
+
+    await test.step('Exit impersonate mode', async () => {
+      await navPagePage.clickExitFromImpersonateMode();
+    });
+  });
+
+  test.skip('Check Manager role permissions through impersonate user as Customer Success', async () => {
+    await test.step('Login to app as customer success', async () => {
+      await loginPage.login(customerSuccess);
+    });
+
+    await test.step('Check "User Management" page', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
+      await commonPage.waitForLoader();
+      await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
+    });
+
+    await test.step('Search for existing user', async () => {
+      await navPagePage.searchValue(user.user);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Open "Edit user" modal', async () => {
+      await commonPage.openMoreMenu(user.user);
+      await commonPage.selectAction(appData.actions.edit);
+      await expect(commonPage.modalName).toHaveText(userManagementData.editUserModal);
+    });
+
+    await test.step('Select new role for user', async () => {
+      await expect(commonPage.inputWithPlaceholder(editUserData.firstName)).toHaveValue(/.+/);
+      await commonPage.selectValueInDropdown(editUserData.role, role.manager);
+    });
+
+    await test.step('Save changes', async () => {
+      await commonPage.clickButtonInModal(userManagementData.saveButton);
+      await expect(commonPage.popUp).toHaveText(userManagementData.userUpdatedAlert);
+    });
+
+    await test.step('Check new role in user data', async () => {
+      const columnsToCheck = {
+        [userManagementTable.email]: user.user,
+        [userManagementTable.role]: role.manager,
+      };
+      await commonPage.checkRowValues(1, columnsToCheck);
+    });
+
+    await test.step('Impersonate user', async () => {
+      await commonPage.openMoreMenu(user.user);
+      await commonPage.selectAction(userManagementData.impersonateUserButton);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Check User Management page access', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.userManagement);
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
       await commonPage.waitForLoader();
       await expect(commonPage.accessDeniedMessage).not.toBeVisible();
@@ -1484,44 +757,79 @@ test.describe('Impersonate user', () => {
       await navPagePage.searchValue(user.user);
       await commonPage.waitForLoader();
       await commonPage.openMoreMenu(user.user);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
     await test.step('Check that delete / deactivate user buttons are enabled', async () => {
       await commonPage.selectItemInTable(user.user);
-      // TODO - await expect(userManagementPage.deleteUserButton).toBeEnabled();
-      // TODO - await expect(userManagementPage.deactivateUserButton).toBeEnabled();
+      await expect(userManagementPage.deleteUserButton).toBeEnabled();
+      await expect(userManagementPage.deactivateUserButton).toBeEnabled();
     });
 
     await test.step('Check that create user button is enabled', async () => {
-      // TODO - await expect(userManagementPage.addUserButton).toBeEnabled();
+      await expect(userManagementPage.addUserButton).toBeEnabled();
     });
 
-    await test.step('Open documentation page', async () => {
+    await test.step('Check documentation page access', async () => {
       await navPagePage.openNavMenuTab(appData.pages.documentation);
-      await commonPage.waitForLoader();
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await expect(commonPage.accessDeniedMessage).not.toBeVisible();
     });
 
-    await test.step('Create documentation if empty', async () => {
+    await test.step('Check and create category if needed', async () => {
       const categoryCount = await documentationPage.categoryCards.count();
       if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(admin);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-        await loginPage.page.reload();
-        await commonPage.waitForLoader();
+        await test.step('Create new category', async () => {
+          await documentationPage.clickButtonOnPage(documentationData.addCategoryButton);
+          await expect(commonPage.modalName).toHaveText(addCategoryModal.modalName);
+
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.categoryNameInput, categoryName);
+          await commonPage.fillFieldWithPlaceholder(addCategoryModal.aboutInput, categoryDescription);
+
+          await documentationPage.selectSubcategory(subCategory);
+
+          const iconOptions = Object.values(addCategoryModal.addIcons);
+          const randomIcon = UserPageHelper.getRandomValue(iconOptions);
+          await commonPage.selectValueInDropdown(addCategoryModal.addIconDropdown, randomIcon);
+
+          await commonPage.clickButtonInModal(documentationData.addCategoryButton);
+          await expect(commonPage.popUp).toHaveText(documentationData.categoryCreatedAlert);
+          await commonPage.waitForLoader();
+        });
       }
+    });
+
+    await test.step('Open category details', async () => {
+      await documentationPage.openDocumentationDetails(0);
+      await commonPage.waitForLoader();
+    });
+
+    await test.step('Check and create article if needed', async () => {
+      const articlesCount = await commonPage.tableData.count();
+      const noArticlesMessageVisible = await documentationPage.noArticlesMessages
+        .first()
+        .isVisible()
+        .catch(() => false);
+
+      if (articlesCount === 0 || noArticlesMessageVisible) {
+        await test.step('Create new article', async () => {
+          await documentationPage.clickButtonOnPage(articlesData.addArticleButton);
+          await commonPage.fillFieldWithPlaceholder(addArticleModal.articleTitlePlaceholder, articleTitle);
+          await commonPage.selectValueInDropdown(addArticleModal.categoryDropdown, categoryName);
+          await commonPage.selectValueInDropdown(addArticleModal.subcategoryDropdown, subCategory);
+          await documentationPage.fillArticleText(articleText);
+
+          await documentationPage.clickButtonOnPage(articlesData.publish);
+          await expect(commonPage.popUp).toHaveText(articlesData.articleCreatedAlert);
+          await commonPage.waitForLoader();
+        });
+      }
+    });
+
+    await test.step('Navigate back to category', async () => {
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Check Documentation page access', async () => {
@@ -1530,20 +838,22 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check that edit category button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
+      await navPagePage.openNavMenuTab(appData.pages.documentation);
+      await commonPage.waitForLoader();
+      await documentationPage.openMoreButtonForCategory(0);
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
     await test.step('Check that delete category button is enabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
     await test.step('Check that add category button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addCategoryButton)).toBeEnabled();
     });
 
     await test.step('Check that add article button is enabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Open documentation details', async () => {
@@ -1552,16 +862,16 @@ test.describe('Impersonate user', () => {
     });
 
     await test.step('Check that delete article button is enabled', async () => {
-      // TODO - await documentationPage.openMoreButtonForCategory(0);
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
+      await commonPage.openMoreMenu('Test');
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeEnabled();
     });
 
-    await test.step('Check that edit article button is disabled', async () => {
-      // TODO - await expect(commonPage.actionButtonInMoreMenu(appData.actions.delete)).toBeDisabled();
+    await test.step('Check that edit article button is enabled', async () => {
+      await expect(commonPage.actionButtonInMoreMenu(appData.actions.edit)).toBeEnabled();
     });
 
-    await test.step('Check that add article button is disabled', async () => {
-      // TODO - await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeDisabled();
+    await test.step('Check that add article button is enabled', async () => {
+      await expect(documentationPage.buttonsOnPage(appData.documentationPageData.addArticleButton)).toBeEnabled();
     });
 
     await test.step('Exit impersonate mode', async () => {

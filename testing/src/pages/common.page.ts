@@ -22,6 +22,10 @@ export class CommonPage {
   readonly checkboxButton: (user: string) => Locator;
   readonly selectAllItemsInTable: Locator;
   readonly breadcrumbItems: Locator;
+  readonly dropdownByLabel: (label: string) => Locator;
+  readonly dropdownOption: (option: string) => Locator;
+  readonly emptyTable: (text: string) => Locator;
+  readonly deleteAllButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -38,17 +42,30 @@ export class CommonPage {
     this.alert = (name: string) => page.getByRole('alert').getByText(name);
     this.modalName = page.locator('.MuiTypography-h3');
     this.inputWithPlaceholder = (name: string) => page.getByPlaceholder(name);
-    this.buttonsInModal = (name: string) => page.locator('.MuiModalDialog-variantOutlined [type="button"]').getByText(name);
+    this.buttonsInModal = (name: string) =>
+      page.locator('.MuiModalDialog-variantOutlined [type="button"]').getByText(name, { exact: true });
     this.popUp = page.locator('div[data-title]');
     this.accessDeniedMessage = page.locator('main .MuiTypography-body-md').getByText(appData.accessDeniedMessage);
     this.checkboxButton = (user: string) => this.tableData.filter({ hasText: user }).locator('[type="checkbox"]');
     this.selectAllItemsInTable = this.tableTitleColumns.first().locator('input[type="checkbox"]');
     this.breadcrumbItems = page.locator('.MuiBreadcrumbs-root .MuiBreadcrumbs-li');
+    this.dropdownByLabel = (label: string) =>
+      page
+        .locator('.MuiTypography-body-sm')
+        .filter({ has: page.locator(`text="${label}"`) })
+        .locator('+ div');
+    this.dropdownOption = (option: string) => page.getByRole('option', { name: option });
+    this.emptyTable = (text: string) => page.locator('.MuiTypography-colorNeutral').getByText(text);
+    this.deleteAllButton = page.locator('.MuiTypography-body-sm').locator('..').locator('button').first();
   }
 
   async waitForLoader(waitVisible: number = 10000, waitHidden: number = 30000): Promise<void> {
-    await this.loader.waitFor({ state: 'visible', timeout: waitVisible });
-    await this.loader.waitFor({ state: 'hidden', timeout: waitHidden });
+    try {
+      await this.loader.waitFor({ state: 'visible', timeout: waitVisible });
+      await this.loader.waitFor({ state: 'hidden', timeout: waitHidden });
+    } catch {
+      await this.page.waitForLoadState('networkidle', { timeout: 5000 });
+    }
   }
 
   async checkRowValues(rowIndex: number, data: Record<string, string | null | undefined>): Promise<void> {
@@ -149,5 +166,11 @@ export class CommonPage {
       }
     }
     return actualPath;
+  }
+
+  async selectValueInDropdown(dropdownLabel: string, option: string): Promise<void> {
+    await this.dropdownByLabel(dropdownLabel).click();
+    await this.dropdownOption(option).scrollIntoViewIfNeeded();
+    await this.dropdownOption(option).click();
   }
 }

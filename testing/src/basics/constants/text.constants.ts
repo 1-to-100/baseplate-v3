@@ -11,19 +11,31 @@ export const appData: AppData = {
     confirmEmailModal: 'Confirm your email',
     profileUpdateAlert: 'Password and profile updated successfully. Please sign in again.',
     setNewPasswordModal: 'Set new password',
+    resetPassword: 'Reset Password',
+    sendRecoveryLink: 'Send Recovery Link',
+    recoveryLinkSent: 'Recovery link sent successfully.',
+    submitButton: 'Submit',
+    checkbox: 'Checkbox',
   },
   pages: {
     userManagement: 'User Management',
     documentation: 'Documentation',
     roleSettings: 'Role Settings',
     customerManagement: 'Customer Management',
-    systemUsers: 'System Users Management',
+    systemUsers: 'System Users',
+    notificationManagement: 'Notification Management',
   },
   userManagementTable: {
     userName: 'User name',
     email: 'Email',
     customer: 'Customer',
     role: 'Role',
+  },
+  userRole: {
+    user: 'Standard User',
+    manager: 'Manager',
+    customer: 'Customer Success',
+    administrator: 'System Administrator',
   },
   customerManagementTable: {
     customer: 'Customer',
@@ -43,6 +55,7 @@ export const appData: AppData = {
   emailSubject: {
     completeRegistration: 'Confirm Your Signup',
     invitation: 'You have been invited',
+    passwordReset: 'Password Reset',
   },
   messages: {
     emptyTable: 'No items found',
@@ -92,6 +105,7 @@ export const appData: AppData = {
   actions: {
     openDetail: 'Open detail',
     edit: 'Edit',
+    send: 'Send',
     delete: 'Delete',
   },
   userManagementPageData: {
@@ -128,7 +142,7 @@ export const appData: AppData = {
       newSubcategoryInput: 'Enter new subcategory',
       addIcons: {
         star: 'Star',
-        rocketLaunch: 'RocketLaunch',
+        rocketLaunch: 'Rocket',
         api: 'Api',
         code: 'Code',
         settings: 'Settings',
@@ -180,5 +194,102 @@ export const appData: AppData = {
     permissionRequired: 'At least one module must have permissions enabled and selected',
     selectedPermissionRequired: 'Modules with enabled permissions must have at least one permission selected',
     roleNameLength: 'Role name must be shorter than or equal to 96 characters',
+  },
+  notificationManagementPageData: {
+    filterButton: 'Filter',
+    notificationHistory: 'Notification history',
+    addNotification: 'Add notification',
+    editNotification: 'Edit notification',
+    notificationDetails: 'Notification Details',
+    notificationTypes: {
+      inApp: 'In-App',
+      email: 'Email',
+    },
+    notificationChannels: {
+      warning: 'warning',
+      alert: 'alert',
+      info: 'info',
+      article: 'article',
+    },
+    addNotificationModal: {
+      typeDropdown: 'Type',
+      channelDropdown: 'Channel',
+      enterTitleField: 'Enter title',
+      saveButton: 'Save',
+    },
+    notificationDeleteButton: 'Delete permanently',
+    notificationAddedAlert: 'Notification created successfully.',
+    notificationUpdatedAlert: 'Notification updated successfully.',
+    notificationDeletedAlert: 'Notifications has been deleted successfully',
+    notificationSentAlert: 'Notifications have been sent successfully.',
+    notificationTable: {
+      title: 'Title',
+      message: 'Message',
+      type: 'Type',
+      channel: 'Channel',
+    },
+    sendNotificationsModal: {
+      modalTitle: 'Send notifications',
+      sendToDropdown: 'Send to',
+      selectRecipientsDropdown: 'Select recipients',
+      sendToOptions: {
+        users: 'Users',
+        customers: 'Customers',
+      },
+    },
+    validationErrors: {
+      isRequired: ' is required',
+    },
+    notificationHistoryTable: {
+      date: 'Date',
+      user: 'User',
+      customer: 'Customer',
+      type: 'Type',
+      channel: 'Channel',
+      message: 'Message',
+    },
+    filterButtons: {
+      filter: 'Filter',
+      apply: 'Apply',
+    },
+  },
+  systemUsersPageData: {
+    pageTitle: 'System Users Management',
+    addSystemUser: 'Add system user',
+    systemUsersTable: {
+      userName: 'User name',
+      email: 'Email',
+      customer: 'Customer',
+      systemRole: 'System role',
+    },
+    addSystemUserModal: {
+      firstName: 'Enter first name',
+      lastName: 'Enter last name',
+      email: 'Enter email',
+      customer: 'Customer',
+      systemRole: 'System Role',
+      saveButton: 'Save',
+    },
+    systemRoles: {
+      customerSuccess: 'Customer Success',
+      systemAdministrator: 'System Administrator',
+    },
+    userCreatedAlert: 'User created successfully.',
+    userUpdatedAlert: 'User updated successfully.',
+  },
+  customerManagementPageData: {
+    pageTitle: 'Customer Management',
+    addCustomer: 'Add customer',
+    addCustomerModal: {
+      customerName: 'Enter customer name',
+      customerAdministrator: 'Customer administrator',
+      email: 'Enter email',
+      subscription: 'Subscription',
+      customerSuccessManager: 'Customer Success Manager',
+    },
+    subscriptions: {
+      basic: 'Basic',
+    },
+    customerCreatedAlert: 'Customer created successfully.',
   },
 };
