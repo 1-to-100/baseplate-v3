@@ -8,27 +8,22 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import ModalClose from "@mui/joy/ModalClose";
 import Typography from "@mui/joy/Typography";
 import Stack from "@mui/joy/Stack";
-import Input from "@mui/joy/Input";
-import Autocomplete from "@mui/joy/Autocomplete";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import IconButton from "@mui/joy/IconButton";
 import Avatar from "@mui/joy/Avatar";
 import Switch from "@mui/joy/Switch";
-import FormHelperText from "@mui/joy/FormHelperText";
 import { UploadSimple as UploadIcon } from "@phosphor-icons/react/dist/ssr/UploadSimple";
 import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Box } from "@mui/joy";
 import { useColorScheme } from "@mui/joy/styles";
 import { createUser, updateUser, getUserById } from "../../../lib/api/users";
-import { getRolesList } from "../../../lib/api/roles";
+import { getRoles } from "../../../lib/api/roles";
 import { getCustomers } from "../../../lib/api/customers";
 import { getManagers } from "../../../lib/api/managers";
 import { getTeams, getUserTeams, addTeamMember, removeTeamMember } from "../../../lib/api/teams";
 import { toast } from "@/components/core/toaster";
 import { useUserInfo } from "@/hooks/use-user-info";
-import { isSystemAdministrator } from "@/lib/user-utils";
+import { isSystemAdministrator, SYSTEM_ROLES } from "@/lib/user-utils";
 import type { TeamMemberWithRelations } from "@/types/database";
 import { FirstNameField } from "./user-form-fields/FirstNameField";
 import { LastNameField } from "./user-form-fields/LastNameField";
@@ -85,14 +80,20 @@ export default function AddEditUser({
   const isLightTheme = colorScheme === "light";
   const queryClient = useQueryClient();
 
-  const { data: roles, isLoading: isRolesLoading } = useQuery({
+  const { userInfo } = useUserInfo();
+  
+  const { data: roles, isLoading: isRolesLoading, error: rolesError } = useQuery({
     queryKey: ["roles"],
-    queryFn: () => getRolesList(),
+    queryFn: () => getRoles(),
+    enabled: open, // Only fetch when modal is open
+    refetchOnMount: true, // Always refetch when modal opens to get fresh data
   });
 
   const { data: customers, isLoading: isCustomersLoading } = useQuery({
     queryKey: ["customers"],
     queryFn: getCustomers,
+    enabled: open, // Only fetch when modal is open
+    refetchOnMount: true, // Always refetch when modal opens to get fresh data
   });
 
   const { data: managers, isLoading: isManagersLoading } = useQuery({
@@ -103,10 +104,9 @@ export default function AddEditUser({
   const { data: userData, isLoading: isUserLoading } = useQuery({
     queryKey: ["user", userId],
     queryFn: () => getUserById(userId!),
-    enabled: !!userId && open,
+    enabled: !!userId && open && !!userInfo,
   });
 
-  const { userInfo } = useUserInfo();
   const isCurrentUserSystemAdmin = useMemo(() => isSystemAdministrator(userInfo), [userInfo]);
 
   // Get customer ID from customer name
@@ -155,7 +155,7 @@ export default function AddEditUser({
   const roleOptions = useMemo(() => {
     // Only show Standard User and Manager roles
     const standardRoles = roles?.filter(
-      (role) => role.name === "standard_user" || role.name === "manager"
+      (role) => role.name === SYSTEM_ROLES.STANDARD_USER || role.name === SYSTEM_ROLES.MANAGER
     );
     return standardRoles?.map((role) => role.display_name).sort() || [];
   }, [roles]);
@@ -490,7 +490,7 @@ export default function AddEditUser({
   const getRoleId = useCallback((roleName: string): string | undefined => {
     if (!roles) return undefined;
     const role = roles.find((r) => r.display_name === roleName);
-    return role?.role_id;
+    return role?.id;
   }, [roles]);
 
   const handleSave = useCallback(async () => {
@@ -764,56 +764,6 @@ export default function AddEditUser({
               disabled={!customerId || isTeamsLoading}
               isLoading={isTeamsLoading}
             />
-            {/* <Stack sx={{ flex: 1 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography
-                  level="body-sm"
-                  sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: "var(--joy-palette-text-primary)",
-                    mb: 0.5,
-                    fontWeight: 500,
-                  }}
-                >
-                  Manager
-                </Typography>
-                <Tooltip
-                  title="You can't select a manager if your role is set as Manager"
-                  placement="top"
-                  sx={{
-                    background: "#DAD8FD",
-                    color: "#3D37DD",
-                    width: { xs: "180px", sm: "206px" },
-                    fontSize: { xs: "10px", sm: "12px" },
-                  }}
-                >
-                  <Box sx={{ background: "none", cursor: "pointer" }}>
-                    <WarningCircle
-                      style={{ fontSize: "16px" }}
-                      color="#6B7280"
-                    />
-                  </Box>
-                </Tooltip>
-              </Box>
-              <Select
-                placeholder="Select manager"
-                value={formData.manager}
-                onChange={(e, newValue) =>
-                  handleInputChange("manager", newValue as string)
-                }
-                sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                }}
-              >
-                <Option value="">None</Option>
-                {managers?.map((manager) => (
-                  <Option key={manager.id} value={manager.id.toString()}>
-                    {manager.name}
-                  </Option>
-                ))}
-              </Select>
-            </Stack> */}
           </Stack>
 
           <Stack

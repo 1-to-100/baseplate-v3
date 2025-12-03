@@ -89,7 +89,7 @@ export default function Page(): React.JSX.Element {
     customerId: [],
     roleId: [],
   });
-  const { userInfo } = useUserInfo();
+  const { userInfo, isUserLoading } = useUserInfo();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [openInviteModal, setOpenInviteModal] = useState(false);
   const [addUserAnchorEl, setAddUserAnchorEl] = useState<null | HTMLElement>(
@@ -556,6 +556,22 @@ export default function Page(): React.JSX.Element {
     isCustomerSuccess(userInfo) ||
     isCustomerAdminOrManager(userInfo)
   );
+
+  // Wait for userInfo to load before checking access
+  if (isUserLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: { xs: "40vh", sm: "50vh" },
+        }}
+      >
+        <CircularProgress size="lg" />
+      </Box>
+    );
+  }
 
   if (error || !hasAccess) {
     const httpError = error as HttpError;

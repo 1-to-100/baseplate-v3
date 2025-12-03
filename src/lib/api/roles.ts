@@ -45,8 +45,10 @@ interface RoleWithRelations {
   export interface GetRolesParams {
     search?: string;
   }
+
+  export type RoleListingItem = TaxonomyItem & { display_name: string };
   
-  export async function getRoles(): Promise<TaxonomyItem[]> {
+  export async function getRoles(): Promise<RoleListingItem[]> {
     const supabase = createClient();
     
     const { data, error } = await supabase
@@ -58,7 +60,8 @@ interface RoleWithRelations {
     
     return (data || []).map((role: RoleData) => ({
       id: role.role_id,
-      name: role.display_name || role.name,
+      name: role.name,
+      display_name: role.display_name || role.name,
     }));
   }
 
