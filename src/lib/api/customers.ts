@@ -209,6 +209,22 @@ async function getCustomerAdminRoleId(supabase: ReturnType<typeof createClient>)
   return data?.role_id || null;
 }
 
+// Helper function to get standard user role ID
+async function getStandardUserRoleId(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('role_id')
+    .eq('name', SYSTEM_ROLES.STANDARD_USER)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Failed to find standard_user role:', error);
+    return null;
+  }
+  
+  return data?.role_id || null;
+}
+
 // Helper function to get domain from email
 function getDomainFromEmail(email: string): string {
   if (!email) return '';
@@ -755,11 +771,14 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
     
     ownerEmail = owner.email;
     
-    // Update old owner: set role_id to null
+    // Update old owner: set role_id to Standard user role
     if (customer.owner_id) {
+      const standardUserRoleId = await getStandardUserRoleId(supabase);
+      const updateData: { role_id: string | null } = { role_id: standardUserRoleId || null };
+      
       await supabase
         .from('users')
-        .update({ role_id: null })
+        .update(updateData)
         .eq('user_id', customer.owner_id)
         .is('deleted_at', null);
     }
