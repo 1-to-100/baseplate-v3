@@ -6,6 +6,7 @@ import "@/styles/global.css";
 import { config } from "@/config";
 import { applyDefaultSettings } from "@/lib/settings/apply-default-settings";
 import { getSettings as getPersistedSettings } from "@/lib/settings/get-settings";
+import type { Settings } from "@/types/settings";
 import { UserProvider } from "@/contexts/auth/user-context";
 import { ImpersonationProvider } from "@/contexts/impersonation-context";
 import { SettingsProvider } from "@/contexts/settings";
@@ -32,7 +33,16 @@ interface LayoutProps {
 export default async function Layout({
   children,
 }: LayoutProps): Promise<React.JSX.Element> {
-  const settings = applyDefaultSettings(await getPersistedSettings());
+  // During build time, cookies() is not available, so we use empty settings
+  // which will be replaced with defaults by applyDefaultSettings
+  let persistedSettings: Partial<Settings> = {};
+  try {
+    persistedSettings = await getPersistedSettings();
+  } catch (error) {
+    // During build time or when cookies are not available, use empty settings
+    // This is expected during static generation
+  }
+  const settings = applyDefaultSettings(persistedSettings);
 
   return (
     <html data-joy-color-scheme={settings.colorScheme} lang="en">
