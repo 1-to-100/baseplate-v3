@@ -1,10 +1,69 @@
-# 📋 Automated Testing Report
+### How to run
+
+### Setup Instructions
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment variables:**
+   
+   Copy the example environment file and fill in your values:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   See [`.env.example`](.env.example) for required environment variables:
+   - `BASE_URL` - Base URL of the application
+   - `API_URL` - API endpoint URL
+   - `SUPABASE_API_URL` - Supabase API URL
+   - `SUPABASE_API_KEY` - Supabase API key
+   - `ADMIN` - System Administrator email
+   - `BASE_PASSWORD` - Base password for test users
+   - `CUSTOMER` - Customer Success user email
+   - `USER_FOR_ROLES` - User email for role testing
+   - `MANAGER` - Manager user email
+   - `STANDARD_USER` - Standard User email
+   - `MAIL_GENERATOR` - Email generator service configuration
+
+3. **Install Playwright browsers:**
+   ```bash
+   npx playwright install
+   ```
+
+### Test execution
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests for specific section
+npm run test -- src/tests/userManagement
+npm run test -- src/tests/documentation
+npm run test -- src/tests/roleSettings
+npm run test -- src/tests/authorization
+npm run test -- src/tests/notificationManagement
+npm run test -- src/tests/systemUsers
+
+# Run specific test file
+npm run test -- src/tests/userManagement/impersonateUser.spec.ts
+
+# Run tests with specific grep pattern
+npm run test -- --grep "impersonateUser"
+
+# Run tests in headed mode (see browser)
+npm run test -- --headed
+
+# Run tests with UI mode
+npm run test -- --ui
+```
 
 ## **Total: 34 automated tests**
 
-## 📚 "Documentation" Section
+## "Documentation" Section
 
-### 📁 Category Creation (`createCategory.spec.ts`)
+### Category Creation (`createCategory.spec.ts`)
 
 **Covered scenarios:**
 • Creating a new category as System Administrator
@@ -21,7 +80,7 @@
 • Searching for created category
 • Validating category data (name, subcategory, article count, icon)
 
-### 📄 Article Creation (`createArticle.spec.ts`)
+### Article Creation (`createArticle.spec.ts`)
 
 **Covered scenarios:**
 • Creating a new article as System Administrator
@@ -44,9 +103,9 @@
 
 ---
 
-## 👥 "User Management" Section
+## "User Management" Section
 
-### 👤 Adding Single User (`addSingleUser.spec.ts`)
+### Adding Single User (`addSingleUser.spec.ts`)
 
 **Covered scenarios:**
 • Adding a single user as System Administrator
@@ -64,7 +123,7 @@
 • Checking status change to "Active"
 • Checking activated user login
 
-### 👥 Bulk User Addition (`addMultipleUsers.spec.ts`)
+### Bulk User Addition (`addMultipleUsers.spec.ts`)
 
 **Covered scenarios:**
 • Bulk adding new users as System Administrator
@@ -81,7 +140,7 @@
 • Activating user through email link
 • Checking status change to "Active"
 
-### 🎭 User Impersonation (`impersonateUser.spec.ts`)
+### User Impersonation (`impersonateUser.spec.ts`)
 
 **Covered scenarios:**
 • Checking absence of impersonation button for inactive users as System Administrator
@@ -103,9 +162,9 @@
 
 ---
 
-## 🔐 "Role Settings" Section
+## "Role Settings" Section
 
-### 🎭 Creating New Roles (`createNewRole.spec.ts`)
+### Creating New Roles (`createNewRole.spec.ts`)
 
 **Covered scenarios:**
 • Creating "Viewer" role as system administrator
@@ -136,9 +195,9 @@
 
 ---
 
-## 🔑 "Authorization" Section
+## "Authorization" Section
 
-### 📝 Registration (`registration.spec.ts`)
+### Registration (`registration.spec.ts`)
 
 **Covered scenarios:**
 • Self-registration of new user as Standard User
@@ -158,9 +217,9 @@
 
 ---
 
-## 🔔 "Notification Management" Section
+## "Notification Management" Section
 
-### 📨 Send Single In-App Notifications (`sendNotificationInApp.spec.ts`)
+### Send Single In-App Notifications (`sendNotificationInApp.spec.ts`)
 
 **Covered scenarios:**
 • Send "Warning" notification in app as System Administrator
@@ -168,7 +227,7 @@
 • Send "Info" notification in app as System Administrator
 • Send "Article" notification in app as System Administrator
 
-### 📬 Send Multi In-App Notifications (`sendMultiNotificationInApp.spec.ts`)
+### Send Multi In-App Notifications (`sendMultiNotificationInApp.spec.ts`)
 
 **Covered scenarios:**
 • Send multi "Warning" notification in app as System Administrator
@@ -176,23 +235,23 @@
 • Send multi "Info" notification in app as System Administrator
 • Send multi "Article" notification in app as System Administrator
 
-### ✏️ Edit Notifications (`editNotification.spec.ts`)
+### Edit Notifications (`editNotification.spec.ts`)
 
 **Covered scenarios:**
 • Edit notification from EMAIL to IN_APP as System Administrator
 • Edit notification from IN_APP to EMAIL as System Administrator
 
-### 📋 Notification Details (`notificationDetails.spec.ts`)
+### Notification Details (`notificationDetails.spec.ts`)
 
 **Covered scenarios:**
 • Check notification details as System Administrator
 
-### 📜 Notification History (`notificationHistory.spec.ts`)
+### Notification History (`notificationHistory.spec.ts`)
 
 **Covered scenarios:**
 • Check notification history filters as System Administrator (Type, Channel, User, Customer filters)
 
-### ❌ Negative Validation (`negativeValidation.spec.ts`)
+### Negative Validation (`negativeValidation.spec.ts`)
 
 **Covered scenarios:**
 • Check validation errors for empty required fields in "Add notification" modal
@@ -229,9 +288,9 @@
 
 ---
 
-## 👨‍💼 "System Users" Section
+## "System Users" Section
 
-### ➕ Adding System Users (`addSystemUser.spec.ts`)
+### Adding System Users (`addSystemUser.spec.ts`)
 
 **Covered scenarios:**
 • Add system user with "Customer Success" role
@@ -255,9 +314,9 @@
 
 ---
 
-## 🏢 "Customer Management" Section
+## "Customer Management" Section
 
-### 👤 Adding Customer Manager (`addCustomerManager.spec.ts`)
+### Adding Customer Manager (`addCustomerManager.spec.ts`)
 
 **Covered scenarios:**
 • Create new customer manager with Basic role
@@ -277,7 +336,7 @@
 
 ---
 
-## 📊 Detailed Coverage Statistics
+## Detailed Coverage Statistics
 
 ### By user types:
 
@@ -303,92 +362,31 @@
 
 ---
 
-## 🎯 Conclusions
+## Conclusions
 
-✅ **34 automated tests** cover all critical user paths
+**34 automated tests** cover all critical user paths
 
-✅ **7 main sections** of the application are tested
+**7 main sections** of the application are tested
 
-✅ **Different user types** verified for permission compliance (System Administrator, Manager, Standard User)
+**Different user types** verified for permission compliance (System Administrator, Manager, Standard User)
 
-✅ **End-to-end scenarios** include email notifications and activation
+**End-to-end scenarios** include email notifications and activation
 
-✅ **User impersonation** tested for Standard User and Manager roles
+**User impersonation** tested for Standard User and Manager roles
 
-✅ **Notification system** comprehensively tested:
+**Notification system** comprehensively tested:
   - Single and multi-recipient notifications
   - All notification channels (Warning, Alert, Info, Article)
   - Notification editing and details
   - Notification history with filters
   - Negative validation
 
-✅ **System users management** tested for Customer Success and System Administrator roles
+**System users management** tested for Customer Success and System Administrator roles
 
-✅ **Reliable cleanup** of data between tests
+**Reliable cleanup** of data between tests
 
-✅ **API integration** for creating test data and dynamic user selection
+**API integration** for creating test data and dynamic user selection
 
-✅ **Access rights validation** at all levels (users, categories, articles, notifications)
+**Access rights validation** at all levels (users, categories, articles, notifications)
 
 ---
-
-## 🚀 Running Tests
-
-### 📋 Setup Instructions
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Configure environment variables:**
-   
-   Copy the example environment file and fill in your values:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   See [`.env.example`](.env.example) for required environment variables:
-   - `BASE_URL` - Base URL of the application
-   - `API_URL` - API endpoint URL
-   - `SUPABASE_API_URL` - Supabase API URL
-   - `SUPABASE_API_KEY` - Supabase API key
-   - `ADMIN` - System Administrator email
-   - `BASE_PASSWORD` - Base password for test users
-   - `CUSTOMER` - Customer Success user email
-   - `USER_FOR_ROLES` - User email for role testing
-   - `MANAGER` - Manager user email
-   - `STANDARD_USER` - Standard User email
-   - `MAIL_GENERATOR` - Email generator service configuration
-
-3. **Install Playwright browsers:**
-   ```bash
-   npx playwright install
-   ```
-
-### 🏃 Running Tests
-
-```bash
-# Run all tests
-npm run test
-
-# Run tests for specific section
-npm run test -- src/tests/userManagement
-npm run test -- src/tests/documentation
-npm run test -- src/tests/roleSettings
-npm run test -- src/tests/authorization
-npm run test -- src/tests/notificationManagement
-npm run test -- src/tests/systemUsers
-
-# Run specific test file
-npm run test -- src/tests/userManagement/impersonateUser.spec.ts
-
-# Run tests with specific grep pattern
-npm run test -- --grep "impersonateUser"
-
-# Run tests in headed mode (see browser)
-npm run test -- --headed
-
-# Run tests with UI mode
-npm run test -- --ui
-```
