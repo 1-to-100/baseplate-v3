@@ -1,31 +1,44 @@
-# Dependencies
-node_modules/
-.pnpm-store/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Build outputs
-.next/
-dist/
-build/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Logs
-*.log
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+.pnpm-debug.log*
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# env files (can opt-in for committing if needed)
+.env
 
-# OS
-.DS_Store
-Thumbs.db
+# vercel
+.vercel
 
-# Supabase
-supabase/.temp/
-supabase/.branches/
-supabase/.env
-.env.local 
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+*storybook.log
+storybook-static

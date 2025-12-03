@@ -1,11 +1,10 @@
 
 # 📘 Baseplate Documentation
 
-This guide walks through setting up and running the **Baseplate**, which consists of:
+This guide walks through setting up and running the **Baseplate**, a Next.js application with:
 
-- A **Next.js frontend** (`frontend`)
-- A **NestJS backend** (`backend`)
-- **Supabase** for authentication, database, and storage
+- **Next.js** frontend (App Router)
+- **Supabase** for authentication, database, and Edge Functions
 - Docker-based deployment
 
 ---
@@ -17,7 +16,7 @@ Ensure you have the following installed:
 - Docker + Docker Compose
 - Git
 - Node.js (v22)
-- pnpm (for frontend)
+- pnpm
 - Supabase CLI (for database migrations)
 - NVM (optional, for managing Node versions)
 
@@ -27,11 +26,20 @@ Ensure you have the following installed:
 
 ```
 .
-├── frontend/          # Next.js frontend
-├── backend/      # NestJS backend
-├── Dockerfile.app      # Dockerfile for frontend
-├── Dockerfile.api      # Dockerfile for backend
-├── docker-compose.yml  # Compose config
+├── src/                # Next.js application source
+│   ├── app/           # App Router pages and routes
+│   ├── components/    # React components
+│   ├── lib/           # Utilities and helpers
+│   ├── hooks/         # React hooks
+│   └── contexts/      # React contexts
+├── supabase/          # Supabase configuration
+│   ├── functions/     # Edge Functions
+│   ├── migrations/    # Database migrations
+│   └── scripts/       # Deployment scripts
+├── testing/           # E2E tests (Playwright)
+├── public/            # Static assets
+├── Dockerfile         # Docker configuration
+├── docker-compose.yml # Docker Compose config
 └── README.md
 ```
 
@@ -39,58 +47,41 @@ Ensure you have the following installed:
 
 ## 🚀 Getting Started
 
-### 1. Clone repository and set env variables
+### 1. Clone repository and set environment variables
 
 ```bash
-git clone https://github.com/1-to-100/baseplate-v2.git
+git clone https://github.com/1-to-100/baseplate-v3.git
+cd baseplate-v3
+```
 
-mv basplate-v2 [your_project_name]
+Create a `.env` file in the root directory with the following variables:
 
-cd baseplate/frontend
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
-cp .env.template .env
+# Optional: Auth providers
+NEXT_PUBLIC_AUTH_STRATEGY=custom
+AUTH0_SECRET=...
+AUTH0_CLIENT_ID=...
+AUTH0_CLIENT_SECRET=...
 
-cd ../backend
-
-cp .env.template .env
+# Optional: Other services
+NEXT_PUBLIC_MAPBOX_API_KEY=...
+NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID=...
 ```
 
 ### 2. Configure Supabase
 
-This README assumes that you have setup a Supabase tenant and have a Supabase project created.
-If you haven't go do that first.  Then:
-
+This README assumes you have a Supabase project created. If not, create one first.
 
 #### 🌐 Connect App Frameworks
 
 1. Go to **Settings > Data API**
-2. Copy the **Project URL**:
-   - Replace the value of the `SUPABASE_URL` key in `.env` for backend
-   - Replace the value of the `NEXT_PUBLIC_SUPABASE_URL` key in `.env` for frontend
+2. Copy the **Project URL** and set `NEXT_PUBLIC_SUPABASE_URL` in your `.env` file
 3. Go to **Settings > API Keys**
-4. Copy the **Legacy API Keys**:
-   - **anon/public**: Replace the value of the `NEXT_PUBLIC_SUPABASE_ANON_KEY` key in `.env` for frontend
-   - **service_role/secret**: Replace the value of the `SUPABASE_SERVICE_ROLE_KEY` key in `.env` for backend
-
-#### 🔑 JWT Secret
-
-1. Go to **Settings > JWT Keys**
-2. In the **Legacy JWT Secret** tab, click **Reveal** to show the JWT secret
-3. Copy the revealed JWT secret and replace the value of your `SUPABASE_JWT_SECRET` key in `.env` for backend
-
-#### 👤 Default System Administrator
-
-On first startup, the application automatically creates a default System Administrator account:
-
-**Email:** `admin@system.local`  
-**Password:** `Admin@123456`
-
-**⚠️ CRITICAL:** Change this password immediately after first login.
-
-To disable auto-creation in production:
-```bash
-DISABLE_BOOTSTRAP_ADMIN=true
-```
+4. Copy the **anon/public** key and set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in your `.env` file
 
 #### 🗄️ Database Migrations
 
@@ -105,15 +96,30 @@ npm install -g supabase
 # Login to Supabase
 supabase login
 
-# Link to your project (from backend directory)
-cd backend
+# Link to your project
 supabase link --project-ref your-project-ref
 ```
 
-To apply migrations manually:
+To apply migrations:
 ```bash
-cd backend
-npm run supabase:push
+npx supabase db push
+```
+
+### 📦 Supabase Package Management
+
+The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup:
+
+```bash
+cd supabase
+
+# Push database migrations
+npx supabase db push
+
+# Deploy Edge Functions
+./scripts/deploy-functions.sh
+
+# Create default system administrator
+npm install && npm run bootstrap
 ```
 
 For detailed migration management, see `supabase/README.md`.
@@ -207,10 +213,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 docker compose up
 ```
 
-Services will be available at:
-
-- Frontend: http://localhost:3000  
-- Backend API: http://localhost:3001
+The application will be available at: http://localhost:3000
 
 ---
 
@@ -231,63 +234,27 @@ nvm use 22
 npm install -g pnpm
 ```
 
-### 3. Start Frontend
+### 3. Install dependencies and start
 
 ```bash
-cd frontend
 pnpm install
 pnpm dev
 ```
 
-### 4. Start Backend
-
-```bash
-cd backend
-npm install
-npm run start:dev // npm run start:dev:env - alternative start command (as start:dev doesn't work on some devices)
-```
+The application will be available at: http://localhost:3000
 
 **Note:** Database migrations are managed via Supabase. See `supabase/README.md` for migration management.
 
 ---
 
-## 🌱 Data Seeding & Cleanup
+## 🧪 Testing
 
-### Docker
-```bash
-# Seed test data
-docker compose exec backend npm run docker:seed
-
-# Cleanup test data
-docker compose exec backend npm run docker:cleanup
-```
-
-### Non-Docker
-```bash
-# Seed test data
-cd backend
-npm run cli:seed
-
-# Cleanup test data
-cd backend
-npm run cli:cleanup
-```
-
----
-
-## 📘 API Documentation
-
-The backend provides Swagger documentation.
-
-After running the backend:
-
-- Access Swagger UI at: http://localhost:3001/api
-
-To rebuild the docs:
+E2E tests are located in the `testing/` directory using Playwright.
 
 ```bash
-cd backend
-npm run build
+cd testing
+npm install
+npm test
 ```
 
 ---
@@ -341,15 +308,9 @@ Once saved, all transactional emails from Supabase will be sent using your confi
 
 ---
 
-## Setup a super user account for yourself
+## 👤 Setting Up a Super User Account
 
-### Option 1: Automatic Bootstrap
-On first startup, the application automatically creates a default System Administrator account:
-- Email: `admin@system.local`
-- Password: `Admin@123456`
-- **⚠️ IMPORTANT:** Change this password immediately after first login
-
-### Option 2: Manual Setup
+### Option 1: Manual Setup
 1. Login to the app (with user/pass or federated login)
 2. Logout - you should now have a record in the users table
 3. Go to Supabase Dashboard
