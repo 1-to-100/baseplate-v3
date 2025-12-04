@@ -22,6 +22,7 @@ import AddEditTeamModal from '@/components/dashboard/modals/AddEditTeamModal';
 import DeleteItemModal from '@/components/dashboard/modals/DeleteItemModal';
 import { toast } from '@/components/core/toaster';
 import { paths } from '@/paths';
+import Pagination from '@/components/dashboard/layout/pagination';
 
 export default function Page(): React.JSX.Element {
   const { userInfo } = useUserInfo();
@@ -35,24 +36,34 @@ export default function Page(): React.JSX.Element {
     teamId: string;
     teamName: string;
   } | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const rowsPerPage = 10;
 
   const isSystemAdmin = isSystemAdministrator(userInfo);
   // For system admin, pass undefined to get all teams; otherwise pass customerId
   const teamsCustomerId = isSystemAdmin ? undefined : customerId;
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['teams', teamsCustomerId, isSystemAdmin],
+  const { data: teamsResponse, isLoading, error } = useQuery({
+    queryKey: ['teams', teamsCustomerId, isSystemAdmin, currentPage],
     queryFn: async () => {
-      const response = await getTeams(teamsCustomerId);
+      const response = await getTeams(teamsCustomerId, {
+        page: currentPage,
+        perPage: rowsPerPage,
+      });
       if (response.error) {
         throw new Error(response.error);
       }
-      return response.data || [];
+      return response.data;
     },
     enabled: isSystemAdmin || !!customerId,
   });
 
-  const teams = React.useMemo(() => data || [], [data]);
+  const teams = React.useMemo(
+    () => teamsResponse?.data || [],
+    [teamsResponse]
+  );
+  const totalPages = teamsResponse?.meta?.lastPage || 1;
+  const hasResults = teams.length > 0;
 
   const handleAddTeam = useCallback(() => {
     setOpenAddModal(true);
@@ -112,6 +123,10 @@ export default function Page(): React.JSX.Element {
     setTeamToRemove(null);
   }, []);
 
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   return (
     <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
       <Stack spacing={{ xs: 2, sm: 3 }} sx={{ mt: { xs: 6, sm: 0 } }}>
@@ -164,79 +179,111 @@ export default function Page(): React.JSX.Element {
             </Typography>
           </Box>
         ) : (
-          <Box
-            sx={{
-              overflowX: 'auto',
-              width: '100%',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: { xs: 'thin', sm: 'auto' },
-              '&::-webkit-scrollbar': {
-                height: { xs: '8px', sm: '12px' },
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: 'var(--joy-palette-divider)',
-                borderRadius: '4px',
-              },
-            }}
-          >
-            <Table
-              aria-label='team management table'
+          <>
+            <Box
               sx={{
-                minWidth: '800px',
-                tableLayout: 'fixed',
-                '& th, & td': {
-                  px: { xs: 1, sm: 2 },
-                  py: { xs: 1, sm: 1.5 },
+                overflowX: 'auto',
+                width: '100%',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: { xs: 'thin', sm: 'auto' },
+                '&::-webkit-scrollbar': {
+                  height: { xs: '8px', sm: '12px' },
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'var(--joy-palette-divider)',
+                  borderRadius: '4px',
                 },
               }}
             >
-              <thead>
-                <tr>
-                  <th style={{ width: isSystemAdmin ? '30%' : '40%' }}>Team</th>
-                  {isSystemAdmin && <th style={{ width: '20%' }}>Customer</th>}
-                  <th style={{ width: isSystemAdmin ? '15%' : '20%', textAlign: 'center' }}>
-                    Users
-                  </th>
-                  <th style={{ width: isSystemAdmin ? '25%' : '30%' }}>Manager Name</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {teams.length === 0 ? (
+              <Table
+                aria-label='team management table'
+                sx={{
+                  minWidth: '800px',
+                  tableLayout: 'fixed',
+                  '& th, & td': {
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 1.5 },
+                  },
+                }}
+              >
+                <thead>
                   <tr>
-                    <td
-                      colSpan={isSystemAdmin ? 5 : 4}
-                      style={{ textAlign: 'center', padding: '20px' }}
-                    >
-                      <Typography level='body-md' color='neutral'>
-                        No teams found
-                      </Typography>
-                    </td>
+                    <th style={{ width: isSystemAdmin ? '30%' : '40%' }}>Team</th>
+                    {isSystemAdmin && <th style={{ width: '20%' }}>Customer</th>}
+                    <th style={{ width: isSystemAdmin ? '15%' : '20%', textAlign: 'center' }}>
+                      Users
+                    </th>
+                    <th style={{ width: isSystemAdmin ? '25%' : '30%' }}>Manager Name</th>
+                    <th style={{ width: '10%', textAlign: 'right' }}></th>
                   </tr>
-                ) : (
-                  teams.map((team: TeamWithRelations) => {
-                    const memberCount = team.team_members?.length || 0;
-                    const managerName = team.manager?.full_name || '';
-                    const customerName = team.customer?.name || '-';
+                </thead>
+                <tbody>
+                  {teams.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={isSystemAdmin ? 5 : 4}
+                        style={{ textAlign: 'center', padding: '20px' }}
+                      >
+                        <Typography level='body-md' color='neutral'>
+                          No teams found
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : (
+                    teams.map((team: TeamWithRelations) => {
+                      const memberCount = team.team_members?.length || 0;
+                      const managerName = team.manager?.full_name || '';
+                      const customerName = team.customer?.name || '-';
 
-                    return (
-                      <tr key={team.team_id}>
-                        <td
-                          onClick={() =>
-                            router.push(paths.dashboard.teamManagement.details(team.team_id))
-                          }
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              fontWeight: 500,
-                            }}
+                      return (
+                        <tr key={team.team_id}>
+                          <td
+                            onClick={() =>
+                              router.push(paths.dashboard.teamManagement.details(team.team_id))
+                            }
+                            style={{ cursor: 'pointer' }}
                           >
-                            {team.team_name}
-                          </Typography>
-                        </td>
-                        {isSystemAdmin && (
+                            <Typography
+                              sx={{
+                                fontSize: { xs: '12px', sm: '14px' },
+                                fontWeight: 500,
+                              }}
+                            >
+                              {team.team_name}
+                            </Typography>
+                          </td>
+                          {isSystemAdmin && (
+                            <td
+                              style={{ cursor: 'pointer' }}
+                              onClick={() =>
+                                router.push(paths.dashboard.teamManagement.details(team.team_id))
+                              }
+                            >
+                              <Typography
+                                sx={{
+                                  fontSize: { xs: '12px', sm: '14px' },
+                                  color: 'var(--joy-palette-text-secondary)',
+                                }}
+                              >
+                                {customerName}
+                              </Typography>
+                            </td>
+                          )}
+                          <td
+                            style={{ textAlign: 'center', cursor: 'pointer' }}
+                            onClick={() =>
+                              router.push(paths.dashboard.teamManagement.details(team.team_id))
+                            }
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: { xs: '12px', sm: '14px' },
+                                color: 'var(--joy-palette-text-secondary)',
+                              }}
+                            >
+                              {memberCount}
+                            </Typography>
+                          </td>
                           <td
                             style={{ cursor: 'pointer' }}
                             onClick={() =>
@@ -249,83 +296,59 @@ export default function Page(): React.JSX.Element {
                                 color: 'var(--joy-palette-text-secondary)',
                               }}
                             >
-                              {customerName}
+                              {managerName || '-'}
                             </Typography>
                           </td>
-                        )}
-                        <td
-                          style={{ textAlign: 'center', cursor: 'pointer' }}
-                          onClick={() =>
-                            router.push(paths.dashboard.teamManagement.details(team.team_id))
-                          }
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              color: 'var(--joy-palette-text-secondary)',
-                            }}
-                          >
-                            {memberCount}
-                          </Typography>
-                        </td>
-                        <td
-                          style={{ cursor: 'pointer' }}
-                          onClick={() =>
-                            router.push(paths.dashboard.teamManagement.details(team.team_id))
-                          }
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              color: 'var(--joy-palette-text-secondary)',
-                            }}
-                          >
-                            {managerName || '-'}
-                          </Typography>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <Stack direction='row' spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                            <IconButton
-                              size='sm'
-                              variant='plain'
-                              color='neutral'
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleEdit(team.team_id);
-                              }}
-                              sx={{
-                                '&:hover': {
-                                  bgcolor: 'var(--joy-palette-neutral-100)',
-                                },
-                              }}
-                            >
-                              <PencilIcon fontSize='var(--Icon-fontSize)' />
-                            </IconButton>
-                            <IconButton
-                              size='sm'
-                              variant='plain'
-                              color='danger'
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleRemove(team.team_id);
-                              }}
-                              sx={{
-                                '&:hover': {
-                                  bgcolor: 'var(--joy-palette-danger-50)',
-                                },
-                              }}
-                            >
-                              <TrashIcon fontSize='var(--Icon-fontSize)' />
-                            </IconButton>
-                          </Stack>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </Box>
+                          <td style={{ textAlign: 'right' }}>
+                            <Stack direction='row' spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                              <IconButton
+                                size='sm'
+                                variant='plain'
+                                color='neutral'
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleEdit(team.team_id);
+                                }}
+                                sx={{
+                                  '&:hover': {
+                                    bgcolor: 'var(--joy-palette-neutral-100)',
+                                  },
+                                }}
+                              >
+                                <PencilIcon fontSize='var(--Icon-fontSize)' />
+                              </IconButton>
+                              <IconButton
+                                size='sm'
+                                variant='plain'
+                                color='danger'
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleRemove(team.team_id);
+                                }}
+                                sx={{
+                                  '&:hover': {
+                                    bgcolor: 'var(--joy-palette-danger-50)',
+                                  },
+                                }}
+                              >
+                                <TrashIcon fontSize='var(--Icon-fontSize)' />
+                              </IconButton>
+                            </Stack>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            </Box>
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+              disabled={!hasResults}
+            />
+          </>
         )}
       </Stack>
       <AddEditTeamModal open={openAddModal} onClose={handleCloseModal} teamId={teamIdToEdit} />

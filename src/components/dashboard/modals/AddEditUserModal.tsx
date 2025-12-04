@@ -124,14 +124,14 @@ export default function AddEditUser({ open, onClose, userId }: AddEditUserProps)
 
   // Fetch teams for the selected customer
   const { data: teamsData, isLoading: isTeamsLoading } = useQuery({
-    queryKey: ['teams', customerId],
+    queryKey: ['teams', customerId, 1],
     queryFn: async () => {
       if (!customerId) return null;
-      const response = await getTeams(customerId);
+      const response = await getTeams(customerId, { page: 1, perPage: 1000 });
       if (response.error) {
         throw new Error(response.error);
       }
-      return response.data || [];
+      return response.data?.data || [];
     },
     enabled: !!customerId && open,
   });

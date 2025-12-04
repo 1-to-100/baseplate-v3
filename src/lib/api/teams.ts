@@ -79,7 +79,28 @@ interface TeamMemberWithRelationsData extends TeamMemberData {
     | null;
 }
 
-export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWithRelations[]>> {
+export interface GetTeamsParams {
+  page?: number;
+  perPage?: number;
+}
+
+export interface GetTeamsResponse {
+  data: TeamWithRelations[];
+  meta: {
+    total: number;
+    page: number;
+    lastPage: number;
+    perPage: number;
+    currentPage: number;
+    prev: number | null;
+    next: number | null;
+  };
+}
+
+export async function getTeams(
+  customerId?: string,
+  params: GetTeamsParams = {}
+): Promise<ApiResponse<GetTeamsResponse>> {
   try {
     const supabase = createClient();
 
@@ -140,6 +161,11 @@ export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWit
     }
     // System admins can access all teams if customerId is undefined, or specific customer if provided
 
+    const page = params.page || 1;
+    const perPage = params.perPage || 10;
+    const from = (page - 1) * perPage;
+    const to = from + perPage - 1;
+
     let query = supabase
       .from('teams')
       .select(
@@ -155,7 +181,8 @@ export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWit
         customer:customers!teams_customer_id_fkey(customer_id, name),
         manager:users!teams_manager_id_fkey(user_id, full_name, email),
         team_members:team_members(team_member_id, team_id, user_id, created_at, updated_at)
-      `
+      `,
+        { count: 'exact' }
       )
       .order('team_name');
 
@@ -165,7 +192,10 @@ export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWit
       query = query.eq('customer_id', targetCustomerId);
     }
 
-    const { data, error } = await query;
+    // Apply pagination
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
 
     if (error) {
       return { data: null, error: error.message, status: 500 };
@@ -207,7 +237,23 @@ export async function getTeams(customerId?: string): Promise<ApiResponse<TeamWit
       };
     });
 
-    return { data: teams, error: null, status: 200 };
+    const total = count || 0;
+    const lastPage = Math.ceil(total / perPage);
+
+    const response: GetTeamsResponse = {
+      data: teams,
+      meta: {
+        total,
+        page,
+        lastPage,
+        perPage,
+        currentPage: page,
+        prev: page > 1 ? page - 1 : null,
+        next: page < lastPage ? page + 1 : null,
+      },
+    };
+
+    return { data: response, error: null, status: 200 };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch teams';
     return { data: null, error: errorMessage, status: 500 };

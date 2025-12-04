@@ -103,14 +103,14 @@ export function AddUser({
 
   // Fetch teams for the selected customer
   const { data: teamsData, isLoading: isTeamsLoading } = useQuery({
-    queryKey: ['teams', teamsCustomerId],
+    queryKey: ['teams', teamsCustomerId, 1],
     queryFn: async () => {
       if (!teamsCustomerId) return null;
-      const response = await getTeams(teamsCustomerId);
+      const response = await getTeams(teamsCustomerId, { page: 1, perPage: 1000 });
       if (response.error) {
         throw new Error(response.error);
       }
-      return response.data || [];
+      return response.data?.data || [];
     },
     enabled: !!teamsCustomerId,
   });
