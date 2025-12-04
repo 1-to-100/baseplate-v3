@@ -402,10 +402,7 @@ export default function Page(): React.JSX.Element {
                             </Typography>
                           </td>
                           <td style={{ textAlign: 'right' }}>
-                            <IconButton
-                              size='sm'
-                              onClick={(event) => handleMenuOpen(event, index)}
-                            >
+                            <IconButton size='sm' onClick={(event) => handleMenuOpen(event, index)}>
                               <DotsThreeVertical
                                 weight='bold'
                                 size={22}
@@ -440,7 +437,9 @@ export default function Page(): React.JSX.Element {
                                   cursor: 'pointer',
                                   color: 'var(--joy-palette-text-primary)',
                                   gap: { xs: '10px', sm: '14px' },
-                                  '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+                                  '&:hover': {
+                                    backgroundColor: 'var(--joy-palette-background-mainBg)',
+                                  },
                                 }}
                               >
                                 <TrashSimple size={20} />

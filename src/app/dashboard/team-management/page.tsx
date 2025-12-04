@@ -11,8 +11,10 @@ import IconButton from '@mui/joy/IconButton';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import { TrashSimple } from '@phosphor-icons/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Popper } from '@mui/base/Popper';
 import { useRouter } from 'next/navigation';
 import { getTeams, deleteTeam } from '@/lib/api/teams';
 import { useUserInfo } from '@/hooks/use-user-info';
@@ -38,6 +40,8 @@ export default function Page(): React.JSX.Element {
     teamName: string;
   } | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [anchorEl, setAnchorPopper] = React.useState<null | HTMLElement>(null);
+  const [menuRowIndex, setMenuRowIndex] = React.useState<number | null>(null);
   const rowsPerPage = 10;
 
   const isSystemAdmin = isSystemAdministrator(userInfo);
@@ -148,6 +152,41 @@ export default function Page(): React.JSX.Element {
     setCurrentPage(page);
   }, []);
 
+  const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, index: number) => {
+    event.stopPropagation();
+    setAnchorPopper(event.currentTarget);
+    setMenuRowIndex(index);
+  }, []);
+
+  const handleMenuClose = useCallback(() => {
+    setAnchorPopper(null);
+    setMenuRowIndex(null);
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (anchorEl && !anchorEl.contains(event.target as Node)) {
+        handleMenuClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [anchorEl, handleMenuClose]);
+
+  const menuItemStyle = {
+    padding: { xs: '6px 12px', sm: '8px 16px' },
+    fontSize: { xs: '12px', sm: '14px' },
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+  };
+
   return (
     <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
       <Stack spacing={{ xs: 2, sm: 3 }} sx={{ mt: { xs: 6, sm: 0 } }}>
@@ -251,7 +290,7 @@ export default function Page(): React.JSX.Element {
                       </td>
                     </tr>
                   ) : (
-                    teams.map((team: TeamWithRelations) => {
+                    teams.map((team: TeamWithRelations, index: number) => {
                       const memberCount = team.team_members?.length || 0;
                       const managerName = team.manager?.full_name || '';
                       const customerName = team.customer?.name || '-';
@@ -267,7 +306,6 @@ export default function Page(): React.JSX.Element {
                             <Typography
                               sx={{
                                 fontSize: { xs: '12px', sm: '14px' },
-                                fontWeight: 500,
                               }}
                             >
                               {team.team_name}
@@ -321,40 +359,55 @@ export default function Page(): React.JSX.Element {
                             </Typography>
                           </td>
                           <td style={{ textAlign: 'right' }}>
-                            <Stack direction='row' spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                              <IconButton
-                                size='sm'
-                                variant='plain'
-                                color='neutral'
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                            <IconButton size='sm' onClick={(event) => handleMenuOpen(event, index)}>
+                              <DotsThreeVertical
+                                weight='bold'
+                                size={22}
+                                color='var(--joy-palette-text-secondary)'
+                              />
+                            </IconButton>
+                            <Popper
+                              open={menuRowIndex === index && Boolean(anchorEl)}
+                              anchorEl={anchorEl}
+                              placement='bottom-start'
+                              style={{
+                                minWidth: '150px',
+                                borderRadius: '8px',
+                                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                                backgroundColor: 'var(--joy-palette-background-surface)',
+                                zIndex: 1300,
+                                border: '1px solid var(--joy-palette-divider)',
+                              }}
+                            >
+                              <Box
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
                                   handleEdit(team.team_id);
+                                  handleMenuClose();
                                 }}
                                 sx={{
-                                  '&:hover': {
-                                    bgcolor: 'var(--joy-palette-neutral-100)',
-                                  },
+                                  ...menuItemStyle,
+                                  gap: { xs: '10px', sm: '14px' },
                                 }}
                               >
-                                <PencilIcon fontSize='var(--Icon-fontSize)' />
-                              </IconButton>
-                              <IconButton
-                                size='sm'
-                                variant='plain'
-                                color='danger'
-                                onClick={(event) => {
-                                  event.stopPropagation();
+                                <PencilIcon fontSize='20px' />
+                                Edit
+                              </Box>
+                              <Box
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
                                   handleRemove(team.team_id);
+                                  handleMenuClose();
                                 }}
                                 sx={{
-                                  '&:hover': {
-                                    bgcolor: 'var(--joy-palette-danger-50)',
-                                  },
+                                  ...menuItemStyle,
+                                  gap: { xs: '10px', sm: '14px' },
                                 }}
                               >
-                                <TrashIcon fontSize='var(--Icon-fontSize)' />
-                              </IconButton>
-                            </Stack>
+                                <TrashSimple size={20} />
+                                Delete team
+                              </Box>
+                            </Popper>
                           </td>
                         </tr>
                       );
