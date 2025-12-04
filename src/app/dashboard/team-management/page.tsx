@@ -12,21 +12,29 @@ import CircularProgress from '@mui/joy/CircularProgress';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { getTeams } from '@/lib/api/teams';
+import { getTeams, deleteTeam } from '@/lib/api/teams';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { isSystemAdministrator } from '@/lib/user-utils';
 import type { TeamWithRelations } from '@/types/database';
 import AddEditTeamModal from '@/components/dashboard/modals/AddEditTeamModal';
+import DeleteItemModal from '@/components/dashboard/modals/DeleteItemModal';
+import { toast } from '@/components/core/toaster';
 import { paths } from '@/paths';
 
 export default function Page(): React.JSX.Element {
   const { userInfo } = useUserInfo();
   const customerId = userInfo?.customerId;
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [openAddModal, setOpenAddModal] = React.useState(false);
   const [teamIdToEdit, setTeamIdToEdit] = React.useState<string | undefined>(undefined);
+  const [openRemoveModal, setOpenRemoveModal] = React.useState(false);
+  const [teamToRemove, setTeamToRemove] = React.useState<{
+    teamId: string;
+    teamName: string;
+  } | null>(null);
 
   const isSystemAdmin = isSystemAdministrator(userInfo);
   // For system admin, pass undefined to get all teams; otherwise pass customerId
@@ -44,7 +52,7 @@ export default function Page(): React.JSX.Element {
     enabled: isSystemAdmin || !!customerId,
   });
 
-  const teams = data || [];
+  const teams = React.useMemo(() => data || [], [data]);
 
   const handleAddTeam = useCallback(() => {
     setOpenAddModal(true);
@@ -55,13 +63,53 @@ export default function Page(): React.JSX.Element {
     setOpenAddModal(true);
   }, []);
 
-  const handleRemove = useCallback((teamId: string) => {
-    // Handler will be implemented later
-  }, []);
+  const removeTeamMutation = useMutation({
+    mutationFn: async (teamId: string) => {
+      const response = await deleteTeam(teamId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast.success('Team successfully removed');
+      setOpenRemoveModal(false);
+      setTeamToRemove(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to remove team');
+    },
+  });
+
+  const handleRemove = useCallback(
+    (teamId: string) => {
+      const team = teams.find((t) => t.team_id === teamId);
+      if (team) {
+        setTeamToRemove({
+          teamId,
+          teamName: team.team_name,
+        });
+        setOpenRemoveModal(true);
+      }
+    },
+    [teams]
+  );
+
+  const confirmRemove = useCallback(() => {
+    if (teamToRemove) {
+      removeTeamMutation.mutate(teamToRemove.teamId);
+    }
+  }, [teamToRemove, removeTeamMutation]);
 
   const handleCloseModal = useCallback(() => {
     setOpenAddModal(false);
     setTeamIdToEdit(undefined);
+  }, []);
+
+  const handleCloseRemoveModal = useCallback(() => {
+    setOpenRemoveModal(false);
+    setTeamToRemove(null);
   }, []);
 
   return (
@@ -281,6 +329,13 @@ export default function Page(): React.JSX.Element {
         )}
       </Stack>
       <AddEditTeamModal open={openAddModal} onClose={handleCloseModal} teamId={teamIdToEdit} />
+      <DeleteItemModal
+        open={openRemoveModal}
+        onClose={handleCloseRemoveModal}
+        onConfirm={confirmRemove}
+        title='Remove team'
+        description={`Are you sure you want to remove the team "${teamToRemove?.teamName || 'this team'}"? All users within this team will be unassigned from the team.`}
+      />
     </Box>
   );
 }

@@ -453,6 +453,21 @@ export async function deleteTeam(teamId: string): Promise<ApiResponse<void>> {
   try {
     const supabase = createClient();
 
+    // First, delete all team members (bulk delete by team_id)
+    const { error: membersError } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('team_id', teamId);
+
+    if (membersError) {
+      return {
+        data: null,
+        error: `Failed to remove team members: ${membersError.message}`,
+        status: 500,
+      };
+    }
+
+    // Then delete the team
     const { error } = await supabase.from('teams').delete().eq('team_id', teamId);
 
     if (error) {
