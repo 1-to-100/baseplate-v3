@@ -27,7 +27,7 @@ export function Audience({ segments = [] }: AudienceProps): React.JSX.Element {
 
   return (
     <Card>
-      <Typography level="h4">Audience</Typography>
+      <Typography level='h4'>Audience</Typography>
       <Stack spacing={2} sx={{ flex: '1 1 auto' }}>
         {segments.map((segment): React.JSX.Element => {
           return (
@@ -43,18 +43,24 @@ export function Audience({ segments = [] }: AudienceProps): React.JSX.Element {
                 p: 3,
               }}
             >
-              <Typography level="title-md">{segment.name}</Typography>
+              <Typography level='title-md'>{segment.name}</Typography>
               <Box sx={{ alignItems: 'center', display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                <NoSsr fallback={<Box sx={{ height: `${chartSize}px`, width: `${chartSize}px` }} />}>
-                  <PieChart height={chartSize} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={chartSize}>
+                <NoSsr
+                  fallback={<Box sx={{ height: `${chartSize}px`, width: `${chartSize}px` }} />}
+                >
+                  <PieChart
+                    height={chartSize}
+                    margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                    width={chartSize}
+                  >
                     <Pie
                       animationDuration={300}
                       cx={chartSize / 2}
                       cy={chartSize / 2}
                       data={segment.data}
-                      dataKey="value"
+                      dataKey='value'
                       innerRadius={chartSize / 2 - chartTickness}
-                      nameKey="name"
+                      nameKey='name'
                       outerRadius={chartSize / 2}
                       paddingAngle={0}
                       strokeWidth={0}
@@ -88,14 +94,23 @@ function Legend({ payload }: LegendProps): React.JSX.Element {
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={1}
             sx={{ alignItems: 'center', justifyContent: 'flex-start' }}
           >
-            <Box sx={{ bgcolor: entry.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-            <Typography textColor="text.primary">{entry.name}</Typography>
-            <Typography textColor="text.secondary">{new Intl.NumberFormat('en-US').format(entry.value)}</Typography>
+            <Box
+              sx={{
+                bgcolor: entry.color,
+                borderRadius: 'var(--joy-radius-xs)',
+                height: '8px',
+                width: '8px',
+              }}
+            />
+            <Typography textColor='text.primary'>{entry.name}</Typography>
+            <Typography textColor='text.secondary'>
+              {new Intl.NumberFormat('en-US').format(entry.value)}
+            </Typography>
           </Stack>
         )
       )}
@@ -125,18 +140,25 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={3}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.payload.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-              <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.payload.fill,
+                  borderRadius: '2px',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                 {entry.name}
               </Typography>
             </Stack>
-            <Typography fontSize="sm" textColor="text.tertiary">
+            <Typography fontSize='sm' textColor='text.tertiary'>
               {new Intl.NumberFormat('en-US').format(entry.value)}
             </Typography>
           </Stack>

@@ -18,7 +18,9 @@ import { CustomersPagination } from '@/components/dashboard/customer/customers-p
 import { CustomersTable } from '@/components/dashboard/customer/customers-table';
 import type { Customer } from '@/components/dashboard/customer/customers-table';
 
-export const metadata = { title: `List | Customers | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `List | Customers | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const customers = [
   {
@@ -96,21 +98,25 @@ export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Customers
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
-              <BreadcrumbsItem type="end">Customers</BreadcrumbsItem>
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
+              <BreadcrumbsItem type='end'>Customers</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Button
               component={RouterLink}
               href={paths.dashboard.customers.create}
-              startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
             >
               Create
             </Button>

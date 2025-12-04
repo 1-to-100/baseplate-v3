@@ -47,7 +47,10 @@ export function Permissions({ groups = [] }: PermissionsProps): React.JSX.Elemen
             <tr>
               {columns.map(
                 (column): React.JSX.Element => (
-                  <th key={column.name} style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}>
+                  <th
+                    key={column.name}
+                    style={{ width: column.width, minWidth: column.width, maxWidth: column.width }}
+                  >
                     {column.name}
                   </th>
                 )
@@ -60,7 +63,7 @@ export function Permissions({ groups = [] }: PermissionsProps): React.JSX.Elemen
                 <React.Fragment key={group.name}>
                   <tr>
                     <td colSpan={5}>
-                      <Typography level="title-sm">{group.name}</Typography>
+                      <Typography level='title-sm'>{group.name}</Typography>
                     </td>
                   </tr>
                   {group.permissions.map(
@@ -77,7 +80,12 @@ export function Permissions({ groups = [] }: PermissionsProps): React.JSX.Elemen
                         ).map(
                           (role): React.JSX.Element => (
                             <td key={role.id}>
-                              <Checkbox color="neutral" defaultChecked={role.value} readOnly variant="outlined" />
+                              <Checkbox
+                                color='neutral'
+                                defaultChecked={role.value}
+                                readOnly
+                                variant='outlined'
+                              />
                             </td>
                           )
                         )}
@@ -90,8 +98,8 @@ export function Permissions({ groups = [] }: PermissionsProps): React.JSX.Elemen
           </tbody>
         </Table>
       </Card>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-        <Button color="neutral" variant="outlined">
+      <Stack direction='row' spacing={2} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+        <Button color='neutral' variant='outlined'>
           Discard
         </Button>
         <Button>Save Changes</Button>

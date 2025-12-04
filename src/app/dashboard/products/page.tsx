@@ -18,7 +18,9 @@ import { ProductsPagination } from '@/components/dashboard/product/products-pagi
 import { ProductsTable } from '@/components/dashboard/product/products-table';
 import type { Product } from '@/components/dashboard/product/products-table';
 
-export const metadata = { title: `List | Products | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `List | Products | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const products = [
   {
@@ -77,27 +79,31 @@ export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Products
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
-              <BreadcrumbsItem type="end">Products</BreadcrumbsItem>
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
+              <BreadcrumbsItem type='end'>Products</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Button
               component={RouterLink}
               href={paths.dashboard.products.create}
-              startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
             >
               Create
             </Button>
           </Stack>
         </Stack>
-        <Stack direction="row" spacing={3} sx={{ justifyContent: 'flex-end' }}>
+        <Stack direction='row' spacing={3} sx={{ justifyContent: 'flex-end' }}>
           <ProductsFiltersButton />
         </Stack>
         <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>

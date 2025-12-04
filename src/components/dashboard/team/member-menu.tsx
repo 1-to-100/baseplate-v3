@@ -36,8 +36,14 @@ export function MemberMenu({
 
   return (
     <React.Fragment>
-      <IconButton color="neutral" onClick={popover.handleOpen} ref={popover.anchorRef} size="sm" variant="plain">
-        <DotsThreeIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton
+        color='neutral'
+        onClick={popover.handleOpen}
+        ref={popover.anchorRef}
+        size='sm'
+        variant='plain'
+      >
+        <DotsThreeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
       <Menu
         anchorEl={popover.anchorRef.current}
@@ -57,7 +63,7 @@ export function MemberMenu({
           }}
         >
           <ListItemDecorator>
-            <EyeIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           <ListItemContent>View</ListItemContent>
         </MenuItem>
@@ -69,7 +75,7 @@ export function MemberMenu({
             }}
           >
             <ListItemDecorator>
-              <PaperPlaneTiltIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+              <PaperPlaneTiltIcon fontSize='var(--Icon-fontSize)' weight='bold' />
             </ListItemDecorator>
             <ListItemContent>Resend Invite</ListItemContent>
           </MenuItem>
@@ -81,7 +87,7 @@ export function MemberMenu({
           }}
         >
           <ListItemDecorator>
-            <LockSimpleIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <LockSimpleIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           <ListItemContent>Permissions</ListItemContent>
         </MenuItem>
@@ -92,7 +98,7 @@ export function MemberMenu({
           }}
         >
           <ListItemDecorator>
-            <ArchiveIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <ArchiveIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           <ListItemContent>Archive</ListItemContent>
         </MenuItem>
@@ -103,9 +109,14 @@ export function MemberMenu({
           }}
         >
           <ListItemDecorator>
-            <TrashIcon color="var(--joy-palette-danger-plainColor)" fontSize="var(--Icon-fontSize)" />
+            <TrashIcon
+              color='var(--joy-palette-danger-plainColor)'
+              fontSize='var(--Icon-fontSize)'
+            />
           </ListItemDecorator>
-          <ListItemContent sx={{ color: 'var(--joy-palette-danger-plainColor)' }}>Delete</ListItemContent>
+          <ListItemContent sx={{ color: 'var(--joy-palette-danger-plainColor)' }}>
+            Delete
+          </ListItemContent>
         </MenuItem>
       </Menu>
     </React.Fragment>

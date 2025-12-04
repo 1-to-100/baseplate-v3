@@ -21,7 +21,11 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Eleme
 
   return (
     <EmotionCacheProvider options={{ key: 'joy' }}>
-      <CssVarsProvider defaultColorScheme={settings.colorScheme} defaultMode={settings.colorScheme} theme={theme}>
+      <CssVarsProvider
+        defaultColorScheme={settings.colorScheme}
+        defaultMode={settings.colorScheme}
+        theme={theme}
+      >
         <CssBaseline />
         <Rtl direction={settings.direction}>{children}</Rtl>
       </CssVarsProvider>

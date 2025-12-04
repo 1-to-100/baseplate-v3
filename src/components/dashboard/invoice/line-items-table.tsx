@@ -19,14 +19,18 @@ const columns = [
   { field: 'quantity', name: 'Quantity', width: '100px' },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.unitPrice);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.unitPrice
+      );
     },
     name: 'Unit Price',
     width: '100px',
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '100px',
@@ -38,5 +42,5 @@ export interface LineItemsTableProps {
 }
 
 export function LineItemsTable({ rows }: LineItemsTableProps): React.JSX.Element {
-  return <DataTable<LineItem> columns={columns} rows={rows} stripe="even" />;
+  return <DataTable<LineItem> columns={columns} rows={rows} stripe='even' />;
 }

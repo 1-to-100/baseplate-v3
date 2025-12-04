@@ -49,10 +49,10 @@ export function Faqs(): React.JSX.Element {
       <Container sx={{ py: '100px' }}>
         <Stack spacing={6}>
           <Stack spacing={2}>
-            <Typography color="primary" level="body-sm" textAlign="center">
+            <Typography color='primary' level='body-sm' textAlign='center'>
               {config.site.name} FAQs
             </Typography>
-            <Typography level="h1" textAlign="center">
+            <Typography level='h1' textAlign='center'>
               Frequently Asked Questions
             </Typography>
           </Stack>
@@ -85,29 +85,35 @@ function FaqCard({ open: forceOpen = false, question, response }: FaqCardProps):
 
   return (
     <AnimatePresence initial={false}>
-      <Sheet sx={{ borderRadius: 'var(--joy-radius-md)', gap: 3, p: '16px' }} variant="outlined">
+      <Sheet sx={{ borderRadius: 'var(--joy-radius-md)', gap: 3, p: '16px' }} variant='outlined'>
         <motion.header
           initial={false}
           onClick={(): void => {
             setExpanded(!expanded);
           }}
         >
-          <Stack direction="row" spacing={2} sx={{ cursor: 'pointer' }}>
+          <Stack direction='row' spacing={2} sx={{ cursor: 'pointer' }}>
             <Box sx={{ flex: '1 1 auto' }}>
-              <Typography level="title-lg">{question}</Typography>
+              <Typography level='title-lg'>{question}</Typography>
             </Box>
             <div>
-              <motion.div animate={{ rotate: expanded ? '180deg' : 0 }} transition={{ duration: 0.2 }}>
-                <CaretDownIcon fontSize="var(--joy-fontSize-md)" weight="bold" />
+              <motion.div
+                animate={{ rotate: expanded ? '180deg' : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CaretDownIcon fontSize='var(--joy-fontSize-md)' weight='bold' />
               </motion.div>
             </div>
           </Stack>
         </motion.header>
         <motion.section
           animate={controls}
-          initial="collapsed"
+          initial='collapsed'
           transition={{ duration: 0.2, ease: 'easeInOut' }}
-          variants={{ collapsed: { opacity: 0, height: 0 }, expanded: { opacity: 1, height: 'auto' } }}
+          variants={{
+            collapsed: { opacity: 0, height: 0 },
+            expanded: { opacity: 1, height: 'auto' },
+          }}
         >
           <Box sx={{ pr: '24px' }}>
             <Typography>{response}</Typography>

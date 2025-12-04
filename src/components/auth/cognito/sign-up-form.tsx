@@ -34,7 +34,13 @@ const schema = zod.object({
 
 type Values = zod.infer<typeof schema>;
 
-const defaultValues = { firstName: '', lastName: '', email: '', password: '', terms: false } satisfies Values;
+const defaultValues = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  terms: false,
+} satisfies Values;
 
 export function SignUpForm(): React.JSX.Element {
   const router = useRouter();
@@ -85,15 +91,15 @@ export function SignUpForm(): React.JSX.Element {
     <Stack spacing={5}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={32} width={154} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={32} width={154} />
         </Box>
       </Box>
-      <Tabs value="sign-up" variant="custom">
+      <Tabs value='sign-up' variant='custom'>
         <TabList>
-          <Tab component={RouterLink} href={paths.auth.cognito.signIn} value="sign-in">
+          <Tab component={RouterLink} href={paths.auth.cognito.signIn} value='sign-in'>
             Sign In
           </Tab>
-          <Tab component={RouterLink} href={paths.auth.cognito.signUp} value="sign-up">
+          <Tab component={RouterLink} href={paths.auth.cognito.signUp} value='sign-up'>
             Create Account
           </Tab>
         </TabList>
@@ -102,51 +108,57 @@ export function SignUpForm(): React.JSX.Element {
         <Stack spacing={2}>
           <Controller
             control={control}
-            name="firstName"
+            name='firstName'
             render={({ field }) => (
               <FormControl error={Boolean(errors.firstName)}>
                 <FormLabel>First Name</FormLabel>
                 <Input {...field} />
-                {errors.firstName ? <FormHelperText>{errors.firstName.message}</FormHelperText> : null}
+                {errors.firstName ? (
+                  <FormHelperText>{errors.firstName.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="lastName"
+            name='lastName'
             render={({ field }) => (
               <FormControl error={Boolean(errors.lastName)}>
                 <FormLabel>Last Name</FormLabel>
                 <Input {...field} />
-                {errors.lastName ? <FormHelperText>{errors.lastName.message}</FormHelperText> : null}
+                {errors.lastName ? (
+                  <FormHelperText>{errors.lastName.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="email"
+            name='email'
             render={({ field }) => (
               <FormControl error={Boolean(errors.email)}>
                 <FormLabel>Email Address</FormLabel>
-                <Input {...field} type="email" />
+                <Input {...field} type='email' />
                 {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="password"
+            name='password'
             render={({ field }) => (
               <FormControl error={Boolean(errors.password)}>
                 <FormLabel>Password</FormLabel>
-                <Input {...field} type="password" />
-                {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                <Input {...field} type='password' />
+                {errors.password ? (
+                  <FormHelperText>{errors.password.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="terms"
+            name='terms'
             render={({ field }) => (
               <FormControl error={Boolean(errors.terms)}>
                 <Checkbox
@@ -163,8 +175,8 @@ export function SignUpForm(): React.JSX.Element {
               </FormControl>
             )}
           />
-          {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-          <Button disabled={isPending} type="submit">
+          {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+          <Button disabled={isPending} type='submit'>
             Create Account
           </Button>
         </Stack>

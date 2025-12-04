@@ -18,7 +18,10 @@ export function ColorSchemeSwitch(): React.JSX.Element {
   const { settings } = useSettings();
   const { colorScheme, setColorScheme } = useColorScheme();
 
-  const handleToggle = async (_: React.SyntheticEvent | null, value: string | number | null): Promise<void> => {
+  const handleToggle = async (
+    _: React.SyntheticEvent | null,
+    value: string | number | null
+  ): Promise<void> => {
     if (value) {
       const newColorScheme = value as ColorScheme;
 
@@ -40,7 +43,11 @@ export function ColorSchemeSwitch(): React.JSX.Element {
         '& .MuiTab-root': {
           color: 'var(--joy-palette-neutral-400)',
           borderRadius: 'var(--joy-radius-xl)',
-          '&.Mui-selected': { bgcolor: 'var(--joy-palette-background-navActiveBg)', color: 'var(--joy-palette-text-primary)', border: '1px solid var(--joy-palette-divider)' },
+          '&.Mui-selected': {
+            bgcolor: 'var(--joy-palette-background-navActiveBg)',
+            color: 'var(--joy-palette-text-primary)',
+            border: '1px solid var(--joy-palette-divider)',
+          },
           '&:not(&.Mui-selected):hover': {
             bgcolor: 'var(--joy-palette-background-mainBg)',
             color: 'var(--joy-palette-text-secondary)',
@@ -48,18 +55,18 @@ export function ColorSchemeSwitch(): React.JSX.Element {
         },
       }}
       value={colorScheme}
-      variant="custom"
+      variant='custom'
     >
       <TabList>
-        <Tab value="light">
+        <Tab value='light'>
           <ListItemDecorator>
-            <SunIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <SunIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           Light
         </Tab>
-        <Tab value="dark">
+        <Tab value='dark'>
           <ListItemDecorator>
-            <MoonIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <MoonIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           Dark
         </Tab>

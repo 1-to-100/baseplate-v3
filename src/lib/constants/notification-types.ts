@@ -3,10 +3,6 @@ export const NotificationTypes = {
   in_app: 'in_app',
 } as const;
 
-export type NotificationType =
-  (typeof NotificationTypes)[keyof typeof NotificationTypes];
+export type NotificationType = (typeof NotificationTypes)[keyof typeof NotificationTypes];
 
-export const NotificationTypeList = Object.values(
-  NotificationTypes,
-) as NotificationType[];
-
+export const NotificationTypeList = Object.values(NotificationTypes) as NotificationType[];

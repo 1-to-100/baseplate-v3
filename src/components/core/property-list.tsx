@@ -25,7 +25,9 @@ export function PropertyList({
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--PropertyList-gap)',
-        ...(stripe && { [`& > *:nth-child(${stripe})`]: { bgcolor: 'var(--joy-palette-background-level1)' } }),
+        ...(stripe && {
+          [`& > *:nth-child(${stripe})`]: { bgcolor: 'var(--joy-palette-background-level1)' },
+        }),
         ...sx,
       }}
     >

@@ -26,7 +26,7 @@ export function SupabaseSignOut(): React.JSX.Element {
       } else {
         // Clear all React Query cache to ensure no stale data remains
         queryClient.clear();
-        
+
         // UserProvider will handle Router refresh
         // After refresh, GuestGuard will handle the redirect
       }
@@ -39,7 +39,11 @@ export function SupabaseSignOut(): React.JSX.Element {
   return (
     <ListItemButton onClick={handleSignOut}>
       <ListItemDecorator>
-        <SignOutIcon fontSize="var(--Icon-fontSize)" weight="bold" style={{ color: "var(--joy-palette-text-secondary)" }}/>
+        <SignOutIcon
+          fontSize='var(--Icon-fontSize)'
+          weight='bold'
+          style={{ color: 'var(--joy-palette-text-secondary)' }}
+        />
       </ListItemDecorator>
       <ListItemContent>Sign Out</ListItemContent>
     </ListItemButton>

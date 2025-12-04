@@ -6,17 +6,20 @@ import type { Breakpoint } from '@mui/system/createTheme';
 export function useCurrentBreakpoint(): Breakpoint {
   const globalTheme = useTheme();
 
-  const mqs: [Breakpoint, string][] = globalTheme.breakpoints.keys.map((key, index, breakpoints) => {
-    let mq = '';
-    if (index === breakpoints.length - 1) {
-      mq = globalTheme.breakpoints.up(key);
-    } else {
-      mq = index + 1 < breakpoints.length
-        ? globalTheme.breakpoints.between(key, breakpoints[index + 1] as Breakpoint)
-        : globalTheme.breakpoints.up(key);
+  const mqs: [Breakpoint, string][] = globalTheme.breakpoints.keys.map(
+    (key, index, breakpoints) => {
+      let mq = '';
+      if (index === breakpoints.length - 1) {
+        mq = globalTheme.breakpoints.up(key);
+      } else {
+        mq =
+          index + 1 < breakpoints.length
+            ? globalTheme.breakpoints.between(key, breakpoints[index + 1] as Breakpoint)
+            : globalTheme.breakpoints.up(key);
+      }
+      return [key, mq.replace(/^@media(?: ?)/m, '')];
     }
-    return [key, mq.replace(/^@media(?: ?)/m, '')];
-  });
+  );
 
   const [currentBreakpoint, setCurrentBreakpoint] = React.useState<Breakpoint>(() => {
     return 'xs' as Breakpoint;

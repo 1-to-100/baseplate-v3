@@ -24,7 +24,7 @@ export interface LineItem {
 const columns = [
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Avatar
           src={row.image}
           sx={{
@@ -34,7 +34,7 @@ const columns = [
             width: '42px',
           }}
         >
-          <PackageIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PackageIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </Avatar>
         <Typography>{row.name}</Typography>
       </Stack>
@@ -45,22 +45,26 @@ const columns = [
   { field: 'quantity', name: 'Qty', width: '100px' },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.unitPrice);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.unitPrice
+      );
     },
     name: 'Unit Price',
     width: '100px',
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '100px',
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -75,5 +79,5 @@ export interface LineItemsTableProps {
 }
 
 export function LineItemsTable({ rows }: LineItemsTableProps): React.JSX.Element {
-  return <DataTable<LineItem> columns={columns} rows={rows} stripe="even" />;
+  return <DataTable<LineItem> columns={columns} rows={rows} stripe='even' />;
 }

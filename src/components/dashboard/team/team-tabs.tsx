@@ -15,12 +15,12 @@ export function TeamTabs(): React.JSX.Element {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <Tabs value={segment} variant="custom">
+      <Tabs value={segment} variant='custom'>
         <TabList>
-          <Tab component={RouterLink} href={paths.dashboard.team.members.list} value="members">
+          <Tab component={RouterLink} href={paths.dashboard.team.members.list} value='members'>
             Members
           </Tab>
-          <Tab component={RouterLink} href={paths.dashboard.team.permissions} value="permissions">
+          <Tab component={RouterLink} href={paths.dashboard.team.permissions} value='permissions'>
             Permissions
           </Tab>
         </TabList>

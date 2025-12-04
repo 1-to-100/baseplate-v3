@@ -12,12 +12,23 @@ interface CustomersPaginationProps {
 }
 
 // See orders pagination implementation
-export function CustomersPagination({ count, page, rowsPerPage }: CustomersPaginationProps): React.JSX.Element {
+export function CustomersPagination({
+  count,
+  page,
+  rowsPerPage,
+}: CustomersPaginationProps): React.JSX.Element {
   const pagesCount = Math.ceil(count / rowsPerPage);
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Pagination count={pagesCount} page={page} showFirstButton showLastButton size="sm" variant="outlined" />
+      <Pagination
+        count={pagesCount}
+        page={page}
+        showFirstButton
+        showLastButton
+        size='sm'
+        variant='outlined'
+      />
     </Box>
   );
 }

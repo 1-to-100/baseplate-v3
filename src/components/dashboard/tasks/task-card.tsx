@@ -39,11 +39,18 @@ export function TaskCard({ onOpen, task }: TaskCardProps): React.JSX.Element {
 
   return (
     <Card>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <div>{priority ? <TaskPriority priority={priority} /> : null}</div>
         <div>
           {dueDate ? (
-            <Typography level="body-xs" startDecorator={<ClockIcon fontSize="var(--Icon-fontSize)" weight="bold" />}>
+            <Typography
+              level='body-xs'
+              startDecorator={<ClockIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+            >
               {dayjs(dueDate).diff(dayjs(), 'day')} days
             </Typography>
           ) : null}
@@ -57,9 +64,13 @@ export function TaskCard({ onOpen, task }: TaskCardProps): React.JSX.Element {
         >
           {title}
         </Typography>
-        <Typography level="body-sm">{description}</Typography>
+        <Typography level='body-sm'>{description}</Typography>
       </Stack>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <div>
           {assignees.length ? (
             <AvatarGroup sx={{ flex: '1 1 auto' }}>
@@ -71,30 +82,38 @@ export function TaskCard({ onOpen, task }: TaskCardProps): React.JSX.Element {
             </AvatarGroup>
           ) : null}
         </div>
-        <Stack direction="row" spacing={1}>
+        <Stack direction='row' spacing={1}>
           {subtasks.length ? (
-            <Typography level="body-xs" startDecorator={<ListIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}>
+            <Typography
+              level='body-xs'
+              startDecorator={<ListIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
+            >
               {subtasks.length}
             </Typography>
           ) : null}
           {attachments.length ? (
             <Typography
-              level="body-xs"
-              startDecorator={<PaperclipIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}
+              level='body-xs'
+              startDecorator={<PaperclipIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
             >
               {attachments.length}
             </Typography>
           ) : null}
           {comments.length ? (
             <Typography
-              level="body-xs"
-              startDecorator={<ChatCenteredDotsIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}
+              level='body-xs'
+              startDecorator={
+                <ChatCenteredDotsIcon fontSize='var(--joy-fontSize-md)' weight='bold' />
+              }
             >
               {sumComments(comments)}
             </Typography>
           ) : null}
           {watchers ? (
-            <Typography level="body-xs" startDecorator={<EyeIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}>
+            <Typography
+              level='body-xs'
+              startDecorator={<EyeIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
+            >
               {watchers}
             </Typography>
           ) : null}

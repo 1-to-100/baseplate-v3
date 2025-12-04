@@ -36,7 +36,7 @@ export interface Shipment {
 const columns = [
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
         <Avatar src={row.driver.avatar} />
         <Typography>{row.driver.name}</Typography>
       </Stack>
@@ -65,7 +65,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '100px',
@@ -76,7 +78,7 @@ const columns = [
       const { label, color } = statusMapping[row.status];
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -94,12 +96,12 @@ export interface ShippingHistoryProps {
 export function ShippingHistory({ shipments = [] }: ShippingHistoryProps): React.JSX.Element {
   return (
     <Card sx={{ gap: 3 }}>
-      <Typography level="h4">Shipping History</Typography>
+      <Typography level='h4'>Shipping History</Typography>
       <CardOverflow sx={{ m: 'var(--CardOverflow-offset)', overflowX: 'auto' }}>
         <DataTable<Shipment>
           columns={columns}
           rows={shipments}
-          stripe="even"
+          stripe='even'
           sx={{ '--TableCell-paddingX': '16px', '--TableCell-paddingY': '12px' }}
         />
       </CardOverflow>

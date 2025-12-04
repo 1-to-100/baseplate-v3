@@ -17,7 +17,10 @@ export const PopupContent = styled(Sheet)({
     'var(--joy-shadowRing, 0 0 #000),0px 2px 8px -2px rgba(var(--joy-shadowChannel, 21 21 21) / var(--joy-shadowOpacity, 0.04)),0px 6px 12px -2px rgba(var(--joy-shadowChannel, 21 21 21) / var(--joy-shadowOpacity, 0.04))',
 });
 
-interface PopupProps extends Pick<PopperProps, 'anchorEl' | 'disablePortal' | 'modifiers' | 'open' | 'placement'> {
+interface PopupProps extends Pick<
+  PopperProps,
+  'anchorEl' | 'disablePortal' | 'modifiers' | 'open' | 'placement'
+> {
   children: React.ReactElement;
   onClose?: () => void;
   sx?: SxProps;

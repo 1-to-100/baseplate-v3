@@ -7,7 +7,7 @@ export interface TimelineProps {
 
 export function Timeline({ children }: TimelineProps): React.JSX.Element {
   return (
-    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+    <Box component='ul' sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {children}
     </Box>
   );
@@ -20,10 +20,12 @@ export interface TimelineItemProps {
 export function TimelineItem({ children }: TimelineItemProps): React.JSX.Element {
   return (
     <Box
-      component="li"
+      component='li'
       sx={{
         display: 'flex',
-        '&:last-of-type': { '& > div:first-of-type': { '& > div:last-of-type': { display: 'none' } } },
+        '&:last-of-type': {
+          '& > div:first-of-type': { '& > div:last-of-type': { display: 'none' } },
+        },
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -36,7 +38,14 @@ export function TimelineItem({ children }: TimelineItemProps): React.JSX.Element
             width: '8px',
           }}
         />
-        <Box sx={{ bgcolor: 'var(--joy-palette-neutral-100)', flex: '1 1 auto', width: '1px', my: '8px' }} />
+        <Box
+          sx={{
+            bgcolor: 'var(--joy-palette-neutral-100)',
+            flex: '1 1 auto',
+            width: '1px',
+            my: '8px',
+          }}
+        />
       </Box>
       {children}
     </Box>

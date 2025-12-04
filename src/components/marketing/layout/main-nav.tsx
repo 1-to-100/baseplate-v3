@@ -27,8 +27,15 @@ export function MainNav(): React.JSX.Element {
   return (
     <React.Fragment>
       <Box
-        component="header"
-        sx={{ left: 0, p: '20px', position: 'fixed', top: 0, width: '100%', zIndex: 'var(--MainNav-zIndex)' }}
+        component='header'
+        sx={{
+          left: 0,
+          p: '20px',
+          position: 'fixed',
+          top: 0,
+          width: '100%',
+          zIndex: 'var(--MainNav-zIndex)',
+        }}
       >
         <Box
           sx={{
@@ -51,16 +58,30 @@ export function MainNav(): React.JSX.Element {
             </Box>
           </Stack> */}
           <Stack
-            direction="row"
+            direction='row'
             spacing={2}
-            sx={{ display: { xs: 'none', md: 'flex' },  justifyContent: 'center', gap: '20px' }}
+            sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', gap: '20px' }}
           >
-            <NavItem href={paths.home} pathname={pathname} title="Home" />
-            <NavItem external href="https://1to100.com/baseplate/" pathname={pathname} title="Documentation" />
-            <NavItem external href="https://github.com/1-to-100/baseplate" pathname={pathname} title="Sources" />
-            <NavItem href={paths.dashboard.overview} pathname={pathname} title="Application" />
+            <NavItem href={paths.home} pathname={pathname} title='Home' />
+            <NavItem
+              external
+              href='https://1to100.com/baseplate/'
+              pathname={pathname}
+              title='Documentation'
+            />
+            <NavItem
+              external
+              href='https://github.com/1-to-100/baseplate'
+              pathname={pathname}
+              title='Sources'
+            />
+            <NavItem href={paths.dashboard.overview} pathname={pathname} title='Application' />
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'flex-end', display: { md: 'none' } }}>
+          <Stack
+            direction='row'
+            spacing={2}
+            sx={{ alignItems: 'center', justifyContent: 'flex-end', display: { md: 'none' } }}
+          >
             {/* <NoSsr>
               <ColorSchemeSwitch />
             </NoSsr> */}
@@ -71,10 +92,13 @@ export function MainNav(): React.JSX.Element {
               sx={{
                 color: 'var(--joy-palette-common-white)',
                 display: { md: 'none' },
-                '&:hover': { bgcolor: 'var(--joy-palette-neutral-800)', color: 'var(--joy-palette-common-white)' },
+                '&:hover': {
+                  bgcolor: 'var(--joy-palette-neutral-800)',
+                  color: 'var(--joy-palette-common-white)',
+                },
               }}
             >
-              <ListIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+              <ListIcon fontSize='var(--Icon-fontSize)' weight='bold' />
             </IconButton>
             {/* <Button
               component="a"
@@ -111,7 +135,11 @@ function NavItem({ disabled, external, href, pathname, title }: NavItemProps): R
 
   return (
     <Typography
-      {...(href && { component: RouterLink, href, ...(external && { target: '_blank', rel: 'noreferrer' }) })}
+      {...(href && {
+        component: RouterLink,
+        href,
+        ...(external && { target: '_blank', rel: 'noreferrer' }),
+      })}
       sx={{
         alignItems: 'center',
         color: 'var(--joy-palette-common-white)',

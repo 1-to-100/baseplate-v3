@@ -19,7 +19,10 @@ export interface TasksContextValue {
   updateColumn: (taskId: string, params: { name?: string }) => void;
   clearColumn: (columnId: string) => void;
   deleteColumn: (columnId: string) => void;
-  dragTask: (active: { id: string; type: 'task' }, over: { id: string; type: 'column' | 'task' }) => void;
+  dragTask: (
+    active: { id: string; type: 'task' },
+    over: { id: string; type: 'column' | 'task' }
+  ) => void;
   createTask: (columnId: string) => void;
   deleteTask: (taskId: string) => void;
   updateTask: (taskId: string, params: { title?: string; description?: string }) => void;
@@ -184,7 +187,10 @@ export function TasksProvider({
         if (activeTask.columnId === over.id) {
           const updatedActiveColumn = {
             ...activeColumn,
-            taskIds: [...activeColumn.taskIds.filter((taskId) => taskId !== activeTask.id), activeTask.id],
+            taskIds: [
+              ...activeColumn.taskIds.filter((taskId) => taskId !== activeTask.id),
+              activeTask.id,
+            ],
           } satisfies Column;
 
           const updatedColumns = new Map<string, Column>(columns);
@@ -217,7 +223,10 @@ export function TasksProvider({
           } satisfies Column;
 
           // Add task to over column
-          const updatedOverColumn = { ...overColumn, taskIds: [...overColumn.taskIds, activeTask.id] } satisfies Column;
+          const updatedOverColumn = {
+            ...overColumn,
+            taskIds: [...overColumn.taskIds, activeTask.id],
+          } satisfies Column;
 
           const updatedColumns = new Map<string, Column>(columns);
 
@@ -317,7 +326,12 @@ export function TasksProvider({
       // Create the new task
       const task = {
         id: `TSK-${Date.now()}`,
-        author: { id: 'USR-000', name: 'Sofia Rivers', username: 'sofia.rivers', avatar: '/assets/avatar.png' },
+        author: {
+          id: 'USR-000',
+          name: 'Sofia Rivers',
+          username: 'sofia.rivers',
+          avatar: '/assets/avatar.png',
+        },
         title: 'Untitled',
         columnId,
         createdAt: new Date(),
@@ -421,7 +435,12 @@ export function TasksProvider({
       // Create the comment and add it to the task
       const comment = {
         id: `MSG-${Date.now()}`,
-        author: { id: 'USR-000', name: 'Sofia Rivers', username: 'sofia.rivers', avatar: '/assets/avatar.png' },
+        author: {
+          id: 'USR-000',
+          name: 'Sofia Rivers',
+          username: 'sofia.rivers',
+          avatar: '/assets/avatar.png',
+        },
         content,
         createdAt: new Date(),
       } satisfies Comment;

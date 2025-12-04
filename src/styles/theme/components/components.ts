@@ -29,5 +29,5 @@ export const components = {
   JoyTable,
   JoyTabs,
   JoyTextarea,
-  JoyCheckbox
+  JoyCheckbox,
 } satisfies Components<Theme>;

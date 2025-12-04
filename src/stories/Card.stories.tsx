@@ -22,35 +22,40 @@ const sampleData: CardData[] = [
   {
     id: '1',
     name: 'Administrator',
-    description: 'Full access to all system features and user management capabilities. Can create, edit, and delete users, roles, and system settings.',
+    description:
+      'Full access to all system features and user management capabilities. Can create, edit, and delete users, roles, and system settings.',
     userCount: 5,
     isDefault: true,
   },
   {
     id: '2',
     name: 'Manager',
-    description: 'Can manage team members, view reports, and access project management tools. Limited administrative capabilities.',
+    description:
+      'Can manage team members, view reports, and access project management tools. Limited administrative capabilities.',
     userCount: 12,
     isDefault: false,
   },
   {
     id: '3',
     name: 'User',
-    description: 'Standard user access with basic functionality. Can view assigned projects and update personal information.',
+    description:
+      'Standard user access with basic functionality. Can view assigned projects and update personal information.',
     userCount: 45,
     isDefault: false,
   },
   {
     id: '4',
     name: 'Guest',
-    description: 'Limited access for temporary users. Can only view public information and basic project details.',
+    description:
+      'Limited access for temporary users. Can only view public information and basic project details.',
     userCount: 8,
     isDefault: false,
   },
   {
     id: '5',
     name: 'Support',
-    description: 'Customer support role with access to help desk tools and user assistance features.',
+    description:
+      'Customer support role with access to help desk tools and user assistance features.',
     userCount: 3,
     isDefault: false,
   },

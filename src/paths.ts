@@ -22,7 +22,10 @@ export const paths = {
       updatePassword: '/auth/cognito/update-password',
     },
     supabase: {
-      callback: { implicit: '/auth/supabase/callback/implicit', pkce: '/auth/supabase/callback/pkce' },
+      callback: {
+        implicit: '/auth/supabase/callback/implicit',
+        pkce: '/auth/supabase/callback/pkce',
+      },
       signIn: '/auth/supabase/sign-in',
       signUp: '/auth/supabase/sign-up',
       signUpConfirm: '/auth/supabase/sign-up-confirm',
@@ -42,7 +45,8 @@ export const paths = {
     documentation: {
       list: '/dashboard/documentation',
       details: (categoryId: string) => `/dashboard/documentation/${categoryId}`,
-      article: (categoryId: string, articleId: string) => `/dashboard/documentation/${categoryId}/${articleId}`,
+      article: (categoryId: string, articleId: string) =>
+        `/dashboard/documentation/${categoryId}/${articleId}`,
       add: (categoryId: string) => `/dashboard/documentation/${categoryId}/add`,
     },
     roleSettings: {
@@ -61,7 +65,7 @@ export const paths = {
     },
     notificationManagement: {
       list: '/dashboard/notification-management',
-      history:  `/dashboard/notification-management/history`,
+      history: `/dashboard/notification-management/history`,
     },
     systemUsers: {
       list: '/dashboard/system-users',
@@ -106,8 +110,8 @@ export const paths = {
       settings: '/dashboard/settings',
     },
     test: {
-        list: '/dashboard/test',
-    }
+      list: '/dashboard/test',
+    },
   },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',

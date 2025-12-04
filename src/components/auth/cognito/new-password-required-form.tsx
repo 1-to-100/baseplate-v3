@@ -69,39 +69,43 @@ export function NewPasswordRequiredForm(): React.JSX.Element {
     <Stack spacing={5}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={32} width={154} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={32} width={154} />
         </Box>
       </Box>
       <Stack spacing={3}>
-        <Typography level="h3" textAlign="center">
+        <Typography level='h3' textAlign='center'>
           New Password Required
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={2}>
             <Controller
               control={control}
-              name="password"
+              name='password'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.password)}>
                   <FormLabel>Password</FormLabel>
-                  <Input {...field} type="password" />
-                  {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                  <Input {...field} type='password' />
+                  {errors.password ? (
+                    <FormHelperText>{errors.password.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
             <Controller
               control={control}
-              name="confirmPassword"
+              name='confirmPassword'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.confirmPassword)}>
                   <FormLabel>Confirm Password</FormLabel>
-                  <Input {...field} type="password" />
-                  {errors.confirmPassword ? <FormHelperText>{errors.confirmPassword.message}</FormHelperText> : null}
+                  <Input {...field} type='password' />
+                  {errors.confirmPassword ? (
+                    <FormHelperText>{errors.confirmPassword.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
-            {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-            <Button disabled={isPending} type="submit">
+            {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+            <Button disabled={isPending} type='submit'>
               Confirm
             </Button>
           </Stack>

@@ -38,7 +38,7 @@ export interface RecentEventsProps {
 export function RecentEvents({ events = [] }: RecentEventsProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Recent Events</Typography>
+      <Typography level='h4'>Recent Events</Typography>
       <List
         sx={{
           '--List-padding': 0,
@@ -57,17 +57,17 @@ export function RecentEvents({ events = [] }: RecentEventsProps): React.JSX.Elem
               <ListItemDecorator>
                 {Icon ? (
                   <Avatar>
-                    <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+                    <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
                   </Avatar>
                 ) : null}
               </ListItemDecorator>
               <ListItemContent>
                 <Typography noWrap>{label}</Typography>
-                <Typography level="body-sm" noWrap>
+                <Typography level='body-sm' noWrap>
                   {description}
                 </Typography>
               </ListItemContent>
-              <Typography level="body-xs" whiteSpace="nowrap">
+              <Typography level='body-xs' whiteSpace='nowrap'>
                 {dayjs().diff(event.createdAt, 'minute')} min ago
               </Typography>
             </ListItem>
@@ -86,7 +86,7 @@ function getContent(event: Event): { label: string; description: React.JSX.Eleme
         description: (
           <React.Fragment>
             Visited{' '}
-            <Typography fontWeight="md" textColor="text.primary">
+            <Typography fontWeight='md' textColor='text.primary'>
               {event.url}
             </Typography>
           </React.Fragment>
@@ -99,7 +99,7 @@ function getContent(event: Event): { label: string; description: React.JSX.Eleme
         description: (
           <React.Fragment>
             Clicked on{' '}
-            <Typography fontWeight="md" textColor="text.primary">
+            <Typography fontWeight='md' textColor='text.primary'>
               {event.text}
             </Typography>
           </React.Fragment>
@@ -111,7 +111,7 @@ function getContent(event: Event): { label: string; description: React.JSX.Eleme
         label: 'Add Product',
         description: (
           <React.Fragment>
-            Added product <Link fontWeight="md">{event.productId}</Link> to cart
+            Added product <Link fontWeight='md'>{event.productId}</Link> to cart
           </React.Fragment>
         ),
       };
@@ -121,7 +121,7 @@ function getContent(event: Event): { label: string; description: React.JSX.Eleme
         label: 'Purchase',
         description: (
           <React.Fragment>
-            Placed order <Link fontWeight="md">{event.orderId}</Link>
+            Placed order <Link fontWeight='md'>{event.orderId}</Link>
           </React.Fragment>
         ),
       };
@@ -131,7 +131,7 @@ function getContent(event: Event): { label: string; description: React.JSX.Eleme
         label: 'Refund request',
         description: (
           <React.Fragment>
-            Requested refund for order <Link fontWeight="md">{event.orderId}</Link>
+            Requested refund for order <Link fontWeight='md'>{event.orderId}</Link>
           </React.Fragment>
         ),
       };

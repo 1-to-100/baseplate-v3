@@ -25,7 +25,7 @@ export function ProductImage({ url, onDelete }: ProductImageProps): React.JSX.El
         '&:not(:hover) > *:nth-child(2)': { display: 'none' },
       }}
     >
-      <Image alt="preview" fill src={url} style={{ objectFit: 'cover', zIndex: 1 }} />
+      <Image alt='preview' fill src={url} style={{ objectFit: 'cover', zIndex: 1 }} />
       <Box
         sx={{
           alignItems: 'center',
@@ -41,8 +41,8 @@ export function ProductImage({ url, onDelete }: ProductImageProps): React.JSX.El
           zIndex: 2,
         }}
       >
-        <IconButton color="danger" onClick={onDelete} size="sm" variant="solid">
-          <TrashIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <IconButton color='danger' onClick={onDelete} size='sm' variant='solid'>
+          <TrashIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       </Box>
     </Box>

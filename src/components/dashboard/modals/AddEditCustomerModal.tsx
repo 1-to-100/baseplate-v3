@@ -1,32 +1,28 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import ModalClose from "@mui/joy/ModalClose";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Input from "@mui/joy/Input";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Button from "@mui/joy/Button";
-import FormHelperText from "@mui/joy/FormHelperText";
-import Autocomplete from "@mui/joy/Autocomplete";
-import Box from "@mui/joy/Box";
-import Chip from "@mui/joy/Chip";
-import { useColorScheme } from "@mui/joy/styles";
-import {
-  createCustomer,
-  getCustomerById,
-  updateCustomer,
-} from "../../../lib/api/customers";
-import { getManagers } from "@/lib/api/managers";
-import { getSubscriptions } from "../../../lib/api/customers";
-import { ApiUser, Customer } from "@/contexts/auth/types";
-import { toast } from "@/components/core/toaster";
-import { getUsers, GetUsersParams } from "@/lib/api/users";
+import * as React from 'react';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import ModalClose from '@mui/joy/ModalClose';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Input from '@mui/joy/Input';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Button from '@mui/joy/Button';
+import FormHelperText from '@mui/joy/FormHelperText';
+import Autocomplete from '@mui/joy/Autocomplete';
+import Box from '@mui/joy/Box';
+import Chip from '@mui/joy/Chip';
+import { useColorScheme } from '@mui/joy/styles';
+import { createCustomer, getCustomerById, updateCustomer } from '../../../lib/api/customers';
+import { getManagers } from '@/lib/api/managers';
+import { getSubscriptions } from '../../../lib/api/customers';
+import { ApiUser, Customer } from '@/contexts/auth/types';
+import { toast } from '@/components/core/toaster';
+import { getUsers, GetUsersParams } from '@/lib/api/users';
 
 interface HttpError {
   response?: {
@@ -57,11 +53,7 @@ interface SelectUser {
   lastName: string;
 }
 
-export default function AddEditCustomer({
-  open,
-  onClose,
-  customerId,
-}: AddEditCustomerProps) {
+export default function AddEditCustomer({ open, onClose, customerId }: AddEditCustomerProps) {
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
@@ -70,11 +62,11 @@ export default function AddEditCustomer({
     status: string;
     ownerId: string | null;
   }>({
-    name: "",
-    email: "",
+    name: '',
+    email: '',
     customerSuccessId: [],
     subscriptionId: null,
-    status: "",
+    status: '',
     ownerId: null,
   });
 
@@ -84,25 +76,25 @@ export default function AddEditCustomer({
   const queryClient = useQueryClient();
 
   const { data: managers, isLoading: isManagersLoading } = useQuery({
-    queryKey: ["managers", customerId],
+    queryKey: ['managers', customerId],
     queryFn: () => getManagers(customerId || undefined),
     enabled: open,
   });
 
   const { data: subscriptions, isLoading: isSubscriptionsLoading } = useQuery({
-    queryKey: ["subscriptions"],
+    queryKey: ['subscriptions'],
     queryFn: getSubscriptions,
     enabled: open,
   });
 
   const { data: customerData, isLoading: isCustomerLoading } = useQuery({
-    queryKey: ["customers", customerId],
+    queryKey: ['customers', customerId],
     queryFn: () => getCustomerById(customerId!),
     enabled: !!customerId && open,
   });
 
   const { data: users, isLoading: isUsersLoading } = useQuery({
-    queryKey: ["users", customerId],
+    queryKey: ['users', customerId],
     queryFn: async () => {
       const params: GetUsersParams = {
         perPage: 1000,
@@ -116,22 +108,22 @@ export default function AddEditCustomer({
   useEffect(() => {
     if (customerId && customerData && open) {
       setFormData({
-        name: customerData.name || "",
+        name: customerData.name || '',
         email: customerData.owner?.email || '',
         subscriptionId: customerData.subscriptionId ?? null,
-        customerSuccessId: customerData.customerSuccess?.map(cs => cs.id) || [],
-        status: customerData.status || "",
+        customerSuccessId: customerData.customerSuccess?.map((cs) => cs.id) || [],
+        status: customerData.status || '',
         ownerId: customerData.owner?.id ?? null,
       });
       setErrors(null);
       setEmailWarnings([]);
     } else if (!customerId && open) {
       setFormData({
-        name: "",
-        email: "",
+        name: '',
+        email: '',
         customerSuccessId: [],
         subscriptionId: null,
-        status: "",
+        status: '',
         ownerId: null,
       });
       setErrors(null);
@@ -142,16 +134,16 @@ export default function AddEditCustomer({
   const createCustomerMutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       onClose();
-      toast.success("Customer created successfully.");
+      toast.success('Customer created successfully.');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while creating the customer.");
+        toast.error('An error occurred while creating the customer.');
       }
     },
   });
@@ -159,47 +151,47 @@ export default function AddEditCustomer({
   const updateCustomerMutation = useMutation({
     mutationFn: updateCustomer,
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["customers", customerId] });
-      await queryClient.refetchQueries({ queryKey: ["customers", customerId] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers', customerId] });
+      await queryClient.refetchQueries({ queryKey: ['customers', customerId] });
       onClose();
-      toast.success("Customer updated successfully.");
+      toast.success('Customer updated successfully.');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while updating the customer.");
+        toast.error('An error occurred while updating the customer.');
       }
     },
   });
 
   const validateEmail = (email: string): string | null => {
     if (!email.trim()) {
-      return "Email is required";
+      return 'Email is required';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return "Invalid email format";
+      return 'Invalid email format';
     }
 
-    if (email.startsWith(".") || email.endsWith(".")) {
-      return "Invalid email format";
+    if (email.startsWith('.') || email.endsWith('.')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("..")) {
-      return "Invalid email format";
+    if (email.includes('..')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("/")) {
-      return "Invalid email format";
+    if (email.includes('/')) {
+      return 'Invalid email format';
     }
 
-    const atIndex = email.indexOf("@");
-    if (email[atIndex - 1] === ".") {
-      return "Invalid email format";
+    const atIndex = email.indexOf('@');
+    if (email[atIndex - 1] === '.') {
+      return 'Invalid email format';
     }
 
     return null;
@@ -209,7 +201,7 @@ export default function AddEditCustomer({
     const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Customer name is required";
+      newErrors.name = 'Customer name is required';
     }
 
     const emailError = validateEmail(formData.email);
@@ -217,13 +209,12 @@ export default function AddEditCustomer({
       newErrors.email = emailError;
     }
 
-
     if (!formData.subscriptionId) {
-      newErrors.subscriptionId = "Subscription is required";
+      newErrors.subscriptionId = 'Subscription is required';
     }
 
     if (!formData.ownerId) {
-      newErrors.ownerId = "Customer admin is required";
+      newErrors.ownerId = 'Customer admin is required';
     }
 
     return newErrors;
@@ -236,7 +227,7 @@ export default function AddEditCustomer({
       [field]: undefined,
     }));
 
-    if (field === "email" && typeof value === "string") {
+    if (field === 'email' && typeof value === 'string') {
       const emailError = validateEmail(value);
       if (emailError) {
         setErrors((prev) => ({ ...prev, email: emailError }));
@@ -254,7 +245,8 @@ export default function AddEditCustomer({
         email: formData.email,
         name: formData.name,
         status: formData.status,
-        customerSuccessIds: formData.customerSuccessId.length > 0 ? formData.customerSuccessId : undefined,
+        customerSuccessIds:
+          formData.customerSuccessId.length > 0 ? formData.customerSuccessId : undefined,
         ownerId: formData.ownerId ?? undefined,
         subscriptionId: formData.subscriptionId ?? undefined,
       };
@@ -274,23 +266,23 @@ export default function AddEditCustomer({
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         sx={{
-          width: { xs: "90%", sm: 520 },
+          width: { xs: '90%', sm: 520 },
           p: 3,
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         }}
       >
-        <ModalClose sx={{ color: "#6B7280" }} />
+        <ModalClose sx={{ color: '#6B7280' }} />
         <Typography
-          level="h3"
+          level='h3'
           sx={{
-            fontSize: "24px",
+            fontSize: '24px',
             fontWeight: 600,
-            color: "var(--joy-palette-text-primary)",
+            color: 'var(--joy-palette-text-primary)',
             mb: 2,
           }}
         >
-          {customerId ? "Edit customer" : "Add customer"}
+          {customerId ? 'Edit customer' : 'Add customer'}
         </Typography>
         <Stack spacing={2}>
           {/* {customerId && (
@@ -331,10 +323,10 @@ export default function AddEditCustomer({
           )} */}
           <Stack sx={{ flex: 1 }}>
             <Typography
-              level="body-sm"
+              level='body-sm'
               sx={{
-                fontSize: "14px",
-                color: "var(--joy-palette-text-primary)",
+                fontSize: '14px',
+                color: 'var(--joy-palette-text-primary)',
                 mb: 0.5,
                 fontWeight: 500,
               }}
@@ -342,21 +334,21 @@ export default function AddEditCustomer({
               Customer Name
             </Typography>
             <Input
-              placeholder="Enter customer name"
+              placeholder='Enter customer name'
               value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               error={!!errors?.name}
               slotProps={{ input: { maxLength: 255 } }}
               sx={{
-                borderRadius: "6px",
-                fontSize: "14px",
+                borderRadius: '6px',
+                fontSize: '14px',
               }}
             />
             {errors?.name && (
               <FormHelperText
                 sx={{
-                  color: "var(--joy-palette-danger-500)",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-danger-500)',
+                  fontSize: '12px',
                 }}
               >
                 {errors.name}
@@ -364,13 +356,13 @@ export default function AddEditCustomer({
             )}
           </Stack>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction='row' spacing={2}>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -378,7 +370,7 @@ export default function AddEditCustomer({
                 Customer administrator
               </Typography>
               <Autocomplete
-                placeholder="Search users"
+                placeholder='Search users'
                 options={users?.data.sort((a, b) => a.firstName?.localeCompare(b.firstName)) || []}
                 getOptionLabel={(user: ApiUser) =>
                   `${user.firstName?.slice(0, 25) || ''} ${user.lastName?.slice(0, 25) || ''}`
@@ -386,21 +378,23 @@ export default function AddEditCustomer({
                 getOptionKey={(user: ApiUser) => user.id}
                 value={
                   formData.ownerId
-                    ? (users?.data?.find((user: ApiUser) => user.id === formData.ownerId) ||
-                        (customerData?.owner ? {
-                          id: customerData.owner.id,
-                          firstName: customerData.owner.firstName,
-                          lastName: customerData.owner.lastName,
-                          email: customerData.owner.email || ""
-                        } as ApiUser : null))
+                    ? users?.data?.find((user: ApiUser) => user.id === formData.ownerId) ||
+                      (customerData?.owner
+                        ? ({
+                            id: customerData.owner.id,
+                            firstName: customerData.owner.firstName,
+                            lastName: customerData.owner.lastName,
+                            email: customerData.owner.email || '',
+                          } as ApiUser)
+                        : null)
                     : null
                 }
                 onChange={(event, newValue) => {
-                  handleInputChange("ownerId", newValue ? newValue.id : null);
+                  handleInputChange('ownerId', newValue ? newValue.id : null);
                   if (newValue && newValue.email) {
-                    handleInputChange("email", newValue.email);
+                    handleInputChange('email', newValue.email);
                   } else if (!newValue) {
-                    handleInputChange("email", "");
+                    handleInputChange('email', '');
                   }
                 }}
                 isOptionEqualToValue={(option, value) => {
@@ -408,18 +402,16 @@ export default function AddEditCustomer({
                   return option.id === value.id;
                 }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  border: errors?.ownerId
-                    ? "1px solid var(--joy-palette-danger-500)"
-                    : undefined,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  border: errors?.ownerId ? '1px solid var(--joy-palette-danger-500)' : undefined,
                 }}
               />
               {errors?.ownerId && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: "12px",
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: '12px',
                   }}
                 >
                   {errors.ownerId}
@@ -430,10 +422,10 @@ export default function AddEditCustomer({
 
           <Stack sx={{ flex: 1 }}>
             <Typography
-              level="body-sm"
+              level='body-sm'
               sx={{
-                fontSize: "14px",
-                color: "var(--joy-palette-text-primary)",
+                fontSize: '14px',
+                color: 'var(--joy-palette-text-primary)',
                 mb: 0.5,
                 fontWeight: 500,
               }}
@@ -441,23 +433,23 @@ export default function AddEditCustomer({
               Email
             </Typography>
             <Input
-              placeholder="Enter email"
+              placeholder='Enter email'
               disabled
-              type="email"
+              type='email'
               value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               error={!!errors?.email}
               slotProps={{ input: { maxLength: 255 } }}
               sx={{
-                borderRadius: "6px",
-                fontSize: "14px",
+                borderRadius: '6px',
+                fontSize: '14px',
               }}
             />
             {errors?.email && (
               <FormHelperText
                 sx={{
-                  color: "var(--joy-palette-danger-500)",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-danger-500)',
+                  fontSize: '12px',
                 }}
               >
                 {errors.email}
@@ -466,8 +458,8 @@ export default function AddEditCustomer({
             {emailWarnings[0] && (
               <FormHelperText
                 sx={{
-                  color: "var(--joy-palette-warning-500)",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-warning-500)',
+                  fontSize: '12px',
                 }}
               >
                 {emailWarnings[0]}
@@ -476,10 +468,10 @@ export default function AddEditCustomer({
           </Stack>
           <Stack sx={{ flex: 1 }}>
             <Typography
-              level="body-sm"
+              level='body-sm'
               sx={{
-                fontSize: "14px",
-                color: "var(--joy-palette-text-primary)",
+                fontSize: '14px',
+                color: 'var(--joy-palette-text-primary)',
                 mb: 0.5,
                 fontWeight: 500,
               }}
@@ -487,21 +479,19 @@ export default function AddEditCustomer({
               Subscription
             </Typography>
             <Select
-              placeholder="Select subscription"
+              placeholder='Select subscription'
               value={formData.subscriptionId}
-              onChange={(e, newValue) =>
-                handleInputChange("subscriptionId", newValue)
-              }
+              onChange={(e, newValue) => handleInputChange('subscriptionId', newValue)}
               slotProps={{
                 listbox: {
-                  placement: 'top'
-                }
+                  placement: 'top',
+                },
               }}
               sx={{
-                borderRadius: "6px",
-                fontSize: "14px",
+                borderRadius: '6px',
+                fontSize: '14px',
                 border: errors?.subscriptionId
-                  ? "1px solid var(--joy-palette-danger-500)"
+                  ? '1px solid var(--joy-palette-danger-500)'
                   : undefined,
               }}
             >
@@ -515,8 +505,8 @@ export default function AddEditCustomer({
             {errors?.subscriptionId && (
               <FormHelperText
                 sx={{
-                  color: "var(--joy-palette-danger-500)",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-danger-500)',
+                  fontSize: '12px',
                 }}
               >
                 {errors.subscriptionId}
@@ -524,13 +514,13 @@ export default function AddEditCustomer({
             )}
           </Stack>
 
-          <Stack direction="row" spacing={2}>
+          <Stack direction='row' spacing={2}>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -539,15 +529,17 @@ export default function AddEditCustomer({
               </Typography>
               <Select
                 multiple
-                placeholder="Select users"
+                placeholder='Select users'
                 value={formData.customerSuccessId}
-                onChange={(event, newValue) => handleInputChange("customerSuccessId", newValue as string[])}
+                onChange={(event, newValue) =>
+                  handleInputChange('customerSuccessId', newValue as string[])
+                }
                 renderValue={(selected) => (
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     {selected.map((item) => {
-                      const manager = managers?.find(m => m.id === item.value);
+                      const manager = managers?.find((m) => m.id === item.value);
                       return (
-                        <Chip key={item.value} size="sm">
+                        <Chip key={item.value} size='sm'>
                           {manager?.name || item.value}
                         </Chip>
                       );
@@ -555,10 +547,10 @@ export default function AddEditCustomer({
                   </Box>
                 )}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: "14px",
+                  borderRadius: '6px',
+                  fontSize: '14px',
                   border: errors?.customerSuccessId
-                    ? "1px solid var(--joy-palette-danger-500)"
+                    ? '1px solid var(--joy-palette-danger-500)'
                     : undefined,
                 }}
                 slotProps={{
@@ -567,17 +559,19 @@ export default function AddEditCustomer({
                   },
                 }}
               >
-                {managers?.sort((a, b) => a.name.localeCompare(b.name)).map((manager) => (
-                  <Option key={manager.id} value={manager.id}>
-                    {manager.name}
-                  </Option>
-                ))}
+                {managers
+                  ?.sort((a, b) => a.name.localeCompare(b.name))
+                  .map((manager) => (
+                    <Option key={manager.id} value={manager.id}>
+                      {manager.name}
+                    </Option>
+                  ))}
               </Select>
               {errors?.customerSuccessId && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: "12px",
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: '12px',
                   }}
                 >
                   {errors.customerSuccessId}
@@ -586,28 +580,25 @@ export default function AddEditCustomer({
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
-            <Button variant="outlined" onClick={onClose}>
+          <Stack direction='row' spacing={2} justifyContent='flex-end' mt={2}>
+            <Button variant='outlined' onClick={onClose}>
               Cancel
             </Button>
             <Button
-              variant="solid"
+              variant='solid'
               onClick={handleSave}
-              disabled={
-                createCustomerMutation.isPending ||
-                updateCustomerMutation.isPending
-              }
+              disabled={createCustomerMutation.isPending || updateCustomerMutation.isPending}
               sx={{
-                borderRadius: "20px",
-                bgcolor: "#4F46E5",
-                color: "#FFFFFF",
+                borderRadius: '20px',
+                bgcolor: '#4F46E5',
+                color: '#FFFFFF',
                 fontWeight: 500,
                 px: 3,
                 py: 1,
-                "&:hover": { bgcolor: "#4338CA" },
+                '&:hover': { bgcolor: '#4338CA' },
               }}
             >
-              {customerId ? "Save" : "Add customer"}
+              {customerId ? 'Save' : 'Add customer'}
             </Button>
           </Stack>
         </Stack>

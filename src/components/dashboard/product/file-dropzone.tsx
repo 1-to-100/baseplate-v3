@@ -29,11 +29,11 @@ export function FileDropzone({ caption, onDrop }: FileDropzoneProps): React.JSX.
         <Typography>Drop the files here ...</Typography>
       ) : (
         <div>
-          <Typography level="body-sm" textAlign="center">
+          <Typography level='body-sm' textAlign='center'>
             Drag & drop files or <Link>browse files</Link>
           </Typography>
           {caption ? (
-            <Typography level="body-sm" textAlign="center">
+            <Typography level='body-sm' textAlign='center'>
               {caption}
             </Typography>
           ) : null}

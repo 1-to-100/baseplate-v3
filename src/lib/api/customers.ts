@@ -1,7 +1,7 @@
-import { Customer, TaxonomyItem } from "@/contexts/auth/types";
-import { createClient } from "@/lib/supabase/client";
-import { SYSTEM_ROLES } from "@/lib/user-utils";
-import { supabaseDB } from "@/lib/supabase/database";
+import { Customer, TaxonomyItem } from '@/contexts/auth/types';
+import { createClient } from '@/lib/supabase/client';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
+import { supabaseDB } from '@/lib/supabase/database';
 
 interface CustomerData {
   customer_id: string;
@@ -73,7 +73,7 @@ interface GetCustomersParams {
 }
 
 interface GetCustomersResponse {
-  data: Customer[]; 
+  data: Customer[];
   meta: {
     total: number;
     page: number;
@@ -118,7 +118,7 @@ async function getSystemRoleIds(supabase: ReturnType<typeof createClient>): Prom
 /**
  * Count users for a customer (excluding system roles, including users with no role)
  * This matches the backend logic in customers.service.ts
- * 
+ *
  * Counts users where:
  * - customer_id matches
  * - deleted_at is null
@@ -161,67 +161,74 @@ async function countUsersForCustomer(
 }
 
 // Helper function to validate customer success user
-async function validateCSUser(supabase: ReturnType<typeof createClient>, userId: string): Promise<void> {
+async function validateCSUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<void> {
   const { data: user, error: userError } = await supabase
     .from('users')
     .select('user_id, role_id, deleted_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .single();
-  
+
   if (userError || !user) {
     throw new Error(`Customer success user not found with ID: ${userId}`);
   }
-  
+
   if (!user.role_id) {
     throw new Error('User must have a customer success role');
   }
-  
+
   // Get the role to check if it's customer success
   const { data: role, error: roleError } = await supabase
     .from('roles')
     .select('name')
     .eq('role_id', user.role_id)
     .single();
-  
+
   if (roleError || !role) {
     throw new Error('Role not found');
   }
-  
+
   if (role.name !== SYSTEM_ROLES.CUSTOMER_SUCCESS) {
     throw new Error('User must have a customer success role');
   }
 }
 
 // Helper function to get customer admin role ID
-async function getCustomerAdminRoleId(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+async function getCustomerAdminRoleId(
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
   const { data, error } = await supabase
     .from('roles')
     .select('role_id')
     .eq('name', SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR)
     .maybeSingle();
-  
+
   if (error) {
     console.error('Failed to find customer_admin role:', error);
     return null;
   }
-  
+
   return data?.role_id || null;
 }
 
 // Helper function to get standard user role ID
-async function getStandardUserRoleId(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+async function getStandardUserRoleId(
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
   const { data, error } = await supabase
     .from('roles')
     .select('role_id')
     .eq('name', SYSTEM_ROLES.STANDARD_USER)
     .maybeSingle();
-  
+
   if (error) {
     console.error('Failed to find standard_user role:', error);
     return null;
   }
-  
+
   return data?.role_id || null;
 }
 
@@ -231,35 +238,35 @@ function getDomainFromEmail(email: string): string {
   const trimmed = email.trim().toLowerCase();
   const domainRegex = /@([^@\s]+)$/;
   const match = domainRegex.exec(trimmed);
-  return match ? (match[1] || '') : '';
+  return match ? match[1] || '' : '';
 }
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
   const supabase = createClient();
-  
+
   // Validate owner exists
   if (!payload.ownerId) {
     throw new Error('Owner ID is required');
   }
-  
+
   const { data: owner, error: ownerError } = await supabase
     .from('users')
     .select('user_id, email, role_id, deleted_at')
     .eq('user_id', payload.ownerId)
     .is('deleted_at', null)
     .single();
-  
+
   if (ownerError || !owner) {
     throw new Error('Owner not found');
   }
-  
+
   // Validate all customer success users if provided
   if (payload.customerSuccessIds && payload.customerSuccessIds.length > 0) {
     for (const csId of payload.customerSuccessIds) {
       await validateCSUser(supabase, csId);
     }
   }
-  
+
   // Create customer
   const { data: customer, error: createError } = await supabase
     .from('customers')
@@ -273,14 +280,16 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
     })
     .select('customer_id')
     .single();
-  
+
   if (createError || !customer) {
     throw new Error(createError?.message || 'Failed to create customer');
   }
-  
+
   // Set owner's customer_id and role
-  const updateData: { customer_id: string; role_id?: string } = { customer_id: customer.customer_id };
-  
+  const updateData: { customer_id: string; role_id?: string } = {
+    customer_id: customer.customer_id,
+  };
+
   // If owner doesn't have a role, assign customer admin role
   if (!owner.role_id) {
     const customerAdminRoleId = await getCustomerAdminRoleId(supabase);
@@ -288,32 +297,30 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
       updateData.role_id = customerAdminRoleId;
     }
   }
-  
+
   const { error: updateOwnerError } = await supabase
     .from('users')
     .update(updateData)
     .eq('user_id', payload.ownerId)
     .is('deleted_at', null);
-  
+
   if (updateOwnerError) {
     console.error('Failed to update owner:', updateOwnerError);
   }
-  
+
   // Create customer success assignments if provided
   if (payload.customerSuccessIds && payload.customerSuccessIds.length > 0) {
     for (const csId of payload.customerSuccessIds) {
       // Create assignment
-      const { error: csError } = await supabase
-        .from('customer_success_owned_customers')
-        .insert({
-          user_id: csId,
-          customer_id: customer.customer_id,
-        });
-      
+      const { error: csError } = await supabase.from('customer_success_owned_customers').insert({
+        user_id: csId,
+        customer_id: customer.customer_id,
+      });
+
       if (csError) {
         console.error('Failed to create customer success assignment:', csError);
       }
-      
+
       // If user has no customer_id, set it
       const { data: user } = await supabase
         .from('users')
@@ -321,7 +328,7 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
         .eq('user_id', csId)
         .is('deleted_at', null)
         .single();
-      
+
       if (user && !user.customer_id) {
         await supabase
           .from('users')
@@ -331,26 +338,23 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
       }
     }
   }
-  
+
   // Fetch and return created customer
   return getCustomerById(customer.customer_id);
 }
 
 export async function getCustomers(): Promise<TaxonomyItem[]> {
   const supabase = createClient();
-  
+
   // Get current user (returns impersonated user when impersonating)
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
   // Check if user is customer success
   const userRoleName = currentUser.role?.name;
   const isCS = userRoleName === SYSTEM_ROLES.CUSTOMER_SUCCESS;
-  
-  let query = supabase
-    .from('customers')
-    .select('customer_id, name')
-    .order('name');
-  
+
+  let query = supabase.from('customers').select('customer_id, name').order('name');
+
   // Filter by assigned customers if user is customer success
   if (isCS && currentUser.user_id) {
     // Get assigned customers from customer_success_owned_customers
@@ -358,27 +362,29 @@ export async function getCustomers(): Promise<TaxonomyItem[]> {
       .from('customer_success_owned_customers')
       .select('customer_id')
       .eq('user_id', currentUser.user_id);
-    
+
     if (csError) {
       throw csError;
     }
-    
+
     // Extract customer IDs
-    const assignedCustomerIds = (csAssignments || []).map((assignment: { customer_id: string }) => assignment.customer_id);
-    
+    const assignedCustomerIds = (csAssignments || []).map(
+      (assignment: { customer_id: string }) => assignment.customer_id
+    );
+
     // If no assigned customers, return empty array
     if (assignedCustomerIds.length === 0) {
       return [];
     }
-    
+
     // Filter customers by assigned customer IDs
     query = query.in('customer_id', assignedCustomerIds);
   }
-  
+
   const { data, error } = await query;
-  
+
   if (error) throw error;
-  
+
   return (data || []).map((customer: CustomerData) => ({
     id: customer.customer_id,
     name: customer.name,
@@ -387,30 +393,32 @@ export async function getCustomers(): Promise<TaxonomyItem[]> {
 
 export async function getSubscriptions(): Promise<TaxonomyItem[]> {
   const supabase = createClient();
-  
+
   const { data, error } = await supabase
     .from('subscription_types')
     .select('subscription_type_id, name')
     .order('name');
-  
+
   if (error) throw error;
-  
+
   return (data || []).map((subscription: SubscriptionTypeData) => ({
     id: subscription.subscription_type_id,
     name: subscription.name,
   }));
 }
 
-export async function getCustomersList(params: GetCustomersParams = {}): Promise<GetCustomersResponse> {
+export async function getCustomersList(
+  params: GetCustomersParams = {}
+): Promise<GetCustomersResponse> {
   const supabase = createClient();
-  
+
   // Get current user (returns impersonated user when impersonating)
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
   // Check if user is customer success
   const userRoleName = currentUser.role?.name;
   const isCS = userRoleName === SYSTEM_ROLES.CUSTOMER_SUCCESS;
-  
+
   // Get assigned customer IDs if user is customer success
   let assignedCustomerIds: string[] | null = null;
   if (isCS && currentUser.user_id) {
@@ -418,13 +426,15 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       .from('customer_success_owned_customers')
       .select('customer_id')
       .eq('user_id', currentUser.user_id);
-    
+
     if (csError) {
       throw csError;
     }
-    
-    assignedCustomerIds = (csAssignments || []).map((assignment: { customer_id: string }) => assignment.customer_id);
-    
+
+    assignedCustomerIds = (csAssignments || []).map(
+      (assignment: { customer_id: string }) => assignment.customer_id
+    );
+
     // If no assigned customers, return empty result set
     if (assignedCustomerIds.length === 0) {
       return {
@@ -441,16 +451,17 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       };
     }
   }
-  
+
   const page = params.page || 1;
   const perPage = params.perPage || 10;
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
-  
+
   // Build the query with joins - removed manager join since it references managers table, not users
   let query = supabase
     .from('customers')
-    .select(`
+    .select(
+      `
       customer_id,
       name,
       email_domain,
@@ -463,52 +474,56 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
       updated_at,
       owner:users!customers_owner_id_fkey(user_id, full_name, email),
       subscription:subscription_types(subscription_type_id, name)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' }
+    )
     .range(from, to);
-  
+
   // Filter by assigned customers if user is customer success
   if (assignedCustomerIds && assignedCustomerIds.length > 0) {
     query = query.in('customer_id', assignedCustomerIds);
   }
-  
+
   // Apply filters
   if (params.search) {
     query = query.or(`name.ilike.%${params.search}%,email_domain.ilike.%${params.search}%`);
   }
-  
+
   if (params.subscriptionId && params.subscriptionId.length > 0) {
     query = query.in('subscription_type_id', params.subscriptionId);
   }
-  
+
   if (params.statusId && params.statusId.length > 0) {
     query = query.in('lifecycle_stage', params.statusId);
   }
-  
+
   // Apply sorting
   const orderBy = params.orderBy || 'created_at';
   const orderDirection = params.orderDirection || 'desc';
   query = query.order(orderBy, { ascending: orderDirection === 'asc' });
-  
+
   const { data, error, count } = await query;
-  
+
   if (error) throw error;
-  
+
   const total = count || 0;
   const lastPage = Math.ceil(total / perPage);
-  
+
   // Fetch customer success users for all customers
   const customerIds = (data || []).map((c: CustomerWithRelations) => c.customer_id);
   const customerSuccessMap = new Map<string, CustomerSuccessData[]>();
-  
+
   if (customerIds.length > 0) {
     const { data: csData, error: csError } = await supabase
       .from('customer_success_owned_customers')
-      .select(`
+      .select(
+        `
         customer_id,
         users!customer_success_owned_customers_user_id_fkey(user_id, full_name, email)
-      `)
+      `
+      )
       .in('customer_id', customerIds);
-    
+
     if (!csError && csData) {
       csData.forEach((cs: CustomerSuccessOwnedCustomerRow) => {
         const user = Array.isArray(cs.users) ? cs.users[0] : cs.users;
@@ -539,11 +554,11 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
   customerIds.forEach((customerId, index) => {
     userCountMap.set(customerId, userCounts[index] ?? 0);
   });
-  
+
   return {
     data: (data || []).map((customer: CustomerWithRelations) => {
       const customerSuccess = customerSuccessMap.get(customer.customer_id) || [];
-      
+
       return {
         id: customer.customer_id,
         name: customer.name,
@@ -553,19 +568,25 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
         customerSuccessId: '', // Handled separately via customer_success_owned_customers
         ownerId: customer.owner_id || '',
         status: customer.lifecycle_stage,
-        subscriptionName: Array.isArray(customer.subscription) ? customer.subscription[0]?.name || '' : customer.subscription?.name || '',
+        subscriptionName: Array.isArray(customer.subscription)
+          ? customer.subscription[0]?.name || ''
+          : customer.subscription?.name || '',
         manager: { id: '', name: '', email: '' }, // Manager is deprecated, use customerSuccess instead
-        owner: customer.owner ? (Array.isArray(customer.owner) ? {
-          id: customer.owner[0]?.user_id || '',
-          firstName: customer.owner[0]?.full_name?.split(' ')[0] || '',
-          lastName: customer.owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
-          email: customer.owner[0]?.email || '',
-        } : {
-          id: customer.owner.user_id,
-          firstName: customer.owner.full_name?.split(' ')[0] || '',
-          lastName: customer.owner.full_name?.split(' ').slice(1).join(' ') || '',
-          email: customer.owner.email || '',
-        }) : { id: '', firstName: '', lastName: '' },
+        owner: customer.owner
+          ? Array.isArray(customer.owner)
+            ? {
+                id: customer.owner[0]?.user_id || '',
+                firstName: customer.owner[0]?.full_name?.split(' ')[0] || '',
+                lastName: customer.owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
+                email: customer.owner[0]?.email || '',
+              }
+            : {
+                id: customer.owner.user_id,
+                firstName: customer.owner.full_name?.split(' ')[0] || '',
+                lastName: customer.owner.full_name?.split(' ').slice(1).join(' ') || '',
+                email: customer.owner.email || '',
+              }
+          : { id: '', firstName: '', lastName: '' },
         numberOfUsers: userCountMap.get(customer.customer_id) ?? 0,
         customerSuccess: customerSuccess.map((cs) => ({
           id: cs.user_id,
@@ -590,10 +611,11 @@ export async function getCustomersList(params: GetCustomersParams = {}): Promise
 
 export async function getCustomerById(id: string): Promise<Customer> {
   const supabase = createClient();
-  
+
   const { data, error } = await supabase
     .from('customers')
-    .select(`
+    .select(
+      `
       customer_id,
       name,
       email_domain,
@@ -606,38 +628,47 @@ export async function getCustomerById(id: string): Promise<Customer> {
       updated_at,
       owner:users!customers_owner_id_fkey(user_id, full_name, email),
       subscription:subscription_types(subscription_type_id, name)
-    `)
+    `
+    )
     .eq('customer_id', id)
     .single();
-  
+
   if (error) throw error;
-  
+
   // Fetch customer success users
   const { data: csData, error: csError } = await supabase
     .from('customer_success_owned_customers')
-    .select(`
+    .select(
+      `
       users!customer_success_owned_customers_user_id_fkey(user_id, full_name, email)
-    `)
+    `
+    )
     .eq('customer_id', id);
 
   // Get system role IDs and calculate user count
   const systemRoleIds = await getSystemRoleIds(supabase);
   const numberOfUsers = await countUsersForCustomer(supabase, id, systemRoleIds);
-  
+
   const subscription = data.subscription as SubscriptionTypeData | SubscriptionTypeData[] | null;
   const owner = data.owner as OwnerData | OwnerData[] | null;
-  const customerSuccess = (!csError && csData) ? csData
-    .map((cs: CustomerSuccessOwnedCustomerRowWithoutId) => {
-      const user = Array.isArray(cs.users) ? cs.users[0] : cs.users;
-      return user;
-    })
-    .filter((u: CustomerSuccessData | null | undefined): u is CustomerSuccessData => u !== null && u !== undefined)
-    .map((u: CustomerSuccessData) => ({
-      id: u.user_id,
-      name: u.full_name || '',
-      email: u.email || '',
-    })) : [];
-  
+  const customerSuccess =
+    !csError && csData
+      ? csData
+          .map((cs: CustomerSuccessOwnedCustomerRowWithoutId) => {
+            const user = Array.isArray(cs.users) ? cs.users[0] : cs.users;
+            return user;
+          })
+          .filter(
+            (u: CustomerSuccessData | null | undefined): u is CustomerSuccessData =>
+              u !== null && u !== undefined
+          )
+          .map((u: CustomerSuccessData) => ({
+            id: u.user_id,
+            name: u.full_name || '',
+            email: u.email || '',
+          }))
+      : [];
+
   return {
     id: data.customer_id,
     name: data.name,
@@ -647,19 +678,25 @@ export async function getCustomerById(id: string): Promise<Customer> {
     customerSuccessId: '', // Handled separately via customer_success_owned_customers
     ownerId: data.owner_id || '',
     status: data.lifecycle_stage,
-    subscriptionName: Array.isArray(subscription) ? subscription[0]?.name || '' : subscription?.name || '',
+    subscriptionName: Array.isArray(subscription)
+      ? subscription[0]?.name || ''
+      : subscription?.name || '',
     manager: { id: '', name: '', email: '' }, // Manager is deprecated, use customerSuccess instead
-    owner: owner ? (Array.isArray(owner) ? {
-      id: owner[0]?.user_id || '',
-      firstName: owner[0]?.full_name?.split(' ')[0] || '',
-      lastName: owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
-      email: owner[0]?.email || '',
-    } : {
-      id: owner.user_id,
-      firstName: owner.full_name?.split(' ')[0] || '',
-      lastName: owner.full_name?.split(' ').slice(1).join(' ') || '',
-      email: owner.email || '',
-    }) : { id: '', firstName: '', lastName: '' },
+    owner: owner
+      ? Array.isArray(owner)
+        ? {
+            id: owner[0]?.user_id || '',
+            firstName: owner[0]?.full_name?.split(' ')[0] || '',
+            lastName: owner[0]?.full_name?.split(' ').slice(1).join(' ') || '',
+            email: owner[0]?.email || '',
+          }
+        : {
+            id: owner.user_id,
+            firstName: owner.full_name?.split(' ')[0] || '',
+            lastName: owner.full_name?.split(' ').slice(1).join(' ') || '',
+            email: owner.email || '',
+          }
+      : { id: '', firstName: '', lastName: '' },
     numberOfUsers,
     customerSuccess,
     createdAt: data.created_at,
@@ -669,47 +706,45 @@ export async function getCustomerById(id: string): Promise<Customer> {
 
 export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Customer> {
   const supabase = createClient();
-  
+
   // Get existing customer
   const { data: customer, error: fetchError } = await supabase
     .from('customers')
     .select('customer_id, owner_id')
     .eq('customer_id', payload.id)
     .single();
-  
+
   if (fetchError || !customer) {
     throw new Error(`Customer with ID ${payload.id} not found`);
   }
-  
+
   const { name, subscriptionId, ownerId, customerSuccessIds } = payload;
-  
+
   // Handle customer success assignments if provided
   if (customerSuccessIds !== undefined) {
     // Validate all CS users
     for (const userId of customerSuccessIds) {
       await validateCSUser(supabase, userId);
     }
-    
+
     // Get existing assignments
     const { data: existingAssignments, error: existingError } = await supabase
       .from('customer_success_owned_customers')
       .select('user_id')
       .eq('customer_id', payload.id);
-    
+
     if (existingError) {
       console.error('Failed to get existing assignments:', existingError);
     }
-    
+
     const existingUserIds = (existingAssignments || []).map((a: { user_id: string }) => a.user_id);
-    
+
     // Determine which assignments to add and remove
-    const toAdd = customerSuccessIds.filter(
-      (userId) => !existingUserIds.includes(userId),
-    );
+    const toAdd = customerSuccessIds.filter((userId) => !existingUserIds.includes(userId));
     const toRemove = existingUserIds.filter(
-      (userId: string) => !customerSuccessIds.includes(userId),
+      (userId: string) => !customerSuccessIds.includes(userId)
     );
-    
+
     // Remove old assignments (do NOT modify user's customer_id)
     for (const userId of toRemove) {
       const { error: removeError } = await supabase
@@ -717,26 +752,24 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
         .delete()
         .eq('user_id', userId)
         .eq('customer_id', payload.id);
-      
+
       if (removeError) {
         console.error('Failed to remove assignment:', removeError);
       }
     }
-    
+
     // Add new assignments
     for (const userId of toAdd) {
       // Create assignment
-      const { error: csError } = await supabase
-        .from('customer_success_owned_customers')
-        .insert({
-          user_id: userId,
-          customer_id: payload.id,
-        });
-      
+      const { error: csError } = await supabase.from('customer_success_owned_customers').insert({
+        user_id: userId,
+        customer_id: payload.id,
+      });
+
       if (csError) {
         console.error('Failed to create customer success assignment:', csError);
       }
-      
+
       // If user has no customer_id, set it
       const { data: user } = await supabase
         .from('users')
@@ -744,7 +777,7 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
         .eq('user_id', userId)
         .is('deleted_at', null)
         .single();
-      
+
       if (user && !user.customer_id) {
         await supabase
           .from('users')
@@ -754,7 +787,7 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
       }
     }
   }
-  
+
   // Handle owner update if provided
   let ownerEmail: string | undefined;
   if (ownerId && ownerId !== customer.owner_id) {
@@ -764,74 +797,81 @@ export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Cu
       .eq('user_id', ownerId)
       .is('deleted_at', null)
       .single();
-    
+
     if (ownerError || !owner) {
       throw new Error('Owner not found');
     }
-    
+
     ownerEmail = owner.email;
-    
+
     // Update old owner: set role_id to Standard user role
     if (customer.owner_id) {
       const standardUserRoleId = await getStandardUserRoleId(supabase);
       const updateData: { role_id: string | null } = { role_id: standardUserRoleId || null };
-      
+
       await supabase
         .from('users')
         .update(updateData)
         .eq('user_id', customer.owner_id)
         .is('deleted_at', null);
     }
-    
+
     // Update new owner: set customer_id and role (if no role)
-    const newOwnerUpdateData: { customer_id: string; role_id?: string } = { customer_id: payload.id };
-    
+    const newOwnerUpdateData: { customer_id: string; role_id?: string } = {
+      customer_id: payload.id,
+    };
+
     if (!owner.role_id) {
       const customerAdminRoleId = await getCustomerAdminRoleId(supabase);
       if (customerAdminRoleId) {
         newOwnerUpdateData.role_id = customerAdminRoleId;
       }
     }
-    
+
     await supabase
       .from('users')
       .update(newOwnerUpdateData)
       .eq('user_id', ownerId)
       .is('deleted_at', null);
   }
-  
+
   // Build update data
-  const updateData: { name?: string; subscription_type_id?: string; owner_id?: string; email_domain?: string } = {};
+  const updateData: {
+    name?: string;
+    subscription_type_id?: string;
+    owner_id?: string;
+    email_domain?: string;
+  } = {};
   if (name !== undefined) updateData.name = name;
   if (subscriptionId !== undefined) updateData.subscription_type_id = subscriptionId;
   if (ownerId !== undefined) updateData.owner_id = ownerId;
   if (ownerEmail !== undefined) updateData.email_domain = getDomainFromEmail(ownerEmail);
-  
+
   // Remove undefined fields
   (Object.keys(updateData) as Array<keyof typeof updateData>).forEach(
-    (key) => updateData[key] === undefined && delete updateData[key],
+    (key) => updateData[key] === undefined && delete updateData[key]
   );
-  
+
   // Update customer
   if (Object.keys(updateData).length > 0) {
     const { error: updateError } = await supabase
       .from('customers')
       .update(updateData)
       .eq('customer_id', payload.id);
-    
+
     if (updateError) throw updateError;
   }
-  
+
   // Fetch and return updated customer
   return getCustomerById(payload.id);
 }
 
 export async function deleteCustomer(id: string): Promise<Customer> {
   const supabase = createClient();
-  
+
   // Fetch customer before deletion
   const customerToDelete = await getCustomerById(id);
-  
+
   const { error } = await supabase
     .from('customers')
     .update({
@@ -839,9 +879,9 @@ export async function deleteCustomer(id: string): Promise<Customer> {
       status: 'inactive',
     })
     .eq('customer_id', id);
-  
+
   if (error) throw error;
-  
+
   return customerToDelete;
 }
 
@@ -854,38 +894,40 @@ export interface CustomerSuccessUser {
 
 export async function getCustomerSuccessUsers(customerId: string): Promise<CustomerSuccessUser[]> {
   const supabase = createClient();
-  
+
   // Validate customer exists
   const { data: customer, error: customerError } = await supabase
     .from('customers')
     .select('customer_id')
     .eq('customer_id', customerId)
     .single();
-  
+
   if (customerError || !customer) {
     throw new Error(`Customer with ID ${customerId} not found`);
   }
-  
+
   // Get CS assignments for this customer
   const { data: csData, error: csError } = await supabase
     .from('customer_success_owned_customers')
-    .select(`
+    .select(
+      `
       user_id,
       users!customer_success_owned_customers_user_id_fkey(user_id, full_name, email, avatar_url)
-    `)
+    `
+    )
     .eq('customer_id', customerId);
-  
+
   if (csError) {
     throw new Error(csError.message || 'Failed to fetch customer success users');
   }
-  
+
   if (!csData || csData.length === 0) {
     return [];
   }
-  
+
   // Map assignments to CustomerSuccessUser format
   const result: CustomerSuccessUser[] = [];
-  
+
   for (const assignment of csData) {
     const user = Array.isArray(assignment.users) ? assignment.users[0] : assignment.users;
     if (user) {
@@ -897,7 +939,7 @@ export async function getCustomerSuccessUsers(customerId: string): Promise<Custo
       });
     }
   }
-  
+
   return result;
 }
 
@@ -911,7 +953,10 @@ export async function removeCustomerSuccessUser(customerId: string, userId: stri
   throw new Error('API calls removed');
 }
 
-export async function updateCustomerSuccessUsers(customerId: string, userIds: string[]): Promise<CustomerSuccessUser[]> {
+export async function updateCustomerSuccessUsers(
+  customerId: string,
+  userIds: string[]
+): Promise<CustomerSuccessUser[]> {
   // API call removed
   return [];
 }

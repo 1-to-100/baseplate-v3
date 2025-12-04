@@ -37,12 +37,18 @@ export function SettingsPopover({
   }, [settings]);
 
   return (
-    <Popup anchorEl={anchorEl} onClose={onClose} open={open} placement="top-end" sx={{ maxWidth: '320px', pb: 1 }}>
+    <Popup
+      anchorEl={anchorEl}
+      onClose={onClose}
+      open={open}
+      placement='top-end'
+      sx={{ maxWidth: '320px', pb: 1 }}
+    >
       <PopupContent sx={{ p: 2 }}>
         <Stack spacing={3}>
           <Stack spacing={2}>
-            <Typography level="title-md">Primary Color</Typography>
-            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
+            <Typography level='title-md'>Primary Color</Typography>
+            <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap' }}>
               {(
                 [
                   { value: 'palatinateBlue', color: '#3d37dd' },
@@ -63,7 +69,9 @@ export function SettingsPopover({
                       flex: '0 0 auto',
                       height: '32px',
                       width: '32px',
-                      ...(primaryColor === option.value && { outline: `2px solid ${option.color}` }),
+                      ...(primaryColor === option.value && {
+                        outline: `2px solid ${option.color}`,
+                      }),
                     }}
                   />
                 )
@@ -71,8 +79,8 @@ export function SettingsPopover({
             </Stack>
           </Stack>
           <Stack spacing={2}>
-            <Typography level="title-md">Direction</Typography>
-            <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
+            <Typography level='title-md'>Direction</Typography>
+            <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap' }}>
               {(
                 [
                   { label: 'Left to Right', value: 'ltr' },
@@ -87,9 +95,9 @@ export function SettingsPopover({
                   }}
                   startDecorator={
                     option.value === 'ltr' ? (
-                      <TextAlignLeftIcon fontSize="var(--joy-fontSize-lg)" />
+                      <TextAlignLeftIcon fontSize='var(--joy-fontSize-lg)' />
                     ) : (
-                      <TextAlignRightIcon fontSize="var(--joy-fontSize-lg)" />
+                      <TextAlignRightIcon fontSize='var(--joy-fontSize-lg)' />
                     )
                   }
                 >
@@ -99,12 +107,12 @@ export function SettingsPopover({
             </Stack>
           </Stack>
           <Button
-            color="neutral"
+            color='neutral'
             onClick={(): void => {
               onUpdate?.({ primaryColor, direction });
             }}
-            size="sm"
-            variant="outlined"
+            size='sm'
+            variant='outlined'
           >
             Apply
           </Button>

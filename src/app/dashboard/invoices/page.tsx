@@ -25,13 +25,19 @@ import { InvoicesSummary } from '@/components/dashboard/invoice/invoices-summary
 import { InvoicesTable } from '@/components/dashboard/invoice/invoices-table';
 import type { Invoice } from '@/components/dashboard/invoice/invoices-table';
 
-export const metadata = { title: `List | Invoices | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `List | Invoices | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const invoices = [
   {
     id: 'INV-005',
     status: 'draft',
-    customer: { name: 'Zaid Schwartz', email: 'zaid.schwartz@domain.com', avatar: '/assets/avatar-1.png' },
+    customer: {
+      name: 'Zaid Schwartz',
+      email: 'zaid.schwartz@domain.com',
+      avatar: '/assets/avatar-1.png',
+    },
     currency: 'USD',
     amount: 99,
     issueDate: dayjs().subtract(1, 'day').toDate(),
@@ -40,7 +46,11 @@ const invoices = [
   {
     id: 'INV-004',
     status: 'pending',
-    customer: { name: 'Olly Schroeder', email: 'olly.schroeder@domain.com', avatar: '/assets/avatar-5.png' },
+    customer: {
+      name: 'Olly Schroeder',
+      email: 'olly.schroeder@domain.com',
+      avatar: '/assets/avatar-5.png',
+    },
     currency: 'USD',
     amount: 192,
     issueDate: dayjs().subtract(5, 'day').toDate(),
@@ -49,7 +59,11 @@ const invoices = [
   {
     id: 'INV-003',
     status: 'late',
-    customer: { name: 'Ammar Foley', email: 'ammar.foley@domain.com', avatar: '/assets/avatar-3.png' },
+    customer: {
+      name: 'Ammar Foley',
+      email: 'ammar.foley@domain.com',
+      avatar: '/assets/avatar-3.png',
+    },
     currency: 'USD',
     amount: 41.4,
     issueDate: dayjs().subtract(6, 'day').toDate(),
@@ -58,7 +72,11 @@ const invoices = [
   {
     id: 'INV-002',
     status: 'paid',
-    customer: { avatar: '/assets/avatar-4.png', name: 'Pippa Wilkinson', email: 'pippa.wilkinson@domain.com' },
+    customer: {
+      avatar: '/assets/avatar-4.png',
+      name: 'Pippa Wilkinson',
+      email: 'pippa.wilkinson@domain.com',
+    },
     currency: 'USD',
     amount: 52.86,
     issueDate: dayjs().subtract(9, 'day').toDate(),
@@ -67,7 +85,11 @@ const invoices = [
   {
     id: 'INV-001',
     status: 'canceled',
-    customer: { avatar: '/assets/avatar-2.png', name: 'sienna.hewitt@domain.com', email: 'Sienna Hewitt' },
+    customer: {
+      avatar: '/assets/avatar-2.png',
+      name: 'sienna.hewitt@domain.com',
+      email: 'Sienna Hewitt',
+    },
     currency: 'USD',
     amount: 432.09,
     issueDate: dayjs().subtract(12, 'day').toDate(),
@@ -79,28 +101,32 @@ export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Invoices
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
-              <BreadcrumbsItem type="end">Invoices</BreadcrumbsItem>
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
+              <BreadcrumbsItem type='end'>Invoices</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Button
-              color="neutral"
-              startDecorator={<PrinterIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-              variant="outlined"
+              color='neutral'
+              startDecorator={<PrinterIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+              variant='outlined'
             >
               Download
             </Button>
             <Button
               component={RouterLink}
               href={paths.dashboard.invoices.create}
-              startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
             >
               Create
             </Button>
@@ -119,16 +145,16 @@ export default function Page(): React.JSX.Element {
               paid={64}
               paidAmount={72104.9}
             />
-            <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
+            <Stack direction='row' spacing={3} sx={{ alignItems: 'center' }}>
               <Stack sx={{ alignItems: 'flex-start', flex: '1 1 auto' }}>
-                <Tabs size="sm" value="all" variant="custom">
+                <Tabs size='sm' value='all' variant='custom'>
                   <TabList>
-                    <Tab value="all">All</Tab>
-                    <Tab value="paid">Paid</Tab>
+                    <Tab value='all'>All</Tab>
+                    <Tab value='paid'>Paid</Tab>
                   </TabList>
                 </Tabs>
               </Stack>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
                 <InvoicesFiltersButton />
               </Stack>
             </Stack>

@@ -29,25 +29,30 @@ export function SessionItem({ session }: SessionItemProps): React.JSX.Element {
   return (
     <ListItem key={session.id} sx={{ alignItems: 'flex-start' }}>
       <ListItemDecorator>
-        <DeviceIcon color="var(--joy-palette-text-primary)" fontSize="var(--joy-fontSize-lg)" />
+        <DeviceIcon color='var(--joy-palette-text-primary)' fontSize='var(--joy-fontSize-lg)' />
       </ListItemDecorator>
       <ListItemContent>
         <Stack spacing={1}>
           <div>
-            <Typography level="title-sm">{session.agent}</Typography>
-            <Typography level="body-sm">
+            <Typography level='title-sm'>{session.agent}</Typography>
+            <Typography level='body-sm'>
               {session.location} • {dayjs(session.createdAt).format('D MMM [at] h:mm A')}
             </Typography>
           </div>
           {session.active ? (
             <Chip
-              size="sm"
+              size='sm'
               startDecorator={
                 <Box
-                  sx={{ bgcolor: 'var(--joy-palette-success-500)', borderRadius: '50%', height: '4px', width: '4px' }}
+                  sx={{
+                    bgcolor: 'var(--joy-palette-success-500)',
+                    borderRadius: '50%',
+                    height: '4px',
+                    width: '4px',
+                  }}
                 />
               }
-              variant="outlined"
+              variant='outlined'
             >
               Active now
             </Chip>

@@ -1,6 +1,6 @@
-import type { User } from "@/types/user";
-import { Customer } from "@/lib/api/customers";
-import { Role } from "@/lib/api/roles";
+import type { User } from '@/types/user';
+import { Customer } from '@/lib/api/customers';
+import { Role } from '@/lib/api/roles';
 
 export interface UserContextValue {
   user: User | null;
@@ -166,27 +166,27 @@ export interface ApiNotification {
     firstName: string;
     lastName: string;
   };
-  Customer?: { 
+  Customer?: {
     id: string;
     name: string;
   };
 }
 
-export interface NotificationType {  
-    types: string[];
-    channels: string[];
-  }
+export interface NotificationType {
+  types: string[];
+  channels: string[];
+}
 
 export interface SystemRoleObject {
   id: string;
   name: string;
 }
 
-export type SystemRole = "customer_success" | "system_admin";
+export type SystemRole = 'customer_success' | 'system_admin';
 
-export type Status = "active" | "inactive" | "suspended";
+export type Status = 'active' | 'inactive' | 'suspended';
 
 export type TaxonomyItem = {
   id: string;
   name: string;
-}
+};

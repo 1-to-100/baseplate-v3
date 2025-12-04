@@ -5,7 +5,9 @@ import { config } from '@/config';
 import { Permissions } from '@/components/dashboard/team/permissions';
 import type { PermissionsGroup } from '@/components/dashboard/team/permissions';
 
-export const metadata = { title: `Permissions | Team | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Permissions | Team | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const groups = [
   {

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import * as React from 'react';
 import Box from '@mui/joy/Box';
@@ -24,9 +24,9 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
   const [submitHandler, setSubmitHandler] = React.useState<(() => void) | null>(null);
 
   React.useEffect(() => {
-    setFormActions(prev => ({
+    setFormActions((prev) => ({
       ...prev,
-      setSubmitHandler: (handler: () => void) => setSubmitHandler(() => handler)
+      setSubmitHandler: (handler: () => void) => setSubmitHandler(() => handler),
     }));
   }, []);
 
@@ -34,15 +34,12 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
     <FormActionsContext.Provider value={formActions}>
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Stack direction='row' justifyContent='space-between' alignItems='center'>
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Profile
             </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button
-                onClick={formActions.onReset}
-                variant="outlined"
-              >
+            <Stack direction='row' spacing={1}>
+              <Button onClick={formActions.onReset} variant='outlined'>
                 Cancel
               </Button>
               <Button onClick={() => submitHandler?.()}>Save</Button>

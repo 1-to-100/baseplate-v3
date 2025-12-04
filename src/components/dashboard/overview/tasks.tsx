@@ -38,7 +38,7 @@ const columns = [
       const { label, color } = statusMapping[row.status] ?? { label: 'Unknown', color: 'neutral' };
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -56,9 +56,14 @@ export interface TasksProps {
 export function Tasks({ tasks = [] }: TasksProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Current Tasks</Typography>
+      <Typography level='h4'>Current Tasks</Typography>
       <CardOverflow sx={{ mx: 'var(--CardOverflow-offset)', overflowX: 'auto' }}>
-        <DataTable<Task> columns={columns} rows={tasks} stripe="even" sx={{ '--TableCell-paddingX': '16px' }} />
+        <DataTable<Task>
+          columns={columns}
+          rows={tasks}
+          stripe='even'
+          sx={{ '--TableCell-paddingX': '16px' }}
+        />
       </CardOverflow>
     </Card>
   );

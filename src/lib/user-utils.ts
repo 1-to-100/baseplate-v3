@@ -1,4 +1,4 @@
-import { ApiUser } from "@/contexts/auth/types";
+import { ApiUser } from '@/contexts/auth/types';
 
 // System Role Names (must match backend constants - these are database names, not display names)
 export const SYSTEM_ROLES = {
@@ -42,8 +42,10 @@ export const isManager = (user?: ApiUser): boolean => {
  * (both have the same permissions)
  */
 export const isCustomerAdminOrManager = (user?: ApiUser): boolean => {
-  return user?.role?.name === SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR ||
-         user?.role?.name === SYSTEM_ROLES.MANAGER;
+  return (
+    user?.role?.name === SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR ||
+    user?.role?.name === SYSTEM_ROLES.MANAGER
+  );
 };
 
 /**
@@ -75,26 +77,17 @@ export const isUserOwner = (ownerUser?: ApiUser, user?: ApiUser): boolean => {
   if (isSystemAdministrator(ownerUser)) return true;
 
   // Check if the ownerUser is Customer Success and the user belongs to the same customer (replaces isCustomerSuccess)
-  if (
-    isCustomerSuccess(ownerUser) &&
-    ownerUser.customerId === user.customerId
-  ) {
+  if (isCustomerSuccess(ownerUser) && ownerUser.customerId === user.customerId) {
     return true;
   }
 
   // Check if the ownerUser is Customer Admin or Manager for the same customer
-  if (
-    isCustomerAdminOrManager(ownerUser) &&
-    ownerUser.customerId === user.customerId
-  ) {
+  if (isCustomerAdminOrManager(ownerUser) && ownerUser.customerId === user.customerId) {
     return true;
   }
 
   // Check if the ownerUser is the customer owner
-  if (
-    ownerUser?.customer?.ownerId === ownerUser.id &&
-    ownerUser.customerId === user.customerId
-  ) {
+  if (ownerUser?.customer?.ownerId === ownerUser.id && ownerUser.customerId === user.customerId) {
     return true;
   }
 
@@ -110,7 +103,7 @@ export const isSuperadmin = (user?: ApiUser): boolean => {
 };
 
 /**
- * Legacy compatibility: Check if user has customer success privileges  
+ * Legacy compatibility: Check if user has customer success privileges
  * @deprecated Use isCustomerSuccess instead
  */
 export const isCustomerSuccessLegacy = (user?: ApiUser): boolean => {

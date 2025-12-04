@@ -14,10 +14,13 @@ export interface InvoicesFiltersDrawerProps {
   open: boolean;
 }
 
-export function InvoicesFiltersDrawer({ onClose, open }: InvoicesFiltersDrawerProps): React.JSX.Element {
+export function InvoicesFiltersDrawer({
+  onClose,
+  open,
+}: InvoicesFiltersDrawerProps): React.JSX.Element {
   return (
     <Drawer
-      anchor="left"
+      anchor='left'
       onClose={onClose}
       open={open}
       sx={{
@@ -26,7 +29,7 @@ export function InvoicesFiltersDrawer({ onClose, open }: InvoicesFiltersDrawerPr
       }}
     >
       <Box sx={{ alignItems: 'center', display: 'flex' }}>
-        <Typography fontSize="lg" fontWeight="lg" sx={{ flex: 1 }}>
+        <Typography fontSize='lg' fontWeight='lg' sx={{ flex: 1 }}>
           Filters
         </Typography>
         <ModalClose sx={{ position: 'initial' }} />

@@ -27,8 +27,6 @@ interface UserWithRole {
   role: RoleData | RoleData[] | null;
 }
 
-
-
 interface CreateUserPayload {
   email: string;
   firstName: string;
@@ -63,7 +61,7 @@ export interface GetUsersParams {
 }
 
 interface GetUsersResponse {
-  data: SystemUser[]; 
+  data: SystemUser[];
   meta: {
     total: number;
     page: number;
@@ -83,38 +81,38 @@ async function getRoleIdByName(roleName: string): Promise<string | null> {
     .select('role_id')
     .eq('name', roleName)
     .maybeSingle();
-  
+
   if (error) {
     console.error(`Failed to find role ${roleName}:`, error);
     return null;
   }
-  
+
   if (!data) {
     console.error(`Role ${roleName} not found in database`);
     return null;
   }
-  
+
   return data.role_id;
 }
 
 export async function createSystemUser(payload: CreateUserPayload): Promise<SystemUser> {
   const supabase = createClient();
   const fullName = `${payload.firstName} ${payload.lastName}`.trim();
-  
+
   // Validate system role
   const isSystemAdmin = payload.systemRole === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR;
   const isCustomerSuccess = payload.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS;
-  
+
   if (!isSystemAdmin && !isCustomerSuccess) {
     throw new Error('Invalid system role. Must be system_admin or customer_success');
   }
-  
+
   // Check if email already exists
   const emailExists = await supabaseDB.checkEmailExists(payload.email);
   if (emailExists) {
     throw new Error('User with this email already exists');
   }
-  
+
   // Validate customer if customer_success
   if (isCustomerSuccess && payload.customerId) {
     const { data: customer, error: customerError } = await supabase
@@ -122,18 +120,18 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
       .select('customer_id')
       .eq('customer_id', payload.customerId)
       .maybeSingle();
-    
+
     if (customerError || !customer) {
       throw new Error('Customer not found');
     }
   }
-  
+
   // Get role ID by name
   const roleId = await getRoleIdByName(payload.systemRole);
   if (!roleId) {
     throw new Error(`Role ${payload.systemRole} not found`);
   }
-  
+
   // Create user in database first (with status 'inactive' so resend invite works)
   const { data: userData, error: createError } = await supabase
     .from('users')
@@ -144,7 +142,8 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
       role_id: roleId,
       status: 'inactive', // Use 'inactive' so resend invite can work
     })
-    .select(`
+    .select(
+      `
       user_id,
       auth_user_id,
       email,
@@ -156,15 +155,17 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
       created_at,
       updated_at,
       role:roles(role_id, name, display_name, description, is_system_role)
-    `)
+    `
+    )
     .single();
-  
+
   if (createError || !userData) {
     // If user already exists, get the existing user
     if (createError?.code === '23505' || createError?.message?.includes('already exists')) {
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
-        .select(`
+        .select(
+          `
           user_id,
           auth_user_id,
           email,
@@ -176,17 +177,18 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
           created_at,
           updated_at,
           role:roles(role_id, name, display_name, description, is_system_role)
-        `)
+        `
+        )
         .eq('email', payload.email)
         .single();
-      
+
       if (fetchError || !existingUser) {
         throw new Error('User already exists but could not be retrieved');
       }
-      
+
       // Use existing user
       const role = existingUser.role as RoleData | RoleData[] | null;
-      
+
       return {
         id: existingUser.user_id,
         uid: existingUser.auth_user_id || '',
@@ -197,34 +199,38 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
         avatar: existingUser.avatar_url || undefined,
         customerId: existingUser.customer_id,
         managerId: '',
-        role: role ? (Array.isArray(role) ? {
-          id: role[0]?.role_id || '',
-          name: role[0]?.display_name || role[0]?.name || '',
-        } : {
-          id: role.role_id,
-          name: role.display_name || role.name,
-        }) : undefined,
+        role: role
+          ? Array.isArray(role)
+            ? {
+                id: role[0]?.role_id || '',
+                name: role[0]?.display_name || role[0]?.name || '',
+              }
+            : {
+                id: role.role_id,
+                name: role.display_name || role.name,
+              }
+          : undefined,
         status: existingUser.status,
         createdAt: existingUser.created_at,
         updatedAt: existingUser.updated_at,
       } as SystemUser;
     }
-    
+
     throw new Error(createError?.message || 'Failed to create user');
   }
-  
+
   // Create auth user and send invite email using resend invite
   // This will create auth user if it doesn't exist and send the email
   try {
     await edgeFunctions.resendInvite(payload.email);
-    
+
     // Refresh user data to get auth_user_id
     const { data: updatedUser } = await supabase
       .from('users')
       .select('auth_user_id')
       .eq('user_id', userData.user_id)
       .single();
-    
+
     if (updatedUser?.auth_user_id) {
       userData.auth_user_id = updatedUser.auth_user_id;
     }
@@ -232,25 +238,23 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     console.error('Failed to send invite email:', resendError);
     // Don't throw - user is created, invite can be resent later via UI
   }
-  
+
   // If customer_success and has customerId, create entry in customer_success_owned_customers
   if (isCustomerSuccess && payload.customerId) {
-    const { error: csError } = await supabase
-      .from('customer_success_owned_customers')
-      .insert({
-        user_id: userData.user_id,
-        customer_id: payload.customerId,
-      });
-    
+    const { error: csError } = await supabase.from('customer_success_owned_customers').insert({
+      user_id: userData.user_id,
+      customer_id: payload.customerId,
+    });
+
     if (csError) {
       console.error('Failed to create customer success assignment:', csError);
       // Don't throw - user is created, assignment can be fixed later
     }
   }
-  
+
   // Map to SystemUser format
   const role = userData.role as RoleData | RoleData[] | null;
-  
+
   return {
     id: userData.user_id,
     uid: userData.auth_user_id || '',
@@ -261,13 +265,17 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
     avatar: userData.avatar_url || undefined,
     customerId: userData.customer_id,
     managerId: '',
-    role: role ? (Array.isArray(role) ? {
-      id: role[0]?.role_id || '',
-      name: role[0]?.display_name || role[0]?.name || '',
-    } : {
-      id: role.role_id,
-      name: role.display_name || role.name,
-    }) : undefined,
+    role: role
+      ? Array.isArray(role)
+        ? {
+            id: role[0]?.role_id || '',
+            name: role[0]?.display_name || role[0]?.name || '',
+          }
+        : {
+            id: role.role_id,
+            name: role.display_name || role.name,
+          }
+      : undefined,
     status: userData.status,
     createdAt: userData.created_at,
     updatedAt: userData.updated_at,
@@ -277,32 +285,32 @@ export async function createSystemUser(payload: CreateUserPayload): Promise<Syst
 export async function updateSystemUser(payload: EditUserInfoPayload): Promise<SystemUser> {
   const supabase = createClient();
   const fullName = `${payload.firstName} ${payload.lastName}`.trim();
-  
+
   // Validate system role
   const isSystemAdmin = payload.systemRole === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR;
   const isCustomerSuccess = payload.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS;
-  
+
   if (!isSystemAdmin && !isCustomerSuccess) {
     throw new Error('Invalid system role. Must be system_admin or customer_success');
   }
-  
+
   // Get current user to check existing role
   const { data: currentUser, error: fetchError } = await supabase
     .from('users')
     .select('role_id, customer_id')
     .eq('user_id', payload.id)
     .single();
-  
+
   if (fetchError || !currentUser) {
     throw new Error('User not found');
   }
-  
+
   // Get new role ID
   const newRoleId = await getRoleIdByName(payload.systemRole);
   if (!newRoleId) {
     throw new Error(`Role ${payload.systemRole} not found`);
   }
-  
+
   // Validate customer if customer_success
   if (isCustomerSuccess && payload.customerId) {
     const { data: customer, error: customerError } = await supabase
@@ -310,12 +318,12 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
       .select('customer_id')
       .eq('customer_id', payload.customerId)
       .maybeSingle();
-    
+
     if (customerError || !customer) {
       throw new Error('Customer not found');
     }
   }
-  
+
   // Update user
   const { data: userData, error: updateError } = await supabase
     .from('users')
@@ -328,7 +336,8 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', payload.id)
-    .select(`
+    .select(
+      `
       user_id,
       auth_user_id,
       email,
@@ -340,13 +349,14 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
       created_at,
       updated_at,
       role:roles(role_id, name, display_name, description, is_system_role)
-    `)
+    `
+    )
     .single();
-  
+
   if (updateError || !userData) {
     throw new Error(updateError?.message || 'Failed to update user');
   }
-  
+
   // Handle customer_success_owned_customers
   if (isCustomerSuccess && payload.customerId) {
     // Check if assignment already exists
@@ -356,31 +366,26 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
       .eq('user_id', payload.id)
       .eq('customer_id', payload.customerId)
       .maybeSingle();
-    
+
     if (!existingAssignment) {
       // Create new assignment
-      const { error: csError } = await supabase
-        .from('customer_success_owned_customers')
-        .insert({
-          user_id: payload.id,
-          customer_id: payload.customerId,
-        });
-      
+      const { error: csError } = await supabase.from('customer_success_owned_customers').insert({
+        user_id: payload.id,
+        customer_id: payload.customerId,
+      });
+
       if (csError) {
         console.error('Failed to create customer success assignment:', csError);
       }
     }
   } else {
     // If not customer_success or no customerId, remove all assignments
-    await supabase
-      .from('customer_success_owned_customers')
-      .delete()
-      .eq('user_id', payload.id);
+    await supabase.from('customer_success_owned_customers').delete().eq('user_id', payload.id);
   }
-  
+
   // Map to SystemUser format
   const role = userData.role as RoleData | RoleData[] | null;
-  
+
   return {
     id: userData.user_id,
     uid: userData.auth_user_id || '',
@@ -391,13 +396,17 @@ export async function updateSystemUser(payload: EditUserInfoPayload): Promise<Sy
     avatar: userData.avatar_url || undefined,
     customerId: userData.customer_id,
     managerId: '',
-    role: role ? (Array.isArray(role) ? {
-      id: role[0]?.role_id || '',
-      name: role[0]?.display_name || role[0]?.name || '',
-    } : {
-      id: role.role_id,
-      name: role.display_name || role.name,
-    }) : undefined,
+    role: role
+      ? Array.isArray(role)
+        ? {
+            id: role[0]?.role_id || '',
+            name: role[0]?.display_name || role[0]?.name || '',
+          }
+        : {
+            id: role.role_id,
+            name: role.display_name || role.name,
+          }
+      : undefined,
     status: userData.status,
     createdAt: userData.created_at,
     updatedAt: userData.updated_at,
@@ -423,17 +432,17 @@ async function getSystemRoleIds(supabase: ReturnType<typeof createClient>): Prom
 
 export async function getSystemRoles(): Promise<SystemRoleObject[]> {
   const supabase = createClient();
-  
+
   const { data, error } = await supabase
     .from('roles')
     .select('role_id, name, display_name, is_system_role')
     .eq('is_system_role', true)
     .in('name', [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS])
     .order('name');
-  
+
   if (error) throw error;
-  
-  return (data || []).map(role => ({
+
+  return (data || []).map((role) => ({
     id: role.role_id,
     name: role.display_name || role.name,
   }));
@@ -441,12 +450,12 @@ export async function getSystemRoles(): Promise<SystemRoleObject[]> {
 
 export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
   const supabase = createClient();
-  
+
   const page = params.page || 1;
   const perPage = params.perPage || 10;
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
-  
+
   // Get system role IDs to filter by
   const systemRoleIds = await getSystemRoleIds(supabase);
   if (systemRoleIds.length === 0) {
@@ -464,13 +473,14 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       },
     };
   }
-  
+
   // If roleId filter is provided, intersect with system role IDs
   // (only show system roles that match the filter)
-  const roleIdsToFilter = params.roleId && params.roleId.length > 0
-    ? systemRoleIds.filter(id => params.roleId!.includes(id))
-    : systemRoleIds;
-  
+  const roleIdsToFilter =
+    params.roleId && params.roleId.length > 0
+      ? systemRoleIds.filter((id) => params.roleId!.includes(id))
+      : systemRoleIds;
+
   if (roleIdsToFilter.length === 0) {
     // If intersection is empty, return empty result
     return {
@@ -486,11 +496,12 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       },
     };
   }
-  
+
   // Build the query with joins - matching backend structure
   let query = supabase
     .from('users')
-    .select(`
+    .select(
+      `
       user_id,
       auth_user_id,
       email,
@@ -504,25 +515,38 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       deleted_at,
       customer:customers!users_customer_id_fkey(customer_id, name, owner_id),
       role:roles(role_id, name, display_name, description, is_system_role)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' }
+    )
     .in('role_id', roleIdsToFilter) // Filter by system role IDs (intersected with filter if provided)
     .is('deleted_at', null); // Exclude deleted users
-  
+
   // Apply filters
   if (params.search) {
     query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
   }
-  
+
   if (params.customerId && params.customerId.length > 0) {
     query = query.in('customer_id', params.customerId);
   }
-  
+
   if (params.statusId && params.statusId.length > 0) {
     query = query.in('status', params.statusId);
   }
-  
+
   // Apply sorting - map 'name' to 'full_name' since users table doesn't have 'name' column
-  const validOrderColumns = ['user_id', 'auth_user_id', 'email', 'full_name', 'avatar_url', 'customer_id', 'role_id', 'status', 'created_at', 'updated_at'];
+  const validOrderColumns = [
+    'user_id',
+    'auth_user_id',
+    'email',
+    'full_name',
+    'avatar_url',
+    'customer_id',
+    'role_id',
+    'status',
+    'created_at',
+    'updated_at',
+  ];
   let orderBy = params.orderBy || 'created_at';
   // Map 'name' to 'full_name' for users table
   if (orderBy === 'name') {
@@ -534,17 +558,17 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
   }
   const orderDirection = params.orderDirection || 'desc';
   query = query.order(orderBy, { ascending: orderDirection === 'asc' });
-  
+
   // Apply pagination
   query = query.range(from, to);
-  
+
   const { data, error, count } = await query;
-  
+
   if (error) throw error;
-  
+
   const total = count || 0;
   const lastPage = Math.ceil(total / perPage);
-  
+
   return {
     data: (data || []).map((user: UserWithRole) => ({
       id: user.user_id,
@@ -556,16 +580,20 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
       avatar: user.avatar_url || undefined,
       customerId: user.customer_id,
       managerId: '',
-      role: user.role ? (() => {
-        const role = user.role;
-        return Array.isArray(role) ? {
-          id: role[0]?.role_id || '',
-          name: role[0]?.display_name || role[0]?.name || '',
-        } : {
-          id: role.role_id,
-          name: role.display_name || role.name,
-        };
-      })() : undefined,
+      role: user.role
+        ? (() => {
+            const role = user.role;
+            return Array.isArray(role)
+              ? {
+                  id: role[0]?.role_id || '',
+                  name: role[0]?.display_name || role[0]?.name || '',
+                }
+              : {
+                  id: role.role_id,
+                  name: role.display_name || role.name,
+                };
+          })()
+        : undefined,
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -584,13 +612,14 @@ export async function getSystemUsers(params: GetUsersParams = {}): Promise<GetUs
 
 export async function getSystemUserById(id: string): Promise<SystemUser> {
   const supabase = createClient();
-  
+
   // Get system role IDs to filter by
   const systemRoleIds = await getSystemRoleIds(supabase);
-  
+
   const { data, error } = await supabase
     .from('users')
-    .select(`
+    .select(
+      `
       user_id,
       auth_user_id,
       email,
@@ -604,16 +633,17 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
       deleted_at,
       customer:customers!users_customer_id_fkey(customer_id, name, owner_id),
       role:roles(role_id, name, display_name, description, is_system_role)
-    `)
+    `
+    )
     .eq('user_id', id)
     .in('role_id', systemRoleIds)
     .is('deleted_at', null)
     .single();
-  
+
   if (error) throw error;
-  
+
   const roleData = data.role as RoleData | RoleData[] | null;
-  
+
   return {
     id: data.user_id,
     uid: data.auth_user_id,
@@ -624,13 +654,17 @@ export async function getSystemUserById(id: string): Promise<SystemUser> {
     avatar: data.avatar_url || undefined,
     customerId: data.customer_id,
     managerId: '',
-    role: roleData ? (Array.isArray(roleData) ? {
-      id: roleData[0]?.role_id || '',
-      name: roleData[0]?.display_name || roleData[0]?.name || '',
-    } : {
-      id: roleData.role_id,
-      name: roleData.display_name || roleData.name,
-    }) : undefined,
+    role: roleData
+      ? Array.isArray(roleData)
+        ? {
+            id: roleData[0]?.role_id || '',
+            name: roleData[0]?.display_name || roleData[0]?.name || '',
+          }
+        : {
+            id: roleData.role_id,
+            name: roleData.display_name || roleData.name,
+          }
+      : undefined,
     status: data.status,
     createdAt: data.created_at,
     updatedAt: data.updated_at,

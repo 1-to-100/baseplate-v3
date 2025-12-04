@@ -15,7 +15,11 @@ export interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps): React.JSX.Element {
-  const [state, setState] = React.useState<{ user: User | null; error: string | null; isLoading: boolean }>({
+  const [state, setState] = React.useState<{
+    user: User | null;
+    error: string | null;
+    isLoading: boolean;
+  }>({
     user: null,
     error: null,
     isLoading: true,
@@ -27,14 +31,24 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
 
       if (error) {
         logger.error(error);
-        setState((prev) => ({ ...prev, user: null, error: 'Something went wrong', isLoading: false }));
+        setState((prev) => ({
+          ...prev,
+          user: null,
+          error: 'Something went wrong',
+          isLoading: false,
+        }));
         return;
       }
 
       setState((prev) => ({ ...prev, user: data ?? null, error: null, isLoading: false }));
     } catch (err) {
       logger.error(err);
-      setState((prev) => ({ ...prev, user: null, error: 'Something went wrong', isLoading: false }));
+      setState((prev) => ({
+        ...prev,
+        user: null,
+        error: 'Something went wrong',
+        isLoading: false,
+      }));
     }
   }, []);
 

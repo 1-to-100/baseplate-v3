@@ -12,12 +12,12 @@ export function ProductsFiltersButton(): React.JSX.Element {
   return (
     <React.Fragment>
       <Button
-        color="neutral"
+        color='neutral'
         onClick={(): void => {
           setOpen(!open);
         }}
-        startDecorator={<FunnelIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-        variant="outlined"
+        startDecorator={<FunnelIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+        variant='outlined'
       >
         Filters
       </Button>

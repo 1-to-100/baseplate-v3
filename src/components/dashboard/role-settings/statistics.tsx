@@ -33,16 +33,18 @@ export function Statistics({ ongoing, shipped, delivered }: StatisticsProps): Re
 
         return (
           <Card key={entry.label}>
-            <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
+            <Stack direction='row' spacing={3} sx={{ alignItems: 'center' }}>
               <Avatar
                 color={entry.color}
                 sx={{ '--Avatar-size': '48px', '--Icon-fontSize': 'var(--joy-fontSize-xl2)' }}
               >
-                <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+                <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
               </Avatar>
               <Stack spacing={1}>
                 <Typography>{entry.label}</Typography>
-                <Typography level="h2">{new Intl.NumberFormat('en-US').format(entry.value)}</Typography>
+                <Typography level='h2'>
+                  {new Intl.NumberFormat('en-US').format(entry.value)}
+                </Typography>
               </Stack>
             </Stack>
           </Card>

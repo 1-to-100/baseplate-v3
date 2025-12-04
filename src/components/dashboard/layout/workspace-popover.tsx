@@ -39,7 +39,7 @@ export function WorkspacePoppover({
       disablePortal
       onClose={onClose}
       open={open}
-      placement="bottom"
+      placement='bottom'
       sx={{ maxWidth: '272px', py: 1 }}
     >
       <PopupContent
@@ -62,7 +62,7 @@ export function WorkspacePoppover({
                   onChange?.(organization.id);
                   onClose?.();
                 }}
-                role="button"
+                role='button'
                 sx={{
                   borderRadius: 'var(--joy-radius-sm)',
                   cursor: 'pointer',
@@ -70,26 +70,26 @@ export function WorkspacePoppover({
                   '&:hover': { bgcolor: 'var(--joy-palette-neutral-700)' },
                 }}
               >
-                <Typography level="title-sm" textColor="inherit">
+                <Typography level='title-sm' textColor='inherit'>
                   {organization.name}
                 </Typography>
-                <Typography fontSize="xs" textColor="neutral.400">
+                <Typography fontSize='xs' textColor='neutral.400'>
                   {environment}
                 </Typography>
               </Box>
             );
           })}
           <Button
-            color="neutral"
-            size="sm"
-            startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+            color='neutral'
+            size='sm'
+            startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
             sx={{
               '--variant-outlinedActiveBg': 'var(--joy-palette-neutral-900)',
               '--variant-outlinedBorder': 'var(--joy-palette-neutral-700)',
               '--variant-outlinedColor': 'var(--joy-palette-common-white)',
               '--variant-outlinedHoverBg': 'var(--joy-palette-neutral-700)',
             }}
-            variant="outlined"
+            variant='outlined'
           >
             Create Workspace
           </Button>

@@ -24,8 +24,15 @@ export interface TopCountriesProps {
 export function TopCountries({ data = [] }: TopCountriesProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Top Countries</Typography>
-      <List sx={{ '--List-gap': '16px', '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItem-paddingY': 0 }}>
+      <Typography level='h4'>Top Countries</Typography>
+      <List
+        sx={{
+          '--List-gap': '16px',
+          '--List-padding': 0,
+          '--ListItem-paddingX': 0,
+          '--ListItem-paddingY': 0,
+        }}
+      >
         {data.map((entry): React.JSX.Element => {
           const country = entry.country ? countries[entry.country] : { name: 'Other', flag: null };
 
@@ -33,22 +40,29 @@ export function TopCountries({ data = [] }: TopCountriesProps): React.JSX.Elemen
             <ListItem key={country.name}>
               <ListItemContent>
                 <Stack spacing={1}>
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: '1 1 auto' }}>
-                      {country.flag ? <Image alt="" height={24} src={country.flag} width={34} /> : null}
-                      <Typography level="title-sm">{country.name}</Typography>
+                  <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                    <Stack
+                      direction='row'
+                      spacing={1}
+                      sx={{ alignItems: 'center', flex: '1 1 auto' }}
+                    >
+                      {country.flag ? (
+                        <Image alt='' height={24} src={country.flag} width={34} />
+                      ) : null}
+                      <Typography level='title-sm'>{country.name}</Typography>
                     </Stack>
-                    <Typography level="body-xs">
-                      {new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(
-                        entry.amount / 100
-                      )}
+                    <Typography level='body-xs'>
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'percent',
+                        maximumFractionDigits: 2,
+                      }).format(entry.amount / 100)}
                     </Typography>
                   </Stack>
                   <LinearProgress
                     determinate
                     sx={{ bgcolor: 'var(--joy-palette-background-level1)' }}
                     value={entry.amount}
-                    variant="plain"
+                    variant='plain'
                   />
                 </Stack>
               </ListItemContent>

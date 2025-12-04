@@ -81,13 +81,13 @@ export const AllVariants: Story = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Button label="Primary" primary />
-        <Button label="Secondary" variant="outlined" />
-        <Button label="Plain" variant="plain" />
+        <Button label='Primary' primary />
+        <Button label='Secondary' variant='outlined' />
+        <Button label='Plain' variant='plain' />
       </div>
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Button label="Danger" color="danger" />
-        <Button label="Custom BG" backgroundColor="#FF6B6B" />
+        <Button label='Danger' color='danger' />
+        <Button label='Custom BG' backgroundColor='#FF6B6B' />
       </div>
     </div>
   ),

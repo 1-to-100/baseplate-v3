@@ -19,7 +19,9 @@ import { z as zod } from 'zod';
 import { paths } from '@/paths';
 import { DynamicLogo } from '@/components/core/logo';
 
-const schema = zod.object({ confirmationCode: zod.string().min(1, { message: 'Code is required' }) });
+const schema = zod.object({
+  confirmationCode: zod.string().min(1, { message: 'Code is required' }),
+});
 
 type Values = zod.infer<typeof schema>;
 
@@ -44,7 +46,10 @@ export function SignUpConfirmForm({ email }: SignUpConfirmFormProps): React.JSX.
       setIsPending(true);
 
       try {
-        const { nextStep } = await confirmSignUp({ username: email, confirmationCode: values.confirmationCode });
+        const { nextStep } = await confirmSignUp({
+          username: email,
+          confirmationCode: values.confirmationCode,
+        });
 
         if (nextStep.signUpStep === 'DONE') {
           // Unless you disabled `autoSignIn` in signUp
@@ -72,31 +77,34 @@ export function SignUpConfirmForm({ email }: SignUpConfirmFormProps): React.JSX.
     <Stack spacing={5}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={32} width={154} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={32} width={154} />
         </Box>
       </Box>
       <Stack spacing={3}>
-        <Typography level="h3" textAlign="center">
+        <Typography level='h3' textAlign='center'>
           Confirm Your Email
         </Typography>
-        <Typography textAlign="center">
-          We&apos;ve sent a verification email to <Typography fontWeight="lg">&quot;{email}&quot;</Typography>.
+        <Typography textAlign='center'>
+          We&apos;ve sent a verification email to{' '}
+          <Typography fontWeight='lg'>&quot;{email}&quot;</Typography>.
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={2}>
             <Controller
               control={control}
-              name="confirmationCode"
+              name='confirmationCode'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.confirmationCode)}>
                   <FormLabel>Confirmation Code</FormLabel>
                   <Input {...field} />
-                  {errors.confirmationCode ? <FormHelperText>{errors.confirmationCode.message}</FormHelperText> : null}
+                  {errors.confirmationCode ? (
+                    <FormHelperText>{errors.confirmationCode.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
-            {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-            <Button disabled={isPending} type="submit">
+            {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+            <Button disabled={isPending} type='submit'>
               Confirm
             </Button>
           </Stack>

@@ -19,17 +19,21 @@ export function VehicleTypes({ data = [] }: VehicleTypesProps): React.JSX.Elemen
 
   return (
     <Card>
-      <Typography level="h4">Types of Vehicle</Typography>
+      <Typography level='h4'>Types of Vehicle</Typography>
       <Stack spacing={3} sx={{ alignItems: 'center' }}>
         <NoSsr fallback={<Box sx={{ height: chartSize, width: chartSize }} />}>
-          <PieChart height={chartSize} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={chartSize}>
+          <PieChart
+            height={chartSize}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            width={chartSize}
+          >
             <Pie
               animationDuration={300}
               cx={chartSize / 2}
               cy={chartSize / 2}
               data={data}
-              dataKey="value"
-              nameKey="name"
+              dataKey='value'
+              nameKey='name'
               outerRadius={chartSize / 2}
               strokeWidth={0}
             >
@@ -58,16 +62,23 @@ function Legend({ payload }: LegendProps): React.JSX.Element {
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={1}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-              <Typography textColor="text.secondary">{entry.name}</Typography>
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.color,
+                  borderRadius: 'var(--joy-radius-xs)',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography textColor='text.secondary'>{entry.name}</Typography>
             </Stack>
-            <Typography level="body-sm" textColor="text.primary">
+            <Typography level='body-sm' textColor='text.primary'>
               {new Intl.NumberFormat('en-US').format(entry.value)}
             </Typography>
           </Stack>
@@ -99,18 +110,25 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={3}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.payload.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-              <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.payload.fill,
+                  borderRadius: '2px',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                 {entry.name}
               </Typography>
             </Stack>
-            <Typography fontSize="sm" textColor="text.tertiary">
+            <Typography fontSize='sm' textColor='text.tertiary'>
               {new Intl.NumberFormat('en-US').format(entry.value)}
             </Typography>
           </Stack>

@@ -11,4 +11,3 @@ export function generateSlug(text: string): string {
     .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
     .replace(/^-+|-+$/g, ''); // Remove leading and trailing hyphens
 }
-

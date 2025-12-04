@@ -28,7 +28,7 @@ export interface Invoice {
 const columns = [
   {
     formatter: (row): React.JSX.Element => (
-      <Link fontSize="sm" fontWeight="md" underline="none">
+      <Link fontSize='sm' fontWeight='md' underline='none'>
         {row.id}
       </Link>
     ),
@@ -45,7 +45,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '100px',
@@ -55,7 +57,7 @@ const columns = [
       const { label, color } = statusMapping[row.status] ?? { label: 'Unknown', color: 'neutral' };
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -65,8 +67,8 @@ const columns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PrinterIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PrinterIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -85,7 +87,7 @@ export function InvoicesTable({ rows }: InvoicesTableProps): React.JSX.Element {
     <DataTable<Invoice>
       columns={columns}
       rows={rows}
-      stripe="even"
+      stripe='even'
       sx={{ '--TableCell-paddingX': '20px', '--TableCell-paddingY': '12px' }}
     />
   );

@@ -41,7 +41,7 @@ export interface AppliancesProps {
 export function Appliances({ appliances = [] }: AppliancesProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Appliances</Typography>
+      <Typography level='h4'>Appliances</Typography>
       <Grid container spacing={3}>
         {appliances.map((appliance): React.JSX.Element => {
           const Icon = iconMapping[appliance.type] as Icon | undefined;
@@ -49,17 +49,24 @@ export function Appliances({ appliances = [] }: AppliancesProps): React.JSX.Elem
           return (
             <Grid key={appliance.id} md={4} xs={12}>
               <Card sx={{ boxShadow: 'none' }}>
-                <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                <Stack
+                  direction='row'
+                  spacing={2}
+                  sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <Avatar
-                    sx={{ '--Avatar-radius': 'var(--joy-radius-sm)', '--Icon-fontSize': 'var(--joy-fontSize-lg)' }}
+                    sx={{
+                      '--Avatar-radius': 'var(--joy-radius-sm)',
+                      '--Icon-fontSize': 'var(--joy-fontSize-lg)',
+                    }}
                   >
-                    {Icon ? <Icon fontSize="var(--Icon-fontSize)" weight="bold" /> : null}
+                    {Icon ? <Icon fontSize='var(--Icon-fontSize)' weight='bold' /> : null}
                   </Avatar>
-                  <Switch checked={appliance.status === 'on'} variant="solid" />
+                  <Switch checked={appliance.status === 'on'} variant='solid' />
                 </Stack>
                 <Stack spacing={1}>
-                  <Typography level="title-sm">{appliance.name}</Typography>
-                  <Typography level="body-xs">Active for {appliance.uptime}</Typography>
+                  <Typography level='title-sm'>{appliance.name}</Typography>
+                  <Typography level='body-xs'>Active for {appliance.uptime}</Typography>
                 </Stack>
               </Card>
             </Grid>

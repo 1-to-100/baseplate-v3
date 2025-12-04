@@ -13,7 +13,7 @@ export default function Page(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <div>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Blank
           </Typography>
         </div>

@@ -1,44 +1,52 @@
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Typography from "@mui/joy/Typography";
-import Card from "@mui/joy/Card";
-import Stack from "@mui/joy/Stack";
-import Link from "@mui/joy/Link";
-import { Star, RocketLaunch, CodeSimple, Gear, Wrench, IdentificationBadge, WebhooksLogo } from "@phosphor-icons/react/dist/ssr";
-import { DotsThree } from "@phosphor-icons/react/dist/ssr/DotsThree";
-import { IconButton } from "@mui/joy";
-import { Popper } from "@mui/base/Popper";
-import { Category } from "@/contexts/auth/types";
-import Button from "@mui/joy/Button";
-import Input from "@mui/joy/Input";
-import Image from "next/image";
-import { MagnifyingGlass as SearchIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { paths } from "@/paths";
-import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import AddEditCategoryModal from "../modals/AddEditCategoryModal";
-import DeleteDeactivateUserModal from "../modals/DeleteItemModal";
-import { deleteCategory } from "@/lib/api/categories";
-import { queryClient } from "@/lib/react-query";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Card from '@mui/joy/Card';
+import Stack from '@mui/joy/Stack';
+import Link from '@mui/joy/Link';
+import {
+  Star,
+  RocketLaunch,
+  CodeSimple,
+  Gear,
+  Wrench,
+  IdentificationBadge,
+  WebhooksLogo,
+} from '@phosphor-icons/react/dist/ssr';
+import { DotsThree } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { IconButton } from '@mui/joy';
+import { Popper } from '@mui/base/Popper';
+import { Category } from '@/contexts/auth/types';
+import Button from '@mui/joy/Button';
+import Input from '@mui/joy/Input';
+import Image from 'next/image';
+import { MagnifyingGlass as SearchIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { paths } from '@/paths';
+import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import AddEditCategoryModal from '../modals/AddEditCategoryModal';
+import DeleteDeactivateUserModal from '../modals/DeleteItemModal';
+import { deleteCategory } from '@/lib/api/categories';
+import { queryClient } from '@/lib/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useColorScheme } from '@mui/joy/styles';
 
 const popularArticles = [
-  { title: "Best Practices for Data Management and Security", href: "#" },
-  { title: "How to Leverage Analytics for Better Decision-Making", href: "#" },
-  { title: "API & Developer Tools: Everything You Need to Know", href: "#" },
-  { title: "Understanding the Dashboard and Key Features", href: "#" },
+  { title: 'Best Practices for Data Management and Security', href: '#' },
+  { title: 'How to Leverage Analytics for Better Decision-Making', href: '#' },
+  { title: 'API & Developer Tools: Everything You Need to Know', href: '#' },
+  { title: 'Understanding the Dashboard and Key Features', href: '#' },
 ];
 
 const teamFavourite = [
-  { title: "Setting Up Your Account: A Step-by-Step Guide", href: "#" },
-  { title: "Understanding the Dashboard and Key Features", href: "#" },
-  { title: "Managing Multi-Tenant Access and Security", href: "#" },
-  { title: "How to Integrate with Third-Party Services", href: "#" },
-  { title: "Common Issues and How to Fix Them", href: "#" },
+  { title: 'Setting Up Your Account: A Step-by-Step Guide', href: '#' },
+  { title: 'Understanding the Dashboard and Key Features', href: '#' },
+  { title: 'Managing Multi-Tenant Access and Security', href: '#' },
+  { title: 'How to Integrate with Third-Party Services', href: '#' },
+  { title: 'Common Issues and How to Fix Them', href: '#' },
 ];
 
 const iconMap: { [key: string]: React.JSX.Element } = {
@@ -55,14 +63,14 @@ function formatDate(dateString: string) {
   if (!dateString) {
     return 'No date';
   }
-  
+
   const date = new Date(dateString);
-  
+
   // Check if the date is valid
   if (isNaN(date.getTime())) {
     return 'Invalid date';
   }
-  
+
   return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
 }
 
@@ -72,17 +80,20 @@ interface CategoriesListComponentForUsersProps {
 }
 
 interface HttpError {
-    response?: {
-      data?: {
-        message?: string;
-      };
+  response?: {
+    data?: {
+      message?: string;
     };
-  }
+  };
+}
 
-const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersProps> = ({ categories, fetchCategories }) => {
+const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersProps> = ({
+  categories,
+  fetchCategories,
+}) => {
   const { colorScheme } = useColorScheme();
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const categoryToDeleteRef = useRef<string | null>(null);
@@ -115,14 +126,11 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
     try {
       router.push(paths.dashboard.documentation.details(categoryId.toString()));
     } catch (error) {
-      console.error("Error fetching category:", error);
+      console.error('Error fetching category:', error);
     }
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    categoryId: string
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, categoryId: string) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedCategoryId(categoryId);
@@ -169,9 +177,9 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
       return deleteCategory(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       handleCloseDeleteCategoryModal();
-      toast.success("Category has been deleted successfully!");
+      toast.success('Category has been deleted successfully!');
     },
     onError: (error: unknown) => {
       const httpError = error as HttpError;
@@ -179,7 +187,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while deleting the category.");
+        toast.error('An error occurred while deleting the category.');
       }
     },
   });
@@ -191,17 +199,17 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
   };
 
   const menuItemStyle = {
-    padding: "8px 16px",
-    fontSize: "16px",
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: '8px 16px',
+    fontSize: '16px',
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
   const iconStyle = {
-    marginRight: "14px",
+    marginRight: '14px',
   };
 
   return (
@@ -209,15 +217,15 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
       {/* Banner */}
       <Box
         sx={{
-          background: colorScheme === "light" ? "#E9EFF8" : "transparent",
-          border: "1px solid var(--joy-palette-divider)",
-          borderRadius: "20px",
+          background: colorScheme === 'light' ? '#E9EFF8' : 'transparent',
+          border: '1px solid var(--joy-palette-divider)',
+          borderRadius: '20px',
           px: { xs: 2, sm: 4 },
           py: { xs: 3, sm: 4 },
           mb: 3,
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          alignItems: "center",
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: 'center',
           gap: { xs: 2, md: 4 },
         }}
       >
@@ -227,34 +235,51 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
               fontWeight: 700,
               fontSize: { xs: 28, sm: 36 },
               mb: 1,
-              color: "var(--joy-palette-text-primary)",
+              color: 'var(--joy-palette-text-primary)',
             }}
           >
             Your Guide to Getting Things Done
           </Typography>
           <Typography
             sx={{
-              color: "var(--joy-palette-text-secondary)",
+              color: 'var(--joy-palette-text-secondary)',
               fontSize: { xs: 14, sm: 16 },
               fontWeight: 400,
               mb: 6,
               maxWidth: 510,
             }}
           >
-            Discover step-by-step guides, best practices, and expert tips to streamline your workflow, solve challenges, and make the most of every feature.
+            Discover step-by-step guides, best practices, and expert tips to streamline your
+            workflow, solve challenges, and make the most of every feature.
           </Typography>
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, alignItems: "center", maxWidth: 620 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: 'center',
+              maxWidth: 620,
+            }}
+          >
             <Input
-              placeholder="Search in  knowledge base"
-              sx={{ flex: 1, backgroundColor: "var(--joy-palette-background-mainBg)", borderRadius: "30px", px: 2, color: "var(--joy-palette-text-secondary)", fontSize: 14, fontWeight: 400 }}
-              size="lg"
+              placeholder='Search in  knowledge base'
+              sx={{
+                flex: 1,
+                backgroundColor: 'var(--joy-palette-background-mainBg)',
+                borderRadius: '30px',
+                px: 2,
+                color: 'var(--joy-palette-text-secondary)',
+                fontSize: 14,
+                fontWeight: 400,
+              }}
+              size='lg'
               endDecorator={null}
-              startDecorator={<SearchIcon size={18} color="var(--joy-palette-text-secondary)" />}
+              startDecorator={<SearchIcon size={18} color='var(--joy-palette-text-secondary)' />}
             />
             <Button
-              variant="solid"
-              color="primary"
-              sx={{ borderRadius: "30px", px: 3, fontWeight: 600, fontSize: 16 }}
+              variant='solid'
+              color='primary'
+              sx={{ borderRadius: '30px', px: 3, fontWeight: 600, fontSize: 16 }}
             >
               Search
             </Button>
@@ -262,69 +287,93 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
         </Box>
         <Box
           sx={{
-            flex: { xs: "unset", md: 1 },
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            flex: { xs: 'unset', md: 1 },
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             mt: { xs: 3, md: 0 },
-            width: { xs: "100%", md: 260 },
+            width: { xs: '100%', md: 260 },
             minWidth: 196,
             maxWidth: 196,
           }}
         >
-          <Image src="/assets/documents-banner-icon.svg" alt="Banner" width={196} height={196} />
+          <Image src='/assets/documents-banner-icon.svg' alt='Banner' width={196} height={196} />
         </Box>
       </Box>
       <Box
         sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
           gap: { xs: 3, md: 4 },
-          width: "100%",
+          width: '100%',
           mt: 2,
-          alignItems: "flex-start",
+          alignItems: 'flex-start',
         }}
       >
         <Box
           sx={{
-            flex: { xs: "unset", md: "0 0 420px" },
-            width: { xs: "100%", md: 420 },
+            flex: { xs: 'unset', md: '0 0 420px' },
+            width: { xs: '100%', md: 420 },
             minWidth: 0,
           }}
         >
-          <Typography level="h3" fontWeight={600} mb={2}>
+          <Typography level='h3' fontWeight={600} mb={2}>
             Selected article
           </Typography>
-          <Typography level="body-xs" fontWeight={400} fontSize={14} mb={2} sx={{ color: "var(--joy-palette-text-secondary)" }}>
+          <Typography
+            level='body-xs'
+            fontWeight={400}
+            fontSize={14}
+            mb={2}
+            sx={{ color: 'var(--joy-palette-text-secondary)' }}
+          >
             Popular
           </Typography>
           <Stack spacing={2} mb={5}>
             {popularArticles.map((a) => (
-              <Link key={a.title} href={a.href} underline="hover" sx={{ fontSize: 14, color: "#3D37DD" }}>{a.title}</Link>
+              <Link
+                key={a.title}
+                href={a.href}
+                underline='hover'
+                sx={{ fontSize: 14, color: '#3D37DD' }}
+              >
+                {a.title}
+              </Link>
             ))}
           </Stack>
-          <Typography level="body-xs" fontWeight={400} fontSize={14} mb={2} sx={{ color: "var(--joy-palette-text-secondary)" }}>
+          <Typography
+            level='body-xs'
+            fontWeight={400}
+            fontSize={14}
+            mb={2}
+            sx={{ color: 'var(--joy-palette-text-secondary)' }}
+          >
             Team favourite
           </Typography>
           <Stack spacing={2}>
             {teamFavourite.map((a) => (
-              <Typography key={a.title} sx={{ fontSize: 14, color: "var(--joy-palette-text-primary)" }}>{a.title}</Typography>
+              <Typography
+                key={a.title}
+                sx={{ fontSize: 14, color: 'var(--joy-palette-text-primary)' }}
+              >
+                {a.title}
+              </Typography>
             ))}
           </Stack>
         </Box>
-        <Box sx={{ flex: 1, width: "100%" }}>
-          <Typography level="h3" fontWeight={600} mb={2}>
+        <Box sx={{ flex: 1, width: '100%' }}>
+          <Typography level='h3' fontWeight={600} mb={2}>
             Explore topics
           </Typography>
           <Box
             sx={{
-              display: "grid",
+              display: 'grid',
               gridTemplateColumns: {
-                xs: "1fr",
-                sm: "1fr 1fr",
-                md: "1fr",
-                lg: "1fr",
-                xl: "1fr 1fr",
+                xs: '1fr',
+                sm: '1fr 1fr',
+                md: '1fr',
+                lg: '1fr',
+                xl: '1fr 1fr',
               },
               gap: 2,
               maxWidth: 700,
@@ -333,25 +382,25 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
             {categories.map((category) => (
               <Card
                 key={category.id}
-                variant="outlined"
+                variant='outlined'
                 sx={{
-                  p: "16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--joy-palette-divider)",
-                  boxShadow: "none",
-                  backgroundColor: "var(--joy-palette-background-body)",
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: "210px",
-                  cursor: "pointer",
-                  "&:hover": {
-                    borderColor: "var(--joy-palette-text-secondary)",
+                  p: '16px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--joy-palette-divider)',
+                  boxShadow: 'none',
+                  backgroundColor: 'var(--joy-palette-background-body)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: '210px',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    borderColor: 'var(--joy-palette-text-secondary)',
                   },
-                  maxWidth: { xs: "100%", sm: "336px" },
+                  maxWidth: { xs: '100%', sm: '336px' },
                 }}
                 onClick={() => handleCardClick(category.id)}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box
                     sx={{
                       width: 40,
@@ -368,48 +417,41 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography
-                      level="title-md"
+                      level='title-md'
                       sx={{
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "var(--joy-palette-text-primary)",
-                        wordBreak: "break-word",
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        color: 'var(--joy-palette-text-primary)',
+                        wordBreak: 'break-word',
                       }}
                     >
                       {category.name.slice(0, 59)}
                     </Typography>
                     <Typography
-                      level="body-xs"
+                      level='body-xs'
                       sx={{
                         mt: 0.5,
-                        color: "var(--joy-palette-text-secondary)",
-                        fontWeight: "400",
-                        fontSize: "12px",
+                        color: 'var(--joy-palette-text-secondary)',
+                        fontWeight: '400',
+                        fontSize: '12px',
                       }}
                     >
                       {category.subcategory}
                     </Typography>
                   </Box>
-                  <IconButton
-                    size="sm"
-                    onClick={(event) => handleMenuOpen(event, category.id)}
-                  >
-                    <DotsThree
-                      weight="bold"
-                      size={22}
-                      color="var(--joy-palette-text-secondary)"
-                    />
+                  <IconButton size='sm' onClick={(event) => handleMenuOpen(event, category.id)}>
+                    <DotsThree weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
                   </IconButton>
                   <Popper
                     open={selectedCategoryId === category.id && Boolean(anchorEl)}
                     anchorEl={anchorEl}
-                    placement="bottom-start"
+                    placement='bottom-start'
                     style={{
-                      minWidth: "150px",
-                      borderRadius: "8px",
-                      backgroundColor: "var(--joy-palette-background-surface)",
+                      minWidth: '150px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--joy-palette-background-surface)',
                       zIndex: 1300,
-                      border: "1px solid var(--joy-palette-divider)",
+                      border: '1px solid var(--joy-palette-divider)',
                     }}
                   >
                     <Box
@@ -420,7 +462,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                       }}
                       sx={menuItemStyle}
                     >
-                      <PencilIcon fontSize="20px" style={iconStyle} />
+                      <PencilIcon fontSize='20px' style={iconStyle} />
                       Edit
                     </Box>
                     <Box
@@ -429,9 +471,9 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                         handleMenuClose();
                         handleDeleteCategoryModalOpen(category.id);
                       }}
-                      sx={{ ...menuItemStyle, color: "#EF4444" }}
+                      sx={{ ...menuItemStyle, color: '#EF4444' }}
                     >
-                      <TrashIcon fontSize="20px" style={iconStyle} />
+                      <TrashIcon fontSize='20px' style={iconStyle} />
                       Delete
                     </Box>
                   </Popper>
@@ -443,37 +485,33 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                   }}
                 >
                   <Typography
-                    level="body-sm"
+                    level='body-sm'
                     sx={{
-                      color: "var(--joy-palette-text-secondary)",
-                      fontWeight: "300",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                      wordBreak: "break-word",
+                      color: 'var(--joy-palette-text-secondary)',
+                      fontWeight: '300',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
+                      wordBreak: 'break-word',
                     }}
                   >
                     {category.about.slice(0, 89)}
                   </Typography>
                 </Box>
                 <Typography
-                  level="body-md"
+                  level='body-md'
                   sx={{
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    color: "var(--joy-palette-text-secondary)",
+                    fontWeight: '400',
+                    fontSize: '12px',
+                    color: 'var(--joy-palette-text-secondary)',
                     pt: 1.5,
-                    borderTop: "1px solid var(--joy-palette-divider)",
-                    mt: "auto",
-                    display: "flex",
-                    justifyContent: "space-between",
+                    borderTop: '1px solid var(--joy-palette-divider)',
+                    mt: 'auto',
+                    display: 'flex',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <span>
-                    {category.articlesCount ?? 0} articles
-                  </span>
-                  <span>
-                    Last updated: {formatDate(category.updatedAt)}
-                  </span>
+                  <span>{category.articlesCount ?? 0} articles</span>
+                  <span>Last updated: {formatDate(category.updatedAt)}</span>
                 </Typography>
               </Card>
             ))}
@@ -491,18 +529,25 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
         open={openDeleteCategoryModal}
         onClose={handleCloseDeleteCategoryModal}
         onConfirm={() => {
-          console.log('Delete confirmation clicked, categoryToDelete:', categoryToDeleteRef.current);
+          console.log(
+            'Delete confirmation clicked, categoryToDelete:',
+            categoryToDeleteRef.current
+          );
           if (categoryToDeleteRef.current) {
             handleDeleteCategory(categoryToDeleteRef.current);
           }
         }}
-        usersToDelete={selectedCategoryId ? [categories.find(cat => cat.id === selectedCategoryId)?.name || ''] : undefined}
+        usersToDelete={
+          selectedCategoryId
+            ? [categories.find((cat) => cat.id === selectedCategoryId)?.name || '']
+            : undefined
+        }
         isDeactivate={false}
-        title="Delete Category"
-        description="Are you sure you want to delete this category?"
+        title='Delete Category'
+        description='Are you sure you want to delete this category?'
       />
     </>
   );
 };
 
-export default CategoriesListComponentForUsers; 
+export default CategoriesListComponentForUsers;

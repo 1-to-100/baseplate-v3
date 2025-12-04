@@ -27,19 +27,24 @@ const columns = [
   {
     formatter: (row): React.JSX.Element => {
       return (
-        <Stack direction="row" spacing={1}>
+        <Stack direction='row' spacing={1}>
           <Avatar
-            color="primary"
-            sx={{ '--Avatar-radius': 'var(--joy-radius-sm)', '--Icon-fontSize': 'var(--joy-fontSize-xl)' }}
-            variant="solid"
+            color='primary'
+            sx={{
+              '--Avatar-radius': 'var(--joy-radius-sm)',
+              '--Icon-fontSize': 'var(--joy-fontSize-xl)',
+            }}
+            variant='solid'
           >
-            <CubeIcon fontSize="var(--Icon-fontSize)" weight="duotone" />
+            <CubeIcon fontSize='var(--Icon-fontSize)' weight='duotone' />
           </Avatar>
           <div>
-            <Typography whiteSpace="nowrap">{row.productName}</Typography>
-            <Typography level="body-sm">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount)}/
-              {row.billingCycle}
+            <Typography whiteSpace='nowrap'>{row.productName}</Typography>
+            <Typography level='body-sm'>
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+                row.amount
+              )}
+              /{row.billingCycle}
             </Typography>
           </div>
         </Stack>
@@ -51,7 +56,7 @@ const columns = [
   {
     formatter: (row): React.JSX.Element => {
       return (
-        <Typography level="inherit" noWrap>
+        <Typography level='inherit' noWrap>
           {row.stripeId}
         </Typography>
       );
@@ -75,8 +80,8 @@ const columns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -91,5 +96,5 @@ export interface SubscriptionsTableProps {
 }
 
 export function SubscriptionsTable({ rows }: SubscriptionsTableProps): React.JSX.Element {
-  return <DataTable<Subscription> columns={columns} rows={rows} stripe="even" />;
+  return <DataTable<Subscription> columns={columns} rows={rows} stripe='even' />;
 }

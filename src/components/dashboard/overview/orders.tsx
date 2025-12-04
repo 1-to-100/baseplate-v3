@@ -24,13 +24,20 @@ export function Orders({ data = [] }: OrdersProps): React.JSX.Element {
 
   return (
     <Card>
-      <Typography level="h4">Orders</Typography>
-      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <Typography level='h4'>Orders</Typography>
+      <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {bars.map(
           (bar): React.JSX.Element => (
-            <Stack direction="row" key={bar.name} spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: bar.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-              <Typography level="body-sm">{bar.name}</Typography>
+            <Stack direction='row' key={bar.name} spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: bar.color,
+                  borderRadius: 'var(--joy-radius-xs)',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography level='body-sm'>{bar.name}</Typography>
             </Stack>
           )
         )}
@@ -38,9 +45,9 @@ export function Orders({ data = [] }: OrdersProps): React.JSX.Element {
       <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
         <ResponsiveContainer height={chartHeight}>
           <BarChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="4 4" vertical={false} />
-            <XAxis axisLine={false} dataKey="name" tickLine={false} type="category" />
-            <YAxis axisLine={false} tickLine={false} type="number" />
+            <CartesianGrid strokeDasharray='4 4' vertical={false} />
+            <XAxis axisLine={false} dataKey='name' tickLine={false} type='category' />
+            <YAxis axisLine={false} tickLine={false} type='number' />
             {bars.map(
               (bar): React.JSX.Element => (
                 <Bar
@@ -83,22 +90,24 @@ function TooltipContent({ active, payload, label }: TooltipContentProps): React.
       }}
     >
       <Stack spacing={2}>
-        <Typography level="title-md">{label}</Typography>
+        <Typography level='title-md'>{label}</Typography>
         {payload?.map(
           (entry): React.JSX.Element => (
             <Stack
-              direction="row"
+              direction='row'
               key={entry.name}
               spacing={3}
               sx={{ alignItems: 'center', justifyContent: 'space-between' }}
             >
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Box sx={{ bgcolor: entry.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-                <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                <Box
+                  sx={{ bgcolor: entry.fill, borderRadius: '2px', height: '8px', width: '8px' }}
+                />
+                <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                   {entry.name}
                 </Typography>
               </Stack>
-              <Typography fontSize="sm" textColor="text.tertiary">
+              <Typography fontSize='sm' textColor='text.tertiary'>
                 {entry.value}
               </Typography>
             </Stack>

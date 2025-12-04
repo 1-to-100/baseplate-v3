@@ -23,7 +23,7 @@ export interface PaymentMethodCardProps {
 export function PaymentMethodCard({ paymentMethod }: PaymentMethodCardProps): React.JSX.Element {
   return (
     <Card sx={{ height: '100%' }}>
-      <Stack direction="row" sx={{ alignItems: 'flex-start' }}>
+      <Stack direction='row' sx={{ alignItems: 'flex-start' }}>
         <Box
           sx={{
             border: '1px solid var(--joy-palette-neutral-outlinedBorder)',
@@ -32,21 +32,24 @@ export function PaymentMethodCard({ paymentMethod }: PaymentMethodCardProps): Re
             p: '4px',
           }}
         >
-          <Image alt="Visa" height={16} src="/assets/logo-visa.svg" width={49.44} />
+          <Image alt='Visa' height={16} src='/assets/logo-visa.svg' width={49.44} />
         </Box>
         <Box sx={{ flex: '1 1 auto' }}>
-          <Typography whiteSpace="nowrap">{paymentMethod.cardNumber}</Typography>
-          <Typography level="body-xs">Expiry {paymentMethod.expiry}</Typography>
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+          <Typography whiteSpace='nowrap'>{paymentMethod.cardNumber}</Typography>
+          <Typography level='body-xs'>Expiry {paymentMethod.expiry}</Typography>
+          <Stack
+            direction='row'
+            sx={{ alignItems: 'center', justifyContent: 'space-between', mt: 1 }}
+          >
             {paymentMethod.primary ? (
-              <Chip color="warning" variant="soft">
+              <Chip color='warning' variant='soft'>
                 Primary
               </Chip>
             ) : (
               <span />
             )}
-            <IconButton color="neutral" size="sm" variant="plain">
-              <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <IconButton color='neutral' size='sm' variant='plain'>
+              <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
             </IconButton>
           </Stack>
         </Box>

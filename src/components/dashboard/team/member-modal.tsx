@@ -11,7 +11,12 @@ import ModalDialog from '@mui/joy/ModalDialog';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 
-const statusMapping = { online: 'success', offline: 'neutral', away: 'warning', busy: 'danger' } as const;
+const statusMapping = {
+  online: 'success',
+  offline: 'neutral',
+  away: 'warning',
+  busy: 'danger',
+} as const;
 
 export interface Member {
   name: string;
@@ -37,7 +42,7 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
       }}
       open={open}
     >
-      <ModalDialog sx={{ '--ModalDialog-maxWidth': '800px', pt: 8, width: '100%' }} variant="plain">
+      <ModalDialog sx={{ '--ModalDialog-maxWidth': '800px', pt: 8, width: '100%' }} variant='plain'>
         <ModalClose />
         <Stack spacing={3} sx={{ overflowY: 'auto' }}>
           <div>
@@ -48,13 +53,13 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
             >
               <Avatar src={avatar} sx={{ '--Avatar-size': '112px' }} />
             </Badge>
-            <Typography level="h4" sx={{ mt: 2 }}>
+            <Typography level='h4' sx={{ mt: 2 }}>
               {name}
             </Typography>
-            <Typography textColor="text.tertiary">@{username}</Typography>
+            <Typography textColor='text.tertiary'>@{username}</Typography>
           </div>
           <Stack spacing={2}>
-            <Typography level="title-md">General Information</Typography>
+            <Typography level='title-md'>General Information</Typography>
             <Grid container disableEqualOverflow spacing={2}>
               {(
                 [
@@ -72,11 +77,16 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
                 ] satisfies { label: string; value: string }[]
               ).map(
                 (item, index): React.JSX.Element => (
-                  <Grid key={item.label} lg={index === 0 ? 12 : 4} md={index === 0 ? 12 : 6} xs={12}>
-                    <Typography level="body-xs" textTransform="uppercase">
+                  <Grid
+                    key={item.label}
+                    lg={index === 0 ? 12 : 4}
+                    md={index === 0 ? 12 : 6}
+                    xs={12}
+                  >
+                    <Typography level='body-xs' textTransform='uppercase'>
                       {item.label}
                     </Typography>
-                    <Typography level="body-sm" textColor="text.primary">
+                    <Typography level='body-sm' textColor='text.primary'>
                       {item.value}
                     </Typography>
                   </Grid>
@@ -85,7 +95,7 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
             </Grid>
           </Stack>
           <Stack spacing={2}>
-            <Typography level="title-md">Contact Information</Typography>
+            <Typography level='title-md'>Contact Information</Typography>
             <Grid container disableEqualOverflow spacing={2}>
               {(
                 [
@@ -95,10 +105,10 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
               ).map(
                 (item): React.JSX.Element => (
                   <Grid key={item.label} lg={4} md={6} xs={12}>
-                    <Typography level="body-xs" textTransform="uppercase">
+                    <Typography level='body-xs' textTransform='uppercase'>
                       {item.label}
                     </Typography>
-                    <Typography level="body-sm" textColor="text.primary">
+                    <Typography level='body-sm' textColor='text.primary'>
                       {item.value}
                     </Typography>
                   </Grid>
@@ -107,17 +117,37 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
             </Grid>
           </Stack>
           <Stack spacing={2}>
-            <Typography level="title-md">Work Experience</Typography>
+            <Typography level='title-md'>Work Experience</Typography>
             {(
               [
-                { id: 'JOB-004', position: 'Leading Web Designer', company: 'AWS', period: 'Jun 2022 - Present' },
-                { id: 'JOB-003', position: 'Leading Web Designer', company: 'Meta', period: 'Sep 2021 - Jun 2022' },
-                { id: 'JOB-002', position: 'Senior Web Designer', company: 'Stripe', period: 'Jun 2020 - Sep 2021' },
-                { id: 'JOB-001', position: 'Web Designer', company: 'PayPal', period: 'May 2018 - Jun 2020' },
+                {
+                  id: 'JOB-004',
+                  position: 'Leading Web Designer',
+                  company: 'AWS',
+                  period: 'Jun 2022 - Present',
+                },
+                {
+                  id: 'JOB-003',
+                  position: 'Leading Web Designer',
+                  company: 'Meta',
+                  period: 'Sep 2021 - Jun 2022',
+                },
+                {
+                  id: 'JOB-002',
+                  position: 'Senior Web Designer',
+                  company: 'Stripe',
+                  period: 'Jun 2020 - Sep 2021',
+                },
+                {
+                  id: 'JOB-001',
+                  position: 'Web Designer',
+                  company: 'PayPal',
+                  period: 'May 2018 - Jun 2020',
+                },
               ] satisfies { id: string; position: string; company: string; period: string }[]
             ).map(
               (record, index): React.JSX.Element => (
-                <Stack direction="row" key={record.id} spacing={2} sx={{ alignItems: 'center' }}>
+                <Stack direction='row' key={record.id} spacing={2} sx={{ alignItems: 'center' }}>
                   <Avatar
                     sx={{
                       '--Avatar-size': '48px',
@@ -126,10 +156,10 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
                     }}
                   />
                   <div>
-                    <Typography level="body-sm" textColor="text.primary">
+                    <Typography level='body-sm' textColor='text.primary'>
                       {record.position}
                     </Typography>
-                    <Typography level="body-xs">
+                    <Typography level='body-xs'>
                       {record.company} {record.period}
                     </Typography>
                   </div>

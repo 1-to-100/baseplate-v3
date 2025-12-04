@@ -50,10 +50,10 @@ export function CurrentUser({ onNavigate }: CurrentUserProps): React.JSX.Element
         p: 2,
       }}
     >
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
+      <Stack direction='row' spacing={2} sx={{ alignItems: 'flex-start' }}>
         <Badge
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          color="success"
+          color='success'
           sx={{
             '--Badge-ringColor': 'var(--joy-palette-neutral-900)',
             '& .MuiBadge-badge': { bottom: '4px', right: '4px' },
@@ -62,27 +62,27 @@ export function CurrentUser({ onNavigate }: CurrentUserProps): React.JSX.Element
           <Avatar src={user.avatar} />
         </Badge>
         <Box sx={{ flex: '1 1 auto' }}>
-          <Typography fontWeight="lg" textColor="inherit">
+          <Typography fontWeight='lg' textColor='inherit'>
             {user.firstName} {user.lastName}
           </Typography>
-          <Typography level="body-xs" textColor="neutral.500">
+          <Typography level='body-xs' textColor='neutral.500'>
             {user.email}
           </Typography>
         </Box>
-        <Chip color={plan.color} size="sm" variant="soft">
+        <Chip color={plan.color} size='sm' variant='soft'>
           {plan.label}
         </Chip>
       </Stack>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Box sx={{ flex: '1 1 auto' }}>
           {user.plan === 'starter' ? (
             <Button
-              color="neutral"
+              color='neutral'
               component={RouterLink}
               href={paths.dashboard.profile.billing}
               onClick={onNavigate}
-              size="sm"
-              startDecorator={<LightningIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+              size='sm'
+              startDecorator={<LightningIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
               sx={{
                 '--variant-outlinedActiveBg': 'var(--joy-palette-neutral-900)',
                 '--variant-outlinedBorder': 'var(--joy-palette-neutral-700)',
@@ -90,27 +90,27 @@ export function CurrentUser({ onNavigate }: CurrentUserProps): React.JSX.Element
                 '--variant-outlinedHoverBg': 'var(--joy-palette-neutral-700)',
                 width: '100%',
               }}
-              variant="outlined"
+              variant='outlined'
             >
               Upgrade to Pro
             </Button>
           ) : null}
         </Box>
         <IconButton
-          color="neutral"
+          color='neutral'
           component={RouterLink}
           href={paths.dashboard.profile.profile}
           onClick={onNavigate}
-          size="sm"
+          size='sm'
           sx={{
             '--variant-outlinedActiveBg': 'var(--joy-palette-neutral-900)',
             '--variant-outlinedBorder': 'var(--joy-palette-neutral-700)',
             '--variant-outlinedColor': 'var(--joy-palette-common-white)',
             '--variant-outlinedHoverBg': 'var(--joy-palette-neutral-700)',
           }}
-          variant="outlined"
+          variant='outlined'
         >
-          <GearSixIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <GearSixIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       </Stack>
     </Box>

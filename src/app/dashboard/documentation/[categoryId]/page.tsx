@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Typography from "@mui/joy/Typography";
-import Button from "@mui/joy/Button";
-import IconButton from "@mui/joy/IconButton";
-import Table from "@mui/joy/Table";
-import { Plus, Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { useParams, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { paths } from "@/paths";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Button from '@mui/joy/Button';
+import IconButton from '@mui/joy/IconButton';
+import Table from '@mui/joy/Table';
+import { Plus, Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { paths } from '@/paths';
 import {
   Avatar,
   Breadcrumbs,
@@ -18,29 +18,29 @@ import {
   ColorPaletteProp,
   Stack,
   VariantProp,
-} from "@mui/joy";
-import { BreadcrumbsItem } from "@/components/core/breadcrumbs-item";
-import { BreadcrumbsSeparator } from "@/components/core/breadcrumbs-separator";
-import SearchInput from "@/components/dashboard/layout/search-input";
-import { Popper } from "@mui/base/Popper";
-import { DotsThreeVertical } from "@phosphor-icons/react/dist/ssr/DotsThreeVertical";
-import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
-import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { Star as StarIcon } from "@phosphor-icons/react/dist/ssr/Star";
-import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
-import { useCallback, useState, useEffect } from "react";
-import AddEditUserModal from "@/components/dashboard/modals/AddEditUserModal";
-import DeleteDeactivateUserModal from "@/components/dashboard/modals/DeleteItemModal";
-import Pagination from "@/components/dashboard/layout/pagination";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Article } from "@/contexts/auth/types";
-import { getCategoryById } from "@/lib/api/categories";
-import { deleteArticle, editArticle, getArticlesList } from "@/lib/api/articles";
-import { useRouter } from "next/navigation";
-import {toast} from '@/components/core/toaster';
+} from '@mui/joy';
+import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
+import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
+import SearchInput from '@/components/dashboard/layout/search-input';
+import { Popper } from '@mui/base/Popper';
+import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { Star as StarIcon } from '@phosphor-icons/react/dist/ssr/Star';
+import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
+import { useCallback, useState, useEffect } from 'react';
+import AddEditUserModal from '@/components/dashboard/modals/AddEditUserModal';
+import DeleteDeactivateUserModal from '@/components/dashboard/modals/DeleteItemModal';
+import Pagination from '@/components/dashboard/layout/pagination';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Article } from '@/contexts/auth/types';
+import { getCategoryById } from '@/lib/api/categories';
+import { deleteArticle, editArticle, getArticlesList } from '@/lib/api/articles';
+import { useRouter } from 'next/navigation';
+import { toast } from '@/components/core/toaster';
 import { useColorScheme } from '@mui/joy/styles';
-import { useGlobalSearch } from "@/hooks/use-global-search";
+import { useGlobalSearch } from '@/hooks/use-global-search';
 
 const RouterLink = Link;
 
@@ -55,9 +55,7 @@ interface HttpError {
 const CategoryInfo: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [addUserAnchorEl, setAddUserAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
+  const [addUserAnchorEl, setAddUserAnchorEl] = useState<null | HTMLElement>(null);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
 
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -67,7 +65,7 @@ const CategoryInfo: React.FC = () => {
   const [openEditRoleModal, setOpenEditRoleModal] = useState(false);
   const [userToEditId, setUserToEditId] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<keyof Article | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const { colorScheme } = useColorScheme();
   const { debouncedSearchValue } = useGlobalSearch();
@@ -85,10 +83,10 @@ const CategoryInfo: React.FC = () => {
     isLoading: isCategoryLoading,
     error: categoryError,
   } = useQuery({
-    queryKey: ["category", categoryId],
+    queryKey: ['category', categoryId],
     queryFn: () => {
       if (!categoryId) {
-        throw new Error("Category ID is missing");
+        throw new Error('Category ID is missing');
       }
       return getCategoryById(String(categoryId));
     },
@@ -97,7 +95,7 @@ const CategoryInfo: React.FC = () => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: [
-      "articles",
+      'articles',
       currentPage,
       debouncedSearchValue,
       sortColumn,
@@ -134,17 +132,13 @@ const CategoryInfo: React.FC = () => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [anchorEl, addUserAnchorEl]);
 
-
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    index: number
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setMenuRowIndex(index);
@@ -166,7 +160,7 @@ const CategoryInfo: React.FC = () => {
   };
 
   const handleAddArticle = () => {
-    router.push("/dashboard/documentation/add");
+    router.push('/dashboard/documentation/add');
   };
 
   const handleDeleteRow = useCallback((articleId: string) => {
@@ -184,16 +178,16 @@ const CategoryInfo: React.FC = () => {
   const deleteArticleMutation = useMutation({
     mutationFn: (id: string) => deleteArticle(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["articles"] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Articles have been deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Articles have been deleted successfully!');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while deleting articles.");
+        toast.error('An error occurred while deleting articles.');
       }
     },
   });
@@ -205,7 +199,7 @@ const CategoryInfo: React.FC = () => {
       setRowsToDelete([]);
       setSelectedRows([]);
     } catch (error) {
-      console.error("Failed to delete articles:", error);
+      console.error('Failed to delete articles:', error);
     }
   };
 
@@ -215,15 +209,11 @@ const CategoryInfo: React.FC = () => {
 
   const handleRowCheckboxChange = (articleId: string) => {
     setSelectedRows((prev) =>
-      prev.includes(articleId)
-        ? prev.filter((id) => id !== articleId)
-        : [...prev, articleId]
+      prev.includes(articleId) ? prev.filter((id) => id !== articleId) : [...prev, articleId]
     );
   };
 
-  const handleSelectAllChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleSelectAllChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasResults) return;
     if (event.target.checked) {
       setSelectedRows(articles.map((article) => article.id));
@@ -238,33 +228,34 @@ const CategoryInfo: React.FC = () => {
   };
 
   const handleSort = (column: keyof Article) => {
-    const isAsc = sortColumn === column && sortDirection === "asc";
-    const newDirection = isAsc ? "desc" : "asc";
+    const isAsc = sortColumn === column && sortDirection === 'asc';
+    const newDirection = isAsc ? 'desc' : 'asc';
     setSortColumn(column);
     setSortDirection(newDirection);
   };
 
   const editArticleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { status: "draft" | "published" } }) => editArticle(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { status: 'draft' | 'published' } }) =>
+      editArticle(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["articles"] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Article status has been updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Article status has been updated successfully!');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while updating article status.");
+        toast.error('An error occurred while updating article status.');
       }
     },
   });
 
   const handleSaveDraft = async (articleId: string) => {
-    editArticleMutation.mutate({ 
-      id: articleId, 
-      data: { status: "draft" }
+    editArticleMutation.mutate({
+      id: articleId,
+      data: { status: 'draft' },
     });
   };
 
@@ -276,27 +267,21 @@ const CategoryInfo: React.FC = () => {
     .filter((name): name is string => name !== undefined);
 
   const menuItemStyle = {
-    padding: "8px 16px",
-    fontSize: "16px",
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: '8px 16px',
+    fontSize: '16px',
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
 
   const iconStyle = {
-    marginRight: "14px",
+    marginRight: '14px',
   };
 
-  const avatarColors: ColorPaletteProp[] = [
-    "primary",
-    "neutral",
-    "danger",
-    "warning",
-    "success",
-  ];
+  const avatarColors: ColorPaletteProp[] = ['primary', 'neutral', 'danger', 'warning', 'success'];
 
   const getAvatarProps = (name: string) => {
     const hash = Array.from(name).reduce(
@@ -306,16 +291,16 @@ const CategoryInfo: React.FC = () => {
     const colorIndex = hash % avatarColors.length;
     return {
       color: avatarColors[colorIndex],
-      variant: "soft" as VariantProp,
+      variant: 'soft' as VariantProp,
     };
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
     }).format(date);
   };
 
@@ -324,29 +309,29 @@ const CategoryInfo: React.FC = () => {
   // }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: "var(--Content-padding)" } }}>
+    <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
       <Stack spacing={{ xs: 2, sm: 3 }} sx={{ mt: { xs: 6, sm: 0 } }}>
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: 'column', sm: 'row' }}
           spacing={{ xs: 2, sm: 3 }}
-          sx={{ alignItems: { xs: "stretch", sm: "flex-start" } }}
+          sx={{ alignItems: { xs: 'stretch', sm: 'flex-start' } }}
         >
-          <Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+          <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography
-              fontSize={{ xs: "xl2", sm: "xl3" }}
-              level="h1"
-              sx={{ wordBreak: "break-word" }}
+              fontSize={{ xs: 'xl2', sm: 'xl3' }}
+              level='h1'
+              sx={{ wordBreak: 'break-word' }}
             >
               {categoryData?.name.slice(0, 30)}
             </Typography>
           </Stack>
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={{ xs: 1, sm: 2 }}
             sx={{
-              alignItems: { xs: "stretch", sm: "center" },
-              width: { xs: "100%", sm: "auto" },
-              position: "relative",
+              alignItems: { xs: 'stretch', sm: 'center' },
+              width: { xs: '100%', sm: 'auto' },
+              position: 'relative',
             }}
           >
             {/* <Button
@@ -362,12 +347,12 @@ const CategoryInfo: React.FC = () => {
               Edit
             </Button> */}
             <Button
-              variant="solid"
-              color="primary"
+              variant='solid'
+              color='primary'
               onClick={handleAddArticle}
-              startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" />}
+              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' />}
               sx={{
-                width: { xs: "100%", sm: "auto" },
+                width: { xs: '100%', sm: 'auto' },
                 py: { xs: 1, sm: 0.75 },
               }}
             >
@@ -379,20 +364,15 @@ const CategoryInfo: React.FC = () => {
 
       <Stack sx={{ mt: 4 }}>
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem
-            href={paths.dashboard.documentation.list}
-            type="start"
-          />
-          <BreadcrumbsItem href={paths.dashboard.documentation.list}>
-            Documentation
-          </BreadcrumbsItem>
-          <BreadcrumbsItem type="end">{categoryData?.name.slice(0, 30)}</BreadcrumbsItem>
+          <BreadcrumbsItem href={paths.dashboard.documentation.list} type='start' />
+          <BreadcrumbsItem href={paths.dashboard.documentation.list}>Documentation</BreadcrumbsItem>
+          <BreadcrumbsItem type='end'>{categoryData?.name.slice(0, 30)}</BreadcrumbsItem>
         </Breadcrumbs>
       </Stack>
 
       <Box
         sx={{
-          display: { xs: "block", sm: "flex" },
+          display: { xs: 'block', sm: 'flex' },
           gap: 3,
           mb: 6,
         }}
@@ -404,39 +384,39 @@ const CategoryInfo: React.FC = () => {
         >
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               mb: 2,
               mt: 2,
             }}
           >
-            <Stack sx={{ alignItems: "center", ml: "auto", mr: 2 }}>
+            <Stack sx={{ alignItems: 'center', ml: 'auto', mr: 2 }}>
               {selectedRows.length > 0 ? (
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    paddingRight: "16px",
-                    gap: "12px",
+                    display: 'flex',
+                    alignItems: 'center',
+                    paddingRight: '16px',
+                    gap: '12px',
                   }}
                 >
-                  <Typography level="body-sm">
+                  <Typography level='body-sm'>
                     {selectedRows.length} row
-                    {selectedRows.length > 1 ? "s" : ""} selected
+                    {selectedRows.length > 1 ? 's' : ''} selected
                   </Typography>
                   <IconButton
                     onClick={handleDelete}
                     sx={{
-                      bgcolor: "#FEE2E2",
-                      color: "#EF4444",
-                      borderRadius: "50%",
+                      bgcolor: '#FEE2E2',
+                      color: '#EF4444',
+                      borderRadius: '50%',
                       width: 32,
                       height: 32,
-                      "&:hover": { bgcolor: "#FECACA" },
+                      '&:hover': { bgcolor: '#FECACA' },
                     }}
                   >
-                    <TrashIcon fontSize="var(--Icon-fontSize)" />
+                    <TrashIcon fontSize='var(--Icon-fontSize)' />
                   </IconButton>
                 </Box>
               ) : null}
@@ -446,10 +426,10 @@ const CategoryInfo: React.FC = () => {
           {isLoading ? (
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "50vh",
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '50vh',
               }}
             >
               <CircularProgress />
@@ -457,21 +437,21 @@ const CategoryInfo: React.FC = () => {
           ) : (
             <Box>
               {articles.length === 0 ? (
-                <Box sx={{ textAlign: "center", mt: "150px" }}>
+                <Box sx={{ textAlign: 'center', mt: '150px' }}>
                   <Typography
                     sx={{
-                      fontSize: "24px",
-                      fontWeight: "600",
-                      color: "var(--joy-palette-text-primary)",
+                      fontSize: '24px',
+                      fontWeight: '600',
+                      color: 'var(--joy-palette-text-primary)',
                     }}
                   >
                     You do not have any articles
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: "14px",
-                      fontWeight: "300",
-                      color: "var(--joy-palette-text-secondary)",
+                      fontSize: '14px',
+                      fontWeight: '300',
+                      color: 'var(--joy-palette-text-secondary)',
                       mt: 1,
                     }}
                   >
@@ -479,38 +459,35 @@ const CategoryInfo: React.FC = () => {
                   </Typography>
                   <Button
                     onClick={handleAddArticle}
-                    variant="outlined"
-                    startDecorator={<Plus size={20} weight="bold" />}
-                    sx={{ mt: 2, color: "var(--joy-palette-text-secondary)" }}
+                    variant='outlined'
+                    startDecorator={<Plus size={20} weight='bold' />}
+                    sx={{ mt: 2, color: 'var(--joy-palette-text-secondary)' }}
                   >
                     Add article
                   </Button>
-                  <AddEditUserModal
-                    open={openAddUserModal}
-                    onClose={handleCloseAddUserModal}
-                  />
+                  <AddEditUserModal open={openAddUserModal} onClose={handleCloseAddUserModal} />
                 </Box>
               ) : (
                 <Box>
                   <Box
                     sx={{
-                      overflowX: "auto",
-                      width: "100%",
-                      "&::-webkit-scrollbar": {
-                        height: "8px",
+                      overflowX: 'auto',
+                      width: '100%',
+                      '&::-webkit-scrollbar': {
+                        height: '8px',
                       },
-                      "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: "var(--joy-palette-divider)",
-                        borderRadius: "4px",
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'var(--joy-palette-divider)',
+                        borderRadius: '4px',
                       },
                     }}
                   >
                     <Table
-                      aria-label="documentation table"
+                      aria-label='documentation table'
                       sx={{
-                        minWidth: "800px",
-                        tableLayout: "fixed",
-                        "& th, & td": {
+                        minWidth: '800px',
+                        tableLayout: 'fixed',
+                        '& th, & td': {
                           px: { xs: 1, sm: 2 },
                           py: { xs: 1, sm: 1.5 },
                         },
@@ -518,12 +495,9 @@ const CategoryInfo: React.FC = () => {
                     >
                       <thead>
                         <tr>
-                          <th style={{ width: "5%", minWidth: "40px" }}>
+                          <th style={{ width: '5%', minWidth: '40px' }}>
                             <Checkbox
-                              checked={
-                                hasResults &&
-                                selectedRows.length === articles.length
-                              }
+                              checked={hasResults && selectedRows.length === articles.length}
                               indeterminate={
                                 hasResults &&
                                 selectedRows.length > 0 &&
@@ -533,45 +507,48 @@ const CategoryInfo: React.FC = () => {
                               disabled={!hasResults}
                             />
                           </th>
-                          <th style={{ width: "30%", minWidth: "150px" }}>Article name</th>
-                          <th style={{ width: "15%", minWidth: "50px" }}>Last edit</th>
-                          <th style={{ width: "15%", minWidth: "50px" }}>Status</th>
+                          <th style={{ width: '30%', minWidth: '150px' }}>Article name</th>
+                          <th style={{ width: '15%', minWidth: '50px' }}>Last edit</th>
+                          <th style={{ width: '15%', minWidth: '50px' }}>Status</th>
                           <th
-                            onClick={() => handleSort("title")}
-                            style={{ width: "25%", minWidth: "150px" }}
+                            onClick={() => handleSort('title')}
+                            style={{ width: '25%', minWidth: '150px' }}
                           >
                             <Box
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                "& .sort-icon": {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                '& .sort-icon': {
                                   opacity: 0,
-                                  transition: "opacity 0.2s ease-in-out",
+                                  transition: 'opacity 0.2s ease-in-out',
                                 },
-                                "&:hover .sort-icon": { opacity: 1 },
+                                '&:hover .sort-icon': { opacity: 1 },
                               }}
                             >
                               Author
                             </Box>
                           </th>
-                          <th style={{ width: "15%", minWidth: "50px" }} onClick={() => handleSort("updatedAt")}>
+                          <th
+                            style={{ width: '15%', minWidth: '50px' }}
+                            onClick={() => handleSort('updatedAt')}
+                          >
                             <Box
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                "& .sort-icon": {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                '& .sort-icon': {
                                   opacity: 0,
-                                  transition: "opacity 0.2s ease-in-out",
+                                  transition: 'opacity 0.2s ease-in-out',
                                 },
-                                "&:hover .sort-icon": { opacity: 1 },
+                                '&:hover .sort-icon': { opacity: 1 },
                               }}
                             >
                               Performance
                             </Box>
                           </th>
-                          <th style={{ width: "60px" }}></th>
+                          <th style={{ width: '60px' }}></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -580,9 +557,7 @@ const CategoryInfo: React.FC = () => {
                             <td>
                               <Checkbox
                                 checked={selectedRows.includes(article.id)}
-                                onChange={() =>
-                                  handleRowCheckboxChange(article.id)
-                                }
+                                onChange={() => handleRowCheckboxChange(article.id)}
                               />
                             </td>
                             <td>{article.title.slice(0, 80)}</td>
@@ -591,31 +566,33 @@ const CategoryInfo: React.FC = () => {
                               <Box
                                 sx={{
                                   bgcolor:
-                                    article.status === "draft"
-                                      ? colorScheme === "light" ? "#FFF8C5" : "#fffad2"
-                                      : colorScheme === "light" ? "#EEEFF0" : "#e9e9e9",
-                                  display: "inline-block",
-                                  padding: "8px 8px",
-                                  borderRadius: "25px", 
-                                  color: colorScheme === "light" ? "var(--joy-palette-text-primary)" : "#000",
+                                    article.status === 'draft'
+                                      ? colorScheme === 'light'
+                                        ? '#FFF8C5'
+                                        : '#fffad2'
+                                      : colorScheme === 'light'
+                                        ? '#EEEFF0'
+                                        : '#e9e9e9',
+                                  display: 'inline-block',
+                                  padding: '8px 8px',
+                                  borderRadius: '25px',
+                                  color:
+                                    colorScheme === 'light'
+                                      ? 'var(--joy-palette-text-primary)'
+                                      : '#000',
                                 }}
                               >
-                                {article.status.charAt(0).toUpperCase() +
-                                  article.status.slice(1)}
+                                {article.status.charAt(0).toUpperCase() + article.status.slice(1)}
                               </Box>
                             </td>
                             <td>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                sx={{ alignItems: "center" }}
-                              >
+                              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
                                 <Avatar
                                   sx={{
                                     width: 28,
                                     height: 28,
-                                    fontWeight: "bold",
-                                    fontSize: "13px",
+                                    fontWeight: 'bold',
+                                    fontSize: '13px',
                                   }}
                                   {...getAvatarProps(
                                     `${article.Creator.firstName} ${article.Creator.lastName}`.trim()
@@ -623,95 +600,79 @@ const CategoryInfo: React.FC = () => {
                                 >
                                   {`${article.Creator.firstName} ${article.Creator.lastName}`
                                     .trim()
-                                    .split(" ")
+                                    .split(' ')
                                     .map((n) => n[0])
-                                    .join("")}
+                                    .join('')}
                                 </Avatar>
-                                <Typography sx={{ wordBreak: "break-all" }}>
-                                  {article.Creator.firstName.slice(0, 30)}{" "}
+                                <Typography sx={{ wordBreak: 'break-all' }}>
+                                  {article.Creator.firstName.slice(0, 30)}{' '}
                                   {article.Creator.lastName.slice(0, 30)}
                                 </Typography>
                               </Stack>
                             </td>
                             <td>
-                              <Stack
-                                direction="row"
-                                sx={{ alignItems: "center" }}
-                              >
-                                <EyeIcon fontSize="18px" style={iconStyle} />
-                                <Typography sx={{ wordBreak: "break-all" }}>
+                              <Stack direction='row' sx={{ alignItems: 'center' }}>
+                                <EyeIcon fontSize='18px' style={iconStyle} />
+                                <Typography sx={{ wordBreak: 'break-all' }}>
                                   {article.viewsNumber}
                                 </Typography>
                               </Stack>
                             </td>
                             <td>
                               <IconButton
-                                size="sm"
-                                onClick={(event) =>
-                                  handleMenuOpen(event, index)
-                                }
+                                size='sm'
+                                onClick={(event) => handleMenuOpen(event, index)}
                               >
                                 <DotsThreeVertical
-                                  weight="bold"
+                                  weight='bold'
                                   size={22}
-                                  color="var(--joy-palette-text-secondary)"
+                                  color='var(--joy-palette-text-secondary)'
                                 />
                               </IconButton>
                               <Popper
-                                open={
-                                  menuRowIndex === index && Boolean(anchorEl)
-                                }
+                                open={menuRowIndex === index && Boolean(anchorEl)}
                                 anchorEl={anchorEl}
-                                placement="bottom-start"
+                                placement='bottom-start'
                                 style={{
-                                  minWidth: "150px",
-                                  borderRadius: "8px",
-                                  boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
-                                  backgroundColor:
-                                    "var(--joy-palette-background-surface)",
+                                  minWidth: '150px',
+                                  borderRadius: '8px',
+                                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                                  backgroundColor: 'var(--joy-palette-background-surface)',
                                   zIndex: 1300,
-                                  border:
-                                    "1px solid var(--joy-palette-divider)",
+                                  border: '1px solid var(--joy-palette-divider)',
                                 }}
                               >
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
-                                    router.push(
-                                      `/dashboard/documentation/article/${article.id}`
-                                    );
+                                    router.push(`/dashboard/documentation/article/${article.id}`);
                                   }}
                                   sx={menuItemStyle}
                                 >
-                                  <EyeIcon fontSize="20px" style={iconStyle} />
+                                  <EyeIcon fontSize='20px' style={iconStyle} />
                                   Open article
                                 </Box>
                                 <Box
                                   onMouseDown={(event) => {
                                     event.preventDefault();
-                                    router.push(
-                                      `/dashboard/documentation/edit/${article.id}`
-                                    );
+                                    router.push(`/dashboard/documentation/edit/${article.id}`);
                                   }}
                                   sx={menuItemStyle}
                                 >
-                                  <PencilIcon
-                                    fontSize="20px"
-                                    style={iconStyle}
-                                  />
+                                  <PencilIcon fontSize='20px' style={iconStyle} />
                                   Edit
                                 </Box>
                                 {article.status === 'published' && (
                                   <Box
-                                  onMouseDown={(event) => {
-                                    event.preventDefault();
-                                    handleSaveDraft(article.id);
-                                  }}
-                                  sx={menuItemStyle}
-                                >
-                                  <XIcon fontSize="20px" style={iconStyle} />
-                                  Unpublish
-                                </Box>
+                                    onMouseDown={(event) => {
+                                      event.preventDefault();
+                                      handleSaveDraft(article.id);
+                                    }}
+                                    sx={menuItemStyle}
+                                  >
+                                    <XIcon fontSize='20px' style={iconStyle} />
+                                    Unpublish
+                                  </Box>
                                 )}
                                 <Box
                                   // onMouseDown={(event) => {
@@ -720,7 +681,7 @@ const CategoryInfo: React.FC = () => {
                                   // }}
                                   sx={menuItemStyle}
                                 >
-                                  <StarIcon fontSize="20px" style={iconStyle} />
+                                  <StarIcon fontSize='20px' style={iconStyle} />
                                   Add to favorite
                                 </Box>
                                 <Box
@@ -729,12 +690,9 @@ const CategoryInfo: React.FC = () => {
                                     handleDeleteRow(article.id);
                                     handleMenuClose();
                                   }}
-                                  sx={{ ...menuItemStyle, color: "#EF4444" }}
+                                  sx={{ ...menuItemStyle, color: '#EF4444' }}
                                 >
-                                  <TrashIcon
-                                    fontSize="20px"
-                                    style={iconStyle}
-                                  />
+                                  <TrashIcon fontSize='20px' style={iconStyle} />
                                   Delete
                                 </Box>
                               </Popper>
@@ -746,13 +704,13 @@ const CategoryInfo: React.FC = () => {
                     {(articles.length > 0 || isLoading) && (
                       <Box
                         sx={{
-                          position: { xs: "static", sm: "static" },
+                          position: { xs: 'static', sm: 'static' },
                           left: 0,
                           right: 0,
                           zIndex: 1000,
-                          padding: "12px 24px",
-                          display: "flex",
-                          justifyContent: "center",
+                          padding: '12px 24px',
+                          display: 'flex',
+                          justifyContent: 'center',
                         }}
                       >
                         <Pagination
@@ -776,8 +734,8 @@ const CategoryInfo: React.FC = () => {
         onClose={() => setOpenDeleteModal(false)}
         onConfirm={confirmDelete}
         usersToDelete={articlesToDelete}
-        title="Delete article"
-        description="Are you sure you want to delete this article?"
+        title='Delete article'
+        description='Are you sure you want to delete this article?'
       />
     </Box>
   );

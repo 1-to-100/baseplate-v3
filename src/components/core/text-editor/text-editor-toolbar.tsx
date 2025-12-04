@@ -34,12 +34,12 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
   return (
     <React.Fragment>
       <Stack
-        className="tiptap-toolbar"
+        className='tiptap-toolbar'
         spacing={1}
         sx={{ borderBottom: '1px solid var(--joy-palette-divider)', p: '8px', minHeight: '57px' }}
       >
         {editor ? (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl>
               <Select
                 onChange={(_, value: string | null) => {
@@ -63,7 +63,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 sx={{ width: '140px' }}
                 value={getFontValue(editor)}
               >
-                <Option disabled={!editor.can().chain().focus().setParagraph().run()} value="p">
+                <Option disabled={!editor.can().chain().focus().setParagraph().run()} value='p'>
                   Paragrah
                 </Option>
                 {([1, 2, 3, 4, 5, 6] as const).map((level) => (
@@ -84,7 +84,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleBold().run();
               }}
             >
-              <TextBIcon fontSize="var(--Icon-fontSize)" />
+              <TextBIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('italic')}
@@ -93,7 +93,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleItalic().run();
               }}
             >
-              <TextItalicIcon fontSize="var(--Icon-fontSize)" />
+              <TextItalicIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('strike')}
@@ -102,7 +102,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleStrike().run();
               }}
             >
-              <TextStrikethroughIcon fontSize="var(--Icon-fontSize)" />
+              <TextStrikethroughIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('codeBlock')}
@@ -111,7 +111,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleCodeBlock();
               }}
             >
-              <CodeIcon fontSize="var(--Icon-fontSize)" />
+              <CodeIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('bulletList')}
@@ -120,7 +120,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleBulletList().run();
               }}
             >
-              <ListDashesIcon fontSize="var(--Icon-fontSize)" />
+              <ListDashesIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('orderedList')}
@@ -129,7 +129,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().toggleOrderedList().run();
               }}
             >
-              <ListNumbersIcon fontSize="var(--Icon-fontSize)" />
+              <ListNumbersIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => {
@@ -138,7 +138,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
               }}
               ref={linkPopover.anchorRef}
             >
-              <LinkIcon fontSize="var(--Icon-fontSize)" />
+              <LinkIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive('link')}
@@ -147,7 +147,7 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
                 editor.chain().focus().unsetLink().run();
               }}
             >
-              <LinkBreakIcon fontSize="var(--Icon-fontSize)" />
+              <LinkBreakIcon fontSize='var(--Icon-fontSize)' />
             </ToolbarButton>
           </Stack>
         ) : null}
@@ -159,13 +159,13 @@ export function TextEditorToolbar({ editor }: TextEditorToolbarProps): React.JSX
           setLink('');
         }}
         open={linkPopover.open}
-        placement="bottom-end"
+        placement='bottom-end'
       >
         <PopupContent sx={{ p: 1 }}>
           <FormControl>
             <FormLabel>URL</FormLabel>
             <Input
-              name="url"
+              name='url'
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                 setLink(event.target.value);
               }}
@@ -217,13 +217,17 @@ interface ToolbarButtonProps {
   onClick: () => void;
 }
 
-const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(function ToolbarButton(
-  { active, children, disabled, onClick },
-  ref
-): React.JSX.Element {
-  return (
-    <IconButton color={active ? 'primary' : 'neutral'} disabled={disabled} onClick={onClick} ref={ref}>
-      {children}
-    </IconButton>
-  );
-});
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  function ToolbarButton({ active, children, disabled, onClick }, ref): React.JSX.Element {
+    return (
+      <IconButton
+        color={active ? 'primary' : 'neutral'}
+        disabled={disabled}
+        onClick={onClick}
+        ref={ref}
+      >
+        {children}
+      </IconButton>
+    );
+  }
+);

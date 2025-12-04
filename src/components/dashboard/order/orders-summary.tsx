@@ -16,7 +16,12 @@ export interface OrdersSummaryProps {
   canceled: number;
 }
 
-export function OrdersSummary({ total, active, completed, canceled }: OrdersSummaryProps): React.JSX.Element {
+export function OrdersSummary({
+  total,
+  active,
+  completed,
+  canceled,
+}: OrdersSummaryProps): React.JSX.Element {
   return (
     <Card
       sx={{
@@ -46,13 +51,13 @@ export function OrdersSummary({ total, active, completed, canceled }: OrdersSumm
         const Icon = entry.icon;
 
         return (
-          <Stack direction="row" key={entry.id} spacing={2} sx={{ alignItems: 'center' }}>
-            <Avatar sx={{ '--Icon-fontSize': 'var(--joy-fontSize-xl)' }} variant="soft">
-              <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <Stack direction='row' key={entry.id} spacing={2} sx={{ alignItems: 'center' }}>
+            <Avatar sx={{ '--Icon-fontSize': 'var(--joy-fontSize-xl)' }} variant='soft'>
+              <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
             </Avatar>
             <div>
-              <Typography level="body-sm">{entry.label}</Typography>
-              <Typography level="h2">{entry.value}</Typography>
+              <Typography level='body-sm'>{entry.label}</Typography>
+              <Typography level='h2'>{entry.value}</Typography>
             </div>
           </Stack>
         );

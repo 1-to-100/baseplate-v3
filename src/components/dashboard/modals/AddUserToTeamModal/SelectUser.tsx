@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Stack from "@mui/joy/Stack";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Typography from "@mui/joy/Typography";
-import Chip from "@mui/joy/Chip";
-import Box from "@mui/joy/Box";
-import type { ApiUser } from "@/contexts/auth/types";
+import * as React from 'react';
+import Stack from '@mui/joy/Stack';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Typography from '@mui/joy/Typography';
+import Chip from '@mui/joy/Chip';
+import Box from '@mui/joy/Box';
+import type { ApiUser } from '@/contexts/auth/types';
 
 interface SelectUserProps {
   availableUsers: ApiUser[];
@@ -32,10 +32,10 @@ export function SelectUser({
   return (
     <Stack>
       <Typography
-        level="body-sm"
+        level='body-sm'
         sx={{
-          fontSize: { xs: "12px", sm: "14px" },
-          color: "var(--joy-palette-text-primary)",
+          fontSize: { xs: '12px', sm: '14px' },
+          color: 'var(--joy-palette-text-primary)',
           mb: 0.5,
           fontWeight: 500,
         }}
@@ -44,7 +44,7 @@ export function SelectUser({
       </Typography>
       <Select
         multiple
-        placeholder="Select users"
+        placeholder='Select users'
         value={selectedUsers}
         onChange={handleUsersChange}
         renderValue={(selected) => (
@@ -52,7 +52,7 @@ export function SelectUser({
             {selected.map((item) => {
               const user = availableUsers.find((u) => u.id.toString() === item.value);
               return (
-                <Chip key={item.value} size="sm">
+                <Chip key={item.value} size='sm'>
                   {user?.name || user?.email || item.value}
                 </Chip>
               );
@@ -60,8 +60,8 @@ export function SelectUser({
           </Box>
         )}
         sx={{
-          borderRadius: "6px",
-          fontSize: { xs: "12px", sm: "14px" },
+          borderRadius: '6px',
+          fontSize: { xs: '12px', sm: '14px' },
         }}
         disabled={isLoading}
         slotProps={{
@@ -81,4 +81,3 @@ export function SelectUser({
     </Stack>
   );
 }
-

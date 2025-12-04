@@ -1,20 +1,20 @@
-import { useEditor, EditorContent } from "@tiptap/react";
-import CodeBlock from "@tiptap/extension-code-block";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
-import Underline from "@tiptap/extension-underline";
-import TextStyle from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
-import TextAlign from "@tiptap/extension-text-align";
-import FontFamily from "@tiptap/extension-font-family";
-import Subscript from "@tiptap/extension-subscript";
-import Superscript from "@tiptap/extension-superscript";
-import { Node, Extension, mergeAttributes } from "@tiptap/core";
-import { CommandProps, RawCommands } from "@tiptap/core";
-import React, { useRef, useState, useEffect } from "react";
-import { useColorScheme } from "@mui/joy/styles";
-import { sanitizeEditorHTML } from "@/lib/sanitize";
+import { useEditor, EditorContent } from '@tiptap/react';
+import CodeBlock from '@tiptap/extension-code-block';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Underline from '@tiptap/extension-underline';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import TextAlign from '@tiptap/extension-text-align';
+import FontFamily from '@tiptap/extension-font-family';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import { Node, Extension, mergeAttributes } from '@tiptap/core';
+import { CommandProps, RawCommands } from '@tiptap/core';
+import React, { useRef, useState, useEffect } from 'react';
+import { useColorScheme } from '@mui/joy/styles';
+import { sanitizeEditorHTML } from '@/lib/sanitize';
 import {
   TextB,
   TextItalic,
@@ -38,9 +38,9 @@ import {
   TextH,
   CaretDown,
   Article as ButtonIcon,
-} from "@phosphor-icons/react/dist/ssr";
+} from '@phosphor-icons/react/dist/ssr';
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     video: {
       setVideo: (options: { src: string }) => ReturnType;
@@ -68,8 +68,8 @@ declare module "@tiptap/core" {
 }
 
 const CustomButton = Node.create({
-  name: "customButton",
-  group: "inline",
+  name: 'customButton',
+  group: 'inline',
   inline: true,
   selectable: true,
   draggable: true,
@@ -78,37 +78,37 @@ const CustomButton = Node.create({
   addAttributes() {
     return {
       text: {
-        default: "Button",
+        default: 'Button',
       },
       url: {
-        default: "#",
+        default: '#',
       },
       backgroundColor: {
-        default: "#3d37dd",
+        default: '#3d37dd',
       },
       textColor: {
-        default: "#ffffff",
+        default: '#ffffff',
       },
       padding: {
-        default: "2px 6px",
+        default: '2px 6px',
       },
       borderWidth: {
-        default: "1px",
+        default: '1px',
       },
       borderColor: {
-        default: "#3d37dd",
+        default: '#3d37dd',
       },
       borderStyle: {
-        default: "solid",
+        default: 'solid',
       },
       borderRadius: {
-        default: "4px",
+        default: '4px',
       },
       fontSize: {
-        default: "14px",
+        default: '14px',
       },
       fontFamily: {
-        default: "inherit",
+        default: 'inherit',
       },
     };
   },
@@ -116,10 +116,10 @@ const CustomButton = Node.create({
   parseHTML() {
     return [
       {
-        tag: "a.custom-button",
+        tag: 'a.custom-button',
         getAttrs: (element: HTMLElement) => ({
           text: element.textContent,
-          url: element.getAttribute("href"),
+          url: element.getAttribute('href'),
           backgroundColor: element.style.backgroundColor,
           textColor: element.style.color,
           padding: element.style.padding,
@@ -136,10 +136,10 @@ const CustomButton = Node.create({
 
   renderHTML({ HTMLAttributes }) {
     return [
-      "a",
+      'a',
       mergeAttributes(
         {
-          class: "custom-button",
+          class: 'custom-button',
           href: HTMLAttributes.url,
           style: `
             display: inline-block;
@@ -189,8 +189,8 @@ const CustomButton = Node.create({
 });
 
 const VideoNode = Node.create({
-  name: "video",
-  group: "block",
+  name: 'video',
+  group: 'block',
   selectable: true,
   draggable: true,
   atom: true,
@@ -204,10 +204,10 @@ const VideoNode = Node.create({
         default: true,
       },
       width: {
-        default: "100%",
+        default: '100%',
       },
       maxWidth: {
-        default: "100%",
+        default: '100%',
       },
     };
   },
@@ -215,19 +215,19 @@ const VideoNode = Node.create({
   parseHTML() {
     return [
       {
-        tag: "video",
+        tag: 'video',
         getAttrs: (element: HTMLElement) => ({
-          src: element.getAttribute("src"),
-          controls: element.hasAttribute("controls"),
-          width: element.getAttribute("width") || "100%",
-          maxWidth: element.getAttribute("max-width") || "100%",
+          src: element.getAttribute('src'),
+          controls: element.hasAttribute('controls'),
+          width: element.getAttribute('width') || '100%',
+          maxWidth: element.getAttribute('max-width') || '100%',
         }),
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["video", mergeAttributes({ controls: true }, HTMLAttributes)];
+    return ['video', mergeAttributes({ controls: true }, HTMLAttributes)];
   },
 
   addCommands() {
@@ -245,10 +245,10 @@ const VideoNode = Node.create({
 });
 
 const FontSize = Extension.create({
-  name: "fontSize",
+  name: 'fontSize',
   addOptions() {
     return {
-      types: ["textStyle"],
+      types: ['textStyle'],
     };
   },
   addGlobalAttributes() {
@@ -277,32 +277,32 @@ const FontSize = Extension.create({
       setFontSize:
         (fontSize: string) =>
         ({ commands }: CommandProps) =>
-          commands.setMark("textStyle", { fontSize }),
+          commands.setMark('textStyle', { fontSize }),
       unsetFontSize:
         () =>
         ({ commands }: CommandProps) =>
-          commands.updateAttributes("textStyle", { fontSize: null }),
+          commands.updateAttributes('textStyle', { fontSize: null }),
     };
   },
 });
 
 const HeadingWithId = Extension.create({
-  name: "headingWithId",
+  name: 'headingWithId',
   addGlobalAttributes() {
     return [
       {
-        types: ["heading"],
+        types: ['heading'],
         attributes: {
           id: {
             default: null,
-            parseHTML: (element) => element.getAttribute("id"),
+            parseHTML: (element) => element.getAttribute('id'),
             renderHTML: (attributes) => {
               if (!attributes.id) {
-                const text = attributes.node?.textContent || "";
+                const text = attributes.node?.textContent || '';
                 const level = attributes.node?.attrs?.level || 1;
                 attributes.id = `heading-${text
                   .toLowerCase()
-                  .replace(/[^a-z0-9]+/g, "-")}-${level}`;
+                  .replace(/[^a-z0-9]+/g, '-')}-${level}`;
               }
               return {
                 id: attributes.id,
@@ -323,24 +323,24 @@ interface TiptapEditorProps {
 }
 
 const fontFamilies = [
-  { label: "Default", value: "inherit" },
-  { label: "Arial", value: "Arial" },
-  { label: "Georgia", value: "Georgia" },
-  { label: "Times New Roman", value: "Times New Roman" },
-  { label: "Courier New", value: "Courier New" },
-  { label: "Helvetica", value: "Helvetica" },
-  { label: "Verdana", value: "Verdana" },
-  { label: "Roboto", value: "Roboto" },
-  { label: "Open Sans", value: "Open Sans" },
-  { label: "Lato", value: "Lato" },
-  { label: "Montserrat", value: "Montserrat" },
-  { label: "Poppins", value: "Poppins" },
-  { label: "Source Sans Pro", value: "Source Sans Pro" },
-  { label: "Comic Sans MS", value: "Comic Sans MS" },
-  { label: "Trebuchet MS", value: "Trebuchet MS" },
+  { label: 'Default', value: 'inherit' },
+  { label: 'Arial', value: 'Arial' },
+  { label: 'Georgia', value: 'Georgia' },
+  { label: 'Times New Roman', value: 'Times New Roman' },
+  { label: 'Courier New', value: 'Courier New' },
+  { label: 'Helvetica', value: 'Helvetica' },
+  { label: 'Verdana', value: 'Verdana' },
+  { label: 'Roboto', value: 'Roboto' },
+  { label: 'Open Sans', value: 'Open Sans' },
+  { label: 'Lato', value: 'Lato' },
+  { label: 'Montserrat', value: 'Montserrat' },
+  { label: 'Poppins', value: 'Poppins' },
+  { label: 'Source Sans Pro', value: 'Source Sans Pro' },
+  { label: 'Comic Sans MS', value: 'Comic Sans MS' },
+  { label: 'Trebuchet MS', value: 'Trebuchet MS' },
 ];
 
-const fontSizes = ["12px", "14px", "16px", "18px", "24px", "32px"];
+const fontSizes = ['12px', '14px', '16px', '18px', '24px', '32px'];
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -359,27 +359,27 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isLinkInputOpen, setIsLinkInputOpen] = useState(false);
   const [isCustomButtonOpen, setIsCustomButtonOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState<string>("");
+  const [linkUrl, setLinkUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isHeadingDropdownOpen, setIsHeadingDropdownOpen] = useState(false);
   const [isFontSizeDropdownOpen, setIsFontSizeDropdownOpen] = useState(false);
   const [isFontFamilyDropdownOpen, setIsFontFamilyDropdownOpen] = useState(false);
-  
+
   const headingDropdownRef = useRef<HTMLDivElement>(null);
   const fontFamilyDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Custom button state
-  const [buttonText, setButtonText] = useState("Button");
-  const [buttonUrl, setButtonUrl] = useState("#");
-  const [buttonBgColor, setButtonBgColor] = useState("#3d37dd");
-  const [buttonTextColor, setButtonTextColor] = useState("#ffffff");
-  const [buttonPadding, setButtonPadding] = useState("2px 6px");
-  const [buttonBorderWidth, setButtonBorderWidth] = useState("1px");
-  const [buttonBorderColor, setButtonBorderColor] = useState("#3d37dd");
-  const [buttonBorderStyle, setButtonBorderStyle] = useState("solid");
-  const [buttonBorderRadius, setButtonBorderRadius] = useState("4px");
-  const [buttonFontSize, setButtonFontSize] = useState("14px");
-  const [buttonFontFamily, setButtonFontFamily] = useState("inherit");
+  const [buttonText, setButtonText] = useState('Button');
+  const [buttonUrl, setButtonUrl] = useState('#');
+  const [buttonBgColor, setButtonBgColor] = useState('#3d37dd');
+  const [buttonTextColor, setButtonTextColor] = useState('#ffffff');
+  const [buttonPadding, setButtonPadding] = useState('2px 6px');
+  const [buttonBorderWidth, setButtonBorderWidth] = useState('1px');
+  const [buttonBorderColor, setButtonBorderColor] = useState('#3d37dd');
+  const [buttonBorderStyle, setButtonBorderStyle] = useState('solid');
+  const [buttonBorderRadius, setButtonBorderRadius] = useState('4px');
+  const [buttonFontSize, setButtonFontSize] = useState('14px');
+  const [buttonFontFamily, setButtonFontFamily] = useState('inherit');
 
   const editor = useEditor({
     extensions: [
@@ -389,21 +389,21 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
           HTMLAttributes: {
-            class: "heading",
+            class: 'heading',
           },
         },
       }),
       HeadingWithId,
       CodeBlock.configure({
         HTMLAttributes: {
-          class: "custom-code-block",
+          class: 'custom-code-block',
         },
       }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          target: "_blank",
-          rel: "noopener noreferrer",
+          target: '_blank',
+          rel: 'noopener noreferrer',
         },
       }),
       Image.configure({
@@ -413,7 +413,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Underline,
       TextStyle,
       Color,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
       FontFamily,
       Subscript,
       Superscript,
@@ -443,32 +443,28 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     if (!isPreview || !editor) return;
     const html = editor.getHTML();
     const parser = new window.DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+    const doc = parser.parseFromString(html, 'text/html');
     const headings: { id: string; text: string; level: number }[] = [];
     const headingCounts: { [key: string]: number } = {};
     let changed = false;
 
-    Array.from(doc.body.querySelectorAll("h1, h2, h3, h4, h5, h6")).forEach(
-      (el) => {
-        const level = Number(el.tagName[1]);
-        const text = el.textContent || "";
-        const baseId = `heading-${text
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")}-${level}`;
+    Array.from(doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6')).forEach((el) => {
+      const level = Number(el.tagName[1]);
+      const text = el.textContent || '';
+      const baseId = `heading-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${level}`;
 
-        headingCounts[baseId] = (headingCounts[baseId] || 0) + 1;
-        const count = headingCounts[baseId];
+      headingCounts[baseId] = (headingCounts[baseId] || 0) + 1;
+      const count = headingCounts[baseId];
 
-        const id = count > 1 ? `${baseId}-${count}` : baseId;
+      const id = count > 1 ? `${baseId}-${count}` : baseId;
 
-        if (el.getAttribute("id") !== id) {
-          el.setAttribute("id", id);
-          changed = true;
-        }
-
-        headings.push({ id, text, level });
+      if (el.getAttribute('id') !== id) {
+        el.setAttribute('id', id);
+        changed = true;
       }
-    );
+
+      headings.push({ id, text, level });
+    });
 
     if (onTocChange) onTocChange(headings);
 
@@ -480,18 +476,16 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   const applyLink = () => {
     if (linkUrl) {
-      const formattedUrl = linkUrl.match(/^https?:\/\//)
-        ? linkUrl
-        : `https://${linkUrl}`;
+      const formattedUrl = linkUrl.match(/^https?:\/\//) ? linkUrl : `https://${linkUrl}`;
       editor?.chain().focus().setLink({ href: formattedUrl }).run();
     }
     setIsLinkInputOpen(false);
-    setLinkUrl("");
+    setLinkUrl('');
   };
 
   const cancelLink = () => {
     setIsLinkInputOpen(false);
-    setLinkUrl("");
+    setLinkUrl('');
   };
 
   const openLinkInput = () => {
@@ -513,7 +507,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           .run();
       };
       reader.onerror = () => {
-        setError("Failed to read image file.");
+        setError('Failed to read image file.');
       };
       reader.readAsDataURL(file);
     }
@@ -523,9 +517,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     if (isPreview) return;
     const file = event.target.files?.[0];
     if (file) {
-      const validTypes = ["video/mp4", "video/webm", "video/ogg"];
+      const validTypes = ['video/mp4', 'video/webm', 'video/ogg'];
       if (!validTypes.includes(file.type)) {
-        setError("Unsupported video format. Please use MP4, WebM, or OGG.");
+        setError('Unsupported video format. Please use MP4, WebM, or OGG.');
         return;
       }
 
@@ -536,7 +530,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
         setError(null);
       };
       reader.onerror = () => {
-        setError("Failed to read video file.");
+        setError('Failed to read video file.');
       };
       reader.readAsDataURL(file);
     }
@@ -547,7 +541,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       setIsColorPickerOpen(!isColorPickerOpen);
       if (!isColorPickerOpen && colorButtonRef.current) {
         const rect = colorButtonRef.current.getBoundingClientRect();
-        const colorPicker = document.querySelector(".color-picker");
+        const colorPicker = document.querySelector('.color-picker');
         if (colorPicker) {
           let top = rect.bottom + window.scrollY;
           let left = rect.left + window.scrollX;
@@ -576,21 +570,21 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   };
 
   const colors = [
-    "#000000",
-    "#FF0000",
-    "#FFA500",
-    "#FFFF00",
-    "#00FF00",
-    "#0000FF",
-    "#800080",
-    "#FF00FF",
-    "#00FFFF",
-    "#800000",
-    "#008000",
-    "#000080",
-    "#808000",
-    "#008080",
-    "#C0C0C0",
+    '#000000',
+    '#FF0000',
+    '#FFA500',
+    '#FFFF00',
+    '#00FF00',
+    '#0000FF',
+    '#800080',
+    '#FF00FF',
+    '#00FFFF',
+    '#800000',
+    '#008000',
+    '#000080',
+    '#808000',
+    '#008080',
+    '#C0C0C0',
   ];
 
   useEffect(() => {
@@ -695,48 +689,46 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   return (
     <div>
-      {error && (
-        <div style={{ color: "red", marginBottom: "8px" }}>{error}</div>
-      )}
+      {error && <div style={{ color: 'red', marginBottom: '8px' }}>{error}</div>}
       {!isPreview && (
-        <div className="tiptap-toolbar">
-          <div className="tooltip-wrapper">
+        <div className='tiptap-toolbar'>
+          <div className='tooltip-wrapper'>
             <button
               onClick={() => editor?.commands.undo()}
               disabled={isPreview || !editor?.can().undo()}
             >
               <ArrowCounterClockwise size={20} />
             </button>
-            <span className="tooltip">Undo</span>
+            <span className='tooltip'>Undo</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
               onClick={() => editor?.commands.redo()}
               disabled={isPreview || !editor?.can().redo()}
             >
               <ArrowClockwise size={20} />
             </button>
-            <span className="tooltip">Redo</span>
+            <span className='tooltip'>Redo</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("superscript") ? "active" : ""}
+              className={editor?.isActive('superscript') ? 'active' : ''}
               onClick={() => editor?.commands.toggleSuperscript()}
               disabled={isPreview || !editor}
             >
               X²
             </button>
-            <span className="tooltip">Superscript</span>
+            <span className='tooltip'>Superscript</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("subscript") ? "active" : ""}
+              className={editor?.isActive('subscript') ? 'active' : ''}
               onClick={() => editor?.commands.toggleSubscript()}
               disabled={isPreview || !editor}
             >
               X₂
             </button>
-            <span className="tooltip">Subscript</span>
+            <span className='tooltip'>Subscript</span>
           </div>
           {/* <div className="tooltip-wrapper">
             <div className="custom-select">
@@ -769,27 +761,23 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             </div>
             <span className="tooltip">Font Size</span>
           </div> */}
-          <div className="tooltip-wrapper">
-            <div className="custom-select" ref={fontFamilyDropdownRef}>
+          <div className='tooltip-wrapper'>
+            <div className='custom-select' ref={fontFamilyDropdownRef}>
               <button
-                onClick={() =>
-                  setIsFontFamilyDropdownOpen(!isFontFamilyDropdownOpen)
-                }
+                onClick={() => setIsFontFamilyDropdownOpen(!isFontFamilyDropdownOpen)}
                 disabled={isPreview}
-                className="select-button"
+                className='select-button'
               >
-                {fontFamilies.find(
-                  (f) =>
-                    f.value === editor?.getAttributes("textStyle").fontFamily
-                )?.label || "Default"}
+                {fontFamilies.find((f) => f.value === editor?.getAttributes('textStyle').fontFamily)
+                  ?.label || 'Default'}
                 <CaretDown size={16} />
               </button>
               {isFontFamilyDropdownOpen && !isPreview && (
-                <div className="select-dropdown">
+                <div className='select-dropdown'>
                   {fontFamilies.map((f) => (
                     <div
                       key={f.value}
-                      className="select-option"
+                      className='select-option'
                       style={{ fontFamily: f.value }}
                       onClick={() => {
                         editor?.commands.setFontFamily(f.value);
@@ -802,30 +790,30 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 </div>
               )}
             </div>
-            <span className="tooltip">Font Family</span>
+            <span className='tooltip'>Font Family</span>
           </div>
-          <div className="tooltip-wrapper">
-            <div className="custom-select" ref={headingDropdownRef}>
+          <div className='tooltip-wrapper'>
+            <div className='custom-select' ref={headingDropdownRef}>
               <button
                 onClick={() => setIsHeadingDropdownOpen(!isHeadingDropdownOpen)}
                 disabled={isPreview}
-                className="select-button"
+                className='select-button'
               >
-                {editor?.isActive("heading", { level: 1 })
-                  ? "Heading 1"
-                  : editor?.isActive("heading", { level: 2 })
-                  ? "Heading 2"
-                  : editor?.isActive("heading", { level: 3 })
-                  ? "Heading 3"
-                  : editor?.isActive("heading", { level: 4 })
-                  ? "Heading 4"
-                  : "Paragraph"}
+                {editor?.isActive('heading', { level: 1 })
+                  ? 'Heading 1'
+                  : editor?.isActive('heading', { level: 2 })
+                    ? 'Heading 2'
+                    : editor?.isActive('heading', { level: 3 })
+                      ? 'Heading 3'
+                      : editor?.isActive('heading', { level: 4 })
+                        ? 'Heading 4'
+                        : 'Paragraph'}
                 <CaretDown size={16} />
               </button>
               {isHeadingDropdownOpen && !isPreview && (
-                <div className="select-dropdown">
+                <div className='select-dropdown'>
                   <div
-                    className="select-option"
+                    className='select-option'
                     onClick={() => {
                       editor?.chain().focus().setParagraph().run();
                       setIsHeadingDropdownOpen(false);
@@ -834,7 +822,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     Paragraph
                   </div>
                   <div
-                    className="select-option heading-1"
+                    className='select-option heading-1'
                     onClick={() => {
                       editor?.chain().focus().toggleHeading({ level: 1 }).run();
                       setIsHeadingDropdownOpen(false);
@@ -843,7 +831,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     Heading 1
                   </div>
                   <div
-                    className="select-option heading-2"
+                    className='select-option heading-2'
                     onClick={() => {
                       editor?.chain().focus().toggleHeading({ level: 2 }).run();
                       setIsHeadingDropdownOpen(false);
@@ -852,7 +840,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     Heading 2
                   </div>
                   <div
-                    className="select-option heading-3"
+                    className='select-option heading-3'
                     onClick={() => {
                       editor?.chain().focus().toggleHeading({ level: 3 }).run();
                       setIsHeadingDropdownOpen(false);
@@ -861,7 +849,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     Heading 3
                   </div>
                   <div
-                    className="select-option heading-4"
+                    className='select-option heading-4'
                     onClick={() => {
                       editor?.chain().focus().toggleHeading({ level: 4 }).run();
                       setIsHeadingDropdownOpen(false);
@@ -872,77 +860,68 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 </div>
               )}
             </div>
-            <span className="tooltip">Heading</span>
+            <span className='tooltip'>Heading</span>
           </div>
-          <div className="tooltip-wrapper">
-            <button
-              onClick={() => editor?.commands.setTextAlign("left")}
-              disabled={!editor}
-            >
+          <div className='tooltip-wrapper'>
+            <button onClick={() => editor?.commands.setTextAlign('left')} disabled={!editor}>
               <TextAlignLeft size={22} />
             </button>
-            <span className="tooltip">Align Left</span>
+            <span className='tooltip'>Align Left</span>
           </div>
-          <div className="tooltip-wrapper">
-            <button
-              onClick={() => editor?.commands.setTextAlign("center")}
-              disabled={!editor}
-            >
+          <div className='tooltip-wrapper'>
+            <button onClick={() => editor?.commands.setTextAlign('center')} disabled={!editor}>
               <TextAlignCenter size={22} />
             </button>
-            <span className="tooltip">Align Center</span>
+            <span className='tooltip'>Align Center</span>
           </div>
-          <div className="tooltip-wrapper">
-            <button
-              onClick={() => editor?.commands.setTextAlign("right")}
-              disabled={!editor}
-            >
+          <div className='tooltip-wrapper'>
+            <button onClick={() => editor?.commands.setTextAlign('right')} disabled={!editor}>
               <TextAlignRight size={22} />
             </button>
-            <span className="tooltip">Align Right</span>
+            <span className='tooltip'>Align Right</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("italic") ? "active" : ""}
+              className={editor?.isActive('italic') ? 'active' : ''}
               onClick={() => editor?.commands.toggleItalic()}
               disabled={isPreview || !editor}
             >
               <TextItalic size={22} />
             </button>
-            <span className="tooltip">Italic</span>
+            <span className='tooltip'>Italic</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("bold") ? "active" : ""}
+              className={editor?.isActive('bold') ? 'active' : ''}
               onClick={() => editor?.commands.toggleBold()}
               disabled={isPreview || !editor}
             >
               <TextB size={22} />
             </button>
-            <span className="tooltip">Bold</span>
+            <span className='tooltip'>Bold</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("underline") ? "active" : ""}
+              className={editor?.isActive('underline') ? 'active' : ''}
               onClick={() => editor?.commands.toggleUnderline()}
               disabled={isPreview || !editor}
             >
               <TextUnderline size={22} />
             </button>
-            <span className="tooltip">Underline</span>
+            <span className='tooltip'>Underline</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("strike") ? "active" : ""}
+              className={editor?.isActive('strike') ? 'active' : ''}
               onClick={() => editor?.commands.toggleStrike()}
               disabled={isPreview || !editor}
             >
               <TextStrikethrough size={22} />
             </button>
-            <span className="tooltip">Strikethrough</span>
+            <span className='tooltip'>Strikethrough</span>
           </div>
-          <div className="color-picker-container">
-            <div className="tooltip-wrapper">
+          <div className='color-picker-container'>
+            <div className='tooltip-wrapper'>
               <button
                 ref={colorButtonRef}
                 onClick={openColorPicker}
@@ -950,90 +929,86 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
               >
                 <PaintBrush size={21} />
               </button>
-              <span className="tooltip">Text Color</span>
+              <span className='tooltip'>Text Color</span>
             </div>
             {isColorPickerOpen && !isPreview && (
-              <div className="color-picker">
+              <div className='color-picker'>
                 {colors.map((color) => (
-                  <div className="tooltip-wrapper" key={color}>
+                  <div className='tooltip-wrapper' key={color}>
                     <div
-                      className="color-swatch"
+                      className='color-swatch'
                       style={{ backgroundColor: color }}
                       onClick={() => selectColor(color)}
                     />
-                    <span className="tooltip">Color {color}</span>
+                    <span className='tooltip'>Color {color}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("blockquote") ? "active" : ""}
+              className={editor?.isActive('blockquote') ? 'active' : ''}
               onClick={() => editor?.commands.toggleBlockquote()}
               disabled={isPreview || !editor}
             >
               <Quotes size={22} />
             </button>
-            <span className="tooltip">Blockquote</span>
+            <span className='tooltip'>Blockquote</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("bulletList") ? "active" : ""}
+              className={editor?.isActive('bulletList') ? 'active' : ''}
               onClick={() => editor?.commands.toggleBulletList()}
               disabled={isPreview || !editor}
             >
               <ListBullets size={22} />
             </button>
-            <span className="tooltip">Bullet List</span>
+            <span className='tooltip'>Bullet List</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("orderedList") ? "active" : ""}
+              className={editor?.isActive('orderedList') ? 'active' : ''}
               onClick={() => editor?.commands.toggleOrderedList()}
               disabled={isPreview || !editor}
             >
               <ListNumbers size={22} />
             </button>
-            <span className="tooltip">Ordered List</span>
+            <span className='tooltip'>Ordered List</span>
           </div>
-          <span className="divider" />
-          <div className="tooltip-wrapper">
+          <span className='divider' />
+          <div className='tooltip-wrapper'>
             <button
-              className={editor?.isActive("codeBlock") ? "active" : ""}
+              className={editor?.isActive('codeBlock') ? 'active' : ''}
               onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
               disabled={isPreview || !editor}
             >
               <Code size={22} />
             </button>
-            <span className="tooltip">Code Block</span>
+            <span className='tooltip'>Code Block</span>
           </div>
-          <div className="link-container">
-            <div className="tooltip-wrapper">
-              <button
-                ref={linkButtonRef}
-                onClick={openLinkInput}
-                disabled={isPreview || !editor}
-              >
+          <div className='link-container'>
+            <div className='tooltip-wrapper'>
+              <button ref={linkButtonRef} onClick={openLinkInput} disabled={isPreview || !editor}>
                 <LinkIcon size={22} />
               </button>
-              <span className="tooltip">Insert Link</span>
+              <span className='tooltip'>Insert Link</span>
             </div>
             {isLinkInputOpen && !isPreview && (
-              <div className="link-input-container">
+              <div className='link-input-container'>
                 <input
-                  type="text"
+                  type='text'
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="Input URL"
+                  placeholder='Input URL'
                   autoFocus
                 />
-                <div className="tooltip-wrapper">
+                <div className='tooltip-wrapper'>
                   <button onClick={applyLink}>
                     <Check size={18} />
                   </button>
                 </div>
-                <div className="tooltip-wrapper">
+                <div className='tooltip-wrapper'>
                   <button onClick={cancelLink}>
                     <X size={18} />
                   </button>
@@ -1041,16 +1016,13 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
               </div>
             )}
           </div>
-          <div className="tooltip-wrapper">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isPreview || !editor}
-            >
+          <div className='tooltip-wrapper'>
+            <button onClick={() => fileInputRef.current?.click()} disabled={isPreview || !editor}>
               <ImageIcon size={22} />
             </button>
-            <span className="tooltip">Insert Image</span>
+            <span className='tooltip'>Insert Image</span>
           </div>
-          <div className="tooltip-wrapper">
+          <div className='tooltip-wrapper'>
             <button
               ref={customButtonRef}
               onClick={() => setIsCustomButtonOpen(!isCustomButtonOpen)}
@@ -1058,94 +1030,94 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             >
               <ButtonIcon size={22} />
             </button>
-            <span className="tooltip">Insert Custom Button</span>
+            <span className='tooltip'>Insert Custom Button</span>
           </div>
           {isCustomButtonOpen && !isPreview && (
-            <div className="custom-button-popup">
-              <div className="custom-button-form">
-                <div className="form-group">
+            <div className='custom-button-popup'>
+              <div className='custom-button-form'>
+                <div className='form-group'>
                   <label>Button Text:</label>
                   <input
-                    type="text"
+                    type='text'
                     value={buttonText}
                     onChange={(e) => setButtonText(e.target.value)}
-                    placeholder="Enter button text"
+                    placeholder='Enter button text'
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>URL:</label>
                   <input
-                    type="text"
+                    type='text'
                     value={buttonUrl}
                     onChange={(e) => setButtonUrl(e.target.value)}
-                    placeholder="Enter URL"
+                    placeholder='Enter URL'
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Background Color:</label>
                   <input
-                    type="color"
+                    type='color'
                     value={buttonBgColor}
                     onChange={(e) => setButtonBgColor(e.target.value)}
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Text Color:</label>
                   <input
-                    type="color"
+                    type='color'
                     value={buttonTextColor}
                     onChange={(e) => setButtonTextColor(e.target.value)}
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Padding:</label>
                   <input
-                    type="text"
+                    type='text'
                     value={buttonPadding}
                     onChange={(e) => setButtonPadding(e.target.value)}
-                    placeholder="e.g., 8px 16px"
+                    placeholder='e.g., 8px 16px'
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Border Width:</label>
                   <input
-                    type="text"
+                    type='text'
                     value={buttonBorderWidth}
                     onChange={(e) => setButtonBorderWidth(e.target.value)}
-                    placeholder="e.g., 1px"
+                    placeholder='e.g., 1px'
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Border Color:</label>
                   <input
-                    type="color"
+                    type='color'
                     value={buttonBorderColor}
                     onChange={(e) => setButtonBorderColor(e.target.value)}
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Border Style:</label>
                   <select
                     value={buttonBorderStyle}
                     onChange={(e) => setButtonBorderStyle(e.target.value)}
                   >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                    <option value="double">Double</option>
-                    <option value="none">None</option>
+                    <option value='solid'>Solid</option>
+                    <option value='dashed'>Dashed</option>
+                    <option value='dotted'>Dotted</option>
+                    <option value='double'>Double</option>
+                    <option value='none'>None</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Border Radius:</label>
                   <input
-                    type="text"
+                    type='text'
                     value={buttonBorderRadius}
                     onChange={(e) => setButtonBorderRadius(e.target.value)}
-                    placeholder="e.g., 4px"
+                    placeholder='e.g., 4px'
                   />
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Font Size:</label>
                   <select
                     value={buttonFontSize}
@@ -1158,7 +1130,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
+                <div className='form-group'>
                   <label>Font Family:</label>
                   <select
                     value={buttonFontFamily}
@@ -1175,22 +1147,26 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     ))}
                   </select>
                 </div>
-                <div className="button-actions">
+                <div className='button-actions'>
                   <button
                     onClick={() => {
-                      editor?.chain().focus().setCustomButton({
-                        text: buttonText,
-                        url: buttonUrl,
-                        backgroundColor: buttonBgColor,
-                        textColor: buttonTextColor,
-                        padding: buttonPadding,
-                        borderWidth: buttonBorderWidth,
-                        borderColor: buttonBorderColor,
-                        borderStyle: buttonBorderStyle,
-                        borderRadius: buttonBorderRadius,
-                        fontSize: buttonFontSize,
-                        fontFamily: buttonFontFamily,
-                      }).run();
+                      editor
+                        ?.chain()
+                        .focus()
+                        .setCustomButton({
+                          text: buttonText,
+                          url: buttonUrl,
+                          backgroundColor: buttonBgColor,
+                          textColor: buttonTextColor,
+                          padding: buttonPadding,
+                          borderWidth: buttonBorderWidth,
+                          borderColor: buttonBorderColor,
+                          borderStyle: buttonBorderStyle,
+                          borderRadius: buttonBorderRadius,
+                          fontSize: buttonFontSize,
+                          fontFamily: buttonFontFamily,
+                        })
+                        .run();
                       setIsCustomButtonOpen(false);
                     }}
                   >
@@ -1204,16 +1180,16 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             </div>
           )}
           <input
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
+            type='file'
+            accept='image/*'
+            style={{ display: 'none' }}
             ref={fileInputRef}
             onChange={addImage}
           />
           <input
-            type="file"
-            accept="video/mp4,video/webm,video/ogg"
-            style={{ display: "none" }}
+            type='file'
+            accept='video/mp4,video/webm,video/ogg'
+            style={{ display: 'none' }}
             ref={videoInputRef}
             onChange={addVideo}
           />
@@ -1235,8 +1211,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
       {isPreview ? (
         <div
-          className="tiptap-preview"
-          dangerouslySetInnerHTML={{ __html: sanitizeEditorHTML(editor?.getHTML() || "") }}
+          className='tiptap-preview'
+          dangerouslySetInnerHTML={{ __html: sanitizeEditorHTML(editor?.getHTML() || '') }}
         />
       ) : (
         <EditorContent editor={editor} />
@@ -1393,7 +1369,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           object-fit: contain;
         }
         :global(.ProseMirror) {
-          pointer-events: ${isPreview ? "none" : "auto"};
+          pointer-events: ${isPreview ? 'none' : 'auto'};
           border-radius: 8px;
           padding: 16px;
           color: var(--joy-palette-text-primary);
@@ -1405,7 +1381,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           overflow-wrap: break-word;
           word-wrap: break-word;
           position: relative;
-          ${colorScheme === "dark" && `
+          ${colorScheme === 'dark' &&
+          `
             p[style*='color: black'], p[style*='color: #000'], p[style*='color: rgb(0, 0, 0)'], p[style*='color: rgba(0,0,0'], p[style*='color: rgb(11, 13, 14)'] {
               color: var(--joy-palette-text-secondary) !important;
             }
@@ -1484,7 +1461,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           color: #222;
           font-size: 16px;
           margin-top: 8px;
-          ${colorScheme === "dark" && `
+          ${colorScheme === 'dark' &&
+          `
             color: var(--joy-palette-text-primary);
             p[style*='color: black'], p[style*='color: #000'], p[style*='color: rgb(0, 0, 0)'], p[style*='color: rgba(0,0,0'], p[style*='color: rgb(11, 13, 14)'] {
               color: var(--joy-palette-text-secondary) !important;
@@ -1678,7 +1656,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           font-size: 14px;
           color: var(--joy-palette-text-secondary);
         }
-        .form-group input[type="text"] {
+        .form-group input[type='text'] {
           padding: 8px;
           border: 1px solid var(--joy-palette-divider);
           border-radius: 4px;
@@ -1686,7 +1664,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           background: var(--joy-palette-background-body);
           color: var(--joy-palette-text-primary);
         }
-        .form-group input[type="color"] {
+        .form-group input[type='color'] {
           width: 100%;
           height: 36px;
           padding: 2px;

@@ -8,7 +8,10 @@ interface DialogController<T> {
 }
 
 export function useDialog<T = unknown>(): DialogController<T> {
-  const [state, setState] = React.useState<{ open: boolean; data?: T }>({ open: false, data: undefined });
+  const [state, setState] = React.useState<{ open: boolean; data?: T }>({
+    open: false,
+    data: undefined,
+  });
 
   const handleOpen = React.useCallback((data?: T) => {
     setState({ open: true, data });

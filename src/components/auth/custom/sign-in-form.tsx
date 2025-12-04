@@ -110,16 +110,27 @@ export function SignInForm(): React.JSX.Element {
     <Stack spacing={2}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={24} width={150} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={24} width={150} />
         </Box>
       </Box>
-      <Box sx={{textAlign: 'center', fontSize: '30px', color: 'var(--joy-palette-text-primary)', fontWeight: '600', lineHeight: '32px', marginBottom: '42px'}}  >Welcome to Baseplate <br /> admin panel</Box>
-      <Tabs value="sign-in" variant="custom">
+      <Box
+        sx={{
+          textAlign: 'center',
+          fontSize: '30px',
+          color: 'var(--joy-palette-text-primary)',
+          fontWeight: '600',
+          lineHeight: '32px',
+          marginBottom: '42px',
+        }}
+      >
+        Welcome to Baseplate <br /> admin panel
+      </Box>
+      <Tabs value='sign-in' variant='custom'>
         <TabList>
-          <Tab component={RouterLink} href={paths.auth.custom.signIn} value="sign-in">
+          <Tab component={RouterLink} href={paths.auth.custom.signIn} value='sign-in'>
             Sign In
           </Tab>
-          <Tab component={RouterLink} href={paths.auth.custom.signUp} value="sign-up">
+          <Tab component={RouterLink} href={paths.auth.custom.signUp} value='sign-up'>
             Create Account
           </Tab>
         </TabList>
@@ -130,14 +141,14 @@ export function SignInForm(): React.JSX.Element {
             (provider): React.JSX.Element => (
               <Button
                 disabled={isPending}
-                endDecorator={<Image alt="" height={24} src={provider.logo} width={24} />}
+                endDecorator={<Image alt='' height={24} src={provider.logo} width={24} />}
                 key={provider.id}
                 onClick={(): void => {
                   onAuth(provider.id).catch(() => {
                     // noop
                   });
                 }}
-                variant="outlined"
+                variant='outlined'
               >
                 Continue with {provider.name}
               </Button>
@@ -149,18 +160,18 @@ export function SignInForm(): React.JSX.Element {
           <Stack spacing={2}>
             <Controller
               control={control}
-              name="email"
+              name='email'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.email)}>
                   <FormLabel>Email Address</FormLabel>
-                  <Input {...field} type="email" />
+                  <Input {...field} type='email' />
                   {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
                 </FormControl>
               )}
             />
             <Controller
               control={control}
-              name="password"
+              name='password'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.password)}>
                   <FormLabel>Password</FormLabel>
@@ -173,33 +184,41 @@ export function SignInForm(): React.JSX.Element {
                         }}
                       >
                         {showPassword ? (
-                          <EyeSlashIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                          <EyeSlashIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                         ) : (
-                          <EyeIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                          <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                         )}
                       </IconButton>
                     }
                     type={showPassword ? 'text' : 'password'}
                   />
-                  {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                  {errors.password ? (
+                    <FormHelperText>{errors.password.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
             <div>
-              <Link component={RouterLink} href={paths.auth.custom.resetPassword} fontSize={'sm'} fontWeight="sm" marginBottom={2}>
+              <Link
+                component={RouterLink}
+                href={paths.auth.custom.resetPassword}
+                fontSize={'sm'}
+                fontWeight='sm'
+                marginBottom={2}
+              >
                 Forgot password?
               </Link>
             </div>
-            {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-            <Button disabled={isPending} type="submit">
+            {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+            <Button disabled={isPending} type='submit'>
               Sign In
             </Button>
           </Stack>
         </form>
-        <Alert color="warning" variant="soft">
-          <Typography fontSize="sm">
-            Use <Typography fontWeight="lg">rene@devias.io</Typography> with password{' '}
-            <Typography fontWeight="lg">Secret1</Typography>
+        <Alert color='warning' variant='soft'>
+          <Typography fontSize='sm'>
+            Use <Typography fontWeight='lg'>rene@devias.io</Typography> with password{' '}
+            <Typography fontWeight='lg'>Secret1</Typography>
           </Typography>
         </Alert>
       </Stack>

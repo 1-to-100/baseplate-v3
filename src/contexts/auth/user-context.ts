@@ -3,15 +3,25 @@ import * as React from 'react';
 import { config } from '@/config';
 import { AuthStrategy } from '@/lib/auth/strategy';
 
-import { UserContext as Auth0UserContext, UserProvider as Auth0UserProvider } from './auth0/user-context';
-import { UserContext as CognitoUserContext, UserProvider as CognitoUserProvider } from './cognito/user-context';
-import { UserContext as CustomUserContext, UserProvider as CustomUserProvider } from './custom/user-context';
-import { UserContext as SupabaseUserContext, UserProvider as SupabaseUserProvider } from './supabase/user-context';
+import {
+  UserContext as Auth0UserContext,
+  UserProvider as Auth0UserProvider,
+} from './auth0/user-context';
+import {
+  UserContext as CognitoUserContext,
+  UserProvider as CognitoUserProvider,
+} from './cognito/user-context';
+import {
+  UserContext as CustomUserContext,
+  UserProvider as CustomUserProvider,
+} from './custom/user-context';
+import {
+  UserContext as SupabaseUserContext,
+  UserProvider as SupabaseUserProvider,
+} from './supabase/user-context';
 import type { UserContextValue } from './types';
 
-
 let UserProvider: React.FC<{ children: React.ReactNode }>;
-
 
 let UserContext: React.Context<UserContextValue | undefined>;
 
@@ -37,12 +47,12 @@ switch (config.auth.strategy) {
 }
 
 const useAuth = () => {
-    const context = React.useContext(UserContext);
+  const context = React.useContext(UserContext);
 
-    if (!context) {
-        throw new Error('useAuth must be used within a UserProvider');
-    }
-    return context;
-}
+  if (!context) {
+    throw new Error('useAuth must be used within a UserProvider');
+  }
+  return context;
+};
 
 export { UserProvider, UserContext, useAuth };

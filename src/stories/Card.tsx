@@ -26,12 +26,12 @@ export interface CardProps {
   onDelete?: (id: string) => void;
 }
 
-export function CardComponent({ 
-  data, 
+export function CardComponent({
+  data,
   showActions = true,
   onCardClick,
   onEdit,
-  onDelete
+  onDelete,
 }: CardProps) {
   const [activeCardId, setActiveCardId] = React.useState<string | null>(null);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -43,9 +43,9 @@ export function CardComponent({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [anchorEl]);
 
@@ -55,10 +55,7 @@ export function CardComponent({
     }
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    cardId: string
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, cardId: string) => {
     event.stopPropagation();
     if (activeCardId === cardId) {
       handleMenuClose();
@@ -88,27 +85,21 @@ export function CardComponent({
   };
 
   const menuItemStyle = {
-    padding: "8px 16px",
-    fontSize: "16px",
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: '8px 16px',
+    fontSize: '16px',
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
 
   const iconStyle = {
-    marginRight: "14px",
+    marginRight: '14px',
   };
 
-  const avatarColors: ColorPaletteProp[] = [
-    "primary",
-    "neutral",
-    "danger",
-    "warning",
-    "success",
-  ];
+  const avatarColors: ColorPaletteProp[] = ['primary', 'neutral', 'danger', 'warning', 'success'];
 
   const getAvatarProps = (name: string) => {
     const hash = Array.from(name).reduce(
@@ -118,116 +109,109 @@ export function CardComponent({
     const colorIndex = hash % avatarColors.length;
     return {
       color: avatarColors[colorIndex],
-      variant: "soft" as VariantProp,
+      variant: 'soft' as VariantProp,
     };
   };
 
   return (
     <Box
       sx={{
-        display: "grid",
+        display: 'grid',
         gridTemplateColumns: {
-          xs: "1fr",
-          sm: "repeat(2, 1fr)",
-          md: "repeat(3, 1fr)",
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
         },
         p: 0,
         gap: 2,
         mt: 2,
-        maxWidth: "1050px",
+        maxWidth: '1050px',
       }}
     >
       {data.map((card) => (
         <Card
           key={card.id}
-          variant="outlined"
+          variant='outlined'
           onClick={() => handleCardClick(card.id)}
           sx={{
-            p: "16px",
-            borderRadius: "8px",
-            border: "1px solid var(--joy-palette-divider)",
-            boxShadow: "none",
-            backgroundColor: "var(--joy-palette-background-body)",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: "210px",
-            cursor: "pointer",
-            "&:hover": {
-              borderColor: "var(--joy-palette-text-secondary)",
+            p: '16px',
+            borderRadius: '8px',
+            border: '1px solid var(--joy-palette-divider)',
+            boxShadow: 'none',
+            backgroundColor: 'var(--joy-palette-background-body)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '210px',
+            cursor: 'pointer',
+            '&:hover': {
+              borderColor: 'var(--joy-palette-text-secondary)',
             },
-            maxWidth: { xs: "100%", sm: "336px" },
-            minWidth: { xs: "100%", sm: "236px" },
+            maxWidth: { xs: '100%', sm: '336px' },
+            minWidth: { xs: '100%', sm: '236px' },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Avatar
               sx={{
                 width: 40,
                 height: 40,
-                fontWeight: "bold",
-                fontSize: "16px",
+                fontWeight: 'bold',
+                fontSize: '16px',
               }}
               {...getAvatarProps(card.name)}
             >
               {card.name
-                .split(" ")
+                .split(' ')
                 .slice(0, 2)
-                .map((n) => n[0]?.toUpperCase() || "")
-                .join("")}
+                .map((n) => n[0]?.toUpperCase() || '')
+                .join('')}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
-                level="title-md"
+                level='title-md'
                 sx={{
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
-                  wordWrap: "break-word",
-                  overflowWrap: "break-word",
-                  whiteSpace: "normal",
-                  width: "100%",
-                  maxWidth: "100%",
-                  display: "block",
-                  overflow: "hidden"
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  whiteSpace: 'normal',
+                  width: '100%',
+                  maxWidth: '100%',
+                  display: 'block',
+                  overflow: 'hidden',
                 }}
               >
                 {card.name.slice(0, 50)}
               </Typography>
               <Typography
-                level="body-xs"
+                level='body-xs'
                 sx={{
                   mt: 0.5,
-                  color: "var(--joy-palette-text-secondary)",
-                  fontWeight: "400",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontWeight: '400',
+                  fontSize: '12px',
                 }}
               >
                 {card.isDefault ? 'Default role' : 'Custom role'}
               </Typography>
             </Box>
             {showActions && (
-              <IconButton
-                size="sm"
-                onClick={(event) => handleMenuOpen(event, card.id)}
-              >
-                <DotsThree
-                  weight="bold"
-                  size={22}
-                  color="var(--joy-palette-text-secondary)"
-                />
+              <IconButton size='sm' onClick={(event) => handleMenuOpen(event, card.id)}>
+                <DotsThree weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
               </IconButton>
             )}
             {showActions && (
               <Popper
                 open={activeCardId === card.id && Boolean(anchorEl)}
                 anchorEl={anchorEl}
-                placement="bottom-start"
+                placement='bottom-start'
                 style={{
-                  minWidth: "150px",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--joy-palette-background-surface)",
+                  minWidth: '150px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--joy-palette-background-surface)',
                   zIndex: 1300,
-                  border: "1px solid var(--joy-palette-divider)",
+                  border: '1px solid var(--joy-palette-divider)',
                 }}
               >
                 <Box
@@ -237,7 +221,7 @@ export function CardComponent({
                   }}
                   sx={menuItemStyle}
                 >
-                  <PencilIcon fontSize="20px" style={iconStyle} />
+                  <PencilIcon fontSize='20px' style={iconStyle} />
                   Edit
                 </Box>
                 <Box
@@ -245,9 +229,9 @@ export function CardComponent({
                     event.preventDefault();
                     handleDelete(card.id);
                   }}
-                  sx={{ ...menuItemStyle, color: "#EF4444" }}
+                  sx={{ ...menuItemStyle, color: '#EF4444' }}
                 >
-                  <TrashIcon fontSize="20px" style={iconStyle} />
+                  <TrashIcon fontSize='20px' style={iconStyle} />
                   Delete
                 </Box>
               </Popper>
@@ -260,29 +244,29 @@ export function CardComponent({
             }}
           >
             <Typography
-              level="body-sm"
+              level='body-sm'
               sx={{
-                color: "var(--joy-palette-text-secondary)",
-                fontWeight: "300",
-                fontSize: "14px",
-                lineHeight: "1.5",
-                wordWrap: "break-word",
-                overflowWrap: "break-word",
-                whiteSpace: "normal",
+                color: 'var(--joy-palette-text-secondary)',
+                fontWeight: '300',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                whiteSpace: 'normal',
               }}
             >
               {card.description?.slice(0, 89) || ''}
             </Typography>
           </Box>
           <Typography
-            level="body-md"
+            level='body-md'
             sx={{
-              fontWeight: "400",
-              fontSize: "12px",
-              color: "var(--joy-palette-text-secondary)",
+              fontWeight: '400',
+              fontSize: '12px',
+              color: 'var(--joy-palette-text-secondary)',
               pt: 1.5,
-              borderTop: "1px solid var(--joy-palette-divider)",
-              mt: "auto",
+              borderTop: '1px solid var(--joy-palette-divider)',
+              mt: 'auto',
             }}
           >
             {card.userCount} people

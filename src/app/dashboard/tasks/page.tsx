@@ -18,7 +18,12 @@ const columns = [
 const tasks = [
   {
     id: 'TSK-001',
-    author: { id: 'USR-002', avatar: '/assets/avatar-2.png', name: 'Sienna Hewitt', username: 'sienna' },
+    author: {
+      id: 'USR-002',
+      avatar: '/assets/avatar-2.png',
+      name: 'Sienna Hewitt',
+      username: 'sienna',
+    },
     title: 'Testing Dashboard',
     description: 'Review dashboard menu',
     createdAt: dayjs().subtract(3, 'day').toDate(),
@@ -26,7 +31,14 @@ const tasks = [
     priority: 'high',
     category: 'Testing',
     dueDate: dayjs().add(7, 'day').add(2, 'minute').toDate(),
-    assignees: [{ id: 'USR-008', avatar: '/assets/avatar-8.png', name: 'Kimberly Maestra', username: 'kimberly' }],
+    assignees: [
+      {
+        id: 'USR-008',
+        avatar: '/assets/avatar-8.png',
+        name: 'Kimberly Maestra',
+        username: 'kimberly',
+      },
+    ],
     subtasks: [
       { id: 'STSK-001', title: 'Create a logo', done: true },
       { id: 'STSK-002', title: 'Create text styles', done: true },
@@ -41,13 +53,24 @@ const tasks = [
     comments: [
       {
         id: 'MSG-001',
-        author: { id: 'USR-008', avatar: '/assets/avatar-8.png', name: 'Kimberly Maestra', username: 'kimberly' },
+        author: {
+          id: 'USR-008',
+          avatar: '/assets/avatar-8.png',
+          name: 'Kimberly Maestra',
+          username: 'kimberly',
+        },
         createdAt: dayjs().subtract(24, 'minute').toDate(),
-        content: 'Could you please share the documentation that we need to follow while creating the brand identity?',
+        content:
+          'Could you please share the documentation that we need to follow while creating the brand identity?',
         comments: [
           {
             id: 'MSG-002',
-            author: { id: 'USR-002', avatar: '/assets/avatar-2.png', name: 'Sienna Hewitt', username: 'sienna' },
+            author: {
+              id: 'USR-002',
+              avatar: '/assets/avatar-2.png',
+              name: 'Sienna Hewitt',
+              username: 'sienna',
+            },
             createdAt: dayjs().subtract(5, 'minute').toDate(),
             content: 'Hey @kimberly I have uploaded the file. Please check',
           },
@@ -58,7 +81,12 @@ const tasks = [
   },
   {
     id: 'TSK-002',
-    author: { id: 'USR-002', avatar: '/assets/avatar-2.png', name: 'Sienna Hewitt', username: 'sienna' },
+    author: {
+      id: 'USR-002',
+      avatar: '/assets/avatar-2.png',
+      name: 'Sienna Hewitt',
+      username: 'sienna',
+    },
     title: 'Create Variables',
     description: 'Create variables for all the components that are currently in the design system',
     createdAt: dayjs().subtract(2, 'day').toDate(),
@@ -68,7 +96,12 @@ const tasks = [
   },
   {
     id: 'TSK-003',
-    author: { id: 'USR-002', avatar: '/assets/avatar-2.png', name: 'Sienna Hewitt', username: 'sienna' },
+    author: {
+      id: 'USR-002',
+      avatar: '/assets/avatar-2.png',
+      name: 'Sienna Hewitt',
+      username: 'sienna',
+    },
     title: 'Create Wireframe for landing page',
     description: 'Create low fidelity landing page wireframes with all the possible layouts',
     createdAt: dayjs().subtract(1, 'day').toDate(),
@@ -78,10 +111,16 @@ const tasks = [
   },
   {
     id: 'TSK-004',
-    author: { id: 'USR-002', avatar: '/assets/avatar-2.png', name: 'Sienna Hewitt', username: 'sienna' },
+    author: {
+      id: 'USR-002',
+      avatar: '/assets/avatar-2.png',
+      name: 'Sienna Hewitt',
+      username: 'sienna',
+    },
     title: 'Branding and visual identity',
     columnId: 'COL-003',
-    description: 'Create a brand identity system that includes a logo, typography, color palette and brand guidelines',
+    description:
+      'Create a brand identity system that includes a logo, typography, color palette and brand guidelines',
     createdAt: dayjs().subtract(1, 'day').toDate(),
     category: 'Branding',
   },
@@ -92,7 +131,6 @@ interface PageProps {
 }
 
 export default async function Page({ searchParams }: PageProps) {
-
   const params = await searchParams;
   const view = params.view ?? 'board';
 

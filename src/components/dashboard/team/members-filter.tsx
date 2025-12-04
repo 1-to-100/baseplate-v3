@@ -10,19 +10,23 @@ import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/di
 export function MembersFilter(): React.JSX.Element {
   // Handle the input change action.
   return (
-    <Stack direction="row" spacing={3} sx={{ alignItems: 'center', flex: '1 1 auto', flexWrap: 'wrap' }}>
+    <Stack
+      direction='row'
+      spacing={3}
+      sx={{ alignItems: 'center', flex: '1 1 auto', flexWrap: 'wrap' }}
+    >
       <Input
-        defaultValue=""
-        name="member"
-        placeholder="Search"
-        startDecorator={<MagnifyingGlassIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+        defaultValue=''
+        name='member'
+        placeholder='Search'
+        startDecorator={<MagnifyingGlassIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
         sx={{ maxWidth: '320px', width: '100%' }}
       />
-      <Select defaultValue="all" name="role" sx={{ maxWidth: '130px', width: '100%' }}>
-        <Option value="all">All</Option>
-        <Option value="admin">Admin</Option>
-        <Option value="member">Member</Option>
-        <Option value="readOnly">Read Only</Option>
+      <Select defaultValue='all' name='role' sx={{ maxWidth: '130px', width: '100%' }}>
+        <Option value='all'>All</Option>
+        <Option value='admin'>Admin</Option>
+        <Option value='member'>Member</Option>
+        <Option value='readOnly'>Read Only</Option>
       </Select>
     </Stack>
   );

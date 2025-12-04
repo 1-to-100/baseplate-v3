@@ -25,7 +25,7 @@ const meta = {
       control: 'boolean',
     },
   },
-  args: { 
+  args: {
     onChange: fn(),
     showContent: true,
     variant: 'custom',
@@ -63,7 +63,15 @@ export const AllVariants: Story = {
     ],
   },
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', alignItems: 'flex-start', minWidth: '400px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '32px',
+        alignItems: 'flex-start',
+        minWidth: '400px',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Basic Tabs</h4>
         <Tabs
@@ -74,14 +82,14 @@ export const AllVariants: Story = {
           ]}
         />
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Sizes</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <strong>Small:</strong>
             <Tabs
-              size="sm"
+              size='sm'
               tabs={[
                 { value: 'small1', label: 'Small 1', content: 'Small tab 1' },
                 { value: 'small2', label: 'Small 2', content: 'Small tab 2' },
@@ -90,7 +98,7 @@ export const AllVariants: Story = {
           </div>
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Without Content</h4>
         <Tabs

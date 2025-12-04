@@ -13,7 +13,9 @@ import type { Member } from '@/components/dashboard/team/member-card';
 import { MembersFilter } from '@/components/dashboard/team/members-filter';
 import { MembersPagination } from '@/components/dashboard/team/members-pagination';
 
-export const metadata = { title: `Members | Team | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Members | Team | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const members = [
   {
@@ -62,12 +64,12 @@ const members = [
 export default function Page(): React.JSX.Element {
   return (
     <Stack spacing={3}>
-      <Stack direction="row" spacing={3} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack direction='row' spacing={3} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <MembersFilter />
         <Button
           component={RouterLink}
           href={paths.dashboard.team.members.invite}
-          startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+          startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
         >
           Add Member
         </Button>

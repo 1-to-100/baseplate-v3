@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Stack from "@mui/joy/Stack";
-import Autocomplete from "@mui/joy/Autocomplete";
-import Typography from "@mui/joy/Typography";
-import FormHelperText from "@mui/joy/FormHelperText";
+import * as React from 'react';
+import Stack from '@mui/joy/Stack';
+import Autocomplete from '@mui/joy/Autocomplete';
+import Typography from '@mui/joy/Typography';
+import FormHelperText from '@mui/joy/FormHelperText';
 
 interface CustomerFieldProps {
   value: string;
@@ -28,18 +28,18 @@ export function CustomerField({
   return (
     <Stack sx={{ flex: 1 }}>
       <Typography
-        level="body-sm"
+        level='body-sm'
         sx={{
-          fontSize: { xs: "12px", sm: "14px" },
-          color: "var(--joy-palette-text-primary)",
+          fontSize: { xs: '12px', sm: '14px' },
+          color: 'var(--joy-palette-text-primary)',
           mb: 0.5,
           fontWeight: 500,
         }}
       >
-        Customer {required && <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>}
+        Customer {required && <span style={{ color: 'var(--joy-palette-danger-500)' }}>*</span>}
       </Typography>
       <Autocomplete
-        placeholder="Select customer"
+        placeholder='Select customer'
         value={value || null}
         onChange={(event, newValue) => onChange(newValue)}
         options={options}
@@ -51,18 +51,16 @@ export function CustomerField({
           },
         }}
         sx={{
-          borderRadius: "6px",
-          fontSize: { xs: "12px", sm: "14px" },
-          border: error
-            ? "1px solid var(--joy-palette-danger-500)"
-            : undefined,
+          borderRadius: '6px',
+          fontSize: { xs: '12px', sm: '14px' },
+          border: error ? '1px solid var(--joy-palette-danger-500)' : undefined,
         }}
       />
       {error && (
         <FormHelperText
           sx={{
-            color: "var(--joy-palette-danger-500)",
-            fontSize: { xs: "10px", sm: "12px" },
+            color: 'var(--joy-palette-danger-500)',
+            fontSize: { xs: '10px', sm: '12px' },
           }}
         >
           {error}
@@ -71,4 +69,3 @@ export function CustomerField({
     </Stack>
   );
 }
-

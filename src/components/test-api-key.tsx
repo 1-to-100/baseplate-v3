@@ -1,10 +1,6 @@
-"use client";
-import {FC} from 'react';
+'use client';
+import { FC } from 'react';
 
 export const TestApiKey: FC = () => {
-    return (
-        <div>
-            Test API Key Component (Firebase removed)
-        </div>
-    );
+  return <div>Test API Key Component (Firebase removed)</div>;
 };

@@ -1,4 +1,3 @@
-
 # 📘 Baseplate Documentation
 
 This guide walks through setting up and running the **Baseplate**, a Next.js application with:
@@ -88,6 +87,7 @@ This README assumes you have a Supabase project created. If not, create one firs
 Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `supabase/migrations/`.
 
 **Prerequisites:**
+
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -101,6 +101,7 @@ supabase link --project-ref your-project-ref
 ```
 
 To apply migrations:
+
 ```bash
 npx supabase db push
 ```
@@ -152,21 +153,21 @@ Before setting up OAuth providers, you need to configure your site URL and redir
    1. Go to project finder - as of this writing in the top navigation under organization name
    2. Create a new project using the “New Project” link
    3. Navigate to the project
-4. Search for "Google Auth Platform"
-5. Complete the wizard to setup the OAUth basics
-6. Activate the “Create OAUth Client"
+3. Search for "Google Auth Platform"
+4. Complete the wizard to setup the OAUth basics
+5. Activate the “Create OAUth Client"
    1. Select Web Application for application type
    2. Hit Add URI for your authorized redirect URIs - you can get this from Supabase under Project Settings -> Authentication -> Google -> Callback URL (for OAuth)
    3. Note that if you’re running this in testing mode, please do, you’ll need to go to “Audience” in your application and add a Test User for the application
-4.IN Google Cloud Console navigate to **APIs & Services > Credentials -> OAuth 2.0 Client ID**:
+      4.IN Google Cloud Console navigate to **APIs & Services > Credentials -> OAuth 2.0 Client ID**:
    - Validate your app is present
-      - App Type: **Web**
-      - Authorized Redirect URI:  
-        ```
-        https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
-        ```
+     - App Type: **Web**
+     - Authorized Redirect URI:
+       ```
+       https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
+       ```
 6. Copy **Client ID**
-7. Copy your **Client Secret**.  Note this will be provided under the general application configuration screen in the upper right hand corner in an "i" surrounded by a blue circle.  Click on that and copy it
+7. Copy your **Client Secret**. Note this will be provided under the general application configuration screen in the upper right hand corner in an "i" surrounded by a blue circle. Click on that and copy it
 8. In Supabase:
    - Go to **Authentication > Providers > Google**
    - Paste Client ID and Secret, and enable the provider
@@ -184,7 +185,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 4. Copy **Client ID** and **Client Secret**
 5. In Supabase:
    - Go to **Authentication > Providers > LinkedIn**
-   - Paste credentials and enable the provider.  Note that Supabase refers to your LinkedIn ClientID as the API Key
+   - Paste credentials and enable the provider. Note that Supabase refers to your LinkedIn ClientID as the API Key
 
 [Supabase Doc](https://supabase.com/docs/guides/auth/social-login/auth-linkedin)
 
@@ -193,7 +194,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 1. Go to [Azure Portal](https://portal.azure.com/)
 2. Navigate to **Azure Active Directory > App Registrations**
 3. Register a new app:
-   - Redirect URI:  
+   - Redirect URI:
      ```
      https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
      ```
@@ -265,28 +266,31 @@ By default, Supabase sends transactional emails (e.g., sign-up confirmation, use
 
 ### 🛠️ Steps to Enable Custom SMTP
 
-#### 1. Log in to your Supabase organization  
-- Open your project  
+#### 1. Log in to your Supabase organization
 
-#### 2. Access SMTP Settings  
+- Open your project
+
+#### 2. Access SMTP Settings
+
 - From the left sidebar, go to:  
   **Authentication → Emails**  
   Or directly to: **SMTP Settings**
 
-#### 3. Enable Custom SMTP  
+#### 3. Enable Custom SMTP
+
 - In the SMTP Settings section, toggle **Enable custom SMTP**
 
 #### 4. Fill in the SMTP Configuration Fields
 
 Example configuration for Gmail:
 
-- **Sender Email**: The email address that will appear in the “From” field  
-- **Sender Name**: The display name shown as the sender  
-- **Host**: `smtp.gmail.com`  
-- **Port**: `587`  
-- **Minimum Interval Between Emails**: (optional, based on your rate limits)  
-- **Username**: Your Gmail address or admin username  
-- **Password**: An App Password (generated in the next step)  
+- **Sender Email**: The email address that will appear in the “From” field
+- **Sender Name**: The display name shown as the sender
+- **Host**: `smtp.gmail.com`
+- **Port**: `587`
+- **Minimum Interval Between Emails**: (optional, based on your rate limits)
+- **Username**: Your Gmail address or admin username
+- **Password**: An App Password (generated in the next step)
 
 ---
 
@@ -297,11 +301,11 @@ To authenticate with Gmail’s SMTP, you need to create an App Password:
 1. Go to your Google Account Security Settings:  
    [https://myaccount.google.com/security](https://myaccount.google.com/security)
 
-2. Open the **App Passwords** section  
+2. Open the **App Passwords** section
 3. Generate a new App Password:
-   - Select the app (or choose "Other" and enter a custom name)  
-   - Click **Create**  
-   - Copy the 16-character password provided  
+   - Select the app (or choose "Other" and enter a custom name)
+   - Click **Create**
+   - Copy the 16-character password provided
    - Paste this password into the **Password** field in your Supabase SMTP settings
 
 Once saved, all transactional emails from Supabase will be sent using your configured SMTP server and custom domain.
@@ -311,6 +315,7 @@ Once saved, all transactional emails from Supabase will be sent using your confi
 ## 👤 Setting Up a Super User Account
 
 ### Option 1: Manual Setup
+
 1. Login to the app (with user/pass or federated login)
 2. Logout - you should now have a record in the users table
 3. Go to Supabase Dashboard
@@ -319,7 +324,9 @@ Once saved, all transactional emails from Supabase will be sent using your confi
 6. Log back in to see full system management options
 
 ### System Roles
+
 The application uses three system roles:
+
 - **System Administrator** (role_id: 1) - Full system access
 - **Customer Success** (role_id: 2) - Customer management access
 - **Customer Administrator** (role_id: 3) - Customer-specific admin access

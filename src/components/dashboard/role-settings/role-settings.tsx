@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Card from "@mui/joy/Card";
-import Typography from "@mui/joy/Typography";
-import Avatar from "@mui/joy/Avatar";
-import { DotsThree } from "@phosphor-icons/react/dist/ssr/DotsThree";
-import { IconButton } from "@mui/joy";
-import { useRouter } from "next/navigation";
-import { paths } from "@/paths";
-import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { useState, useEffect } from "react";
-import { Popper } from "@mui/base/Popper";
-import AddRoleModal from "../modals/AddRoleModal";
-import type { ColorPaletteProp, VariantProp } from "@mui/joy";
-import { Role } from "@/contexts/auth/types";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Card from '@mui/joy/Card';
+import Typography from '@mui/joy/Typography';
+import Avatar from '@mui/joy/Avatar';
+import { DotsThree } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { IconButton } from '@mui/joy';
+import { useRouter } from 'next/navigation';
+import { paths } from '@/paths';
+import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { useState, useEffect } from 'react';
+import { Popper } from '@mui/base/Popper';
+import AddRoleModal from '../modals/AddRoleModal';
+import type { ColorPaletteProp, VariantProp } from '@mui/joy';
+import { Role } from '@/contexts/auth/types';
 
 interface PermissionsByModule {
   [moduleName: string]: Array<{
@@ -24,7 +24,6 @@ interface PermissionsByModule {
     label: string;
   }>;
 }
-
 
 interface RoleSettingsProps {
   roles: Role[];
@@ -45,9 +44,9 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [anchorEl]);
 
@@ -55,14 +54,11 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
     try {
       router.push(paths.dashboard.roleSettings.details(roleId.toString()));
     } catch (error) {
-      console.error("Error fetching role:", error);
+      console.error('Error fetching role:', error);
     }
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    roleId: string | number
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, roleId: string | number) => {
     event.stopPropagation();
     if (activeRoleId === roleId.toString()) {
       handleMenuClose();
@@ -89,27 +85,21 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
   };
 
   const menuItemStyle = {
-    padding: "8px 16px",
-    fontSize: "16px",
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: '8px 16px',
+    fontSize: '16px',
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
 
   const iconStyle = {
-    marginRight: "14px",
+    marginRight: '14px',
   };
 
-  const avatarColors: ColorPaletteProp[] = [
-    "primary",
-    "neutral",
-    "danger",
-    "warning",
-    "success",
-  ];
+  const avatarColors: ColorPaletteProp[] = ['primary', 'neutral', 'danger', 'warning', 'success'];
 
   const getAvatarProps = (name: string) => {
     const hash = Array.from(name).reduce(
@@ -119,113 +109,106 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
     const colorIndex = hash % avatarColors.length;
     return {
       color: avatarColors[colorIndex],
-      variant: "soft" as VariantProp,
+      variant: 'soft' as VariantProp,
     };
   };
 
   return (
     <Box
       sx={{
-        display: "grid",
+        display: 'grid',
         gridTemplateColumns: {
-          xs: "1fr",
-          sm: "repeat(2, 1fr)",
-          md: "repeat(3, 1fr)",
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
         },
         p: 0,
         gap: 2,
         mt: 2,
-        maxWidth: "1050px",
+        maxWidth: '1050px',
       }}
     >
       {roles.map((role: Role) => (
         <Card
           key={role.role_id}
-          variant="outlined"
+          variant='outlined'
           onClick={() => handleCardClick(role.role_id)}
           sx={{
-            p: "16px",
-            borderRadius: "8px",
-            border: "1px solid var(--joy-palette-divider)",
-            boxShadow: "none",
-            backgroundColor: "var(--joy-palette-background-body)",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: "210px",
-            cursor: "pointer",
-            "&:hover": {
-              borderColor: "var(--joy-palette-text-secondary)",
+            p: '16px',
+            borderRadius: '8px',
+            border: '1px solid var(--joy-palette-divider)',
+            boxShadow: 'none',
+            backgroundColor: 'var(--joy-palette-background-body)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '210px',
+            cursor: 'pointer',
+            '&:hover': {
+              borderColor: 'var(--joy-palette-text-secondary)',
             },
-            maxWidth: { xs: "100%", sm: "336px" },
-            minWidth: { xs: "100%", sm: "236px" },
+            maxWidth: { xs: '100%', sm: '336px' },
+            minWidth: { xs: '100%', sm: '236px' },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Avatar
               sx={{
                 width: 40,
                 height: 40,
-                fontWeight: "bold",
-                fontSize: "16px",
+                fontWeight: 'bold',
+                fontSize: '16px',
               }}
               {...getAvatarProps(role.display_name)}
             >
               {role.display_name
-                .split(" ")
+                .split(' ')
                 .slice(0, 2)
-                .map((n) => n[0]?.toUpperCase() || "")
-                .join("")}
+                .map((n) => n[0]?.toUpperCase() || '')
+                .join('')}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
-                level="title-md"
+                level='title-md'
                 sx={{
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
-                  wordWrap: "break-word",
-                  overflowWrap: "break-word",
-                  whiteSpace: "normal",
-                  width: "100%",
-                  maxWidth: "100%",
-                  display: "block",
-                  overflow: "hidden"
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  whiteSpace: 'normal',
+                  width: '100%',
+                  maxWidth: '100%',
+                  display: 'block',
+                  overflow: 'hidden',
                 }}
               >
                 {role.display_name.slice(0, 50)}
               </Typography>
               <Typography
-                level="body-xs"
+                level='body-xs'
                 sx={{
                   mt: 0.5,
-                  color: "var(--joy-palette-text-secondary)",
-                  fontWeight: "400",
-                  fontSize: "12px",
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontWeight: '400',
+                  fontSize: '12px',
                 }}
               >
                 Default role
               </Typography>
             </Box>
-            <IconButton
-              size="sm"
-              onClick={(event) => handleMenuOpen(event, role.role_id)}
-            >
-              <DotsThree
-                weight="bold"
-                size={22}
-                color="var(--joy-palette-text-secondary)"
-              />
+            <IconButton size='sm' onClick={(event) => handleMenuOpen(event, role.role_id)}>
+              <DotsThree weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
             </IconButton>
             <Popper
               open={activeRoleId === role.role_id.toString() && Boolean(anchorEl)}
               anchorEl={anchorEl}
-              placement="bottom-start"
+              placement='bottom-start'
               style={{
-                minWidth: "150px",
-                borderRadius: "8px",
-                backgroundColor: "var(--joy-palette-background-surface)",
+                minWidth: '150px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--joy-palette-background-surface)',
                 zIndex: 1300,
-                border: "1px solid var(--joy-palette-divider)",
+                border: '1px solid var(--joy-palette-divider)',
               }}
             >
               <Box
@@ -235,7 +218,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
                 }}
                 sx={menuItemStyle}
               >
-                <PencilIcon fontSize="20px" style={iconStyle} />
+                <PencilIcon fontSize='20px' style={iconStyle} />
                 Edit
               </Box>
               <Box
@@ -243,9 +226,9 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
                   event.preventDefault();
                   handleMenuClose();
                 }}
-                sx={{ ...menuItemStyle, color: "#EF4444" }}
+                sx={{ ...menuItemStyle, color: '#EF4444' }}
               >
-                <TrashIcon fontSize="20px" style={iconStyle} />
+                <TrashIcon fontSize='20px' style={iconStyle} />
                 Delete
               </Box>
             </Popper>
@@ -257,29 +240,29 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
             }}
           >
             <Typography
-              level="body-sm"
+              level='body-sm'
               sx={{
-                color: "var(--joy-palette-text-secondary)",
-                fontWeight: "300",
-                fontSize: "14px",
-                lineHeight: "1.5",
-                wordWrap: "break-word",
-                overflowWrap: "break-word",
-                whiteSpace: "normal",
+                color: 'var(--joy-palette-text-secondary)',
+                fontWeight: '300',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                whiteSpace: 'normal',
               }}
             >
               {role.description?.slice(0, 89) || ''}
             </Typography>
           </Box>
           <Typography
-            level="body-md"
+            level='body-md'
             sx={{
-              fontWeight: "400",
-              fontSize: "12px",
-              color: "var(--joy-palette-text-secondary)",
+              fontWeight: '400',
+              fontSize: '12px',
+              color: 'var(--joy-palette-text-secondary)',
               pt: 1.5,
-              borderTop: "1px solid var(--joy-palette-divider)",
-              mt: "auto",
+              borderTop: '1px solid var(--joy-palette-divider)',
+              mt: 'auto',
             }}
           >
             {role._count.users} people

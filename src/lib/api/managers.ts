@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
-import { SYSTEM_ROLES } from "@/lib/user-utils";
+import { createClient } from '@/lib/supabase/client';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
 
 export interface Manager {
   id: string;
@@ -7,24 +7,26 @@ export interface Manager {
 }
 
 // Helper function to get customer_success role ID
-async function getCustomerSuccessRoleId(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+async function getCustomerSuccessRoleId(
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
   const { data, error } = await supabase
     .from('roles')
     .select('role_id')
     .eq('name', SYSTEM_ROLES.CUSTOMER_SUCCESS)
     .maybeSingle();
-  
+
   if (error) {
     console.error('Failed to find customer_success role:', error);
     return null;
   }
-  
+
   return data?.role_id || null;
 }
 
 export async function getManagers(customerId?: string): Promise<Manager[]> {
   const supabase = createClient();
-  
+
   // Get customer success role ID by name
   const customerSuccessRoleId = await getCustomerSuccessRoleId(supabase);
   if (!customerSuccessRoleId) {
@@ -40,9 +42,9 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
       .eq('role_id', customerSuccessRoleId)
       .is('deleted_at', null)
       .order('full_name');
-    
+
     if (error) throw error;
-    
+
     return (allCSManagers || []).map((manager) => ({
       id: manager.user_id,
       name: manager.full_name || manager.email,
@@ -58,7 +60,7 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
     .is('deleted_at', null)
     .or(`customer_id.is.null,customer_id.eq.${customerId}`)
     .order('full_name');
-  
+
   if (usersError) throw usersError;
 
   // Also get managers from customer_success_owned_customers relations
@@ -66,7 +68,7 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
     .from('customer_success_owned_customers')
     .select('user_id')
     .eq('customer_id', customerId);
-  
+
   if (csError) throw csError;
 
   // Get user details for CS owned customers
@@ -81,7 +83,7 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
       .eq('role_id', customerSuccessRoleId)
       .is('deleted_at', null)
       .order('full_name');
-    
+
     if (csManagersError) throw csManagersError;
     csOwnedManagers = csManagersData || [];
   }
@@ -89,8 +91,7 @@ export async function getManagers(customerId?: string): Promise<Manager[]> {
   // Combine and deduplicate managers
   const allManagers = [...(usersManagers || []), ...csOwnedManagers];
   const uniqueManagers = allManagers.filter(
-    (manager, index, self) =>
-      index === self.findIndex((m) => m.user_id === manager.user_id),
+    (manager, index, self) => index === self.findIndex((m) => m.user_id === manager.user_id)
   );
 
   return uniqueManagers.map((manager) => ({

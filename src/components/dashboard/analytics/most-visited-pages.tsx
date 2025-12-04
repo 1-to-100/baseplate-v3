@@ -55,7 +55,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(row.ctr / 100);
+      return new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(
+        row.ctr / 100
+      );
     },
     name: 'CTR',
     width: '100px',
@@ -69,12 +71,18 @@ export interface MostVisitedPagesProps {
 export function MostVisitedPages({ data = [] }: MostVisitedPagesProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Most Visited Pages</Typography>
-      <CardOverflow sx={{ mb: 'var(--CardOverflow-offset)', mx: 'var(--CardOverflow-offset)', overflowX: 'auto' }}>
+      <Typography level='h4'>Most Visited Pages</Typography>
+      <CardOverflow
+        sx={{
+          mb: 'var(--CardOverflow-offset)',
+          mx: 'var(--CardOverflow-offset)',
+          overflowX: 'auto',
+        }}
+      >
         <DataTable<RowModel>
           columns={columns}
           rows={data}
-          stripe="even"
+          stripe='even'
           sx={{ '--TableCell-paddingX': '8px', '--TableCell-paddingY': '12px' }}
           uniqueRowId={(row): string => row.title}
         />

@@ -87,15 +87,15 @@ export function SignInForm(): React.JSX.Element {
     <Stack spacing={5}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={32} width={154} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={32} width={154} />
         </Box>
       </Box>
-      <Tabs value="sign-in" variant="custom">
+      <Tabs value='sign-in' variant='custom'>
         <TabList>
-          <Tab component={RouterLink} href={paths.auth.cognito.signIn} value="sign-in">
+          <Tab component={RouterLink} href={paths.auth.cognito.signIn} value='sign-in'>
             Sign In
           </Tab>
-          <Tab component={RouterLink} href={paths.auth.cognito.signUp} value="sign-up">
+          <Tab component={RouterLink} href={paths.auth.cognito.signUp} value='sign-up'>
             Create Account
           </Tab>
         </TabList>
@@ -104,18 +104,18 @@ export function SignInForm(): React.JSX.Element {
         <Stack spacing={2}>
           <Controller
             control={control}
-            name="email"
+            name='email'
             render={({ field }) => (
               <FormControl error={Boolean(errors.email)}>
                 <FormLabel>Email Address</FormLabel>
-                <Input {...field} type="email" />
+                <Input {...field} type='email' />
                 {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="password"
+            name='password'
             render={({ field }) => (
               <FormControl error={Boolean(errors.password)}>
                 <FormLabel>Password</FormLabel>
@@ -128,15 +128,17 @@ export function SignInForm(): React.JSX.Element {
                       }}
                     >
                       {showPassword ? (
-                        <EyeSlashIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                        <EyeSlashIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                       ) : (
-                        <EyeIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                        <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                       )}
                     </IconButton>
                   }
                   type={showPassword ? 'text' : 'password'}
                 />
-                {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                {errors.password ? (
+                  <FormHelperText>{errors.password.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
@@ -145,8 +147,8 @@ export function SignInForm(): React.JSX.Element {
               Forgot password?
             </Link>
           </div>
-          {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-          <Button disabled={isPending} type="submit">
+          {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+          <Button disabled={isPending} type='submit'>
             Sign In
           </Button>
         </Stack>

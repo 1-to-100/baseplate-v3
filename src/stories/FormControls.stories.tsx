@@ -53,13 +53,7 @@ function FormControlsWrapper(props: React.ComponentProps<typeof FormControls>) {
     setValue(newValue);
   };
 
-  return (
-    <FormControls
-      {...props}
-      value={value}
-      onChange={handleChange}
-    />
-  );
+  return <FormControls {...props} value={value} onChange={handleChange} />;
 }
 
 export const RadioButtons: Story = {

@@ -5,10 +5,6 @@ export const NotificationChannel = {
   article: 'article',
 } as const;
 
-export type NotificationChannel =
-  (typeof NotificationChannel)[keyof typeof NotificationChannel];
+export type NotificationChannel = (typeof NotificationChannel)[keyof typeof NotificationChannel];
 
-export const NotificationChannelList = Object.values(
-  NotificationChannel,
-) as NotificationChannel[];
-
+export const NotificationChannelList = Object.values(NotificationChannel) as NotificationChannel[];

@@ -11,7 +11,7 @@ export const JoyTable = {
           borderBottom: 'var(--Table-headerUnderlineThickness) solid var(--TableCell-borderColor)',
         },
       }),
-      
+
       minWidth: 800,
       border: '1px solid var(--joy-palette-divider)',
       borderRadius: '8px',

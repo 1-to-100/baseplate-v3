@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import type { Metadata } from "next";
-import Box from "@mui/joy/Box";
-import Stack from "@mui/joy/Stack";
-import Typography from "@mui/joy/Typography";
-import Table from "@mui/joy/Table";
-import { ArrowsDownUp as SortIcon } from "@phosphor-icons/react/dist/ssr/ArrowsDownUp";
-import { config } from "@/config";
-import { useState } from "react";
-import Pagination from "@/components/dashboard/layout/pagination";
-import { useQuery } from "@tanstack/react-query";
-import { getNotificationsHistory } from "@/lib/api/notifications";
-import { useGlobalSearch } from "@/hooks/use-global-search";
-import CircularProgress from "@mui/joy/CircularProgress";
-import NotificationFilter from "@/components/dashboard/notification-management/notification-filter";
-import { useColorScheme } from "@mui/joy/styles";
-import { sanitizeNotificationHTML } from "@/lib/sanitize";
+import * as React from 'react';
+import type { Metadata } from 'next';
+import Box from '@mui/joy/Box';
+import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
+import Table from '@mui/joy/Table';
+import { ArrowsDownUp as SortIcon } from '@phosphor-icons/react/dist/ssr/ArrowsDownUp';
+import { config } from '@/config';
+import { useState } from 'react';
+import Pagination from '@/components/dashboard/layout/pagination';
+import { useQuery } from '@tanstack/react-query';
+import { getNotificationsHistory } from '@/lib/api/notifications';
+import { useGlobalSearch } from '@/hooks/use-global-search';
+import CircularProgress from '@mui/joy/CircularProgress';
+import NotificationFilter from '@/components/dashboard/notification-management/notification-filter';
+import { useColorScheme } from '@mui/joy/styles';
+import { sanitizeNotificationHTML } from '@/lib/sanitize';
 
 const metadata = {
   title: `Notification History | Dashboard | ${config.site.name}`,
@@ -26,7 +26,7 @@ export default function Page(): React.JSX.Element {
   const { colorScheme } = useColorScheme();
   const { debouncedSearchValue } = useGlobalSearch();
   const [sortColumn, setSortColumn] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
     type: string[];
@@ -45,7 +45,7 @@ export default function Page(): React.JSX.Element {
 
   const { data, isLoading, error } = useQuery({
     queryKey: [
-      "notifications",
+      'notifications',
       currentPage,
       debouncedSearchValue,
       sortColumn,
@@ -56,7 +56,7 @@ export default function Page(): React.JSX.Element {
       filters.user,
     ],
     queryFn: async () => {
-      const response = await getNotificationsHistory ({
+      const response = await getNotificationsHistory({
         page: currentPage,
         perPage: rowsPerPage,
         orderBy: sortColumn || undefined,
@@ -80,22 +80,22 @@ export default function Page(): React.JSX.Element {
   };
 
   const getFirstLine = (html: string) => {
-    const tempDiv = document.createElement("div");
+    const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
     const nodes = Array.from(tempDiv.childNodes);
 
-    if (nodes.length === 0) return "";
+    if (nodes.length === 0) return '';
 
     const firstNode = nodes[0];
 
     switch (firstNode?.nodeType) {
       case Node.TEXT_NODE:
-        return firstNode.textContent?.split("\n")[0] || "";
+        return firstNode.textContent?.split('\n')[0] || '';
       case Node.ELEMENT_NODE:
         return (firstNode as Element).outerHTML;
       default:
-        return "";
+        return '';
     }
   };
 
@@ -118,38 +118,36 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleSort = (column: string) => {
-    const isAsc = sortColumn === column && sortDirection === "asc";
-    const newDirection = isAsc ? "desc" : "asc";
+    const isAsc = sortColumn === column && sortDirection === 'asc';
+    const newDirection = isAsc ? 'desc' : 'asc';
     setSortColumn(column);
     setSortDirection(newDirection);
   };
 
- 
-
   return (
-    <Box sx={{ p: { xs: 2, sm: "var(--Content-padding)" } }}>
+    <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
       <Stack spacing={{ xs: 2, sm: 3 }} sx={{ mt: { xs: 6, sm: 0 } }}>
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: 'column', sm: 'row' }}
           spacing={{ xs: 2, sm: 3 }}
-          sx={{ alignItems: { xs: "stretch", sm: "flex-start" } }}
+          sx={{ alignItems: { xs: 'stretch', sm: 'flex-start' } }}
         >
-          <Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+          <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
             <Typography
-              fontSize={{ xs: "xl2", sm: "xl3" }}
-              level="h1"
-              sx={{ wordBreak: "break-word" }}
+              fontSize={{ xs: 'xl2', sm: 'xl3' }}
+              level='h1'
+              sx={{ wordBreak: 'break-word' }}
             >
               Notification History
             </Typography>
           </Stack>
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={{ xs: 1, sm: 2 }}
             sx={{
-              alignItems: { xs: "stretch", sm: "center" },
-              width: { xs: "100%", sm: "auto" },
+              alignItems: { xs: 'stretch', sm: 'center' },
+              width: { xs: '100%', sm: 'auto' },
             }}
           >
             <NotificationFilter
@@ -164,38 +162,38 @@ export default function Page(): React.JSX.Element {
         {isLoading ? (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: { xs: "40vh", sm: "50vh" },
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: { xs: '40vh', sm: '50vh' },
             }}
           >
-            <CircularProgress size="lg" />
+            <CircularProgress size='lg' />
           </Box>
         ) : (
           <>
             <Box>
               <Box
                 sx={{
-                  overflowX: "auto",
-                  width: "100%",
-                  WebkitOverflowScrolling: "touch",
-                  scrollbarWidth: { xs: "thin", sm: "auto" },
-                  "&::-webkit-scrollbar": {
-                    height: { xs: "8px", sm: "12px" },
+                  overflowX: 'auto',
+                  width: '100%',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: { xs: 'thin', sm: 'auto' },
+                  '&::-webkit-scrollbar': {
+                    height: { xs: '8px', sm: '12px' },
                   },
-                  "&::-webkit-scrollbar-thumb": {
-                    backgroundColor: "var(--joy-palette-divider)",
-                    borderRadius: "4px",
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'var(--joy-palette-divider)',
+                    borderRadius: '4px',
                   },
                 }}
               >
                 <Table
-                  aria-label="notification history table"
+                  aria-label='notification history table'
                   sx={{
-                    minWidth: "800px",
-                    tableLayout: "fixed",
-                    "& th, & td": {
+                    minWidth: '800px',
+                    tableLayout: 'fixed',
+                    '& th, & td': {
                       px: { xs: 1, sm: 2 },
                       py: { xs: 1, sm: 1.5 },
                     },
@@ -203,147 +201,129 @@ export default function Page(): React.JSX.Element {
                 >
                   <thead>
                     <tr>
-                      <th
-                        style={{ width: "130px" }}
-                        onClick={() => handleSort("createdAt")}
-                      >
+                      <th style={{ width: '130px' }} onClick={() => handleSort('createdAt')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           Date
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
-                      <th
-                        style={{ width: "15%" }}
-                        onClick={() => handleSort("user")}
-                      >
+                      <th style={{ width: '15%' }} onClick={() => handleSort('user')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           User
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
-                      <th
-                        style={{ width: "15%" }}
-                        onClick={() => handleSort("customer")}
-                      >
+                      <th style={{ width: '15%' }} onClick={() => handleSort('customer')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           Customer
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
-                      <th
-                        style={{ width: "100px" }}
-                        onClick={() => handleSort("type")}
-                      >
+                      <th style={{ width: '100px' }} onClick={() => handleSort('type')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           Type
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
-                      <th
-                        style={{ width: "110px" }}
-                        onClick={() => handleSort("channel")}
-                      >
+                      <th style={{ width: '110px' }} onClick={() => handleSort('channel')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           Channel
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
-                      <th
-                        
-                        onClick={() => handleSort("message")}
-                      >
+                      <th onClick={() => handleSort('message')}>
                         <Box
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            "& .sort-icon": {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            '& .sort-icon': {
                               opacity: 0,
-                              transition: "opacity 0.2s ease-in-out",
+                              transition: 'opacity 0.2s ease-in-out',
                             },
-                            "&:hover .sort-icon": { opacity: 1 },
+                            '&:hover .sort-icon': { opacity: 1 },
                           }}
                         >
                           Message
                           <SortIcon
-                            className="sort-icon"
-                            fontSize="16"
-                            color="var(--joy-palette-text-secondary)"
+                            className='sort-icon'
+                            fontSize='16'
+                            color='var(--joy-palette-text-secondary)'
                           />
                         </Box>
                       </th>
@@ -352,11 +332,8 @@ export default function Page(): React.JSX.Element {
                   <tbody>
                     {notifications.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={6}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          <Typography level="body-md" color="neutral">
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                          <Typography level='body-md' color='neutral'>
                             No items found
                           </Typography>
                         </td>
@@ -367,42 +344,40 @@ export default function Page(): React.JSX.Element {
                           <td>
                             <Typography
                               sx={{
-                                wordBreak: "break-all",
-                                fontSize: { xs: "12px", sm: "14px" },
+                                wordBreak: 'break-all',
+                                fontSize: { xs: '12px', sm: '14px' },
                               }}
                             >
                               {new Date(notification.createdAt).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
-                                year: 'numeric'
+                                year: 'numeric',
                               })}
                             </Typography>
                           </td>
                           <td>
                             <Typography
                               sx={{
-                                color: "var(--joy-palette-text-secondary)",
-                                fontSize: { xs: "12px", sm: "14px" },
-                                whiteSpace: "normal",
-                                wordBreak: "break-word",
-                                maxWidth: "100%"
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontSize: { xs: '12px', sm: '14px' },
+                                whiteSpace: 'normal',
+                                wordBreak: 'break-word',
+                                maxWidth: '100%',
                               }}
                             >
-                              {notification.users?.full_name?.slice(0, 40)  ? (
-                                notification.users?.full_name?.slice(0, 40) || ''
-                              ) : (
-                                notification.users?.email?.slice(0, 40) || ''
-                              )}
+                              {notification.users?.full_name?.slice(0, 40)
+                                ? notification.users?.full_name?.slice(0, 40) || ''
+                                : notification.users?.email?.slice(0, 40) || ''}
                             </Typography>
                           </td>
                           <td>
                             <Typography
                               sx={{
-                                color: "var(--joy-palette-text-secondary)",
-                                fontSize: { xs: "12px", sm: "14px" },
-                                whiteSpace: "normal",
-                                wordBreak: "break-word",
-                                maxWidth: "100%"
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontSize: { xs: '12px', sm: '14px' },
+                                whiteSpace: 'normal',
+                                wordBreak: 'break-word',
+                                maxWidth: '100%',
                               }}
                             >
                               {notification.customers?.name?.slice(0, 40) || ''}
@@ -411,103 +386,101 @@ export default function Page(): React.JSX.Element {
                           <td
                             style={{
                               fontWeight: 400,
-                              color: "var(--joy-palette-text-secondary)",
+                              color: 'var(--joy-palette-text-secondary)',
                             }}
                           >
                             <Box
                               sx={{
-                                fontSize: { xs: "12px", sm: "14px" },
-                                wordBreak: "break-all",
+                                fontSize: { xs: '12px', sm: '14px' },
+                                wordBreak: 'break-all',
                                 fontWeight: 500,
-                                backgroundColor: notification?.type?.includes(
-                                  "in_app"
-                                )
-                                  ? colorScheme === "dark"
-                                    ? "rgba(79, 70, 229, 0.2)"
-                                    : "#E0E7FF"
-                                  : notification?.type?.includes("email")
-                                  ? colorScheme === "dark"
-                                    ? "rgba(22, 163, 74, 0.2)"
-                                    : "#DCFCE7"
-                                  : colorScheme === "dark"
-                                  ? "rgba(107, 114, 128, 0.2)"
-                                  : "#F3F4F6",
-                                color: notification?.type?.includes("in_app")
-                                  ? colorScheme === "dark"
-                                    ? "#818CF8"
-                                    : "#4F46E5"
-                                  : notification?.type?.includes("email")
-                                  ? colorScheme === "dark"
-                                    ? "#4ADE80"
-                                    : "#16A34A"
-                                  : colorScheme === "dark"
-                                  ? "#9CA3AF"
-                                  : "#6B7280",
-                                borderRadius: "10px",
-                                padding: "2px 8px",
-                                display: "inline-block",
+                                backgroundColor: notification?.type?.includes('in_app')
+                                  ? colorScheme === 'dark'
+                                    ? 'rgba(79, 70, 229, 0.2)'
+                                    : '#E0E7FF'
+                                  : notification?.type?.includes('email')
+                                    ? colorScheme === 'dark'
+                                      ? 'rgba(22, 163, 74, 0.2)'
+                                      : '#DCFCE7'
+                                    : colorScheme === 'dark'
+                                      ? 'rgba(107, 114, 128, 0.2)'
+                                      : '#F3F4F6',
+                                color: notification?.type?.includes('in_app')
+                                  ? colorScheme === 'dark'
+                                    ? '#818CF8'
+                                    : '#4F46E5'
+                                  : notification?.type?.includes('email')
+                                    ? colorScheme === 'dark'
+                                      ? '#4ADE80'
+                                      : '#16A34A'
+                                    : colorScheme === 'dark'
+                                      ? '#9CA3AF'
+                                      : '#6B7280',
+                                borderRadius: '10px',
+                                padding: '2px 8px',
+                                display: 'inline-block',
                               }}
                             >
-                              {notification.type?.includes("in_app")
-                                ? "In-App"
-                                : notification.type?.includes("email")
-                                ? "Email"
-                                : notification.type?.[0] || ""}
+                              {notification.type?.includes('in_app')
+                                ? 'In-App'
+                                : notification.type?.includes('email')
+                                  ? 'Email'
+                                  : notification.type?.[0] || ''}
                             </Box>
                           </td>
                           <td
                             style={{
-                              color: "var(--joy-palette-text-secondary)",
+                              color: 'var(--joy-palette-text-secondary)',
                             }}
                           >
                             <Box
                               sx={{
-                                fontSize: { xs: "12px", sm: "14px" },
-                                wordBreak: "break-all",
+                                fontSize: { xs: '12px', sm: '14px' },
+                                wordBreak: 'break-all',
                                 fontWeight: 500,
                                 backgroundColor:
-                                  notification?.channel === "info"
-                                    ? colorScheme === "dark"
-                                      ? "rgba(107, 114, 128, 0.2)"
-                                      : "#EEEFF0"
-                                    : notification?.channel === "article"
-                                    ? colorScheme === "dark"
-                                      ? "rgba(107, 114, 128, 0.2)"
-                                      : "#EEEFF0"
-                                    : notification?.channel === "warning"
-                                    ? colorScheme === "dark"
-                                      ? "rgba(183, 76, 6, 0.2)"
-                                      : "#FFF8C5"
-                                    : notification?.channel === "alert"
-                                    ? colorScheme === "dark"
-                                      ? "rgba(211, 35, 47, 0.2)"
-                                      : "#FFE9E8"
-                                    : colorScheme === "dark"
-                                    ? "rgba(79, 70, 229, 0.2)"
-                                    : "#4F46E5",
+                                  notification?.channel === 'info'
+                                    ? colorScheme === 'dark'
+                                      ? 'rgba(107, 114, 128, 0.2)'
+                                      : '#EEEFF0'
+                                    : notification?.channel === 'article'
+                                      ? colorScheme === 'dark'
+                                        ? 'rgba(107, 114, 128, 0.2)'
+                                        : '#EEEFF0'
+                                      : notification?.channel === 'warning'
+                                        ? colorScheme === 'dark'
+                                          ? 'rgba(183, 76, 6, 0.2)'
+                                          : '#FFF8C5'
+                                        : notification?.channel === 'alert'
+                                          ? colorScheme === 'dark'
+                                            ? 'rgba(211, 35, 47, 0.2)'
+                                            : '#FFE9E8'
+                                          : colorScheme === 'dark'
+                                            ? 'rgba(79, 70, 229, 0.2)'
+                                            : '#4F46E5',
                                 color:
-                                  notification?.channel === "info"
-                                    ? colorScheme === "dark"
-                                      ? "#D1D5DB"
-                                      : "#6B7280"
-                                    : notification?.channel === "article"
-                                    ? colorScheme === "dark"
-                                      ? "#D1D5DB"
-                                      : "#6B7280"
-                                    : notification?.channel === "warning"
-                                    ? colorScheme === "dark"
-                                      ? "#FDBA74"
-                                      : "#b74c06"
-                                    : notification?.channel === "alert"
-                                    ? colorScheme === "dark"
-                                      ? "#FCA5A5"
-                                      : "#D3232F"
-                                    : colorScheme === "dark"
-                                    ? "#818CF8"
-                                    : "#4F46E5",
-                                borderRadius: "10px",
-                                padding: "2px 8px",
-                                display: "inline-block",
+                                  notification?.channel === 'info'
+                                    ? colorScheme === 'dark'
+                                      ? '#D1D5DB'
+                                      : '#6B7280'
+                                    : notification?.channel === 'article'
+                                      ? colorScheme === 'dark'
+                                        ? '#D1D5DB'
+                                        : '#6B7280'
+                                      : notification?.channel === 'warning'
+                                        ? colorScheme === 'dark'
+                                          ? '#FDBA74'
+                                          : '#b74c06'
+                                        : notification?.channel === 'alert'
+                                          ? colorScheme === 'dark'
+                                            ? '#FCA5A5'
+                                            : '#D3232F'
+                                          : colorScheme === 'dark'
+                                            ? '#818CF8'
+                                            : '#4F46E5',
+                                borderRadius: '10px',
+                                padding: '2px 8px',
+                                display: 'inline-block',
                               }}
                             >
                               {notification.channel}
@@ -515,34 +488,38 @@ export default function Page(): React.JSX.Element {
                           </td>
                           <td>
                             <Typography
-                              component="div"
+                              component='div'
                               sx={{
-                                color: "var(--joy-palette-text-secondary)",
-                                fontSize: { xs: "12px", sm: "14px" },
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontSize: { xs: '12px', sm: '14px' },
                                 '& img': {
                                   width: '100%',
                                   maxWidth: '600px',
-                                  height: 'auto'
+                                  height: 'auto',
                                 },
                                 p: {
-                                  ...(colorScheme === "dark" && {
-                                    "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']": {
-                                      color: "var(--joy-palette-text-secondary) !important"
-                                    }
+                                  ...(colorScheme === 'dark' && {
+                                    "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']":
+                                      {
+                                        color: 'var(--joy-palette-text-secondary) !important',
+                                      },
                                   }),
                                 },
                                 span: {
-                                  ...(colorScheme === "dark" && {
-                                    "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']": {
-                                      color: "var(--joy-palette-text-secondary) !important"
-                                    }
+                                  ...(colorScheme === 'dark' && {
+                                    "&[style*='color: black'], &[style*='color: #000'], &[style*='color: rgb(0, 0, 0)'], &[style*='color: rgba(0,0,0'], &[style*='color: rgb(11, 13, 14)']":
+                                      {
+                                        color: 'var(--joy-palette-text-secondary) !important',
+                                      },
                                   }),
                                 },
                               }}
                             >
                               <div
                                 dangerouslySetInnerHTML={{
-                                  __html: sanitizeNotificationHTML(getFirstLine(notification.message)),
+                                  __html: sanitizeNotificationHTML(
+                                    getFirstLine(notification.message)
+                                  ),
                                 }}
                               />
                             </Typography>
@@ -566,4 +543,4 @@ export default function Page(): React.JSX.Element {
       </Stack>
     </Box>
   );
-} 
+}

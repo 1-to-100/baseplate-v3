@@ -27,7 +27,7 @@ class AuthService {
    * SECURE: Updates user context in app_metadata
    * Backend validates authorization before updating app_metadata
    * Then refreshes the session to get new JWT with updated claims
-   * 
+   *
    * Process:
    * 1. Backend validates permissions and updates Supabase user app_metadata
    * 2. Frontend calls refreshSession() to get new JWT with updated app_metadata
@@ -36,8 +36,10 @@ class AuthService {
    */
   async refreshWithContext(params: RefreshContextParams): Promise<void> {
     try {
-      const { data: { session } } = await this.supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+
       if (!session?.access_token) {
         throw new Error('No active session. Please log in again.');
       }
@@ -52,16 +54,21 @@ class AuthService {
         if (!data?.updated) {
           // Extract error message from response if available
           const responseData = data as RefreshContextResponse;
-          const errorMessage = responseData?.message || responseData?.error || 'Context was not updated';
+          const errorMessage =
+            responseData?.message || responseData?.error || 'Context was not updated';
           throw new Error(errorMessage);
         }
       } catch (edgeError) {
         // Extract meaningful error message from edge function error
         if (edgeError instanceof Error) {
           const message = edgeError.message.toLowerCase();
-          
+
           // Check for specific error patterns
-          if (message.includes('permission') || message.includes('forbidden') || message.includes('403')) {
+          if (
+            message.includes('permission') ||
+            message.includes('forbidden') ||
+            message.includes('403')
+          ) {
             throw new Error('You do not have permission to perform this action');
           } else if (message.includes('not found') || message.includes('404')) {
             throw new Error('User or resource not found');
@@ -72,7 +79,7 @@ class AuthService {
           } else if (message.includes('customer') && message.includes('scope')) {
             throw new Error('You do not have access to this customer');
           }
-          
+
           // Re-throw with original message if it's user-friendly
           throw edgeError;
         }
@@ -81,10 +88,9 @@ class AuthService {
 
       // Step 2: Refresh the Supabase session to get new JWT with updated app_metadata
       // Add a small delay to ensure Supabase has processed the metadata update
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const { data: refreshData, error: refreshError } = 
-        await this.supabase.auth.refreshSession();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const { data: refreshData, error: refreshError } = await this.supabase.auth.refreshSession();
 
       if (refreshError || !refreshData.session) {
         const errorMsg = refreshError?.message || 'Unknown error';
@@ -110,8 +116,10 @@ class AuthService {
    */
   async clearContext(): Promise<void> {
     try {
-      const { data: { session } } = await this.supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+
       if (!session?.access_token) {
         // If no session, just clean up storage
         if (typeof window !== 'undefined') {
@@ -127,14 +135,18 @@ class AuthService {
         // Extract meaningful error message from edge function error
         if (edgeError instanceof Error) {
           const message = edgeError.message.toLowerCase();
-          
+
           // Check for specific error patterns
-          if (message.includes('permission') || message.includes('forbidden') || message.includes('403')) {
+          if (
+            message.includes('permission') ||
+            message.includes('forbidden') ||
+            message.includes('403')
+          ) {
             throw new Error('You do not have permission to clear context');
           } else if (message.includes('session') || message.includes('authenticated')) {
             throw new Error('Authentication error. Please try logging in again');
           }
-          
+
           // Re-throw with original message if it's user-friendly
           throw edgeError;
         }
@@ -143,7 +155,7 @@ class AuthService {
 
       // Refresh session to get updated token
       const { error: refreshError } = await this.supabase.auth.refreshSession();
-      
+
       if (refreshError) {
         console.error('[AUTH] Failed to refresh session after clearing context:', refreshError);
         // Don't throw - context was cleared, session refresh failure is non-critical
@@ -167,7 +179,9 @@ class AuthService {
    * Gets the current access token
    */
   async getAccessToken(): Promise<string | null> {
-    const { data: { session } } = await this.supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
     return session?.access_token || null;
   }
 
@@ -175,7 +189,9 @@ class AuthService {
    * Checks if user is authenticated
    */
   async isAuthenticated(): Promise<boolean> {
-    const { data: { session } } = await this.supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
     return !!session;
   }
 
@@ -187,15 +203,17 @@ class AuthService {
     customerId?: string | null;
     impersonatedUserId?: string | null;
   }> {
-    const { data: { session } } = await this.supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await this.supabase.auth.getSession();
+
     if (!session?.user) {
       return {};
     }
 
     // Read from JWT app_metadata
     const appMetadata = session.user.app_metadata || {};
-    
+
     return {
       customerId: appMetadata.customer_id || null,
       impersonatedUserId: appMetadata.impersonated_user_id || null,
@@ -204,4 +222,3 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-

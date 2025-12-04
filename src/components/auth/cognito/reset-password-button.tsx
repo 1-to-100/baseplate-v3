@@ -14,7 +14,10 @@ export interface ResetPasswordButtonProps {
   email: string;
 }
 
-export function ResetPasswordButton({ children, email }: ResetPasswordButtonProps): React.JSX.Element {
+export function ResetPasswordButton({
+  children,
+  email,
+}: ResetPasswordButtonProps): React.JSX.Element {
   const [isPending, setIsPending] = React.useState<boolean>(false);
   const [submitError, setSubmitError] = React.useState<string>();
 
@@ -35,12 +38,12 @@ export function ResetPasswordButton({ children, email }: ResetPasswordButtonProp
 
   return (
     <Stack spacing={2}>
-      {submitError ? <Alert color="danger">{submitError}</Alert> : null}
+      {submitError ? <Alert color='danger'>{submitError}</Alert> : null}
       <Stack spacing={1}>
-        <Button disabled={!email || isPending} onClick={handle} variant="plain">
+        <Button disabled={!email || isPending} onClick={handle} variant='plain'>
           {children}
         </Button>
-        <Typography level="body-sm" textAlign="center">
+        <Typography level='body-sm' textAlign='center'>
           Wait a few minutes then try again
         </Typography>
       </Stack>

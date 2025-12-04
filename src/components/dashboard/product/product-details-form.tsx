@@ -60,13 +60,13 @@ export function ProductDetialsForm(): React.JSX.Element {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
-        <Typography level="h4">Information</Typography>
+        <Typography level='h4'>Information</Typography>
         <Stack spacing={3} sx={{ maxWidth: 'md' }}>
           <Grid container spacing={3}>
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="name"
+                name='name'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.name)}>
                     <FormLabel>Display Name</FormLabel>
@@ -81,7 +81,7 @@ export function ProductDetialsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="category"
+                name='category'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.category)}>
                     <FormLabel>Category</FormLabel>
@@ -91,12 +91,14 @@ export function ProductDetialsForm(): React.JSX.Element {
                         field.onChange(value);
                       }}
                     >
-                      <Option value="">Choose a category</Option>
-                      <Option value="clothing">Clothing</Option>
-                      <Option value="shoes">Shoes</Option>
-                      <Option value="accessories">Accessories</Option>
+                      <Option value=''>Choose a category</Option>
+                      <Option value='clothing'>Clothing</Option>
+                      <Option value='shoes'>Shoes</Option>
+                      <Option value='accessories'>Accessories</Option>
                     </Select>
-                    {errors.category ? <FormHelperText>{errors.category.message}</FormHelperText> : null}
+                    {errors.category ? (
+                      <FormHelperText>{errors.category.message}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 )}
               />
@@ -104,7 +106,7 @@ export function ProductDetialsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="brand"
+                name='brand'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.brand)}>
                     <FormLabel>Brand</FormLabel>
@@ -114,10 +116,10 @@ export function ProductDetialsForm(): React.JSX.Element {
                         field.onChange(value);
                       }}
                     >
-                      <Option value="">Choose a brand</Option>
-                      <Option value="puma">Puma</Option>
-                      <Option value="nike">Nike</Option>
-                      <Option value="adidas">Adidas</Option>
+                      <Option value=''>Choose a brand</Option>
+                      <Option value='puma'>Puma</Option>
+                      <Option value='nike'>Nike</Option>
+                      <Option value='adidas'>Adidas</Option>
                     </Select>
                     {errors.brand ? <FormHelperText>{errors.brand.message}</FormHelperText> : null}
                   </FormControl>
@@ -128,7 +130,7 @@ export function ProductDetialsForm(): React.JSX.Element {
           <Box sx={{ '& .tiptap-container': { height: '300px' } }}>
             <Controller
               control={control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.description)}>
                   <FormLabel>Description</FormLabel>
@@ -140,27 +142,33 @@ export function ProductDetialsForm(): React.JSX.Element {
                     onUpdate={({ editor }) => {
                       field.onChange(editor.getHTML());
                     }}
-                    placeholder="Write something"
+                    placeholder='Write something'
                   />
-                  {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
+                  {errors.description ? (
+                    <FormHelperText>{errors.description.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
           </Box>
         </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+        <Stack
+          direction='row'
+          spacing={1}
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
           <Button
-            color="neutral"
+            color='neutral'
             onClick={() => {
               reset();
               // Form reset doesn't reset the text editor
               editorRef.current?.commands.setContent(defaultValues.description);
             }}
-            variant="outlined"
+            variant='outlined'
           >
             Discard
           </Button>
-          <Button type="submit">Save Changes</Button>
+          <Button type='submit'>Save Changes</Button>
         </Stack>
       </Stack>
     </form>

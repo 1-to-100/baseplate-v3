@@ -1,25 +1,25 @@
-import * as React from "react";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import ModalClose from "@mui/joy/ModalClose";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Button from "@mui/joy/Button";
-import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
-import { useState, useMemo, useEffect } from "react";
-import { Tabs, TabList, Tab, Input, IconButton, FormHelperText } from "@mui/joy";
-import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
-import { Copy as CopyIcon } from "@phosphor-icons/react/dist/ssr/Copy";
-import { useQuery } from "@tanstack/react-query";
-import { getRolesList } from "@/lib/api/roles";
-import { getCustomers } from "@/lib/api/customers";
-import { inviteUser, inviteMultipleUsers } from "@/lib/api/users";
-import { toast } from "@/components/core/toaster";
-import { queryClient } from "@/lib/react-query";
-import { useUserInfo } from "@/hooks/use-user-info";
-import { isSystemAdministrator } from "@/lib/user-utils";
+import * as React from 'react';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import ModalClose from '@mui/joy/ModalClose';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Button from '@mui/joy/Button';
+import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
+import { useState, useMemo, useEffect } from 'react';
+import { Tabs, TabList, Tab, Input, IconButton, FormHelperText } from '@mui/joy';
+import { Trash as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
+import { Copy as CopyIcon } from '@phosphor-icons/react/dist/ssr/Copy';
+import { useQuery } from '@tanstack/react-query';
+import { getRolesList } from '@/lib/api/roles';
+import { getCustomers } from '@/lib/api/customers';
+import { inviteUser, inviteMultipleUsers } from '@/lib/api/users';
+import { toast } from '@/components/core/toaster';
+import { queryClient } from '@/lib/react-query';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { isSystemAdministrator } from '@/lib/user-utils';
 
 interface InviteUserProps {
   open: boolean;
@@ -33,27 +33,23 @@ interface ApiError {
   statusCode: number;
 }
 
-export default function InviteUser({
-  open,
-  onClose,
-  onConfirm,
-}: InviteUserProps) {
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [viewMode, setViewMode] = React.useState<"email" | "magic">("email");
-  const [emailInput, setEmailInput] = useState<string>("");
+export default function InviteUser({ open, onClose, onConfirm }: InviteUserProps) {
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('');
+  const [viewMode, setViewMode] = React.useState<'email' | 'magic'>('email');
+  const [emailInput, setEmailInput] = useState<string>('');
   const [emails, setEmails] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>("");
-  const [roleError, setRoleError] = useState<string>("");
+  const [error, setError] = useState<string>('');
+  const [roleError, setRoleError] = useState<string>('');
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
-    queryKey: ["roles"],
+    queryKey: ['roles'],
     queryFn: () => getRolesList(),
   });
 
   const { data: customers, isLoading: isCustomersLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: getCustomers,
   });
 
@@ -63,47 +59,50 @@ export default function InviteUser({
   const roleOptions = useMemo(() => {
     // Only show Standard User and Manager roles
     const standardRoles = roles?.filter(
-      (role) => role.name === "standard_user" || role.name === "manager"
+      (role) => role.name === 'standard_user' || role.name === 'manager'
     );
-    return standardRoles?.map((role) => role.display_name).filter((name): name is string => !!name).sort() || [];
+    return (
+      standardRoles
+        ?.map((role) => role.display_name)
+        .filter((name): name is string => !!name)
+        .sort() || []
+    );
   }, [roles]);
 
   const validateEmail = (email: string): string | null => {
     if (!email.trim()) {
-      return "Email is required";
+      return 'Email is required';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return "Invalid email format";
+      return 'Invalid email format';
     }
 
-    if (email.startsWith(".") || email.endsWith(".")) {
-      return "Invalid email format";
+    if (email.startsWith('.') || email.endsWith('.')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("..")) {
-      return "Invalid email format";
+    if (email.includes('..')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("/")) {
-      return "Invalid email format";
+    if (email.includes('/')) {
+      return 'Invalid email format';
     }
 
-    const atIndex = email.indexOf("@");
-    if (email[atIndex - 1] === ".") {
-      return "Invalid email format";
+    const atIndex = email.indexOf('@');
+    if (email[atIndex - 1] === '.') {
+      return 'Invalid email format';
     }
 
     return null;
   };
 
-  const handleEmailKeyPress = (
-    event: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (event.key === "Enter" && emailInput.trim() !== "") {
+  const handleEmailKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && emailInput.trim() !== '') {
       if (emails.length >= 5) {
-        setError("Maximum 5 email addresses allowed");
+        setError('Maximum 5 email addresses allowed');
         return;
       }
       const emailError = validateEmail(emailInput.trim());
@@ -112,15 +111,15 @@ export default function InviteUser({
         return;
       }
       setEmails([...emails, emailInput.trim()]);
-      setEmailInput("");
-      setError("");
+      setEmailInput('');
+      setError('');
       event.preventDefault();
     }
   };
 
   const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEmailInput(event.target.value);
-    setError("");
+    setError('');
   };
 
   const handleDeleteEmail = (emailToDelete: string) => {
@@ -128,17 +127,16 @@ export default function InviteUser({
   };
 
   const resetForm = () => {
-    setSelectedRole("");
+    setSelectedRole('');
     // If current user is not a system admin, preselect their customer
-    const initialCustomer = !isCurrentUserSystemAdmin && userInfo?.customer?.name 
-      ? userInfo.customer.name 
-      : "";
+    const initialCustomer =
+      !isCurrentUserSystemAdmin && userInfo?.customer?.name ? userInfo.customer.name : '';
     setSelectedCustomer(initialCustomer);
-    setEmailInput("");
+    setEmailInput('');
     setEmails([]);
-    setError("");
-    setRoleError("");
-    setViewMode("email");
+    setError('');
+    setRoleError('');
+    setViewMode('email');
   };
 
   // Initialize customer selection when modal opens
@@ -146,7 +144,7 @@ export default function InviteUser({
     if (open && !isCurrentUserSystemAdmin && userInfo?.customer?.name) {
       setSelectedCustomer(userInfo.customer.name);
     } else if (open && isCurrentUserSystemAdmin) {
-      setSelectedCustomer("");
+      setSelectedCustomer('');
     }
   }, [open, isCurrentUserSystemAdmin, userInfo]);
 
@@ -156,19 +154,19 @@ export default function InviteUser({
   };
 
   const handleConfirm = async () => {
-    setError("");
-    setRoleError("");
+    setError('');
+    setRoleError('');
 
     // Validate role
     if (!selectedRole.trim()) {
-      setRoleError("Role is required");
+      setRoleError('Role is required');
       return;
     }
 
     // Validate and add email from input if it's valid
-    if (emailInput.trim() !== "") {
+    if (emailInput.trim() !== '') {
       if (emails.length >= 5) {
-        setError("Maximum 5 email addresses allowed");
+        setError('Maximum 5 email addresses allowed');
         return;
       }
       const emailError = validateEmail(emailInput.trim());
@@ -179,10 +177,10 @@ export default function InviteUser({
           return;
         }
         // If there are valid emails, just clear the input and proceed
-        setEmailInput("");
+        setEmailInput('');
       } else {
         setEmails([...emails, emailInput.trim()]);
-        setEmailInput("");
+        setEmailInput('');
       }
     }
 
@@ -190,29 +188,31 @@ export default function InviteUser({
     const emailErrors = emails.map((email) => validateEmail(email));
     const hasErrors = emailErrors.some((error) => error !== null);
     if (hasErrors) {
-      setError("One or more email addresses are invalid");
+      setError('One or more email addresses are invalid');
       return;
     }
 
     // Check if we have at least one valid email to invite
     if (emails.length === 0) {
-      setError("Please enter at least one email address");
+      setError('Please enter at least one email address');
       return;
     }
 
     setIsLoading(true);
     try {
-      const roleId = selectedRole ? roles?.find((role) => role.display_name === selectedRole)?.role_id : undefined;
-      const customerId = selectedCustomer ? customers?.find(
-        (customer) => customer.name === selectedCustomer
-      )?.id : undefined;
+      const roleId = selectedRole
+        ? roles?.find((role) => role.display_name === selectedRole)?.role_id
+        : undefined;
+      const customerId = selectedCustomer
+        ? customers?.find((customer) => customer.name === selectedCustomer)?.id
+        : undefined;
 
       const emailsToInvite = emails;
 
       if (emailsToInvite.length === 1) {
         const email = emailsToInvite[0];
         if (!email) {
-          throw new Error("Email is required");
+          throw new Error('Email is required');
         }
         await inviteUser({
           email,
@@ -226,13 +226,11 @@ export default function InviteUser({
           customerId,
           roleId,
         });
-        toast.success(
-          `Users have been successfully invited:\n${emailsToInvite.join("\n")}`
-        );
+        toast.success(`Users have been successfully invited:\n${emailsToInvite.join('\n')}`);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+
       resetForm();
       onConfirm();
       onClose();
@@ -241,44 +239,44 @@ export default function InviteUser({
       if (apiError.response?.data) {
         setError(apiError.response.data.message);
       } else {
-        setError("Failed to invite user. Please try again.");
+        setError('Failed to invite user. Please try again.');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const magicLink = "";
+  const magicLink = '';
 
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         sx={{
-          maxWidth: { xs: "90%", sm: 520 },
-          width: "100%",
-          borderRadius: "8px",
+          maxWidth: { xs: '90%', sm: 520 },
+          width: '100%',
+          borderRadius: '8px',
           p: 3,
-          boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
         }}
       >
         <ModalClose
           sx={{
             top: 8,
             right: 8,
-            "&:hover": { bgcolor: "transparent" },
+            '&:hover': { bgcolor: 'transparent' },
           }}
         >
-          <XIcon fontSize="var(--Icon-fontSize)" />
+          <XIcon fontSize='var(--Icon-fontSize)' />
         </ModalClose>
-        <Typography level="h4" sx={{ mb: 0 }}>
+        <Typography level='h4' sx={{ mb: 0 }}>
           Invite user
         </Typography>
 
         <Stack spacing={0.5}>
           <Typography
-            level="body-sm"
-            fontWeight="500"
-            sx={{ color: "var(--joy-palette-text-primary)", mt: 1 }}
+            level='body-sm'
+            fontWeight='500'
+            sx={{ color: 'var(--joy-palette-text-primary)', mt: 1 }}
           >
             Role
           </Typography>
@@ -286,10 +284,10 @@ export default function InviteUser({
             value={selectedRole}
             onChange={(event, newValue) => {
               setSelectedRole(newValue as string);
-              setRoleError("");
+              setRoleError('');
             }}
-            placeholder="Select role"
-            color={roleError ? "danger" : undefined}
+            placeholder='Select role'
+            color={roleError ? 'danger' : undefined}
           >
             {roleOptions.map((roleName) => (
               <Option key={roleName} value={roleName}>
@@ -300,8 +298,8 @@ export default function InviteUser({
           {roleError && (
             <FormHelperText
               sx={{
-                color: "var(--joy-palette-danger-500)",
-                fontSize: "12px",
+                color: 'var(--joy-palette-danger-500)',
+                fontSize: '12px',
                 mt: 0.5,
               }}
             >
@@ -310,18 +308,16 @@ export default function InviteUser({
           )}
 
           <Typography
-            level="body-sm"
-            fontWeight="500"
-            sx={{ color: "var(--joy-palette-text-primary)", mt: 1 }}
+            level='body-sm'
+            fontWeight='500'
+            sx={{ color: 'var(--joy-palette-text-primary)', mt: 1 }}
           >
             Customer
           </Typography>
           <Select
             value={selectedCustomer}
-            onChange={(event, newValue) =>
-              setSelectedCustomer((newValue as string) || "")
-            }
-            placeholder="Select customer"
+            onChange={(event, newValue) => setSelectedCustomer((newValue as string) || '')}
+            placeholder='Select customer'
             disabled={!isCurrentUserSystemAdmin}
           >
             {customers &&
@@ -334,41 +330,39 @@ export default function InviteUser({
 
           <Tabs
             value={viewMode}
-            variant="custom"
-            onChange={(event, newValue) =>
-              setViewMode(newValue as "email" | "magic")
-            }
+            variant='custom'
+            onChange={(event, newValue) => setViewMode(newValue as 'email' | 'magic')}
             sx={{ mt: 2, mb: 2 }}
           >
             <TabList
               sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 1,
                 p: 0,
-                "& .MuiTab-root": {
-                  borderRadius: "20px",
-                  minWidth: "40px",
+                '& .MuiTab-root': {
+                  borderRadius: '20px',
+                  minWidth: '40px',
                   p: 1,
-                  color: "var(--joy-palette-text-secondary)",
+                  color: 'var(--joy-palette-text-secondary)',
                   "&[aria-selected='true']": {
-                    border: "1px solid var(--joy-palette-divider)",
-                    color: "var(--joy-palette-text-primary)",
+                    border: '1px solid var(--joy-palette-divider)',
+                    color: 'var(--joy-palette-text-primary)',
                   },
                 },
               }}
             >
-              <Tab value="email">Invite via email</Tab>
-              <Tab value="magic">Invite via magic link</Tab>
+              <Tab value='email'>Invite via email</Tab>
+              <Tab value='magic'>Invite via magic link</Tab>
             </TabList>
           </Tabs>
 
-          {viewMode === "email" ? (
+          {viewMode === 'email' ? (
             <>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -376,28 +370,28 @@ export default function InviteUser({
                 Enter email
               </Typography>
               <Input
-                type="email"
-                placeholder="Enter email"
+                type='email'
+                placeholder='Enter email'
                 value={emailInput}
                 onChange={handleEmailChange}
                 onKeyPress={handleEmailKeyPress}
                 error={!!error}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
-                  "&::placeholder": {
-                    color: "var(--joy-palette-text-secondary)",
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
+                  '&::placeholder': {
+                    color: 'var(--joy-palette-text-secondary)',
                   },
                 }}
               />
               {error && (
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
+                    color: 'var(--joy-palette-danger-500)',
                     mt: 0.5,
-                    fontSize: "12px",
+                    fontSize: '12px',
                   }}
                 >
                   {error}
@@ -407,15 +401,15 @@ export default function InviteUser({
                 {emails.map((email, index) => (
                   <Stack
                     key={index}
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                    sx={{ mb: 1, color: "var(--joy-palette-text-primary)" }}
+                    direction='row'
+                    alignItems='center'
+                    justifyContent='space-between'
+                    sx={{ mb: 1, color: 'var(--joy-palette-text-primary)' }}
                   >
                     <Typography
                       sx={{
-                        color: "var(--joy-palette-text-primary)",
-                        fontSize: "16px",
+                        color: 'var(--joy-palette-text-primary)',
+                        fontSize: '16px',
                       }}
                     >
                       {email}
@@ -423,12 +417,12 @@ export default function InviteUser({
                     <IconButton
                       onClick={() => handleDeleteEmail(email)}
                       sx={{
-                        bgcolor: "transparent",
-                        color: "var(--joy-palette-text-primary)",
-                        "&:hover": { bgcolor: "transparent" },
+                        bgcolor: 'transparent',
+                        color: 'var(--joy-palette-text-primary)',
+                        '&:hover': { bgcolor: 'transparent' },
                       }}
                     >
-                      <Trash fontSize="20px" />
+                      <Trash fontSize='20px' />
                     </IconButton>
                   </Stack>
                 ))}
@@ -443,45 +437,41 @@ export default function InviteUser({
                   onClick={() => {
                     navigator.clipboard.writeText(magicLink);
                   }}
-                  sx={{ color: "var(--joy-palette-text-secondary)" }}
+                  sx={{ color: 'var(--joy-palette-text-secondary)' }}
                 >
-                  <CopyIcon fontSize="20px" />
+                  <CopyIcon fontSize='20px' />
                 </IconButton>
               }
               sx={{
-                fontSize: "16px",
-                color: "var(--joy-palette-text-secondary)",
+                fontSize: '16px',
+                color: 'var(--joy-palette-text-secondary)',
                 fontWeight: 400,
                 mt: 1,
                 mb: 1,
-                background: "var(--joy-palette-background-level1)",
+                background: 'var(--joy-palette-background-level1)',
               }}
             />
           )}
 
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ mt: 2, justifyContent: "flex-end" }}
-          >
-            <Button variant="outlined" onClick={onCancel}>
+          <Stack direction='row' spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+            <Button variant='outlined' onClick={onCancel}>
               Cancel
             </Button>
             <Button
-              variant="solid"
+              variant='solid'
               onClick={handleConfirm}
               loading={isLoading}
               disabled={emails.length === 0 && !emailInput.trim()}
               sx={{
-                borderRadius: "20px",
-                bgcolor: "#4F46E5",
-                color: "#FFFFFF",
+                borderRadius: '20px',
+                bgcolor: '#4F46E5',
+                color: '#FFFFFF',
                 fontWeight: 500,
-                fontSize: { xs: "12px", sm: "14px" },
+                fontSize: { xs: '12px', sm: '14px' },
                 px: { xs: 2, sm: 3 },
                 py: 1,
-                "&:hover": { bgcolor: "#4338CA" },
-                width: { xs: "100%", sm: "auto" },
+                '&:hover': { bgcolor: '#4338CA' },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               Invite

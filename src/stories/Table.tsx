@@ -30,11 +30,11 @@ export interface TableProps {
   title?: string;
 }
 
-export function TableComponent({ 
-  data, 
-  itemsPerPage = 10, 
+export function TableComponent({
+  data,
+  itemsPerPage = 10,
   showPagination = true,
-  title = 'Users Table'
+  title = 'Users Table',
 }: TableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [disabled, setDisabled] = React.useState(false);
@@ -66,9 +66,7 @@ export function TableComponent({
 
   const handleRowCheckboxChange = (rowId: string) => {
     setSelectedRows((prev) =>
-      prev.includes(rowId)
-        ? prev.filter((id) => id !== rowId)
-        : [...prev, rowId]
+      prev.includes(rowId) ? prev.filter((id) => id !== rowId) : [...prev, rowId]
     );
   };
 
@@ -105,24 +103,24 @@ export function TableComponent({
   };
 
   const menuItemStyle = {
-    padding: { xs: "6px 12px", sm: "8px 16px" },
-    fontSize: { xs: "12px", sm: "14px" },
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: { xs: '6px 12px', sm: '8px 16px' },
+    fontSize: { xs: '12px', sm: '14px' },
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
 
   return (
     <Box sx={{ width: '100%', mx: 'auto' }}>
       {title && (
-        <Typography level="h4" sx={{ mb: 2, color: 'var(--joy-palette-text-primary)' }}>
+        <Typography level='h4' sx={{ mb: 2, color: 'var(--joy-palette-text-primary)' }}>
           {title}
         </Typography>
       )}
-      
+
       <Sheet
         sx={{
           width: '100%',
@@ -132,7 +130,7 @@ export function TableComponent({
         }}
       >
         <Table
-          aria-label="basic table"
+          aria-label='basic table'
           sx={{
             '--TableCell-headBackground': 'var(--joy-palette-background-level1)',
             '--Table-headerUnderlineThickness': '1px',
@@ -151,7 +149,9 @@ export function TableComponent({
               <th style={{ width: '60px' }}>
                 <Checkbox
                   checked={currentData.length > 0 && selectedRows.length === currentData.length}
-                  indeterminate={selectedRows.length > 0 && selectedRows.length < currentData.length}
+                  indeterminate={
+                    selectedRows.length > 0 && selectedRows.length < currentData.length
+                  }
                   onChange={handleSelectAllChange}
                   disabled={currentData.length === 0}
                 />
@@ -174,28 +174,24 @@ export function TableComponent({
                   />
                 </td>
                 <td>
-                  <Typography level="body-sm" fontWeight="lg">
+                  <Typography level='body-sm' fontWeight='lg'>
                     {row.name}
                   </Typography>
                 </td>
                 <td>
-                  <Typography level="body-sm">
-                    {row.email}
-                  </Typography>
+                  <Typography level='body-sm'>{row.email}</Typography>
                 </td>
                 <td>
-                  <Typography level="body-sm">
-                    {row.role}
-                  </Typography>
+                  <Typography level='body-sm'>{row.role}</Typography>
                 </td>
                 <td>
                   <Tooltip
                     title={row.status}
-                    placement="top"
+                    placement='top'
                     sx={{
-                      background: "#DAD8FD",
-                      color: "#3D37DD",
-                      textTransform: "capitalize",
+                      background: '#DAD8FD',
+                      color: '#3D37DD',
+                      textTransform: 'capitalize',
                     }}
                   >
                     <Box
@@ -216,32 +212,27 @@ export function TableComponent({
                   </Tooltip>
                 </td>
                 <td>
-                  <Typography level="body-sm">
-                    {row.lastLogin}
-                  </Typography>
+                  <Typography level='body-sm'>{row.lastLogin}</Typography>
                 </td>
                 <td>
-                  <IconButton
-                    size="sm"
-                    onClick={(event) => handleMenuOpen(event, index)}
-                  >
+                  <IconButton size='sm' onClick={(event) => handleMenuOpen(event, index)}>
                     <DotsThreeVertical
-                      weight="bold"
+                      weight='bold'
                       size={22}
-                      color="var(--joy-palette-text-secondary)"
+                      color='var(--joy-palette-text-secondary)'
                     />
                   </IconButton>
                   <Popper
                     open={menuRowIndex === index && Boolean(anchorEl)}
                     anchorEl={anchorEl}
-                    placement="bottom-start"
+                    placement='bottom-start'
                     style={{
-                      minWidth: "150px",
-                      borderRadius: "8px",
-                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
-                      backgroundColor: "var(--joy-palette-background-surface)",
+                      minWidth: '150px',
+                      borderRadius: '8px',
+                      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: 'var(--joy-palette-background-surface)',
                       zIndex: 1300,
-                      border: "1px solid var(--joy-palette-divider)",
+                      border: '1px solid var(--joy-palette-divider)',
                     }}
                   >
                     <Box
@@ -252,26 +243,26 @@ export function TableComponent({
                       }}
                       sx={{
                         ...menuItemStyle,
-                        gap: { xs: "10px", sm: "14px" },
+                        gap: { xs: '10px', sm: '14px' },
                       }}
                     >
                       <Box
                         sx={{
-                          width: "16px",
-                          height: "16px",
-                          border: "2px dashed var(--joy-palette-text-secondary)",
-                          borderRadius: "4px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          width: '16px',
+                          height: '16px',
+                          border: '2px dashed var(--joy-palette-text-secondary)',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
                         <Box
                           sx={{
-                            width: "8px",
-                            height: "8px",
-                            backgroundColor: "var(--joy-palette-text-secondary)",
-                            borderRadius: "2px",
+                            width: '8px',
+                            height: '8px',
+                            backgroundColor: 'var(--joy-palette-text-secondary)',
+                            borderRadius: '2px',
                           }}
                         />
                       </Box>
@@ -285,10 +276,10 @@ export function TableComponent({
                       }}
                       sx={{
                         ...menuItemStyle,
-                        gap: { xs: "10px", sm: "14px" },
+                        gap: { xs: '10px', sm: '14px' },
                       }}
                     >
-                      <EyeIcon fontSize="20px" />
+                      <EyeIcon fontSize='20px' />
                       View profile
                     </Box>
                     <Box
@@ -299,10 +290,10 @@ export function TableComponent({
                       }}
                       sx={{
                         ...menuItemStyle,
-                        gap: { xs: "10px", sm: "14px" },
+                        gap: { xs: '10px', sm: '14px' },
                       }}
                     >
-                      <PencilIcon fontSize="20px" />
+                      <PencilIcon fontSize='20px' />
                       Edit
                     </Box>
                     <Box
@@ -313,10 +304,10 @@ export function TableComponent({
                       }}
                       sx={{
                         ...menuItemStyle,
-                        gap: { xs: "10px", sm: "14px" },
+                        gap: { xs: '10px', sm: '14px' },
                       }}
                     >
-                      <PlusIcon fontSize="20px" />
+                      <PlusIcon fontSize='20px' />
                       Add to list
                     </Box>
                     <Box
@@ -327,7 +318,7 @@ export function TableComponent({
                       }}
                       sx={{
                         ...menuItemStyle,
-                        gap: { xs: "10px", sm: "14px" },
+                        gap: { xs: '10px', sm: '14px' },
                       }}
                     >
                       <TrashSimple size={20} />
@@ -352,4 +343,3 @@ export function TableComponent({
     </Box>
   );
 }
-

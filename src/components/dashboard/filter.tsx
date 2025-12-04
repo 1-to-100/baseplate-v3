@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import Sheet from "@mui/joy/Sheet";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Checkbox from "@mui/joy/Checkbox";
-import { Funnel as FunnelIcon } from "@phosphor-icons/react/dist/ssr/Funnel";
-import { CaretRight as ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/CaretRight";
-import { X as X } from "@phosphor-icons/react/dist/ssr/X";
-import { ApiUser, Customer } from "@/contexts/auth/types";
-import { useQuery } from "@tanstack/react-query";
-import { getCustomers, getSubscriptions } from "@/lib/api/customers";
-import { getRolesList } from "@/lib/api/roles";
-import { getManagers } from "@/lib/api/managers";
-import { UserStatusList, UserStatusDisplayNames } from "@/lib/constants/user-status";
+import * as React from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import Sheet from '@mui/joy/Sheet';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
+import Checkbox from '@mui/joy/Checkbox';
+import { Funnel as FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
+import { CaretRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
+import { X as X } from '@phosphor-icons/react/dist/ssr/X';
+import { ApiUser, Customer } from '@/contexts/auth/types';
+import { useQuery } from '@tanstack/react-query';
+import { getCustomers, getSubscriptions } from '@/lib/api/customers';
+import { getRolesList } from '@/lib/api/roles';
+import { getManagers } from '@/lib/api/managers';
+import { UserStatusList, UserStatusDisplayNames } from '@/lib/constants/user-status';
 
 interface FilterProps {
   users?: ApiUser[];
@@ -24,11 +24,7 @@ interface FilterProps {
   onClose?: () => void;
   open?: boolean;
   onOpen?: () => void;
-  onFilter?: (filters: {
-    statusId: string[];
-    customerId: string[];
-    roleId: string[];
-  }) => void;
+  onFilter?: (filters: { statusId: string[]; customerId: string[]; roleId: string[] }) => void;
   onFilterCustomers?: (filters: {
     customerSuccessId: string[];
     subscriptionId: string[];
@@ -52,11 +48,17 @@ const Filter = ({
   initialFilters,
 }: FilterProps) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialFilters?.statusId || []);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
+    initialFilters?.statusId || []
+  );
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
-  const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>(initialFilters?.customerSuccessId || []);
-  const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<string[]>(initialFilters?.subscriptionId || []);
+  const [selectedManagerIds, setSelectedManagerIds] = useState<string[]>(
+    initialFilters?.customerSuccessId || []
+  );
+  const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<string[]>(
+    initialFilters?.subscriptionId || []
+  );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -89,9 +91,9 @@ const Filter = ({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [anchorEl, handleClose]);
 
@@ -106,34 +108,38 @@ const Filter = ({
   }, [onClose]);
 
   const { data: customersSelect, isLoading: isCustomersLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: getCustomers,
     enabled: open,
   });
 
   const { data: managersSelect, isLoading: isManagersLoading } = useQuery({
-    queryKey: ["managers"],
+    queryKey: ['managers'],
     queryFn: () => getManagers(),
     enabled: open,
   });
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
-    queryKey: ["roles"],
+    queryKey: ['roles'],
     queryFn: () => getRolesList(),
     enabled: open,
   });
 
   const { data: subscriptions, isLoading: isSubscriptionsLoading } = useQuery({
-    queryKey: ["subscriptions"],
+    queryKey: ['subscriptions'],
     queryFn: getSubscriptions,
     enabled: open,
   });
 
   // Use constants instead of fetching from database
-  const statuses = useMemo(() => UserStatusList.map((status) => ({
-    id: status,
-    name: UserStatusDisplayNames[status],
-  })), []);
+  const statuses = useMemo(
+    () =>
+      UserStatusList.map((status) => ({
+        id: status,
+        name: UserStatusDisplayNames[status],
+      })),
+    []
+  );
 
   const handleOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -148,33 +154,25 @@ const Filter = ({
 
   const handleStatusChange = (statusId: string) => {
     setSelectedStatuses((prev) =>
-      prev.includes(statusId)
-        ? prev.filter((s) => s !== statusId)
-        : [...prev, statusId]
+      prev.includes(statusId) ? prev.filter((s) => s !== statusId) : [...prev, statusId]
     );
   };
 
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerIds((prev) =>
-      prev.includes(customerId)
-        ? prev.filter((c) => c !== customerId)
-        : [...prev, customerId]
+      prev.includes(customerId) ? prev.filter((c) => c !== customerId) : [...prev, customerId]
     );
   };
 
   const handleRoleChange = (roleId: string) => {
     setSelectedRoleIds((prev) =>
-      prev.includes(roleId)
-        ? prev.filter((r) => r !== roleId)
-        : [...prev, roleId]
+      prev.includes(roleId) ? prev.filter((r) => r !== roleId) : [...prev, roleId]
     );
   };
 
   const handleManagerChange = (managerId: string) => {
     setSelectedManagerIds((prev) =>
-      prev.includes(managerId)
-        ? prev.filter((m) => m !== managerId)
-        : [...prev, managerId]
+      prev.includes(managerId) ? prev.filter((m) => m !== managerId) : [...prev, managerId]
     );
   };
 
@@ -204,9 +202,7 @@ const Filter = ({
     handleClose();
   };
 
-  const handleReset = (
-    event: React.MouseEvent<SVGSVGElement | HTMLButtonElement>
-  ) => {
+  const handleReset = (event: React.MouseEvent<SVGSVGElement | HTMLButtonElement>) => {
     event.stopPropagation();
     setSelectedStatuses([]);
     setSelectedCustomerIds([]);
@@ -231,151 +227,131 @@ const Filter = ({
   return (
     <>
       <Button
-        variant="outlined"
+        variant='outlined'
         startDecorator={
           totalFiltersApplied > 0 ? (
-            <X fontSize="var(--Icon-fontSize)" onClick={handleReset} />
+            <X fontSize='var(--Icon-fontSize)' onClick={handleReset} />
           ) : (
-            <FunnelIcon fontSize="var(--Icon-fontSize)" color="var(--joy-palette-text-secondary)" />
+            <FunnelIcon fontSize='var(--Icon-fontSize)' color='var(--joy-palette-text-secondary)' />
           )
         }
         onClick={handleOpen}
         sx={{
-          borderColor:
-            totalFiltersApplied > 0
-              ? "transparent"
-              : "transparent",
-          borderRadius: "20px",
-          background:
-            totalFiltersApplied > 0
-              ? "#C7C5FC"
-              : "var(--joy-palette-background-mainBg)",
-          color:
-            totalFiltersApplied > 0
-              ? "#3D37DD"
-              : "var(--joy-palette-text-primary)",
-          padding: { xs: "6px 12px", sm: "7px 14px" },
-          fontSize: { xs: "12px", sm: "14px" },
-          width: { xs: "100%", sm: "auto" },
-          "&:hover": {
-            background: "#DDDEE0",
+          borderColor: totalFiltersApplied > 0 ? 'transparent' : 'transparent',
+          borderRadius: '20px',
+          background: totalFiltersApplied > 0 ? '#C7C5FC' : 'var(--joy-palette-background-mainBg)',
+          color: totalFiltersApplied > 0 ? '#3D37DD' : 'var(--joy-palette-text-primary)',
+          padding: { xs: '6px 12px', sm: '7px 14px' },
+          fontSize: { xs: '12px', sm: '14px' },
+          width: { xs: '100%', sm: 'auto' },
+          '&:hover': {
+            background: '#DDDEE0',
           },
         }}
       >
         {totalFiltersApplied > 0
-          ? `${totalFiltersApplied} filter${
-              totalFiltersApplied !== 1 ? "s" : ""
-            } apply`
-          : "Filter"}
+          ? `${totalFiltersApplied} filter${totalFiltersApplied !== 1 ? 's' : ''} apply`
+          : 'Filter'}
       </Button>
 
       {open && anchorEl && (
         <Sheet
           ref={sheetRef}
           sx={{
-            position: "absolute",
+            position: 'absolute',
             top: {
               xs: anchorEl.getBoundingClientRect().bottom + 5,
               sm: anchorEl.getBoundingClientRect().bottom + 10,
             },
-            left: { xs: "10px", sm: "auto" },
-            right: { xs: "10px", sm: "9.5vw" },
-            width: { xs: "calc(100% - 20px)", sm: "550px", md: "600px" },
-            maxHeight: { xs: "70vh", sm: "80vh" },
-            overflowY: "auto",
-            borderRadius: "8px",
-            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
-            border: "1px solid var(--joy-palette-divider)",
+            left: { xs: '10px', sm: 'auto' },
+            right: { xs: '10px', sm: '9.5vw' },
+            width: { xs: 'calc(100% - 20px)', sm: '550px', md: '600px' },
+            maxHeight: { xs: '70vh', sm: '80vh' },
+            overflowY: 'auto',
+            borderRadius: '8px',
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+            border: '1px solid var(--joy-palette-divider)',
             zIndex: 1300,
             p: { xs: 1.5, sm: 2 },
-            display: "flex",
-            flexDirection: "column",
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 2, sm: 1 }}
-          >
-            <Box sx={{ width: { xs: "100%", sm: "58%" }, pr: { sm: 1 } }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 2, sm: 1 }}>
+            <Box sx={{ width: { xs: '100%', sm: '58%' }, pr: { sm: 1 } }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  color: "var(--joy-palette-text-secondary)",
-                  fontSize: { xs: "10px", sm: "12px" },
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontSize: { xs: '10px', sm: '12px' },
                   mb: { xs: 1, sm: 1.5 },
                 }}
               >
                 {totalFiltersApplied} filter
-                {totalFiltersApplied !== 1 ? "s" : ""} apply
+                {totalFiltersApplied !== 1 ? 's' : ''} apply
               </Typography>
               <Stack
                 spacing={1}
                 sx={{
-                  paddingRight: { sm: "5px" },
+                  paddingRight: { sm: '5px' },
                 }}
               >
                 {users && users?.length > 0 && (
                   <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    p: { xs: "4px 8px", sm: "6px 12px" },
-                    bgcolor:
-                      activeCategory === "Status"
-                        ? "#EEEFF0"
-                        : "transparent",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => handleCategoryClick("Status")}
-                >
-                  <Typography
-                    level="body-md"
-                    fontWeight="400"
                     sx={{
-                      color:
-                        activeCategory === "Status"
-                          ? "var(--joy-palette-text-primary)"
-                          : "#32383E",
-                      fontSize: { xs: "14px", sm: "16px" },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: { xs: '4px 8px', sm: '6px 12px' },
+                      bgcolor: activeCategory === 'Status' ? '#EEEFF0' : 'transparent',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
                     }}
+                    onClick={() => handleCategoryClick('Status')}
                   >
-                    Status
-                  </Typography>
-                  <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
-                </Box>
+                    <Typography
+                      level='body-md'
+                      fontWeight='400'
+                      sx={{
+                        color:
+                          activeCategory === 'Status'
+                            ? 'var(--joy-palette-text-primary)'
+                            : '#32383E',
+                        fontSize: { xs: '14px', sm: '16px' },
+                      }}
+                    >
+                      Status
+                    </Typography>
+                    <ArrowRightIcon fontSize='var(--Icon-fontSize)' />
+                  </Box>
                 )}
                 {users && users?.length > 0 && (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      p: { xs: "4px 8px", sm: "6px 12px" },
-                      bgcolor:
-                        activeCategory === "Customer"
-                          ? "#EEEFF0"
-                          : "transparent",
-                      borderRadius: "4px",
-                      cursor: "pointer",
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: { xs: '4px 8px', sm: '6px 12px' },
+                      bgcolor: activeCategory === 'Customer' ? '#EEEFF0' : 'transparent',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
                     }}
-                    onClick={() => handleCategoryClick("Customer")}
+                    onClick={() => handleCategoryClick('Customer')}
                   >
                     <Typography
-                      level="body-md"
-                      fontWeight="400"
+                      level='body-md'
+                      fontWeight='400'
                       sx={{
                         color:
-                          activeCategory === "Customer"
-                            ? "var(--joy-palette-text-primary)"
-                            : "#32383E",
-                        fontSize: { xs: "14px", sm: "16px" },
+                          activeCategory === 'Customer'
+                            ? 'var(--joy-palette-text-primary)'
+                            : '#32383E',
+                        fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
                       Customer
                     </Typography>
-                    <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
+                    <ArrowRightIcon fontSize='var(--Icon-fontSize)' />
                   </Box>
                 )}
                 {/* {users && users?.length > 0 && (
@@ -413,102 +389,108 @@ const Filter = ({
                 {customers && customers?.length > 0 && (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      p: { xs: "4px 8px", sm: "6px 12px" },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
-                        activeCategory === "Manager"
-                          ? "var(--joy-palette-background-mainBg)"
-                          : "transparent",
-                      borderRadius: "4px",
+                        activeCategory === 'Manager'
+                          ? 'var(--joy-palette-background-mainBg)'
+                          : 'transparent',
+                      borderRadius: '4px',
                       border:
-                        activeCategory === "Manager"
-                          ? "1px solid var(--joy-palette-divider)"
-                          : "none",
-                      cursor: "pointer",
+                        activeCategory === 'Manager'
+                          ? '1px solid var(--joy-palette-divider)'
+                          : 'none',
+                      cursor: 'pointer',
                     }}
-                    onClick={() => handleCategoryClick("Manager")}
+                    onClick={() => handleCategoryClick('Manager')}
                   >
                     <Typography
-                      level="body-md"
-                      fontWeight="400"
+                      level='body-md'
+                      fontWeight='400'
                       sx={{
                         color:
-                          activeCategory === "Manager"
-                          ? "var(--joy-palette-text-primary)"
-                          : "#32383E",
-                        fontSize: { xs: "14px", sm: "16px" },
+                          activeCategory === 'Manager'
+                            ? 'var(--joy-palette-text-primary)'
+                            : '#32383E',
+                        fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
                       Manager
                     </Typography>
-                    <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
+                    <ArrowRightIcon fontSize='var(--Icon-fontSize)' />
                   </Box>
                 )}
                 {customers && customers?.length > 0 && (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      p: { xs: "4px 8px", sm: "6px 12px" },
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
-                        activeCategory === "Subscription"
-                          ? "var(--joy-palette-background-mainBg)"
-                          : "transparent",
-                      borderRadius: "4px",
+                        activeCategory === 'Subscription'
+                          ? 'var(--joy-palette-background-mainBg)'
+                          : 'transparent',
+                      borderRadius: '4px',
                       border:
-                        activeCategory === "Subscription"
-                          ? "1px solid var(--joy-palette-divider)"
-                          : "none",
-                      cursor: "pointer",
+                        activeCategory === 'Subscription'
+                          ? '1px solid var(--joy-palette-divider)'
+                          : 'none',
+                      cursor: 'pointer',
                     }}
-                    onClick={() => handleCategoryClick("Subscription")}
+                    onClick={() => handleCategoryClick('Subscription')}
                   >
                     <Typography
-                      level="body-md"
-                      fontWeight="400"
+                      level='body-md'
+                      fontWeight='400'
                       sx={{
                         color:
-                          activeCategory === "Subscription"
-                            ? "var(--joy-palette-text-primary)"
-                            : "#32383E",
-                        fontSize: { xs: "14px", sm: "16px" },
+                          activeCategory === 'Subscription'
+                            ? 'var(--joy-palette-text-primary)'
+                            : '#32383E',
+                        fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
                       Subscription
                     </Typography>
-                    <ArrowRightIcon fontSize="var(--Icon-fontSize)" />
+                    <ArrowRightIcon fontSize='var(--Icon-fontSize)' />
                   </Box>
                 )}
               </Stack>
             </Box>
 
-            <Box sx={{ width: { xs: "100%", sm: "42%" }, pl: { sm: '20px' }, borderLeft: { sm: "1px solid var(--joy-palette-divider)" }, }}>
+            <Box
+              sx={{
+                width: { xs: '100%', sm: '42%' },
+                pl: { sm: '20px' },
+                borderLeft: { sm: '1px solid var(--joy-palette-divider)' },
+              }}
+            >
               {activeCategory && (
                 <>
                   <Typography
-                    level="body-md"
-                    fontWeight="600"
+                    level='body-md'
+                    fontWeight='600'
                     sx={{
-                      fontSize: { xs: "10px", sm: "12px" },
+                      fontSize: { xs: '10px', sm: '12px' },
                       mb: { xs: 1, sm: 1.5 },
-                      color: "var(--joy-palette-text-primary)",
+                      color: 'var(--joy-palette-text-primary)',
                     }}
                   >
                     Select {activeCategory.toLowerCase()}
                   </Typography>
                   <Stack spacing={1}>
-                    {activeCategory === "Status" && (
+                    {activeCategory === 'Status' && (
                       <>
                         {statuses && statuses.length > 0 ? (
                           statuses.map((status) => (
                             <Box
                               key={status.id}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1.5,
                               }}
                             >
@@ -516,14 +498,14 @@ const Filter = ({
                                 checked={selectedStatuses.includes(status.id)}
                                 onChange={() => handleStatusChange(status.id)}
                                 sx={{
-                                  transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                                  transform: { xs: 'scale(0.9)', sm: 'scale(1)' },
                                 }}
                               />
                               <Typography
-                                level="body-sm"
+                                level='body-sm'
                                 sx={{
-                                  fontSize: { xs: "12px", sm: "14px" },
-                                  color: "var(--joy-palette-text-primary)",
+                                  fontSize: { xs: '12px', sm: '14px' },
+                                  color: 'var(--joy-palette-text-primary)',
                                 }}
                               >
                                 {status.name}
@@ -531,17 +513,20 @@ const Filter = ({
                             </Box>
                           ))
                         ) : (
-                          <Typography level="body-sm" sx={{ color: "var(--joy-palette-text-secondary)" }}>
+                          <Typography
+                            level='body-sm'
+                            sx={{ color: 'var(--joy-palette-text-secondary)' }}
+                          >
                             No statuses available
                           </Typography>
                         )}
                       </>
                     )}
-                    {activeCategory === "Customer" && (
+                    {activeCategory === 'Customer' && (
                       <Box
                         sx={{
-                          maxHeight: "200px",
-                          overflowY: "auto",
+                          maxHeight: '200px',
+                          overflowY: 'auto',
                           pr: 1,
                         }}
                       >
@@ -550,8 +535,8 @@ const Filter = ({
                             <Box
                               key={customer.id}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1.5,
                               }}
                             >
@@ -559,14 +544,14 @@ const Filter = ({
                                 checked={selectedCustomerIds.includes(customer.id)}
                                 onChange={() => handleCustomerChange(customer.id)}
                                 sx={{
-                                  transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                                  transform: { xs: 'scale(0.9)', sm: 'scale(1)' },
                                 }}
                               />
                               <Typography
-                                level="body-sm"
+                                level='body-sm'
                                 sx={{
-                                  fontSize: { xs: "12px", sm: "14px" },
-                                  color: "var(--joy-palette-text-primary)",
+                                  fontSize: { xs: '12px', sm: '14px' },
+                                  color: 'var(--joy-palette-text-primary)',
                                 }}
                               >
                                 {customer.name}
@@ -576,11 +561,11 @@ const Filter = ({
                         </Stack>
                       </Box>
                     )}
-                    {activeCategory === "Role" && (
+                    {activeCategory === 'Role' && (
                       <Box
                         sx={{
-                          maxHeight: "200px",
-                          overflowY: "auto",
+                          maxHeight: '200px',
+                          overflowY: 'auto',
                           pr: 1,
                         }}
                       >
@@ -589,8 +574,8 @@ const Filter = ({
                             <Box
                               key={role.role_id}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1.5,
                               }}
                             >
@@ -598,14 +583,14 @@ const Filter = ({
                                 checked={selectedRoleIds.includes(role.role_id)}
                                 onChange={() => handleRoleChange(role.role_id)}
                                 sx={{
-                                  transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                                  transform: { xs: 'scale(0.9)', sm: 'scale(1)' },
                                 }}
                               />
                               <Typography
-                                level="body-sm"
+                                level='body-sm'
                                 sx={{
-                                  fontSize: { xs: "12px", sm: "14px" },
-                                  color: "var(--joy-palette-text-primary)",
+                                  fontSize: { xs: '12px', sm: '14px' },
+                                  color: 'var(--joy-palette-text-primary)',
                                 }}
                               >
                                 {role.display_name}
@@ -615,11 +600,11 @@ const Filter = ({
                         </Stack>
                       </Box>
                     )}
-                    {activeCategory === "Manager" && (
+                    {activeCategory === 'Manager' && (
                       <Box
                         sx={{
-                          maxHeight: "200px",
-                          overflowY: "auto",
+                          maxHeight: '200px',
+                          overflowY: 'auto',
                           pr: 1,
                         }}
                       >
@@ -628,8 +613,8 @@ const Filter = ({
                             <Box
                               key={manager.id}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1.5,
                               }}
                             >
@@ -637,14 +622,14 @@ const Filter = ({
                                 checked={selectedManagerIds.includes(manager.id)}
                                 onChange={() => handleManagerChange(manager.id)}
                                 sx={{
-                                  transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                                  transform: { xs: 'scale(0.9)', sm: 'scale(1)' },
                                 }}
                               />
                               <Typography
-                                level="body-sm"
+                                level='body-sm'
                                 sx={{
-                                  fontSize: { xs: "12px", sm: "14px" },
-                                  color: "var(--joy-palette-text-primary)",
+                                  fontSize: { xs: '12px', sm: '14px' },
+                                  color: 'var(--joy-palette-text-primary)',
                                 }}
                               >
                                 {manager.name}
@@ -654,32 +639,28 @@ const Filter = ({
                         </Stack>
                       </Box>
                     )}
-                    {activeCategory === "Subscription" &&
+                    {activeCategory === 'Subscription' &&
                       subscriptions?.map((subscription) => (
                         <Box
                           key={subscription.id}
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: 1.5,
                           }}
                         >
                           <Checkbox
-                            checked={selectedSubscriptionIds.includes(
-                              subscription.id
-                            )}
-                            onChange={() =>
-                              handleSubscriptionChange(subscription.id)
-                            }
+                            checked={selectedSubscriptionIds.includes(subscription.id)}
+                            onChange={() => handleSubscriptionChange(subscription.id)}
                             sx={{
-                              transform: { xs: "scale(0.9)", sm: "scale(1)" },
+                              transform: { xs: 'scale(0.9)', sm: 'scale(1)' },
                             }}
                           />
                           <Typography
-                            level="body-sm"
+                            level='body-sm'
                             sx={{
-                              fontSize: { xs: "12px", sm: "14px" },
-                              color: "var(--joy-palette-text-primary)",
+                              fontSize: { xs: '12px', sm: '14px' },
+                              color: 'var(--joy-palette-text-primary)',
                             }}
                           >
                             {subscription.name}
@@ -693,58 +674,58 @@ const Filter = ({
           </Stack>
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={{ xs: 1, sm: 1 }}
             sx={{
-              justifyContent: { xs: "center", sm: "space-between" },
-              alignItems: { xs: "center", sm: "center" },
+              justifyContent: { xs: 'center', sm: 'space-between' },
+              alignItems: { xs: 'center', sm: 'center' },
               mt: { xs: 2, sm: 3 },
             }}
           >
             <Button
-              variant="plain"
+              variant='plain'
               onClick={handleReset}
               sx={{
-                fontSize: { xs: "12px", sm: "14px" },
-                width: { xs: "100%", sm: "auto" },
+                fontSize: { xs: '12px', sm: '14px' },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               Reset filters
             </Button>
             <Stack
-              direction="row"
+              direction='row'
               spacing={1}
               sx={{
-                width: { xs: "100%", sm: "auto" },
-                justifyContent: { xs: "space-between", sm: "flex-end" },
-                alignItems: { xs: "center", sm: "center" },
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'space-between', sm: 'flex-end' },
+                alignItems: { xs: 'center', sm: 'center' },
               }}
             >
               <Button
-                variant="outlined"
+                variant='outlined'
                 onClick={handleClose}
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  width: { xs: "48%", sm: "auto" },
-                  height: { xs: "32px", sm: "40px" },
+                  fontSize: { xs: '12px', sm: '14px' },
+                  width: { xs: '48%', sm: 'auto' },
+                  height: { xs: '32px', sm: '40px' },
                 }}
               >
                 Cancel
               </Button>
               <Button
-                variant="solid"
+                variant='solid'
                 onClick={handleApply}
                 sx={{
-                  borderRadius: "25px",
-                  bgcolor: "#4F46E5",
-                  color: "#FFFFFF",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '25px',
+                  bgcolor: '#4F46E5',
+                  color: '#FFFFFF',
+                  fontSize: { xs: '12px', sm: '14px' },
                   fontWeight: 500,
                   px: { xs: 2, sm: 3 },
                   py: 1,
-                  "&:hover": { bgcolor: "#4338CA" },
-                  width: { xs: "48%", sm: "auto" },
-                  height: { xs: "32px", sm: "45px" },
+                  '&:hover': { bgcolor: '#4338CA' },
+                  width: { xs: '48%', sm: 'auto' },
+                  height: { xs: '32px', sm: '45px' },
                 }}
               >
                 Apply

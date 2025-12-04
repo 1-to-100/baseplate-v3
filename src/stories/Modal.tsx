@@ -29,20 +29,14 @@ export interface ModalProps {
   isLoading?: boolean;
 }
 
-export function ModalComponent({ 
-  open, 
-  onClose, 
-  data, 
-  onSave,
-  isLoading = false
-}: ModalProps) {
+export function ModalComponent({ open, onClose, data, onSave, isLoading = false }: ModalProps) {
   const [formData, setFormData] = React.useState<Record<string, string>>({});
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     if (open) {
       const initialData: Record<string, string> = {};
-      data.fields.forEach(field => {
+      data.fields.forEach((field) => {
         initialData[field.name] = '';
       });
       setFormData(initialData);
@@ -51,22 +45,22 @@ export function ModalComponent({
   }, [open, data]);
 
   const handleInputChange = (fieldName: string, value: string) => {
-    setFormData(prev => ({ ...prev, [fieldName]: value }));
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
     if (errors[fieldName]) {
-      setErrors(prev => ({ ...prev, [fieldName]: '' }));
+      setErrors((prev) => ({ ...prev, [fieldName]: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
-    data.fields.forEach(field => {
+
+    data.fields.forEach((field) => {
       const fieldValue = formData[field.name] || '';
-      
+
       if (field.required && !fieldValue.trim()) {
         newErrors[field.name] = `${field.label} is required`;
       }
-      
+
       if (field.type === 'email' && fieldValue) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(fieldValue)) {
@@ -89,22 +83,22 @@ export function ModalComponent({
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         sx={{
-          width: { xs: "90%", sm: 600, md: 800 },
-          maxWidth: "100%",
+          width: { xs: '90%', sm: 600, md: 800 },
+          maxWidth: '100%',
           p: { xs: 2, sm: 3 },
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          maxHeight: "90vh",
-          overflowY: "auto",
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
-        <ModalClose sx={{ color: "#6B7280" }} />
+        <ModalClose sx={{ color: '#6B7280' }} />
         <Typography
-          level="h3"
+          level='h3'
           sx={{
-            fontSize: { xs: "20px", sm: "22px", md: "24px" },
+            fontSize: { xs: '20px', sm: '22px', md: '24px' },
             fontWeight: 600,
-            color: "var(--joy-palette-text-primary)",
+            color: 'var(--joy-palette-text-primary)',
             mb: { xs: 1.5, sm: 2 },
           }}
         >
@@ -114,10 +108,10 @@ export function ModalComponent({
           {data.fields.map((field) => (
             <Stack key={field.name}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -132,15 +126,15 @@ export function ModalComponent({
                 error={!!errors[field.name]}
                 slotProps={{ input: { maxLength: 255 } }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               />
               {errors[field.name] && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors[field.name]}
@@ -150,36 +144,36 @@ export function ModalComponent({
           ))}
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={{ xs: 1, sm: 2 }}
-            justifyContent="flex-end"
+            justifyContent='flex-end'
             sx={{ mt: 2 }}
           >
             <Button
-              variant="outlined"
+              variant='outlined'
               onClick={onClose}
               sx={{
-                fontSize: { xs: "12px", sm: "14px" },
+                fontSize: { xs: '12px', sm: '14px' },
                 px: { xs: 2, sm: 3 },
-                width: { xs: "100%", sm: "auto" },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               Cancel
             </Button>
             <Button
-              variant="solid"
+              variant='solid'
               onClick={handleSave}
               disabled={isLoading}
               sx={{
-                borderRadius: "20px",
-                bgcolor: "#4F46E5",
-                color: "#FFFFFF",
+                borderRadius: '20px',
+                bgcolor: '#4F46E5',
+                color: '#FFFFFF',
                 fontWeight: 500,
-                fontSize: { xs: "12px", sm: "14px" },
+                fontSize: { xs: '12px', sm: '14px' },
                 px: { xs: 2, sm: 3 },
                 py: 1,
-                "&:hover": { bgcolor: "#4338CA" },
-                width: { xs: "100%", sm: "auto" },
+                '&:hover': { bgcolor: '#4338CA' },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               {isLoading ? 'Saving...' : 'Save'}

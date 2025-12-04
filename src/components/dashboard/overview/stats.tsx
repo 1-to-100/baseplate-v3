@@ -16,13 +16,20 @@ export interface StatsProps {
   value: number | string;
 }
 
-export function Stats({ color, diff, icon: Icon, label, trend, value }: StatsProps): React.JSX.Element {
+export function Stats({
+  color,
+  diff,
+  icon: Icon,
+  label,
+  trend,
+  value,
+}: StatsProps): React.JSX.Element {
   const TrendIcon = trend === 'up' ? TrendUpIcon : TrendDownIcon;
   const trendColor = trend === 'up' ? 'success' : 'danger';
 
   return (
     <Card>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Avatar
           color={color}
           sx={{
@@ -31,21 +38,23 @@ export function Stats({ color, diff, icon: Icon, label, trend, value }: StatsPro
             '--Icon-fontSize': 'var(--joy-fontSize-lg)',
           }}
         >
-          <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
         </Avatar>
-        <Typography level="body-sm">{label}</Typography>
+        <Typography level='body-sm'>{label}</Typography>
       </Stack>
-      <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-        <Typography level="h2">{value}</Typography>
+      <Stack direction='row' spacing={2} sx={{ justifyContent: 'space-between' }}>
+        <Typography level='h2'>{value}</Typography>
         <div>
           <Typography
             color={trendColor}
-            level="body-xs"
-            startDecorator={<TrendIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}
+            level='body-xs'
+            startDecorator={<TrendIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
           >
-            {new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(diff / 100)}
+            {new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(
+              diff / 100
+            )}
           </Typography>
-          <Typography level="body-xs">vs last 7 days</Typography>
+          <Typography level='body-xs'>vs last 7 days</Typography>
         </div>
       </Stack>
     </Card>

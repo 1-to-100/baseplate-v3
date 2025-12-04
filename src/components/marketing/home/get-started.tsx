@@ -20,16 +20,16 @@ export function GetStarted(): React.JSX.Element {
       whileInView={{ opacity: 1 }}
     >
       <Container sx={{ py: '200px' }}>
-        <Grid alignItems="center" container spacing={3}>
+        <Grid alignItems='center' container spacing={3}>
           <Grid md={6} xs={12}>
             <Stack spacing={3} sx={{ maxWidth: '400px' }}>
-              <Typography color="primary" level="body-sm">
+              <Typography color='primary' level='body-sm'>
                 Get Started
               </Typography>
-              <Typography level="h1">Start your {config.site.name} journey today.</Typography>
-              <Typography fontSize="xl" textColor="text.secondary">
-                Unlock the power of development analytics and gain actionable insights to make informed business
-                decisions.
+              <Typography level='h1'>Start your {config.site.name} journey today.</Typography>
+              <Typography fontSize='xl' textColor='text.secondary'>
+                Unlock the power of development analytics and gain actionable insights to make
+                informed business decisions.
               </Typography>
             </Stack>
           </Grid>
@@ -51,7 +51,8 @@ export function GetStarted(): React.JSX.Element {
                     mx: 'auto',
                     width: { xs: '300px', sm: '385px' },
                     '&:after': {
-                      background: 'linear-gradient(to top, var(--joy-palette-background-level1) 10%, transparent 100%)',
+                      background:
+                        'linear-gradient(to top, var(--joy-palette-background-level1) 10%, transparent 100%)',
                       bottom: 0,
                       content: '" "',
                       height: '200px',
@@ -63,9 +64,9 @@ export function GetStarted(): React.JSX.Element {
                   }}
                 >
                   <Image
-                    alt="pattern"
+                    alt='pattern'
                     height={200}
-                    src="/assets/home-grid-pattern.png"
+                    src='/assets/home-grid-pattern.png'
                     style={{
                       bottom: 0,
                       left: '50%',
@@ -103,7 +104,12 @@ export function GetStarted(): React.JSX.Element {
                       overflow: 'hidden',
                     }}
                   >
-                    <Image alt="demo" height={183} src="/assets/home-floating-image-1.png" width={263} />
+                    <Image
+                      alt='demo'
+                      height={183}
+                      src='/assets/home-floating-image-1.png'
+                      width={263}
+                    />
                   </Box>
                 </Box>
               </motion.div>
@@ -132,7 +138,12 @@ export function GetStarted(): React.JSX.Element {
                       overflow: 'hidden',
                     }}
                   >
-                    <Image alt="demo" height={232} src="/assets/home-floating-image-2.png" width={180} />
+                    <Image
+                      alt='demo'
+                      height={232}
+                      src='/assets/home-floating-image-2.png'
+                      width={180}
+                    />
                   </Box>
                 </Box>
               </motion.div>

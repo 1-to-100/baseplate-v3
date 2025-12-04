@@ -28,16 +28,16 @@ export function ShippingAddressCard({ address }: ShippingAddressCardProps): Reac
         <br /> {address.city}, {address.state}, {address.country},
         <br /> {address.zipCode}
       </Typography>
-      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+      <Stack direction='row' sx={{ justifyContent: 'space-between' }}>
         {address.primary ? (
-          <Chip color="warning" variant="soft">
+          <Chip color='warning' variant='soft'>
             Primary
           </Chip>
         ) : (
           <span />
         )}
-        <IconButton color="neutral" size="sm" variant="plain">
-          <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <IconButton color='neutral' size='sm' variant='plain'>
+          <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       </Stack>
     </Card>

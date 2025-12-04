@@ -20,8 +20,12 @@ export interface TopDriversProps {
 export function TopDrivers({ data = [] }: TopDriversProps): React.JSX.Element {
   return (
     <Card sx={{ gap: 2 }}>
-      <Typography level="h4">Top Drivers</Typography>
-      <Table borderAxis="header" stripe="even" sx={{ '--TableCell-paddingX': '12px', '--TableCell-paddingY': '12px' }}>
+      <Typography level='h4'>Top Drivers</Typography>
+      <Table
+        borderAxis='header'
+        stripe='even'
+        sx={{ '--TableCell-paddingX': '12px', '--TableCell-paddingY': '12px' }}
+      >
         <thead>
           <tr>
             <th>Driver</th>
@@ -33,18 +37,18 @@ export function TopDrivers({ data = [] }: TopDriversProps): React.JSX.Element {
             (driver): React.JSX.Element => (
               <tr key={driver.id}>
                 <td>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                  <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
                     {driver.trend === 'up' ? (
                       <CaretUpIcon
-                        color="var(--joy-palette-success-500)"
-                        fontSize="var(--joy-fontSize-md)"
-                        weight="fill"
+                        color='var(--joy-palette-success-500)'
+                        fontSize='var(--joy-fontSize-md)'
+                        weight='fill'
                       />
                     ) : (
                       <CaretDownIcon
-                        color="var(--joy-palette-danger-500)"
-                        fontSize="var(--joy-fontSize- md)"
-                        weight="fill"
+                        color='var(--joy-palette-danger-500)'
+                        fontSize='var(--joy-fontSize- md)'
+                        weight='fill'
                       />
                     )}
                     <Typography noWrap>{driver.name}</Typography>

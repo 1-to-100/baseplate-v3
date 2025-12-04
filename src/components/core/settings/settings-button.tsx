@@ -31,7 +31,7 @@ export function SettingsButton(): React.JSX.Element {
   return (
     <React.Fragment>
       <IconButton
-        color="neutral"
+        color='neutral'
         onClick={popover.handleOpen}
         ref={popover.anchorRef}
         sx={{
@@ -46,9 +46,9 @@ export function SettingsButton(): React.JSX.Element {
             '@keyframes spin': { '0%': { rotate: '0' }, '100%': { rotate: '360deg' } },
           },
         }}
-        variant="solid"
+        variant='solid'
       >
-        <GearSixIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <GearSixIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
       <SettingsPopover
         anchorEl={popover.anchorRef.current}

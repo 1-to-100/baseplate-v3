@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Card from "@mui/joy/Card";
-import Typography from "@mui/joy/Typography";
-import { DotsThree } from "@phosphor-icons/react/dist/ssr/DotsThree";
-import { IconButton } from "@mui/joy";
-import { useRouter } from "next/navigation";
-import { paths } from "@/paths";
-import { PencilSimple as PencilIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { useState, useEffect, useRef } from "react";
-import { Popper } from "@mui/base/Popper";
-import AddEditCategoryModal from "../modals/AddEditCategoryModal";
-import { Category } from "@/contexts/auth/types";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Card from '@mui/joy/Card';
+import Typography from '@mui/joy/Typography';
+import { DotsThree } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { IconButton } from '@mui/joy';
+import { useRouter } from 'next/navigation';
+import { paths } from '@/paths';
+import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { useState, useEffect, useRef } from 'react';
+import { Popper } from '@mui/base/Popper';
+import AddEditCategoryModal from '../modals/AddEditCategoryModal';
+import { Category } from '@/contexts/auth/types';
 import {
   Star,
   RocketLaunch,
@@ -21,12 +21,12 @@ import {
   Gear,
   Wrench,
   IdentificationBadge,
-  WebhooksLogo
-} from "@phosphor-icons/react/dist/ssr";
-import { deleteCategory } from "@/lib/api/categories";
-import DeleteDeactivateUserModal from "../modals/DeleteItemModal";
-import {toast} from '@/components/core/toaster';
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+  WebhooksLogo,
+} from '@phosphor-icons/react/dist/ssr';
+import { deleteCategory } from '@/lib/api/categories';
+import DeleteDeactivateUserModal from '../modals/DeleteItemModal';
+import { toast } from '@/components/core/toaster';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface CategoriesListProps {
   categories: Category[];
@@ -41,7 +41,10 @@ interface HttpError {
   };
 }
 
-const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fetchCategories }) => {
+const CategoriesListComponent: React.FC<CategoriesListProps> = ({
+  categories,
+  fetchCategories,
+}) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -50,7 +53,6 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
   const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = useState(false);
   const categoryToDeleteRef = useRef<string | null>(null);
   const [pendingEditId, setPendingEditId] = useState<string | null>(null);
- 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,14 +71,11 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
     try {
       router.push(paths.dashboard.documentation.details(categoryId.toString()));
     } catch (error) {
-      console.error("Error fetching category:", error);
+      console.error('Error fetching category:', error);
     }
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    categoryId: string
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, categoryId: string) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedCategoryId(categoryId);
@@ -123,9 +122,9 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
       return deleteCategory(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       handleCloseDeleteCategoryModal();
-      toast.success("Category has been deleted successfully!");
+      toast.success('Category has been deleted successfully!');
     },
     onError: (error: unknown) => {
       const httpError = error as HttpError;
@@ -133,7 +132,7 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while deleting the category.");
+        toast.error('An error occurred while deleting the category.');
       }
     },
   });
@@ -145,32 +144,32 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
   };
 
   const menuItemStyle = {
-    padding: "8px 16px",
-    fontSize: "16px",
-    fontWeight: "400",
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--joy-palette-text-primary)",
-    "&:hover": { backgroundColor: "var(--joy-palette-background-mainBg)" },
+    padding: '8px 16px',
+    fontSize: '16px',
+    fontWeight: '400',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    color: 'var(--joy-palette-text-primary)',
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
   };
 
   const iconStyle = {
-    marginRight: "14px",
+    marginRight: '14px',
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) {
       return 'No date';
     }
-    
+
     const date = new Date(dateString);
-    
+
     // Check if the date is valid
     if (isNaN(date.getTime())) {
       return 'Invalid date';
     }
-    
+
     return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
   };
 
@@ -186,164 +185,153 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
 
   return (
     <Box
-    sx={{
-      display: "grid",
-      gridTemplateColumns: {
-        xs: "1fr",
-        sm: "1fr 1fr",
-        md: "1fr 1fr 1fr",
-      },
-      gap: 2,
-      maxWidth: 1000,
-    }}
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: '1fr 1fr',
+          md: '1fr 1fr 1fr',
+        },
+        gap: 2,
+        maxWidth: 1000,
+      }}
     >
       {categories.map((category) => (
-              <Card
-                key={category.id}
-                variant="outlined"
+        <Card
+          key={category.id}
+          variant='outlined'
+          sx={{
+            p: '16px',
+            borderRadius: '8px',
+            border: '1px solid var(--joy-palette-divider)',
+            boxShadow: 'none',
+            backgroundColor: 'var(--joy-palette-background-body)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '210px',
+            cursor: 'pointer',
+            '&:hover': {
+              borderColor: 'var(--joy-palette-text-secondary)',
+            },
+            maxWidth: { xs: '100%', sm: '336px' },
+          }}
+          onClick={() => handleCardClick(category.id)}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                backgroundColor: '#E9EFF8',
+                color: '#3D37DD',
+              }}
+            >
+              {iconMap[category.icon] || <Star size={28} />}
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography
+                level='title-md'
                 sx={{
-                  p: "16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--joy-palette-divider)",
-                  boxShadow: "none",
-                  backgroundColor: "var(--joy-palette-background-body)",
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: "210px",
-                  cursor: "pointer",
-                  "&:hover": {
-                    borderColor: "var(--joy-palette-text-secondary)",
-                  },
-                  maxWidth: { xs: "100%", sm: "336px" },
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
+                  wordBreak: 'break-word',
                 }}
-                onClick={() => handleCardClick(category.id)}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '8px',
-                      backgroundColor: '#E9EFF8',
-                      color: '#3D37DD',
-                    }}
-                  >
-                    {iconMap[category.icon] || <Star size={28} />}
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      level="title-md"
-                      sx={{
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "var(--joy-palette-text-primary)",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {category.name.slice(0, 59)}
-                    </Typography>
-                    <Typography
-                      level="body-xs"
-                      sx={{
-                        mt: 0.5,
-                        color: "var(--joy-palette-text-secondary)",
-                        fontWeight: "400",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {category.subcategory}
-                    </Typography>
-                  </Box>
-                  <IconButton
-                    size="sm"
-                    onClick={(event) => handleMenuOpen(event, category.id)}
-                  >
-                    <DotsThree
-                      weight="bold"
-                      size={22}
-                      color="var(--joy-palette-text-secondary)"
-                    />
-                  </IconButton>
-                  <Popper
-                    open={selectedCategoryId === category.id && Boolean(anchorEl)}
-                    anchorEl={anchorEl}
-                    placement="bottom-start"
-                    style={{
-                      minWidth: "150px",
-                      borderRadius: "8px",
-                      backgroundColor: "var(--joy-palette-background-surface)",
-                      zIndex: 1300,
-                      border: "1px solid var(--joy-palette-divider)",
-                    }}
-                  >
-                    <Box
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        handleEditCategory(category.id);
-                      }}
-                      sx={menuItemStyle}
-                    >
-                      <PencilIcon fontSize="20px" style={iconStyle} />
-                      Edit
-                    </Box>
-                    <Box
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        handleMenuClose();
-                        handleDeleteCategoryModalOpen(category.id);
-                      }}
-                      sx={{ ...menuItemStyle, color: "#EF4444" }}
-                    >
-                      <TrashIcon fontSize="20px" style={iconStyle} />
-                      Delete
-                    </Box>
-                  </Popper>
-                </Box>
-                <Box
-                  sx={{
-                    mt: 1.5,
-                    flexGrow: 1,
-                  }}
-                >
-                  <Typography
-                    level="body-sm"
-                    sx={{
-                      color: "var(--joy-palette-text-secondary)",
-                      fontWeight: "300",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {category.about.slice(0, 89)}
-                  </Typography>
-                </Box>
-                <Typography
-                  level="body-md"
-                  sx={{
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    color: "var(--joy-palette-text-secondary)",
-                    pt: 1.5,
-                    borderTop: "1px solid var(--joy-palette-divider)",
-                    mt: "auto",
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>
-                    {category.articlesCount ?? 0} articles
-                  </span>
-                  <span>
-                    Last updated: {formatDate(category.updatedAt)}
-                  </span>
-                </Typography>
-              </Card>
-            ))}
+                {category.name.slice(0, 59)}
+              </Typography>
+              <Typography
+                level='body-xs'
+                sx={{
+                  mt: 0.5,
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontWeight: '400',
+                  fontSize: '12px',
+                }}
+              >
+                {category.subcategory}
+              </Typography>
+            </Box>
+            <IconButton size='sm' onClick={(event) => handleMenuOpen(event, category.id)}>
+              <DotsThree weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
+            </IconButton>
+            <Popper
+              open={selectedCategoryId === category.id && Boolean(anchorEl)}
+              anchorEl={anchorEl}
+              placement='bottom-start'
+              style={{
+                minWidth: '150px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--joy-palette-background-surface)',
+                zIndex: 1300,
+                border: '1px solid var(--joy-palette-divider)',
+              }}
+            >
+              <Box
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleEditCategory(category.id);
+                }}
+                sx={menuItemStyle}
+              >
+                <PencilIcon fontSize='20px' style={iconStyle} />
+                Edit
+              </Box>
+              <Box
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleMenuClose();
+                  handleDeleteCategoryModalOpen(category.id);
+                }}
+                sx={{ ...menuItemStyle, color: '#EF4444' }}
+              >
+                <TrashIcon fontSize='20px' style={iconStyle} />
+                Delete
+              </Box>
+            </Popper>
+          </Box>
+          <Box
+            sx={{
+              mt: 1.5,
+              flexGrow: 1,
+            }}
+          >
+            <Typography
+              level='body-sm'
+              sx={{
+                color: 'var(--joy-palette-text-secondary)',
+                fontWeight: '300',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                wordBreak: 'break-word',
+              }}
+            >
+              {category.about.slice(0, 89)}
+            </Typography>
+          </Box>
+          <Typography
+            level='body-md'
+            sx={{
+              fontWeight: '400',
+              fontSize: '12px',
+              color: 'var(--joy-palette-text-secondary)',
+              pt: 1.5,
+              borderTop: '1px solid var(--joy-palette-divider)',
+              mt: 'auto',
+              display: 'flex',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>{category.articlesCount ?? 0} articles</span>
+            <span>Last updated: {formatDate(category.updatedAt)}</span>
+          </Typography>
+        </Card>
+      ))}
       <AddEditCategoryModal
         open={openEditCategoryModal}
         onClose={handleCloseEditCategoryModal}
@@ -354,15 +342,22 @@ const CategoriesListComponent: React.FC<CategoriesListProps> = ({ categories, fe
         open={openDeleteCategoryModal}
         onClose={handleCloseDeleteCategoryModal}
         onConfirm={() => {
-          console.log('Delete confirmation clicked, categoryToDelete:', categoryToDeleteRef.current);
+          console.log(
+            'Delete confirmation clicked, categoryToDelete:',
+            categoryToDeleteRef.current
+          );
           if (categoryToDeleteRef.current) {
             handleDeleteCategory(categoryToDeleteRef.current);
           }
         }}
-        usersToDelete={selectedCategoryId ? [categories.find(cat => cat.id === selectedCategoryId)?.name || ''] : undefined}
+        usersToDelete={
+          selectedCategoryId
+            ? [categories.find((cat) => cat.id === selectedCategoryId)?.name || '']
+            : undefined
+        }
         isDeactivate={false}
-        title="Delete Category"
-        description="Are you sure you want to delete this category?"
+        title='Delete Category'
+        description='Are you sure you want to delete this category?'
       />
     </Box>
   );

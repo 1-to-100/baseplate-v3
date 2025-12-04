@@ -17,7 +17,9 @@ import type {
 /**
  * Get all customer success owned customer assignments
  */
-export async function getCustomerSuccessOwnedCustomers(): Promise<ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>> {
+export async function getCustomerSuccessOwnedCustomers(): Promise<
+  ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>
+> {
   // API call removed
   return { data: [], error: null, status: 200 };
 }
@@ -25,7 +27,9 @@ export async function getCustomerSuccessOwnedCustomers(): Promise<ApiResponse<Cu
 /**
  * Get customers owned by a specific customer success representative
  */
-export async function getCustomersByCSRep(userId: string): Promise<ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>> {
+export async function getCustomersByCSRep(
+  userId: string
+): Promise<ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>> {
   // API call removed
   return { data: [], error: null, status: 200 };
 }
@@ -33,7 +37,9 @@ export async function getCustomersByCSRep(userId: string): Promise<ApiResponse<C
 /**
  * Get customer success representatives for a specific customer
  */
-export async function getCSRepsByCustomer(customerId: string): Promise<ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>> {
+export async function getCSRepsByCustomer(
+  customerId: string
+): Promise<ApiResponse<CustomerSuccessOwnedCustomerWithRelations[]>> {
   // API call removed
   return { data: [], error: null, status: 200 };
 }
@@ -62,7 +68,7 @@ export async function removeCSRepFromCustomer(
  * Remove all CS rep assignments by userId and customerId
  */
 export async function removeCSRepAssignment(
-  userId: string, 
+  userId: string,
   customerId: string
 ): Promise<ApiResponse<void>> {
   // API call removed
@@ -73,7 +79,7 @@ export async function removeCSRepAssignment(
  * Check if a user is assigned as CS rep for a customer
  */
 export async function isCSRepAssignedToCustomer(
-  userId: string, 
+  userId: string,
   customerId: string
 ): Promise<ApiResponse<boolean>> {
   // API call removed

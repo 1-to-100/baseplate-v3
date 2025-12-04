@@ -64,9 +64,9 @@ export function CustomerDetailsForm(): React.JSX.Element {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
-        <Stack direction="row" spacing={3} sx={{ alignItems: 'center' }}>
+        <Stack direction='row' spacing={3} sx={{ alignItems: 'center' }}>
           <Box sx={{ '--Avatar-size': '120px', position: 'relative' }}>
-            <Avatar src="/assets/avatar-1.png">ZS</Avatar>
+            <Avatar src='/assets/avatar-1.png'>ZS</Avatar>
             <Box
               sx={{
                 alignItems: 'center',
@@ -84,12 +84,12 @@ export function CustomerDetailsForm(): React.JSX.Element {
                 '&:not(:hover) > *': { display: 'none' },
               }}
             >
-              <PenIcon fontSize="var(--joy-fontSize-lg)" weight="bold" />
+              <PenIcon fontSize='var(--joy-fontSize-lg)' weight='bold' />
             </Box>
           </Box>
           <div>
-            <Typography level="title-md">Profile Picture</Typography>
-            <Typography level="body-sm">Supports PNGs, JPEGs and GIFs under 3MB</Typography>
+            <Typography level='title-md'>Profile Picture</Typography>
+            <Typography level='body-sm'>Supports PNGs, JPEGs and GIFs under 3MB</Typography>
           </div>
         </Stack>
         <Box sx={{ maxWidth: 'lg' }}>
@@ -97,7 +97,7 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <FormControl>
                 <FormLabel>ID</FormLabel>
-                <Input disabled name="customerId" readOnly value="USR-001" />
+                <Input disabled name='customerId' readOnly value='USR-001' />
               </FormControl>
             </Grid>
             <Grid md={6} xs={12}>
@@ -105,7 +105,7 @@ export function CustomerDetailsForm(): React.JSX.Element {
                 <FormLabel>Created At</FormLabel>
                 <Input
                   disabled
-                  name="createdAt"
+                  name='createdAt'
                   readOnly
                   value={dayjs().subtract(3, 'month').format('MMM D, YYYY h:mm A')}
                 />
@@ -114,12 +114,14 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="firstName"
+                name='firstName'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.firstName)}>
                     <FormLabel>First Name</FormLabel>
                     <Input {...field} />
-                    {errors.firstName ? <FormHelperText>{errors.firstName.message}</FormHelperText> : null}
+                    {errors.firstName ? (
+                      <FormHelperText>{errors.firstName.message}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 )}
               />
@@ -127,12 +129,14 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="lastName"
+                name='lastName'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.lastName)}>
                     <FormLabel>Last Name</FormLabel>
                     <Input {...field} />
-                    {errors.lastName ? <FormHelperText>{errors.lastName.message}</FormHelperText> : null}
+                    {errors.lastName ? (
+                      <FormHelperText>{errors.lastName.message}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 )}
               />
@@ -140,11 +144,11 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="email"
+                name='email'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.email)}>
                     <FormLabel>Email Address</FormLabel>
-                    <Input {...field} type="email" />
+                    <Input {...field} type='email' />
                     {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
                   </FormControl>
                 )}
@@ -153,11 +157,11 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="phone"
+                name='phone'
                 render={({ field }) => (
                   <FormControl>
                     <FormLabel>Phone Number</FormLabel>
-                    <Input {...field} type="tel" />
+                    <Input {...field} type='tel' />
                     {errors.phone ? <FormHelperText>{errors.phone.message}</FormHelperText> : null}
                   </FormControl>
                 )}
@@ -166,7 +170,7 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="country"
+                name='country'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.country)}>
                     <FormLabel>Country</FormLabel>
@@ -176,12 +180,14 @@ export function CustomerDetailsForm(): React.JSX.Element {
                         field.onChange(value);
                       }}
                     >
-                      <Option value="">Choose a country</Option>
-                      <Option value="ca">Canada</Option>
-                      <Option value="uk">United Kingdom</Option>
-                      <Option value="us">United States</Option>
+                      <Option value=''>Choose a country</Option>
+                      <Option value='ca'>Canada</Option>
+                      <Option value='uk'>United Kingdom</Option>
+                      <Option value='us'>United States</Option>
                     </Select>
-                    {errors.country ? <FormHelperText>{errors.country.message}</FormHelperText> : null}
+                    {errors.country ? (
+                      <FormHelperText>{errors.country.message}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 )}
               />
@@ -189,7 +195,7 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="state"
+                name='state'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.state)}>
                     <FormLabel>State</FormLabel>
@@ -202,7 +208,7 @@ export function CustomerDetailsForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="city"
+                name='city'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.city)}>
                     <FormLabel>City</FormLabel>
@@ -214,17 +220,21 @@ export function CustomerDetailsForm(): React.JSX.Element {
             </Grid>
           </Grid>
         </Box>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+        <Stack
+          direction='row'
+          spacing={1}
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
           <Button
-            color="neutral"
+            color='neutral'
             onClick={() => {
               reset();
             }}
-            variant="outlined"
+            variant='outlined'
           >
             Discard
           </Button>
-          <Button type="submit">Save Changes</Button>
+          <Button type='submit'>Save Changes</Button>
         </Stack>
       </Stack>
     </form>

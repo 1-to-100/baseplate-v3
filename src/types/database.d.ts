@@ -163,17 +163,23 @@ export interface PaginatedResponse<T> {
 export type CreateTeamInput = Omit<Team, 'team_id' | 'created_at' | 'updated_at'>;
 export type UpdateTeamInput = Partial<CreateTeamInput>;
 
-export type CreateTeamMemberInput = Omit<TeamMember, 'team_member_id' | 'created_at' | 'updated_at'>;
+export type CreateTeamMemberInput = Omit<
+  TeamMember,
+  'team_member_id' | 'created_at' | 'updated_at'
+>;
 export type UpdateTeamMemberInput = Partial<CreateTeamMemberInput>;
 
 export type CreateCustomerSuccessOwnedCustomerInput = Omit<
   CustomerSuccessOwnedCustomer,
   'customer_success_owned_customer_id' | 'created_at' | 'updated_at'
 >;
-export type UpdateCustomerSuccessOwnedCustomerInput = Partial<CreateCustomerSuccessOwnedCustomerInput>;
+export type UpdateCustomerSuccessOwnedCustomerInput =
+  Partial<CreateCustomerSuccessOwnedCustomerInput>;
 
-export type CreateSubscriptionInput = Omit<Subscription, 'subscription_id' | 'created_at' | 'updated_at'>;
+export type CreateSubscriptionInput = Omit<
+  Subscription,
+  'subscription_id' | 'created_at' | 'updated_at'
+>;
 export type UpdateSubscriptionInput = Partial<CreateSubscriptionInput>;
 
 export type CreateRolePermissionInput = Omit<RolePermission, 'created_at'>;
-

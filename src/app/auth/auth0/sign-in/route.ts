@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest): Promise<Response> {
   return auth0.handleLogin(req, {} as AppRouteHandlerFnContext, {
-    authorizationParams: { redirect_uri: new URL(paths.auth.auth0.callback, config.auth0.baseUrl).toString() },
+    authorizationParams: {
+      redirect_uri: new URL(paths.auth.auth0.callback, config.auth0.baseUrl).toString(),
+    },
     returnTo: new URL(paths.dashboard.overview, config.auth0.baseUrl).toString(),
   });
 }

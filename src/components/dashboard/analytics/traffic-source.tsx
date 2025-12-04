@@ -14,27 +14,30 @@ export interface TrafficSourceProps {
 export function TrafficSource({ data = [] }: TrafficSourceProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Traffic Source</Typography>
-      <List sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '48px' }}>
+      <Typography level='h4'>Traffic Source</Typography>
+      <List
+        sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '48px' }}
+      >
         {data.map(
           (source): React.JSX.Element => (
             <ListItem key={source.id}>
               <ListItemContent>
-                <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-                  <Typography level="body-sm" sx={{ flex: '1 1 auto' }} textColor="text.primary">
+                <Stack direction='row' spacing={2} sx={{ mb: 1 }}>
+                  <Typography level='body-sm' sx={{ flex: '1 1 auto' }} textColor='text.primary'>
                     {source.name}
                   </Typography>
-                  <Typography level="body-xs">
-                    {new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(
-                      source.value / 100
-                    )}
+                  <Typography level='body-xs'>
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'percent',
+                      maximumFractionDigits: 2,
+                    }).format(source.value / 100)}
                   </Typography>
                 </Stack>
                 <LinearProgress
                   determinate
                   sx={{ bgcolor: 'var(--joy-palette-background-level1)' }}
                   value={source.value}
-                  variant="plain"
+                  variant='plain'
                 />
               </ListItemContent>
             </ListItem>

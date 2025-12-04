@@ -6,7 +6,15 @@ import Card from '@mui/joy/Card';
 import Sheet from '@mui/joy/Sheet';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import { NoSsr } from '@/components/core/no-ssr';
 
@@ -25,15 +33,15 @@ export function SessionDuration({ data = [] }: SessionDurationProps): React.JSX.
 
   return (
     <Card>
-      <Typography level="h4">Session Duration</Typography>
+      <Typography level='h4'>Session Duration</Typography>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 7 }}>
         <Legend />
       </Box>
       <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
-        <ResponsiveContainer height={chartHeight} width="100%">
+        <ResponsiveContainer height={chartHeight} width='100%'>
           <LineChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="4 4" vertical={false} />
-            <XAxis axisLine={false} dataKey="name" interval={4} tickLine={false} type="category" />
+            <CartesianGrid strokeDasharray='4 4' vertical={false} />
+            <XAxis axisLine={false} dataKey='name' interval={4} tickLine={false} type='category' />
             <YAxis
               axisLine={false}
               tickFormatter={(value: number): string => {
@@ -41,7 +49,7 @@ export function SessionDuration({ data = [] }: SessionDurationProps): React.JSX.
                 return mins.toString();
               }}
               tickLine={false}
-              type="number"
+              type='number'
             />
             {lines.map(
               (line): React.JSX.Element => (
@@ -53,7 +61,7 @@ export function SessionDuration({ data = [] }: SessionDurationProps): React.JSX.
                   name={line.name}
                   stroke={line.stroke}
                   strokeWidth={2}
-                  type="monotone"
+                  type='monotone'
                 />
               )
             )}
@@ -74,7 +82,7 @@ interface DotProps {
 
 function Dot({ active, cx, cy, payload }: DotProps): React.JSX.Element | null {
   if (active && payload?.name === active) {
-    return <circle cx={cx} cy={cy} fill="var(--joy-palette-primary-solidBg)" r={6} />;
+    return <circle cx={cx} cy={cy} fill='var(--joy-palette-primary-solidBg)' r={6} />;
   }
 
   return null;
@@ -104,18 +112,20 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
         {payload?.map(
           (entry): React.JSX.Element => (
             <Stack
-              direction="row"
+              direction='row'
               key={entry.name}
               spacing={3}
               sx={{ alignItems: 'center', justifyContent: 'space-between' }}
             >
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Box sx={{ bgcolor: entry.stroke, borderRadius: '2px', height: '8px', width: '8px' }} />
-                <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                <Box
+                  sx={{ bgcolor: entry.stroke, borderRadius: '2px', height: '8px', width: '8px' }}
+                />
+                <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                   {entry.name}
                 </Typography>
               </Stack>
-              <Typography fontSize="sm" textColor="text.tertiary">
+              <Typography fontSize='sm' textColor='text.tertiary'>
                 {entry.dataKey === 'v3'
                   ? `${secondsToMinutes(entry.value)}min`
                   : new Intl.NumberFormat('en-US').format(entry.value)}
@@ -130,12 +140,12 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
 
 function Legend(): React.JSX.Element {
   return (
-    <Stack direction="row" spacing={2}>
+    <Stack direction='row' spacing={2}>
       {lines.map(
         (line): React.JSX.Element => (
-          <Stack direction="row" key={line.name} spacing={1} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' key={line.name} spacing={1} sx={{ alignItems: 'center' }}>
             <Box sx={{ bgcolor: line.stroke, borderRadius: '2px', height: '8px', width: '8px' }} />
-            <Typography component="span" display="inline" fontSize="sm" textColor="text.secondary">
+            <Typography component='span' display='inline' fontSize='sm' textColor='text.secondary'>
               {line.name}
             </Typography>
           </Stack>

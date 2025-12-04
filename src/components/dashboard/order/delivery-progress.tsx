@@ -9,7 +9,11 @@ import { ClockCountdown as ClockCountdownIcon } from '@phosphor-icons/react/dist
 const typeMapping = {
   pending: {
     icon: (
-      <Avatar color="neutral" sx={{ '--Avatar-size': '24px', borderWidth: '2px' }} variant="outlined">
+      <Avatar
+        color='neutral'
+        sx={{ '--Avatar-size': '24px', borderWidth: '2px' }}
+        variant='outlined'
+      >
         &nbsp;
       </Avatar>
     ),
@@ -19,11 +23,11 @@ const typeMapping = {
   current: {
     icon: (
       <Avatar
-        color="warning"
+        color='warning'
         sx={{ '--Avatar-size': '24px', '--Icon-fontSize': 'var(--joy-fontSize-xl)' }}
-        variant="soft"
+        variant='soft'
       >
-        <ClockCountdownIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <ClockCountdownIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </Avatar>
     ),
     progress: 40,
@@ -32,11 +36,11 @@ const typeMapping = {
   done: {
     icon: (
       <Avatar
-        color="success"
+        color='success'
         sx={{ '--Avatar-size': '24px', '--Icon-fontSize': 'var(--joy-fontSize-md)' }}
-        variant="solid"
+        variant='solid'
       >
-        <CheckIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <CheckIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </Avatar>
     ),
     progress: 100,
@@ -55,15 +59,15 @@ export function DeliveryProgress({ label, status }: DeliveryProgressProps): Reac
   return (
     <Stack spacing={1}>
       <LinearProgress
-        color="success"
+        color='success'
         determinate
         sx={{ bgcolor: 'var(--joy-palette-background-level2)', width: '200px' }}
         value={progress}
-        variant="plain"
+        variant='plain'
       />
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         {icon}
-        <Typography level="body-sm" textColor={textColor}>
+        <Typography level='body-sm' textColor={textColor}>
           {label}
         </Typography>
       </Stack>

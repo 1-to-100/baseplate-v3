@@ -1,37 +1,37 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import ModalClose from "@mui/joy/ModalClose";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Input from "@mui/joy/Input";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Autocomplete from "@mui/joy/Autocomplete";
-import Button from "@mui/joy/Button";
-import IconButton from "@mui/joy/IconButton";
-import Avatar from "@mui/joy/Avatar";
-import Switch from "@mui/joy/Switch";
-import FormHelperText from "@mui/joy/FormHelperText";
-import { Upload as UploadIcon } from "@phosphor-icons/react/dist/ssr/Upload";
-import { Trash as Trash } from "@phosphor-icons/react/dist/ssr/Trash";
-import { Box } from "@mui/joy";
-import { useColorScheme } from "@mui/joy/styles";
+import * as React from 'react';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import ModalClose from '@mui/joy/ModalClose';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Input from '@mui/joy/Input';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Autocomplete from '@mui/joy/Autocomplete';
+import Button from '@mui/joy/Button';
+import IconButton from '@mui/joy/IconButton';
+import Avatar from '@mui/joy/Avatar';
+import Switch from '@mui/joy/Switch';
+import FormHelperText from '@mui/joy/FormHelperText';
+import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import { Trash as Trash } from '@phosphor-icons/react/dist/ssr/Trash';
+import { Box } from '@mui/joy';
+import { useColorScheme } from '@mui/joy/styles';
 import {
   createSystemUser,
   updateSystemUser,
   getSystemUserById,
-} from "../../../lib/api/system-users";
-import { getSystemRoles } from "../../../lib/api/system-users";
-import { getCustomers } from "../../../lib/api/customers";
-import { toast } from "@/components/core/toaster";
-import {SystemRolesHumanNames} from "@/lib/constants/system-roles";
-import {SystemRole, SystemRoleObject} from "@/contexts/auth/types";
-import { SYSTEM_ROLES } from "@/lib/user-utils";
+} from '../../../lib/api/system-users';
+import { getSystemRoles } from '../../../lib/api/system-users';
+import { getCustomers } from '../../../lib/api/customers';
+import { toast } from '@/components/core/toaster';
+import { SystemRolesHumanNames } from '@/lib/constants/system-roles';
+import { SystemRole, SystemRoleObject } from '@/contexts/auth/types';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
 
 interface HttpError {
   response?: {
@@ -55,49 +55,44 @@ interface FormErrors {
   systemRole?: string;
 }
 
-export default function AddEditSystemUser({
-  open,
-  onClose,
-  userId,
-}: AddEditSystemUserProps) {
+export default function AddEditSystemUser({ open, onClose, userId }: AddEditSystemUserProps) {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    customer: "",
-    systemRole: "customer_success",
+    firstName: '',
+    lastName: '',
+    email: '',
+    customer: '',
+    systemRole: 'customer_success',
   });
 
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isActive, setIsActive] = useState<boolean>(true);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] =
-    useState<boolean>(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors | null>(null);
   const [emailWarnings, setEmailWarnings] = useState<string[]>([]);
   const { colorScheme } = useColorScheme();
-  const isLightTheme = colorScheme === "light";
+  const isLightTheme = colorScheme === 'light';
   const queryClient = useQueryClient();
   const [localSystemRoles, setLocalSystemRoles] = useState<SystemRoleObject[]>([]);
 
   const formatSystemRole = (role: string): string => {
     return role
-      .split("_")
+      .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+      .join(' ');
   };
 
   const { data: roles, isLoading: isRolesLoading } = useQuery({
-    queryKey: ["system-roles"],
+    queryKey: ['system-roles'],
     queryFn: getSystemRoles,
   });
 
   const { data: customers, isLoading: isCustomersLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: getCustomers,
   });
 
   const { data: userData, isLoading: isUserLoading } = useQuery({
-    queryKey: ["user", userId],
+    queryKey: ['user', userId],
     queryFn: () => getSystemUserById(userId!),
     enabled: !!userId && open,
   });
@@ -113,23 +108,26 @@ export default function AddEditSystemUser({
   useEffect(() => {
     if (userId && userData && open) {
       setFormData({
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email || "",
-        customer: userData.customer?.name || "",
-        systemRole: userData.role?.display_name === 'System Administrator' ? 'system_admin' : 'customer_success',
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email || '',
+        customer: userData.customer?.name || '',
+        systemRole:
+          userData.role?.display_name === 'System Administrator'
+            ? 'system_admin'
+            : 'customer_success',
       });
       setAvatarPreview(userData.avatar || null);
-      setIsActive(userData.status === "active");
+      setIsActive(userData.status === 'active');
       setErrors(null);
       setEmailWarnings([]);
     } else if (!userId && open) {
       setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        customer: "",
-        systemRole: "",
+        firstName: '',
+        lastName: '',
+        email: '',
+        customer: '',
+        systemRole: '',
       });
       setAvatarPreview(null);
       setIsActive(false);
@@ -142,16 +140,16 @@ export default function AddEditSystemUser({
     mutationFn: createSystemUser,
     onSuccess: () => {
       // queryClient.invalidateQueries({ queryKey: ["system-users"] });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       onClose();
-      toast.success("User created successfully.");
+      toast.success('User created successfully.');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while creating the user.");
+        toast.error('An error occurred while creating the user.');
       }
     },
   });
@@ -160,46 +158,47 @@ export default function AddEditSystemUser({
     mutationFn: updateSystemUser,
     onSuccess: () => {
       // queryClient.invalidateQueries({ queryKey: ["system-users"] });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({ queryKey: ["system-user", userId] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['system-user', userId] });
       onClose();
-      toast.success("User updated successfully.");
+      toast.success('User updated successfully.');
     },
     onError: (error: HttpError) => {
       const errorMessage = error.response?.data?.message;
       if (errorMessage) {
         toast.error(errorMessage);
       } else {
-        toast.error("An error occurred while updating the user.");
+        toast.error('An error occurred while updating the user.');
       }
     },
   });
 
   const validateEmail = (email: string): string | null => {
     if (!email.trim()) {
-      return "Email is required";
+      return 'Email is required';
     }
 
-    if (email.startsWith(".") || email.endsWith(".")) {
-      return "Invalid email format";
+    if (email.startsWith('.') || email.endsWith('.')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("..")) {
-      return "Invalid email format";
+    if (email.includes('..')) {
+      return 'Invalid email format';
     }
 
-    if (email.includes("/")) {
-      return "Invalid email format";
+    if (email.includes('/')) {
+      return 'Invalid email format';
     }
 
-    const atIndex = email.indexOf("@");
-    if (atIndex > 0 && email[atIndex - 1] === ".") {
-      return "Invalid email format";
+    const atIndex = email.indexOf('@');
+    if (atIndex > 0 && email[atIndex - 1] === '.') {
+      return 'Invalid email format';
     }
-    
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(email)) {
-      return "Invalid email format";
+      return 'Invalid email format';
     }
 
     return null;
@@ -209,11 +208,11 @@ export default function AddEditSystemUser({
     const newErrors: FormErrors = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
+      newErrors.firstName = 'First name is required';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
+      newErrors.lastName = 'Last name is required';
     }
 
     const emailError = validateEmail(formData.email);
@@ -222,9 +221,8 @@ export default function AddEditSystemUser({
     }
 
     if (!formData.systemRole) {
-      newErrors.systemRole = "System role is required";
+      newErrors.systemRole = 'System role is required';
     }
-
 
     return newErrors;
   };
@@ -232,16 +230,16 @@ export default function AddEditSystemUser({
   const handleInputChange = async (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    if (field === "email") {
+    if (field === 'email') {
       const emailError = validateEmail(value);
       setErrors((prev) => ({ ...prev, email: emailError || undefined }));
-    } else if (field === "firstName" && value.trim()) {
+    } else if (field === 'firstName' && value.trim()) {
       setErrors((prev) => ({ ...prev, firstName: undefined }));
-    } else if (field === "lastName" && value.trim()) {
+    } else if (field === 'lastName' && value.trim()) {
       setErrors((prev) => ({ ...prev, lastName: undefined }));
-    } else if (field === "customer" && value) {
+    } else if (field === 'customer' && value) {
       setErrors((prev) => ({ ...prev, customer: undefined }));
-    } else if (field === "systemRole" && value) {
+    } else if (field === 'systemRole' && value) {
       setErrors((prev) => ({ ...prev, systemRole: undefined }));
     }
   };
@@ -249,7 +247,7 @@ export default function AddEditSystemUser({
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.size <= 3 * 1024 * 1024) {
-      const fileTypes = ["image/png", "image/jpeg", "image/gif"];
+      const fileTypes = ['image/png', 'image/jpeg', 'image/gif'];
       if (fileTypes.includes(file.type)) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -257,10 +255,10 @@ export default function AddEditSystemUser({
         };
         reader.readAsDataURL(file);
       } else {
-        alert("Please upload a PNG, JPEG, or GIF file.");
+        alert('Please upload a PNG, JPEG, or GIF file.');
       }
     } else {
-      alert("File size must be less than 3MB.");
+      alert('File size must be less than 3MB.');
     }
   };
 
@@ -270,22 +268,22 @@ export default function AddEditSystemUser({
   };
 
   const getCustomerId = (customerName: string): string => {
-    if (!customers) return "";
+    if (!customers) return '';
     const customer = customers.find((c) => c.name === customerName);
-    return customer ? customer.id : "";
+    return customer ? customer.id : '';
   };
 
   const handleSystemRoleChange = (newValue: string) => {
-    const isSystemAdmin = newValue === "system_admin";
+    const isSystemAdmin = newValue === 'system_admin';
     setFormData((prev) => ({
       ...prev,
       systemRole: newValue as SystemRole,
-      customer: isSystemAdmin ? "" : prev.customer,
+      customer: isSystemAdmin ? '' : prev.customer,
     }));
-    setErrors((prev) => ({ 
-      ...prev, 
+    setErrors((prev) => ({
+      ...prev,
       systemRole: undefined,
-      customer: isSystemAdmin ? undefined : prev?.customer 
+      customer: isSystemAdmin ? undefined : prev?.customer,
     }));
   };
 
@@ -299,9 +297,9 @@ export default function AddEditSystemUser({
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        status: isActive ? "active" : ("inactive" as "active" | "inactive"),
+        status: isActive ? 'active' : ('inactive' as 'active' | 'inactive'),
         systemRole: formData.systemRole,
-        ...(formData.systemRole !== "system_admin" && formData.customer
+        ...(formData.systemRole !== 'system_admin' && formData.customer
           ? { customerId: getCustomerId(formData.customer) }
           : {}),
       };
@@ -321,41 +319,41 @@ export default function AddEditSystemUser({
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         sx={{
-          width: { xs: "90%", sm: 600, md: 800 },
-          maxWidth: "100%",
+          width: { xs: '90%', sm: 600, md: 800 },
+          maxWidth: '100%',
           p: { xs: 2, sm: 3 },
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          maxHeight: "90vh",
-          overflowY: "auto",
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
-        <ModalClose sx={{ color: "#6B7280" }} />
+        <ModalClose sx={{ color: '#6B7280' }} />
         <Typography
-          level="h3"
+          level='h3'
           sx={{
-            fontSize: { xs: "20px", sm: "22px", md: "24px" },
+            fontSize: { xs: '20px', sm: '22px', md: '24px' },
             fontWeight: 600,
-            color: "var(--joy-palette-text-primary)",
+            color: 'var(--joy-palette-text-primary)',
             mb: { xs: 1.5, sm: 2 },
           }}
         >
-          {userId ? "Edit system user" : "Add system user"}
+          {userId ? 'Edit system user' : 'Add system user'}
         </Typography>
         <Stack spacing={{ xs: 1.5, sm: 2 }}>
           <Stack spacing={1}>
             <Stack
-              direction={{ xs: "row", sm: "row" }}
+              direction={{ xs: 'row', sm: 'row' }}
               spacing={{ xs: 1, sm: 2 }}
-              alignItems={{ xs: "flex-start", sm: "center" }}
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
               mb={2}
-              justifyContent="space-between"
+              justifyContent='space-between'
             >
               <Box
-                display="flex"
-                alignItems={{ xs: "flex-start", sm: "center" }}
+                display='flex'
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
                 gap={{ xs: 1, sm: 2 }}
-                flexDirection={{ xs: "column", sm: "row" }}
+                flexDirection={{ xs: 'column', sm: 'row' }}
               >
                 {avatarPreview ? (
                   <Avatar
@@ -363,36 +361,36 @@ export default function AddEditSystemUser({
                     sx={{
                       width: { xs: 48, sm: 64 },
                       height: { xs: 48, sm: 64 },
-                      borderRadius: "50%",
+                      borderRadius: '50%',
                     }}
                   />
                 ) : (
                   <IconButton
-                    component="label"
+                    component='label'
                     sx={{
-                      bgcolor: "#E5E7EB",
-                      borderRadius: "50%",
+                      bgcolor: '#E5E7EB',
+                      borderRadius: '50%',
                       width: { xs: 48, sm: 64 },
                       height: { xs: 48, sm: 64 },
-                      color: "#4F46E5",
+                      color: '#4F46E5',
                     }}
                   >
-                    <UploadIcon style={{ fontSize: "16px" }} />
+                    <UploadIcon style={{ fontSize: '16px' }} />
                     <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/gif"
+                      type='file'
+                      accept='image/png, image/jpeg, image/gif'
                       hidden
                       onChange={handleAvatarUpload}
                     />
                   </IconButton>
                 )}
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: { xs: "10px", sm: "12px" },
-                    color: "#6B7280",
-                    lineHeight: "16px",
-                    textAlign: { xs: "left", sm: "left" },
+                    fontSize: { xs: '10px', sm: '12px' },
+                    color: '#6B7280',
+                    lineHeight: '16px',
+                    textAlign: { xs: 'left', sm: 'left' },
                   }}
                 >
                   Upload Avatar
@@ -404,57 +402,55 @@ export default function AddEditSystemUser({
                 onClick={() => setShowDeleteConfirmation(true)}
                 disabled={!avatarPreview}
                 sx={{
-                  bgcolor: "transparent",
-                  color: "#6B7280",
-                  "&:hover": { bgcolor: "transparent" },
+                  bgcolor: 'transparent',
+                  color: '#6B7280',
+                  '&:hover': { bgcolor: 'transparent' },
                 }}
               >
-                <Trash fontSize="20px" />
+                <Trash fontSize='20px' />
               </IconButton>
             </Stack>
 
             {showDeleteConfirmation && (
               <Stack
-                direction={{ xs: "column", sm: "row" }}
+                direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
-                alignItems={{ xs: "flex-start", sm: "center" }}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
                 sx={{
-                  bgcolor: isLightTheme ? "#DDDEE0" : "transparent",
-                  borderRadius: "6px",
+                  bgcolor: isLightTheme ? '#DDDEE0' : 'transparent',
+                  borderRadius: '6px',
                   p: { xs: 1, sm: 1.5 },
-                  justifyContent: "space-between",
-                  border: "1px solid var(--joy-palette-divider)",
+                  justifyContent: 'space-between',
+                  border: '1px solid var(--joy-palette-divider)',
                 }}
               >
                 <Typography
-                  level="body-md"
+                  level='body-md'
                   sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: isLightTheme
-                      ? "#272930"
-                      : "var(--joy-palette-text-secondary)",
+                    fontSize: { xs: '12px', sm: '14px' },
+                    color: isLightTheme ? '#272930' : 'var(--joy-palette-text-secondary)',
                   }}
                 >
                   Are you sure you want to delete image?
                 </Typography>
-                <Stack direction="row" spacing={1}>
+                <Stack direction='row' spacing={1}>
                   <Button
-                    variant="solid"
-                    color="neutral"
+                    variant='solid'
+                    color='neutral'
                     onClick={() => setShowDeleteConfirmation(false)}
                     sx={{
-                      fontSize: { xs: "12px", sm: "14px" },
+                      fontSize: { xs: '12px', sm: '14px' },
                       px: { xs: 2, sm: 3 },
                     }}
                   >
                     No
                   </Button>
                   <Button
-                    variant="solid"
-                    color="danger"
+                    variant='solid'
+                    color='danger'
                     onClick={handleDeleteAvatar}
                     sx={{
-                      fontSize: { xs: "12px", sm: "14px" },
+                      fontSize: { xs: '12px', sm: '14px' },
                       px: { xs: 2, sm: 3 },
                     }}
                   >
@@ -467,22 +463,17 @@ export default function AddEditSystemUser({
 
           {userId && (
             <Stack spacing={1}>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                mb={{ xs: 1, sm: 2 }}
-              >
+              <Stack direction='row' spacing={1} alignItems='center' mb={{ xs: 1, sm: 2 }}>
                 <Switch
                   checked={isActive}
                   onChange={(event) => setIsActive(event.target.checked)}
-                  sx={{ transform: { xs: "scale(0.9)", sm: "scale(1)" } }}
+                  sx={{ transform: { xs: 'scale(0.9)', sm: 'scale(1)' } }}
                 />
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: "var(--joy-palette-text-secondary)",
+                    fontSize: { xs: '12px', sm: '14px' },
+                    color: 'var(--joy-palette-text-secondary)',
                   }}
                 >
                   Active
@@ -491,16 +482,13 @@ export default function AddEditSystemUser({
             </Stack>
           )}
 
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 1.5, sm: 2 }}
-          >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }}>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -508,21 +496,21 @@ export default function AddEditSystemUser({
                 First Name
               </Typography>
               <Input
-                placeholder="Enter first name"
+                placeholder='Enter first name'
                 value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
                 error={!!errors?.firstName}
                 slotProps={{ input: { maxLength: 255 } }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               />
               {errors?.firstName && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors.firstName}
@@ -531,10 +519,10 @@ export default function AddEditSystemUser({
             </Stack>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -542,21 +530,21 @@ export default function AddEditSystemUser({
                 Last Name
               </Typography>
               <Input
-                placeholder="Enter last name"
+                placeholder='Enter last name'
                 value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
                 error={!!errors?.lastName}
                 slotProps={{ input: { maxLength: 255 } }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               />
               {errors?.lastName && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors.lastName}
@@ -565,16 +553,13 @@ export default function AddEditSystemUser({
             </Stack>
           </Stack>
 
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 1.5, sm: 2 }}
-          >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }}>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -582,23 +567,23 @@ export default function AddEditSystemUser({
                 Email
               </Typography>
               <Input
-                placeholder="Enter email"
+                placeholder='Enter email'
                 disabled={!!userId}
-                type="email"
+                type='email'
                 value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
+                onChange={(e) => handleInputChange('email', e.target.value)}
                 error={!!errors?.email}
                 slotProps={{ input: { maxLength: 255 } }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               />
               {errors?.email && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors.email}
@@ -607,8 +592,8 @@ export default function AddEditSystemUser({
               {emailWarnings[0] && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-warning-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-warning-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {emailWarnings[0]}
@@ -617,43 +602,43 @@ export default function AddEditSystemUser({
             </Stack>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
               >
-                Customer {formData.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS && "(Optional)"}
+                Customer {formData.systemRole === SYSTEM_ROLES.CUSTOMER_SUCCESS && '(Optional)'}
               </Typography>
               <Autocomplete
-                placeholder="Select customer"
+                placeholder='Select customer'
                 value={formData.customer}
-                onChange={(event, newValue) =>
-                  handleInputChange("customer", newValue as string)
+                onChange={(event, newValue) => handleInputChange('customer', newValue as string)}
+                options={
+                  customers
+                    ?.sort((a, b) => a.name.localeCompare(b.name))
+                    .map((customer) => customer.name) || []
                 }
-                options={customers?.sort((a, b) => a.name.localeCompare(b.name)).map((customer) => customer.name) || []}
-                disabled={formData.systemRole === "system_admin"}
+                disabled={formData.systemRole === 'system_admin'}
                 slotProps={{
                   listbox: {
                     placement: 'top',
                   },
                 }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
-                  border: errors?.customer
-                    ? "1px solid var(--joy-palette-danger-500)"
-                    : undefined,
-                  opacity: formData.systemRole === "system_admin" ? 0.5 : 1,
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
+                  border: errors?.customer ? '1px solid var(--joy-palette-danger-500)' : undefined,
+                  opacity: formData.systemRole === 'system_admin' ? 0.5 : 1,
                 }}
               />
               {errors?.customer && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors.customer}
@@ -662,16 +647,13 @@ export default function AddEditSystemUser({
             </Stack>
           </Stack>
 
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 1.5, sm: 2 }}
-          >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }}>
             <Stack sx={{ flex: 1 }}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -679,15 +661,13 @@ export default function AddEditSystemUser({
                 System Role
               </Typography>
               <Select
-                placeholder="Select system role"
+                placeholder='Select system role'
                 value={formData.systemRole}
-                onChange={(e, newValue) =>
-                  handleSystemRoleChange(newValue as SystemRole)
-                }
-                color={errors?.systemRole ? "danger" : "neutral"}
+                onChange={(e, newValue) => handleSystemRoleChange(newValue as SystemRole)}
+                color={errors?.systemRole ? 'danger' : 'neutral'}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               >
                 {Object.entries(SystemRolesHumanNames).map(([systemRole, systemRoleName]) => {
@@ -701,8 +681,8 @@ export default function AddEditSystemUser({
               {errors?.systemRole && (
                 <FormHelperText
                   sx={{
-                    color: "var(--joy-palette-danger-500)",
-                    fontSize: { xs: "10px", sm: "12px" },
+                    color: 'var(--joy-palette-danger-500)',
+                    fontSize: { xs: '10px', sm: '12px' },
                   }}
                 >
                   {errors.systemRole}
@@ -712,37 +692,35 @@ export default function AddEditSystemUser({
           </Stack>
 
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={{ xs: 1, sm: 2 }}
-            justifyContent="flex-end"
+            justifyContent='flex-end'
           >
             <Button
-              variant="outlined"
+              variant='outlined'
               onClick={onClose}
               sx={{
-                fontSize: { xs: "12px", sm: "14px" },
+                fontSize: { xs: '12px', sm: '14px' },
                 px: { xs: 2, sm: 3 },
-                width: { xs: "100%", sm: "auto" },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               Cancel
             </Button>
             <Button
-              variant="solid"
+              variant='solid'
               onClick={handleSave}
-              disabled={
-                createUserMutation.isPending || updateUserMutation.isPending
-              }
+              disabled={createUserMutation.isPending || updateUserMutation.isPending}
               sx={{
-                borderRadius: "20px",
-                bgcolor: "#4F46E5",
-                color: "#FFFFFF",
+                borderRadius: '20px',
+                bgcolor: '#4F46E5',
+                color: '#FFFFFF',
                 fontWeight: 500,
-                fontSize: { xs: "12px", sm: "14px" },
+                fontSize: { xs: '12px', sm: '14px' },
                 px: { xs: 2, sm: 3 },
                 py: 1,
-                "&:hover": { bgcolor: "#4338CA" },
-                width: { xs: "100%", sm: "auto" },
+                '&:hover': { bgcolor: '#4338CA' },
+                width: { xs: '100%', sm: 'auto' },
               }}
             >
               Save

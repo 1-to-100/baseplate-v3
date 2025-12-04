@@ -24,7 +24,11 @@ export interface UserProviderProps {
 export function UserProvider({ children }: UserProviderProps): React.JSX.Element {
   const router = useRouter();
 
-  const [state, setState] = React.useState<{ user: User | null; error: string | null; isLoading: boolean }>({
+  const [state, setState] = React.useState<{
+    user: User | null;
+    error: string | null;
+    isLoading: boolean;
+  }>({
     user: null,
     error: null,
     isLoading: true,
@@ -34,7 +38,11 @@ export function UserProvider({ children }: UserProviderProps): React.JSX.Element
     // Only run on initial mount.
     getCurrentUser()
       .then((user) => {
-        setState({ user: { id: user.userId, email: user.username }, error: null, isLoading: false });
+        setState({
+          user: { id: user.userId, email: user.username },
+          error: null,
+          isLoading: false,
+        });
       })
       .catch(() => {
         setState({ user: null, error: null, isLoading: false });

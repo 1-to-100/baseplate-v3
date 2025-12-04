@@ -39,10 +39,10 @@ const columns = [
     formatter: (row): React.JSX.Element => (
       <Link
         component={RouterLink}
-        fontSize="sm"
-        fontWeight="md"
+        fontSize='sm'
+        fontWeight='md'
         href={paths.dashboard.invoices.details('1')}
-        underline="none"
+        underline='none'
       >
         {row.id}
       </Link>
@@ -52,13 +52,13 @@ const columns = [
   },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
         <Avatar src={row.customer.avatar} />
         <div>
-          <Typography level="body-sm" textColor="text.primary">
+          <Typography level='body-sm' textColor='text.primary'>
             {row.customer.name}
           </Typography>
-          <Typography level="body-xs">{row.customer.email}</Typography>
+          <Typography level='body-xs'>{row.customer.email}</Typography>
         </div>
       </Stack>
     ),
@@ -81,7 +81,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '150px',
@@ -91,7 +93,7 @@ const columns = [
       const { color, label } = statusMapping[row.status] ?? { label: 'Unknown', color: 'neutral' };
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -101,8 +103,8 @@ const columns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -134,7 +136,7 @@ export function InvoicesTable({ rows = [] }: InvoicesTableProps): React.JSX.Elem
       rows={rows}
       selectable
       selected={selection.selected}
-      stripe="even"
+      stripe='even'
     />
   );
 }

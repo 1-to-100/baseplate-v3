@@ -51,11 +51,18 @@ interface LineItem {
 }
 
 function calculateSubtotal(lineItems: LineItem[]): number {
-  const subtotal = lineItems.reduce((acc, lineItem) => acc + lineItem.quantity * lineItem.unitPrice, 0);
+  const subtotal = lineItems.reduce(
+    (acc, lineItem) => acc + lineItem.quantity * lineItem.unitPrice,
+    0
+  );
   return parseFloat(subtotal.toFixed(2));
 }
 
-function calculateTotalWithoutTaxes(subtotal: number, discount: number, shippingRate: number): number {
+function calculateTotalWithoutTaxes(
+  subtotal: number,
+  discount: number,
+  shippingRate: number
+): number {
   return subtotal - discount + shippingRate;
 }
 
@@ -109,7 +116,9 @@ const lineItemColumns = [
   { field: 'quantity', name: 'Quantity', width: '100px' },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(row.unitPrice);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+        row.unitPrice
+      );
     },
     name: 'Unit Price',
     width: '100px',
@@ -125,8 +134,8 @@ const lineItemColumns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -177,40 +186,46 @@ export function InvoiceCreateForm(): React.JSX.Element {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack divider={<Divider />} spacing={5}>
         <Stack spacing={3}>
-          <Typography level="h4">Customer</Typography>
+          <Typography level='h4'>Customer</Typography>
           <Box sx={{ maxWidth: 'md' }}>
             <Controller
               control={control}
-              name="customer"
+              name='customer'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.customer)}>
-                  <Input {...field} placeholder="Find a customer" />
-                  {errors.customer ? <FormHelperText>{errors.customer.message}</FormHelperText> : null}
+                  <Input {...field} placeholder='Find a customer' />
+                  {errors.customer ? (
+                    <FormHelperText>{errors.customer.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
           </Box>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Payment</Typography>
+          <Typography level='h4'>Payment</Typography>
           <Box sx={{ maxWidth: 'md' }}>
             <Grid container spacing={3}>
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="issueDate"
+                  name='issueDate'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.issueDate)}>
                       <FormLabel>Issue Date</FormLabel>
                       <Input
                         {...field}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          field.onChange(event.target.value ? dayjs(event.target.value).toDate() : null);
+                          field.onChange(
+                            event.target.value ? dayjs(event.target.value).toDate() : null
+                          );
                         }}
-                        type="date"
+                        type='date'
                         value={field.value ? dayjs(field.value).format('YYYY-MM-DD') : ''}
                       />
-                      {errors.issueDate ? <FormHelperText>{errors.issueDate.message}</FormHelperText> : null}
+                      {errors.issueDate ? (
+                        <FormHelperText>{errors.issueDate.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -218,19 +233,23 @@ export function InvoiceCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="dueDate"
+                  name='dueDate'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.dueDate)}>
                       <FormLabel>Due Date</FormLabel>
                       <Input
                         {...field}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          field.onChange(event.target.value ? dayjs(event.target.value).toDate() : null);
+                          field.onChange(
+                            event.target.value ? dayjs(event.target.value).toDate() : null
+                          );
                         }}
-                        type="date"
+                        type='date'
                         value={field.value ? dayjs(field.value).format('YYYY-MM-DD') : ''}
                       />
-                      {errors.dueDate ? <FormHelperText>{errors.dueDate.message}</FormHelperText> : null}
+                      {errors.dueDate ? (
+                        <FormHelperText>{errors.dueDate.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -238,16 +257,16 @@ export function InvoiceCreateForm(): React.JSX.Element {
               <Grid xs={12}>
                 <Controller
                   control={control}
-                  name="isRecurring"
+                  name='isRecurring'
                   render={({ field: { value, ...field } }) => (
-                    <Checkbox {...field} checked={value} label="This is a recurring invoice" />
+                    <Checkbox {...field} checked={value} label='This is a recurring invoice' />
                   )}
                 />
               </Grid>
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="billingCycle"
+                  name='billingCycle'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.billingCycle)}>
                       <FormLabel>Billing Cycle</FormLabel>
@@ -257,12 +276,14 @@ export function InvoiceCreateForm(): React.JSX.Element {
                           field.onChange(value);
                         }}
                       >
-                        <Option value="daily">Daily</Option>
-                        <Option value="weekly">Weekly</Option>
-                        <Option value="monthly">Monthly</Option>
-                        <Option value="yearly">Yearly</Option>
+                        <Option value='daily'>Daily</Option>
+                        <Option value='weekly'>Weekly</Option>
+                        <Option value='monthly'>Monthly</Option>
+                        <Option value='yearly'>Yearly</Option>
                       </Select>
-                      {errors.billingCycle ? <FormHelperText>{errors.billingCycle.message}</FormHelperText> : null}
+                      {errors.billingCycle ? (
+                        <FormHelperText>{errors.billingCycle.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -270,19 +291,23 @@ export function InvoiceCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="nextCycleDate"
+                  name='nextCycleDate'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.nextCycleDate)}>
                       <FormLabel>Next Cycle Date</FormLabel>
                       <Input
                         {...field}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          field.onChange(event.target.value ? dayjs(event.target.value).toDate() : null);
+                          field.onChange(
+                            event.target.value ? dayjs(event.target.value).toDate() : null
+                          );
                         }}
-                        type="date"
+                        type='date'
                         value={field.value ? dayjs(field.value).format('YYYY-MM-DD') : ''}
                       />
-                      {errors.nextCycleDate ? <FormHelperText>{errors.nextCycleDate.message}</FormHelperText> : null}
+                      {errors.nextCycleDate ? (
+                        <FormHelperText>{errors.nextCycleDate.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -290,74 +315,100 @@ export function InvoiceCreateForm(): React.JSX.Element {
               <Grid xs={12}>
                 <Controller
                   control={control}
-                  name="recipients"
+                  name='recipients'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.recipients)}>
                       <FormLabel>Recipients</FormLabel>
-                      <Input {...field} placeholder="Add emails" />
-                      {errors.recipients ? <FormHelperText>{errors.recipients.message}</FormHelperText> : null}
+                      <Input {...field} placeholder='Add emails' />
+                      {errors.recipients ? (
+                        <FormHelperText>{errors.recipients.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
               </Grid>
               <Grid xs={12}>
-                <Link fontSize="sm">Copy payment link</Link>
+                <Link fontSize='sm'>Copy payment link</Link>
               </Grid>
             </Grid>
           </Box>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Items</Typography>
+          <Typography level='h4'>Items</Typography>
           <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
-            <DataTable<LineItem> columns={lineItemColumns} rows={lineItems} stripe="even" />
+            <DataTable<LineItem> columns={lineItemColumns} rows={lineItems} stripe='even' />
           </Card>
-          <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+          <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
             <Box sx={{ flex: '1 1 auto' }}>
               <Button
-                color="neutral"
-                size="sm"
-                startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                variant="outlined"
+                color='neutral'
+                size='sm'
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                variant='outlined'
               >
                 Add Item
               </Button>
             </Box>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Subtotal</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Subtotal</Typography>
                 <Typography>
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(subtotal)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    subtotal
+                  )}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Shipping</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Shipping</Typography>
                 <Typography>
                   {shippingRate
-                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(shippingRate)
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                        shippingRate
+                      )
                     : '-'}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Taxes</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Taxes</Typography>
                 <Typography>
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tax)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    tax
+                  )}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="lg">Total</Typography>
-                <Typography level="h4">
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(total)}
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='lg'>Total</Typography>
+                <Typography level='h4'>
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    total
+                  )}
                 </Typography>
               </Stack>
             </Stack>
           </Stack>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Additional Note</Typography>
+          <Typography level='h4'>Additional Note</Typography>
           <Stack spacing={1} sx={{ maxWidth: 'md' }}>
             <Controller
               control={control}
-              name="notes"
+              name='notes'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.notes)}>
                   <Textarea {...field} maxRows={5} minRows={3} />
@@ -365,7 +416,9 @@ export function InvoiceCreateForm(): React.JSX.Element {
                 </FormControl>
               )}
             />
-            <Typography level="body-sm">* This is a public note, it will appear on the invoice</Typography>
+            <Typography level='body-sm'>
+              * This is a public note, it will appear on the invoice
+            </Typography>
           </Stack>
         </Stack>
       </Stack>

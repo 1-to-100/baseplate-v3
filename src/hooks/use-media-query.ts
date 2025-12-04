@@ -7,11 +7,19 @@ type FnName = 'up' | 'down' | 'between' | 'only' | 'not';
 
 export function useMediaQuery(fn: 'up' | 'down', key: Breakpoint | number): boolean;
 
-export function useMediaQuery(fn: 'between', start: Breakpoint | number, end: Breakpoint | number): boolean;
+export function useMediaQuery(
+  fn: 'between',
+  start: Breakpoint | number,
+  end: Breakpoint | number
+): boolean;
 
 export function useMediaQuery(fn: 'only' | 'not', key: Breakpoint): boolean;
 
-export function useMediaQuery(fn: FnName, start: Breakpoint | number, end?: Breakpoint | number): boolean {
+export function useMediaQuery(
+  fn: FnName,
+  start: Breakpoint | number,
+  end?: Breakpoint | number
+): boolean {
   const theme = useTheme();
   const [matches, setMatches] = React.useState<boolean>(false);
 

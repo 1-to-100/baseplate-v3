@@ -14,7 +14,11 @@ export interface ColumnDroppableProps {
   onTaskOpen?: (taskId: string) => void;
   tasks: Task[];
 }
-export function ColumnDroppable({ id, onTaskOpen, tasks }: ColumnDroppableProps): React.JSX.Element {
+export function ColumnDroppable({
+  id,
+  onTaskOpen,
+  tasks,
+}: ColumnDroppableProps): React.JSX.Element {
   const { over, setNodeRef } = useDroppable({ id, data: { type: 'column' } satisfies DnDData });
 
   const isOver = over ? over.id === id || tasks.find((task) => task.id === over.id) : false;

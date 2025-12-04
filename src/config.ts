@@ -15,7 +15,13 @@ export interface Config {
   };
   logLevel: keyof typeof LogLevel;
   auth: { strategy: keyof typeof AuthStrategy };
-  auth0: { secret?: string; baseUrl?: string; issuerBaseUrl?: string; clientId?: string; clientSecret?: string };
+  auth0: {
+    secret?: string;
+    baseUrl?: string;
+    issuerBaseUrl?: string;
+    clientId?: string;
+    clientSecret?: string;
+  };
   cognito: { identityPoolId?: string; userPoolClientId?: string; userPoolId?: string };
   supabase: { url?: string; anonKey?: string };
   mapbox: { apiKey?: string };
@@ -33,7 +39,7 @@ export const config = {
     version: process.env.NEXT_PUBLIC_SITE_VERSION,
   },
   logLevel: (process.env.NEXT_PUBLIC_LOG_LEVEL as keyof typeof LogLevel) || LogLevel.ALL,
-  auth: { 
+  auth: {
     strategy: (() => {
       const envStrategy = process.env.NEXT_PUBLIC_AUTH_STRATEGY;
       const validStrategies = Object.values(AuthStrategy) as string[];

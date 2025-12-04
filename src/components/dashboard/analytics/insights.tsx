@@ -17,24 +17,26 @@ export interface InsightsProps {
 export function Insights({ data = [] }: InsightsProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Insights</Typography>
-      <List sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '48px' }}>
+      <Typography level='h4'>Insights</Typography>
+      <List
+        sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '48px' }}
+      >
         {data.map(
           (entry, index): React.JSX.Element => (
             <ListItem key={entry.id}>
               <ListItemDecorator>
-                <Avatar size="sm">{index + 1}</Avatar>
+                <Avatar size='sm'>{index + 1}</Avatar>
               </ListItemDecorator>
               <ListItemContent>{entry.description}</ListItemContent>
             </ListItem>
           )
         )}
       </List>
-      <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+      <Stack direction='row' sx={{ justifyContent: 'flex-end' }}>
         <Button
-          endDecorator={<CaretRightIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-          size="sm"
-          variant="plain"
+          endDecorator={<CaretRightIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+          size='sm'
+          variant='plain'
         >
           View All Insights
         </Button>

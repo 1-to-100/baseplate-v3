@@ -21,18 +21,22 @@ export function SessionsByDevice({ total, data = [] }: SessionsByDeviceProps): R
 
   return (
     <Card sx={{ justifyContent: 'space-between' }}>
-      <Typography level="h4">Sessions by Device</Typography>
+      <Typography level='h4'>Sessions by Device</Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <NoSsr fallback={<Box sx={{ height: `${chartSize}px`, width: `${chartSize}px` }} />}>
-          <PieChart height={chartSize} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={chartSize}>
+          <PieChart
+            height={chartSize}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            width={chartSize}
+          >
             <Pie
               animationDuration={300}
               cx={chartSize / 2}
               cy={chartSize / 2}
               data={data}
-              dataKey="value"
+              dataKey='value'
               innerRadius={chartSize / 2 - chartTickness}
-              nameKey="name"
+              nameKey='name'
               outerRadius={chartSize / 2}
               strokeWidth={0}
             >
@@ -41,7 +45,7 @@ export function SessionsByDevice({ total, data = [] }: SessionsByDeviceProps): R
                   <Cell fill={entry.color} key={entry.name} />
                 )
               )}
-              <Label content={<LabelContent label="Total" value={total} />} position="center" />
+              <Label content={<LabelContent label='Total' value={total} />} position='center' />
             </Pie>
             <Tooltip animationDuration={50} content={<TooltipContent />} />
           </PieChart>
@@ -62,15 +66,20 @@ function LabelContent({ viewBox, value, label }: LabelContentProps): React.JSX.E
   const { cx, cy } = viewBox ?? { cx: 0, cy: 0 };
 
   return (
-    <text dominantBaseline="middle" textAnchor="middle" x={cx} y={cy + 10}>
-      <tspan dy="-1em" fill="var(--joy-palette-text-secondary)" fontSize="var(--joy-fontSize-sm)" x={cx}>
+    <text dominantBaseline='middle' textAnchor='middle' x={cx} y={cy + 10}>
+      <tspan
+        dy='-1em'
+        fill='var(--joy-palette-text-secondary)'
+        fontSize='var(--joy-fontSize-sm)'
+        x={cx}
+      >
         {label}
       </tspan>
       <tspan
-        dy="1em"
-        fill="var(--joy-palette-text-primary)"
-        fontSize="var(--joy-fontSize-lg)"
-        fontWeight="var(--joy-fontWeight-lg)"
+        dy='1em'
+        fill='var(--joy-palette-text-primary)'
+        fontSize='var(--joy-fontSize-lg)'
+        fontWeight='var(--joy-fontWeight-lg)'
         x={cx}
       >
         {new Intl.NumberFormat('en-US').format(value)}
@@ -86,16 +95,28 @@ interface LegendProps {
 function Legend({ payload }: LegendProps): React.JSX.Element {
   return (
     <Stack spacing={2}>
-      <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
-        <Typography level="title-md">Device</Typography>
-        <Typography level="title-md">Sessions</Typography>
+      <Stack direction='row' spacing={2} sx={{ justifyContent: 'space-between' }}>
+        <Typography level='title-md'>Device</Typography>
+        <Typography level='title-md'>Sessions</Typography>
       </Stack>
       {payload?.map(
         (entry): React.JSX.Element => (
-          <Stack direction="row" key={entry.name} spacing={2} sx={{ justifyContent: 'space-between' }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-              <Typography textColor="text.secondary">{entry.name}</Typography>
+          <Stack
+            direction='row'
+            key={entry.name}
+            spacing={2}
+            sx={{ justifyContent: 'space-between' }}
+          >
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.color,
+                  borderRadius: 'var(--joy-radius-xs)',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography textColor='text.secondary'>{entry.name}</Typography>
             </Stack>
             <Typography>{new Intl.NumberFormat('en-US').format(entry.value)}</Typography>
           </Stack>
@@ -127,18 +148,25 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={3}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.payload.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-              <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.payload.fill,
+                  borderRadius: '2px',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                 {entry.name}
               </Typography>
             </Stack>
-            <Typography fontSize="sm" textColor="text.tertiary">
+            <Typography fontSize='sm' textColor='text.tertiary'>
               {new Intl.NumberFormat('en-US').format(entry.value)}
             </Typography>
           </Stack>

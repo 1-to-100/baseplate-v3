@@ -12,12 +12,23 @@ interface ProductsPaginationProps {
 }
 
 // See orders pagination implementation
-export function ProductsPagination({ count, page, rowsPerPage }: ProductsPaginationProps): React.JSX.Element {
+export function ProductsPagination({
+  count,
+  page,
+  rowsPerPage,
+}: ProductsPaginationProps): React.JSX.Element {
   const pagesCount = Math.ceil(count / rowsPerPage);
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Pagination count={pagesCount} page={page} showFirstButton showLastButton size="sm" variant="outlined" />
+      <Pagination
+        count={pagesCount}
+        page={page}
+        showFirstButton
+        showLastButton
+        size='sm'
+        variant='outlined'
+      />
     </Box>
   );
 }

@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useState, useEffect, useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import ModalClose from "@mui/joy/ModalClose";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Input from "@mui/joy/Input";
-import Textarea from "@mui/joy/Textarea";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Button from "@mui/joy/Button";
-import FormHelperText from "@mui/joy/FormHelperText";
-import CircularProgress from "@mui/joy/CircularProgress";
-import { createTeam, updateTeam, getTeamById } from "@/lib/api/teams";
-import type { UpdateTeamInput } from "@/types/database";
-import { toast } from "@/components/core/toaster";
-import { useUserInfo } from "@/hooks/use-user-info";
-import { edgeFunctions } from "@/lib/supabase/edge-functions";
-import { isSystemAdministrator } from "@/lib/user-utils";
-import { getCustomers } from "@/lib/api/customers";
+import * as React from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import ModalClose from '@mui/joy/ModalClose';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Input from '@mui/joy/Input';
+import Textarea from '@mui/joy/Textarea';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Button from '@mui/joy/Button';
+import FormHelperText from '@mui/joy/FormHelperText';
+import CircularProgress from '@mui/joy/CircularProgress';
+import { createTeam, updateTeam, getTeamById } from '@/lib/api/teams';
+import type { UpdateTeamInput } from '@/types/database';
+import { toast } from '@/components/core/toaster';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { edgeFunctions } from '@/lib/supabase/edge-functions';
+import { isSystemAdministrator } from '@/lib/user-utils';
+import { getCustomers } from '@/lib/api/customers';
 
 interface AddEditTeamModalProps {
   open: boolean;
@@ -47,10 +47,10 @@ export default function AddEditTeamModal({
   teamId,
 }: AddEditTeamModalProps): React.JSX.Element {
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    managerId: "",
-    customerId: "",
+    name: '',
+    description: '',
+    managerId: '',
+    customerId: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ export default function AddEditTeamModal({
 
   // Get team data when editing
   const { data: teamData, isLoading: isTeamLoading } = useQuery({
-    queryKey: ["team", teamId],
+    queryKey: ['team', teamId],
     queryFn: async () => {
       if (!teamId) return null;
       const response = await getTeamById(teamId);
@@ -74,7 +74,7 @@ export default function AddEditTeamModal({
 
   // Get customers for system admin
   const { data: customersData, isLoading: isCustomersLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: getCustomers,
     enabled: isSystemAdmin && open,
   });
@@ -86,10 +86,12 @@ export default function AddEditTeamModal({
     } else {
       // For non-system admin, show only current customer
       if (customerId && userInfo?.customer) {
-        return [{
-          id: customerId,
-          name: userInfo.customer.name,
-        }];
+        return [
+          {
+            id: customerId,
+            name: userInfo.customer.name,
+          },
+        ];
       }
       return [];
     }
@@ -98,7 +100,7 @@ export default function AddEditTeamModal({
   // Get managers using edge function - use formData.customerId if available, otherwise fallback to user's customerId
   const managerCustomerId = formData.customerId || customerId;
   const { data: managersData, isLoading: isManagersLoading } = useQuery({
-    queryKey: ["managers", managerCustomerId],
+    queryKey: ['managers', managerCustomerId],
     queryFn: async () => {
       if (!managerCustomerId) {
         return [];
@@ -115,18 +117,18 @@ export default function AddEditTeamModal({
     if (teamId && teamData && open) {
       setFormData({
         name: teamData.team_name,
-        description: teamData.description || "",
-        managerId: teamData.manager_id || "",
-        customerId: teamData.customer_id || "",
+        description: teamData.description || '',
+        managerId: teamData.manager_id || '',
+        customerId: teamData.customer_id || '',
       });
       setErrors({});
     } else if (!teamId && open) {
       // For new team, set customerId based on user role
-      const initialCustomerId = isSystemAdmin ? "" : (customerId || "");
-      setFormData({ 
-        name: "", 
-        description: "", 
-        managerId: "",
+      const initialCustomerId = isSystemAdmin ? '' : customerId || '';
+      setFormData({
+        name: '',
+        description: '',
+        managerId: '',
         customerId: initialCustomerId,
       });
       setErrors({});
@@ -136,40 +138,41 @@ export default function AddEditTeamModal({
   const createTeamMutation = useMutation({
     mutationFn: createTeam,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
       onClose();
-      setFormData({ name: "", description: "", managerId: "", customerId: "" });
+      setFormData({ name: '', description: '', managerId: '', customerId: '' });
       setErrors({});
-      toast.success("Team created successfully.");
+      toast.success('Team created successfully.');
     },
     onError: (error: Error) => {
       const errorMessage = error.message;
-      if (errorMessage.includes("already exists")) {
-        setErrors((prev) => ({ ...prev, name: "A team with this name already exists" }));
-        toast.error("A team with this name already exists");
+      if (errorMessage.includes('already exists')) {
+        setErrors((prev) => ({ ...prev, name: 'A team with this name already exists' }));
+        toast.error('A team with this name already exists');
       } else {
-        toast.error(errorMessage || "An error occurred while creating the team.");
+        toast.error(errorMessage || 'An error occurred while creating the team.');
       }
     },
   });
 
   const updateTeamMutation = useMutation({
-    mutationFn: ({ teamId, input }: { teamId: string; input: UpdateTeamInput }) => updateTeam(teamId, input),
+    mutationFn: ({ teamId, input }: { teamId: string; input: UpdateTeamInput }) =>
+      updateTeam(teamId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teams"] });
-      queryClient.invalidateQueries({ queryKey: ["team", teamId] });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['team', teamId] });
       onClose();
-      setFormData({ name: "", description: "", managerId: "", customerId: "" });
+      setFormData({ name: '', description: '', managerId: '', customerId: '' });
       setErrors({});
-      toast.success("Team updated successfully.");
+      toast.success('Team updated successfully.');
     },
     onError: (error: Error) => {
       const errorMessage = error.message;
-      if (errorMessage.includes("already exists")) {
-        setErrors((prev) => ({ ...prev, name: "A team with this name already exists" }));
-        toast.error("A team with this name already exists");
+      if (errorMessage.includes('already exists')) {
+        setErrors((prev) => ({ ...prev, name: 'A team with this name already exists' }));
+        toast.error('A team with this name already exists');
       } else {
-        toast.error(errorMessage || "An error occurred while updating the team.");
+        toast.error(errorMessage || 'An error occurred while updating the team.');
       }
     },
   });
@@ -178,8 +181,8 @@ export default function AddEditTeamModal({
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
       // Clear manager when customer changes (managers are customer-specific)
-      if (field === "customerId" && value !== prev.customerId) {
-        updated.managerId = "";
+      if (field === 'customerId' && value !== prev.customerId) {
+        updated.managerId = '';
       }
       return updated;
     });
@@ -196,11 +199,11 @@ export default function AddEditTeamModal({
     const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+      newErrors.name = 'Name is required';
     }
 
     if (!formData.customerId) {
-      newErrors.customerId = "Customer is required";
+      newErrors.customerId = 'Customer is required';
     }
 
     setErrors(newErrors);
@@ -224,7 +227,7 @@ export default function AddEditTeamModal({
         const updatePayload: UpdateTeamInput = {
           ...payload,
         };
-        
+
         // Only include customer_id in update if system admin and it changed
         if (isSystemAdmin && formData.customerId) {
           updatePayload.customer_id = formData.customerId;
@@ -266,66 +269,63 @@ export default function AddEditTeamModal({
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         sx={{
-          width: { xs: "90%", sm: 600, md: 800 },
-          maxWidth: "100%",
+          width: { xs: '90%', sm: 600, md: 800 },
+          maxWidth: '100%',
           p: { xs: 2, sm: 3 },
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          minHeight: { xs: "400px", sm: "450px" },
-          maxHeight: "90vh",
-          overflowY: "auto",
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          minHeight: { xs: '400px', sm: '450px' },
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
-        <ModalClose sx={{ color: "#6B7280" }} />
+        <ModalClose sx={{ color: '#6B7280' }} />
         <Typography
-          level="h3"
+          level='h3'
           sx={{
-            fontSize: { xs: "20px", sm: "22px", md: "24px" },
+            fontSize: { xs: '20px', sm: '22px', md: '24px' },
             fontWeight: 600,
-            color: "var(--joy-palette-text-primary)",
+            color: 'var(--joy-palette-text-primary)',
             mb: { xs: 1.5, sm: 2 },
           }}
         >
-          {teamId ? "Edit Team" : "Add Team"}
+          {teamId ? 'Edit Team' : 'Add Team'}
         </Typography>
         {isLoading ? (
-          <Stack sx={{ alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
-            <CircularProgress size="md" />
+          <Stack sx={{ alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+            <CircularProgress size='md' />
           </Stack>
         ) : (
-          <Stack spacing={{ xs: 1.5, sm: 2 }} sx={{ minHeight: "300px" }}>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={{ xs: 1.5, sm: 2 }}
-            >
+          <Stack spacing={{ xs: 1.5, sm: 2 }} sx={{ minHeight: '300px' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }}>
               <Stack sx={{ flex: 1 }}>
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: "var(--joy-palette-text-primary)",
+                    fontSize: { xs: '12px', sm: '14px' },
+                    color: 'var(--joy-palette-text-primary)',
                     mb: 0.5,
                     fontWeight: 500,
                   }}
                 >
-                  Name <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
+                  Name <span style={{ color: 'var(--joy-palette-danger-500)' }}>*</span>
                 </Typography>
                 <Input
-                  placeholder="Enter team name"
+                  placeholder='Enter team name'
                   value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   error={!!errors?.name}
                   slotProps={{ input: { maxLength: 255 } }}
                   sx={{
-                    borderRadius: "6px",
-                    fontSize: { xs: "12px", sm: "14px" },
+                    borderRadius: '6px',
+                    fontSize: { xs: '12px', sm: '14px' },
                   }}
                 />
                 {errors?.name && (
                   <FormHelperText
                     sx={{
-                      color: "var(--joy-palette-danger-500)",
-                      fontSize: { xs: "10px", sm: "12px" },
+                      color: 'var(--joy-palette-danger-500)',
+                      fontSize: { xs: '10px', sm: '12px' },
                     }}
                   >
                     {errors.name}
@@ -334,27 +334,27 @@ export default function AddEditTeamModal({
               </Stack>
               <Stack sx={{ flex: 1 }}>
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: "var(--joy-palette-text-primary)",
+                    fontSize: { xs: '12px', sm: '14px' },
+                    color: 'var(--joy-palette-text-primary)',
                     mb: 0.5,
                     fontWeight: 500,
                   }}
                 >
-                  Customer <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
+                  Customer <span style={{ color: 'var(--joy-palette-danger-500)' }}>*</span>
                 </Typography>
                 <Select
-                  placeholder="Select customer"
+                  placeholder='Select customer'
                   value={formData.customerId}
                   onChange={(e, newValue) =>
-                    handleInputChange("customerId", (newValue as string) || "")
+                    handleInputChange('customerId', (newValue as string) || '')
                   }
-                  color={errors?.customerId ? "danger" : undefined}
+                  color={errors?.customerId ? 'danger' : undefined}
                   disabled={!isSystemAdmin || isCustomersLoading || !!teamId}
                   sx={{
-                    borderRadius: "6px",
-                    fontSize: { xs: "12px", sm: "14px" },
+                    borderRadius: '6px',
+                    fontSize: { xs: '12px', sm: '14px' },
                   }}
                 >
                   {customers.map((customer: { id: string; name: string }) => (
@@ -366,8 +366,8 @@ export default function AddEditTeamModal({
                 {errors?.customerId && (
                   <FormHelperText
                     sx={{
-                      color: "var(--joy-palette-danger-500)",
-                      fontSize: { xs: "10px", sm: "12px" },
+                      color: 'var(--joy-palette-danger-500)',
+                      fontSize: { xs: '10px', sm: '12px' },
                     }}
                   >
                     {errors.customerId}
@@ -376,16 +376,13 @@ export default function AddEditTeamModal({
               </Stack>
             </Stack>
 
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={{ xs: 1.5, sm: 2 }}
-            >
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }}>
               <Stack sx={{ flex: 1 }}>
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: { xs: "12px", sm: "14px" },
-                    color: "var(--joy-palette-text-primary)",
+                    fontSize: { xs: '12px', sm: '14px' },
+                    color: 'var(--joy-palette-text-primary)',
                     mb: 0.5,
                     fontWeight: 500,
                   }}
@@ -393,36 +390,45 @@ export default function AddEditTeamModal({
                   Manager
                 </Typography>
                 <Select
-                  placeholder="Select manager"
+                  placeholder='Select manager'
                   value={formData.managerId}
                   onChange={(e, newValue) =>
-                    handleInputChange("managerId", (newValue as string) || "")
+                    handleInputChange('managerId', (newValue as string) || '')
                   }
                   disabled={isManagersLoading || !managerCustomerId}
                   sx={{
-                    borderRadius: "6px",
-                    fontSize: { xs: "12px", sm: "14px" },
+                    borderRadius: '6px',
+                    fontSize: { xs: '12px', sm: '14px' },
                   }}
                 >
-                  <Option value="">None</Option>
-                  {managerUsers.map((manager: { id?: string; user_id?: string; name?: string; full_name?: string; email?: string }) => (
-                    <Option key={manager.id || manager.user_id} value={manager.id || manager.user_id}>
-                      {manager.name || manager.full_name || manager.email}
-                    </Option>
-                  ))}
+                  <Option value=''>None</Option>
+                  {managerUsers.map(
+                    (manager: {
+                      id?: string;
+                      user_id?: string;
+                      name?: string;
+                      full_name?: string;
+                      email?: string;
+                    }) => (
+                      <Option
+                        key={manager.id || manager.user_id}
+                        value={manager.id || manager.user_id}
+                      >
+                        {manager.name || manager.full_name || manager.email}
+                      </Option>
+                    )
+                  )}
                 </Select>
               </Stack>
-              <Stack sx={{ flex: 1 }}>
-                {/* Empty space to align with Customer field */}
-              </Stack>
+              <Stack sx={{ flex: 1 }}>{/* Empty space to align with Customer field */}</Stack>
             </Stack>
 
             <Stack>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: { xs: '12px', sm: '14px' },
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -430,50 +436,50 @@ export default function AddEditTeamModal({
                 Description
               </Typography>
               <Textarea
-                placeholder="Enter team description"
+                placeholder='Enter team description'
                 value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 minRows={3}
                 maxRows={6}
                 slotProps={{ textarea: { maxLength: 1000 } }}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: { xs: "12px", sm: "14px" },
+                  borderRadius: '6px',
+                  fontSize: { xs: '12px', sm: '14px' },
                 }}
               />
             </Stack>
 
             <Stack
-              direction={{ xs: "column", sm: "row" }}
+              direction={{ xs: 'column', sm: 'row' }}
               spacing={{ xs: 1, sm: 2 }}
-              justifyContent="flex-end"
+              justifyContent='flex-end'
               sx={{ mt: 2 }}
             >
               <Button
-                variant="outlined"
+                variant='outlined'
                 onClick={onClose}
                 sx={{
-                  fontSize: { xs: "12px", sm: "14px" },
+                  fontSize: { xs: '12px', sm: '14px' },
                   px: { xs: 2, sm: 3 },
-                  width: { xs: "100%", sm: "auto" },
+                  width: { xs: '100%', sm: 'auto' },
                 }}
               >
                 Cancel
               </Button>
               <Button
-                variant="solid"
+                variant='solid'
                 onClick={handleSave}
                 disabled={isSaving}
                 sx={{
-                  borderRadius: "20px",
-                  bgcolor: "#4F46E5",
-                  color: "#FFFFFF",
+                  borderRadius: '20px',
+                  bgcolor: '#4F46E5',
+                  color: '#FFFFFF',
                   fontWeight: 500,
-                  fontSize: { xs: "12px", sm: "14px" },
+                  fontSize: { xs: '12px', sm: '14px' },
                   px: { xs: 2, sm: 3 },
                   py: 1,
-                  "&:hover": { bgcolor: "#4338CA" },
-                  width: { xs: "100%", sm: "auto" },
+                  '&:hover': { bgcolor: '#4338CA' },
+                  width: { xs: '100%', sm: 'auto' },
                 }}
               >
                 Save
@@ -485,4 +491,3 @@ export default function AddEditTeamModal({
     </Modal>
   );
 }
-

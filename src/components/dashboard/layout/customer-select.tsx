@@ -1,20 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { Autocomplete, FormControl } from "@mui/joy";
-import { useQuery } from "@tanstack/react-query";
-import { getCustomers } from "@/lib/api/customers";
-import { authService } from "@/lib/auth/auth-service";
-import { useUserInfo } from "@/hooks/use-user-info";
+import { Autocomplete, FormControl } from '@mui/joy';
+import { useQuery } from '@tanstack/react-query';
+import { getCustomers } from '@/lib/api/customers';
+import { authService } from '@/lib/auth/auth-service';
+import { useUserInfo } from '@/hooks/use-user-info';
 import { useState, useEffect } from 'react';
 
 export function CustomerSelect(): React.JSX.Element {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [isChanging, setIsChanging] = useState(false);
-  
+
   const { userInfo } = useUserInfo();
   const { data: customers } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: getCustomers,
   });
 
@@ -24,7 +24,7 @@ export function CustomerSelect(): React.JSX.Element {
       try {
         // First, try to get customer from JWT app_metadata (for context switching)
         const context = await authService.getCurrentContext();
-        
+
         if (context.customerId) {
           // Use customer from JWT context (System Admin switched context)
           setSelectedCustomerId(context.customerId);
@@ -64,7 +64,7 @@ export function CustomerSelect(): React.JSX.Element {
         </Typography>
       )} */}
       <Autocomplete
-        placeholder="Select customer"
+        placeholder='Select customer'
         options={customers || []}
         getOptionLabel={(customer) => customer.name.slice(0, 20)}
         getOptionKey={(customer) => customer.id}
@@ -75,8 +75,8 @@ export function CustomerSelect(): React.JSX.Element {
           try {
             if (newValue) {
               // SECURE: Backend validates and issues new JWT with customer context
-              await authService.refreshWithContext({ 
-                customerId: newValue.id 
+              await authService.refreshWithContext({
+                customerId: newValue.id,
               });
               setSelectedCustomerId(newValue.id);
             } else {
@@ -94,10 +94,10 @@ export function CustomerSelect(): React.JSX.Element {
         }}
         isOptionEqualToValue={(option, value) => option.id === value.id}
         sx={{
-          borderRadius: "25px",
-          fontSize: { xs: "12px", sm: "14px" },
-          minWidth: { xs: "100%", md: "220px" },
-          maxWidth: { xs: "100%", md: "220px" },
+          borderRadius: '25px',
+          fontSize: { xs: '12px', sm: '14px' },
+          minWidth: { xs: '100%', md: '220px' },
+          maxWidth: { xs: '100%', md: '220px' },
           '& .MuiInput-root': {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -108,4 +108,4 @@ export function CustomerSelect(): React.JSX.Element {
       />
     </FormControl>
   );
-} 
+}

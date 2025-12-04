@@ -30,9 +30,14 @@ export interface SelectProps {
   /** Whether multiple selection is allowed */
   multiple?: boolean;
   /** Optional change handler */
-  onChange?: (event: React.SyntheticEvent | null, value: string | string[] | (string | string[])[] | null) => void;
+  onChange?: (
+    event: React.SyntheticEvent | null,
+    value: string | string[] | (string | string[])[] | null
+  ) => void;
   /** Custom render function for selected value */
-  renderValue?: (option: JoySelectOption<string | string[]> | JoySelectOption<string | string[]>[] | null) => React.ReactNode;
+  renderValue?: (
+    option: JoySelectOption<string | string[]> | JoySelectOption<string | string[]>[] | null
+  ) => React.ReactNode;
   /** Maximum number of options to display */
   maxOptions?: number;
   /** Whether to show the select as required */

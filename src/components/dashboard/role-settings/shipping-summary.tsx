@@ -19,19 +19,19 @@ export function ShippingSummary({ data = [] }: ShippingSummaryProps): React.JSX.
 
   return (
     <Card>
-      <Typography level="h4">Shipping</Typography>
+      <Typography level='h4'>Shipping</Typography>
       <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
         <ResponsiveContainer height={chartHeight}>
           <BarChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="4 4" vertical={false} />
-            <XAxis axisLine={false} dataKey="name" interval={1} tickLine={false} type="category" />
-            <YAxis axisLine={false} domain={[0, 800]} tickLine={false} type="number" />
+            <CartesianGrid strokeDasharray='4 4' vertical={false} />
+            <XAxis axisLine={false} dataKey='name' interval={1} tickLine={false} type='category' />
+            <YAxis axisLine={false} domain={[0, 800]} tickLine={false} type='number' />
             <Bar
               animationDuration={300}
               barSize={16}
-              dataKey="value"
-              fill="var(--joy-palette-primary-solidBg)"
-              name="Shipping"
+              dataKey='value'
+              fill='var(--joy-palette-primary-solidBg)'
+              name='Shipping'
               radius={[6, 6, 6, 6]}
             />
             <Tooltip animationDuration={50} content={<TooltipContent />} cursor={false} />
@@ -63,23 +63,25 @@ function TooltipContent({ active, payload, label }: TooltipContentProps): React.
       }}
     >
       <Stack spacing={2}>
-        <Typography level="title-md">{label}</Typography>
+        <Typography level='title-md'>{label}</Typography>
         <div>
           {payload?.map(
             (entry): React.JSX.Element => (
               <Stack
-                direction="row"
+                direction='row'
                 key={entry.name}
                 spacing={3}
                 sx={{ alignItems: 'center', justifyContent: 'space-between' }}
               >
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <Box sx={{ bgcolor: entry.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-                  <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+                <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                  <Box
+                    sx={{ bgcolor: entry.fill, borderRadius: '2px', height: '8px', width: '8px' }}
+                  />
+                  <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                     {entry.name}
                   </Typography>
                 </Stack>
-                <Typography fontSize="sm" textColor="text.tertiary">
+                <Typography fontSize='sm' textColor='text.tertiary'>
                   {new Intl.NumberFormat('en-US').format(entry.value)}
                 </Typography>
               </Stack>

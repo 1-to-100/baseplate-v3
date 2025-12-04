@@ -19,7 +19,12 @@ function UserProviderImpl({ children }: UserProviderProps): React.JSX.Element {
 
   return (
     <UserContext.Provider
-      value={{ user: user ? (user as User) : null, error: error ? error.message : null, isLoading, checkSession }}
+      value={{
+        user: user ? (user as User) : null,
+        error: error ? error.message : null,
+        isLoading,
+        checkSession,
+      }}
     >
       {children}
     </UserContext.Provider>

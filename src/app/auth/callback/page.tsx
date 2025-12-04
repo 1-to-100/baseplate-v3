@@ -55,14 +55,16 @@ export default function Page(): React.JSX.Element | null {
     if (!accessToken || !refreshToken) {
       setDisplayError('Access token or refresh token is missing');
       toast.error('Access token or refresh token is missing');
-      const errorParams = new URLSearchParams({ error: 'Access token or refresh token is missing' });
+      const errorParams = new URLSearchParams({
+        error: 'Access token or refresh token is missing',
+      });
       router.replace(`${paths.auth.supabase.signIn}?${errorParams.toString()}`);
       return;
     }
 
-    const { error, data } = await supabaseClient.auth.setSession({ 
-      access_token: accessToken, 
-      refresh_token: refreshToken 
+    const { error, data } = await supabaseClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
     if (error) {
@@ -76,7 +78,7 @@ export default function Page(): React.JSX.Element | null {
     if (data?.user) {
       try {
         const dbUser = await supabaseDB.getCurrentUser();
-        
+
         // Always check if user is soft-deleted (even for invites)
         if (dbUser.deleted_at) {
           await supabaseClient.auth.signOut();
@@ -84,15 +86,12 @@ export default function Page(): React.JSX.Element | null {
           router.replace(paths.auth.supabase.signIn);
           return;
         }
-        
+
         // If this is an invite, activate the user and redirect to set password page
         // Users become active as soon as they open the invitation link
         if (type === 'invite') {
           // Activate user if they are currently inactive or invited
-          if (
-            dbUser.status === UserStatus.INACTIVE ||
-            dbUser.status === 'invited'
-          ) {
+          if (dbUser.status === UserStatus.INACTIVE || dbUser.status === 'invited') {
             try {
               await supabaseDB.updateUser(dbUser.user_id, {
                 status: UserStatus.ACTIVE,
@@ -106,12 +105,9 @@ export default function Page(): React.JSX.Element | null {
           router.replace(paths.auth.supabase.setNewPassword);
           return;
         }
-        
+
         // For non-invite flows, check if user is inactive or suspended
-        if (
-          dbUser.status === UserStatus.INACTIVE ||
-          dbUser.status === UserStatus.SUSPENDED
-        ) {
+        if (dbUser.status === UserStatus.INACTIVE || dbUser.status === UserStatus.SUSPENDED) {
           // Sign out the user immediately
           await supabaseClient.auth.signOut();
           toast.error('Your account is not active. Please contact support.');
@@ -143,9 +139,8 @@ export default function Page(): React.JSX.Element | null {
   }, []);
 
   if (displayError) {
-    return <Alert color="danger">{displayError}</Alert>;
+    return <Alert color='danger'>{displayError}</Alert>;
   }
 
   return null;
 }
-

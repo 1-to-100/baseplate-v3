@@ -10,13 +10,13 @@ import RouterLink from 'next/link';
 import type { NavItemConfig } from '../types/nav';
 import { icons } from '../components/dashboard/layout/nav-icons';
 
-function SimpleNavItem({ 
-  item, 
-  depth = 0, 
-  activeItem, 
-  onItemClick 
-}: { 
-  item: NavItemConfig; 
+function SimpleNavItem({
+  item,
+  depth = 0,
+  activeItem,
+  onItemClick,
+}: {
+  item: NavItemConfig;
   depth?: number;
   activeItem: string;
   onItemClick: (key: string) => void;
@@ -78,21 +78,18 @@ function SimpleNavItem({
         >
           {Icon && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Icon
-                fill="currentColor"
-                fontSize="var(--joy-fontSize-xl)"
-                weight="regular"
-              />
+              <Icon fill='currentColor' fontSize='var(--joy-fontSize-xl)' weight='regular' />
             </Box>
           )}
           <Box sx={{ flex: '1 1 auto' }}>
-            <Typography 
-              component="span" 
-              fontSize="16px" 
-              fontWeight="400" 
+            <Typography
+              component='span'
+              fontSize='16px'
+              fontWeight='400'
               sx={{
-                color: "var(--joy-palette-text-primary) !important",
-                fontFamily: "var(--joy-fontFamily-body, 'Be Vietnam Pro', var(--joy-fontFamily-fallback))",
+                color: 'var(--joy-palette-text-primary) !important',
+                fontFamily:
+                  "var(--joy-fontFamily-body, 'Be Vietnam Pro', var(--joy-fontFamily-fallback))",
               }}
             >
               {item.title}
@@ -104,9 +101,9 @@ function SimpleNavItem({
             <Box sx={{ borderLeft: '1px solid var(--joy-palette-neutral-700)', pl: '12px' }}>
               <List sx={{ '--List-gap': '8px', '--List-padding': 0 }}>
                 {item.items?.map((childItem) => (
-                  <SimpleNavItem 
-                    key={childItem.key} 
-                    item={childItem} 
+                  <SimpleNavItem
+                    key={childItem.key}
+                    item={childItem}
                     depth={depth + 1}
                     activeItem={activeItem}
                     onItemClick={onItemClick}
@@ -126,10 +123,7 @@ export interface NavMenuProps {
   showLogo?: boolean;
 }
 
-export function NavMenu({ 
-  items, 
-  showLogo = true
-}: NavMenuProps) {
+export function NavMenu({ items, showLogo = true }: NavMenuProps) {
   const [activeItem, setActiveItem] = React.useState('role');
 
   const handleItemClick = (key: string) => {
@@ -151,7 +145,7 @@ export function NavMenu({
     >
       <Box sx={{ height: '100%', pb: '197px', position: 'relative', pt: '58px' }}>
         <Box
-          component="nav"
+          component='nav'
           sx={{
             height: '100%',
             overflowY: 'auto',
@@ -162,8 +156,8 @@ export function NavMenu({
         >
           <List sx={{ '--List-padding': 0, '--List-gap': '8px' }}>
             {items.map((item) => (
-              <SimpleNavItem 
-                key={item.key} 
+              <SimpleNavItem
+                key={item.key}
                 item={item}
                 activeItem={activeItem}
                 onItemClick={handleItemClick}

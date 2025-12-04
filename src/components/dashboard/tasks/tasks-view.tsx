@@ -55,27 +55,37 @@ export function TasksView({ mode }: TasksViewProps): React.JSX.Element {
       >
         <Stack spacing={3} sx={{ flex: '1 1 auto' }}>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Tasks
             </Typography>
           </div>
-          <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+          <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
             <Box sx={{ flex: '1 1 auto' }}>
               <Input
-                name="task"
-                placeholder="Search"
-                startDecorator={<MagnifyingGlassIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+                name='task'
+                placeholder='Search'
+                startDecorator={
+                  <MagnifyingGlassIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                }
                 sx={{ maxWidth: '420px' }}
               />
             </Box>
-            <Tabs value={mode} variant="custom">
+            <Tabs value={mode} variant='custom'>
               <TabList>
-                <Tab component={RouterLink} href={`${paths.dashboard.tasks}?view=board`} value="board">
-                  <KanbanIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                <Tab
+                  component={RouterLink}
+                  href={`${paths.dashboard.tasks}?view=board`}
+                  value='board'
+                >
+                  <KanbanIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                   Board
                 </Tab>
-                <Tab component={RouterLink} href={`${paths.dashboard.tasks}?view=list`} value="list">
-                  <TableIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                <Tab
+                  component={RouterLink}
+                  href={`${paths.dashboard.tasks}?view=list`}
+                  value='list'
+                >
+                  <TableIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                   List
                 </Tab>
               </TabList>

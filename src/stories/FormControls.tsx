@@ -44,7 +44,7 @@ export function FormControls({
   helperText,
   disabled = false,
   size = 'md',
-  color = 'primary'
+  color = 'primary',
 }: FormControlsProps) {
   const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) {
@@ -56,7 +56,7 @@ export function FormControls({
     if (onChange) {
       const currentValues = Array.isArray(value) ? value : [];
       const newValues = currentValues.includes(checkedValue)
-        ? currentValues.filter(v => v !== checkedValue)
+        ? currentValues.filter((v) => v !== checkedValue)
         : [...currentValues, checkedValue];
       onChange(newValues);
     }
@@ -76,13 +76,9 @@ export function FormControls({
           {label}
         </FormLabel>
       )}
-      
+
       {type === 'radio' ? (
-        <RadioGroup
-          value={value as string}
-          onChange={handleRadioChange}
-          size={size}
-        >
+        <RadioGroup value={value as string} onChange={handleRadioChange} size={size}>
           <Stack spacing={1}>
             {options.map((option) => (
               <Box
@@ -97,21 +93,22 @@ export function FormControls({
                 }}
                 onClick={() => !option.disabled && !disabled && onChange && onChange(option.value)}
               >
-                                  <Box
-                    sx={{
-                      width: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
-                      height: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
-                      border: value === option.value ? 'none' : '1px solid #dde7ee',
-                      borderRadius: '50%',
-                      background: value === option.value
+                <Box
+                  sx={{
+                    width: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
+                    height: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
+                    border: value === option.value ? 'none' : '1px solid #dde7ee',
+                    borderRadius: '50%',
+                    background:
+                      value === option.value
                         ? 'linear-gradient(120deg, #1E1A6F 0%, #3439B0 100%)'
                         : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
                   {value === option.value && (
                     <Box
                       sx={{
@@ -138,7 +135,7 @@ export function FormControls({
       ) : (
         <Stack spacing={1}>
           {options.map((option) => (
-                        <Box
+            <Box
               key={option.value}
               sx={{
                 display: 'flex',
@@ -155,28 +152,31 @@ export function FormControls({
                   width: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
                   height: size === 'sm' ? '16px' : size === 'lg' ? '24px' : '20px',
                   border: '1px solid #dde7ee',
-                  borderColor: Array.isArray(value) && value.includes(option.value) 
-                    ? 'transparent' 
-                    : '#dde7ee',
+                  borderColor:
+                    Array.isArray(value) && value.includes(option.value)
+                      ? 'transparent'
+                      : '#dde7ee',
                   borderRadius: '3px',
-                  background: Array.isArray(value) && value.includes(option.value)
-                    ? 'linear-gradient(120deg, #282490 0%, #3F4DCF 100%)'
-                    : 'transparent',
+                  background:
+                    Array.isArray(value) && value.includes(option.value)
+                      ? 'linear-gradient(120deg, #282490 0%, #3F4DCF 100%)'
+                      : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    background: Array.isArray(value) && value.includes(option.value)
-                      ? 'linear-gradient(120deg, #1E1A6F 0%, #3439B0 100%)'
-                      : 'transparent',
+                    background:
+                      Array.isArray(value) && value.includes(option.value)
+                        ? 'linear-gradient(120deg, #1E1A6F 0%, #3439B0 100%)'
+                        : 'transparent',
                   },
                 }}
               >
                 {Array.isArray(value) && value.includes(option.value) && (
                   <Box
-                    component="svg"
-                    viewBox="0 0 24 24"
+                    component='svg'
+                    viewBox='0 0 24 24'
                     sx={{
                       width: size === 'sm' ? '10px' : size === 'lg' ? '16px' : '16px',
                       height: size === 'sm' ? '10px' : size === 'lg' ? '16px' : '16px',
@@ -184,7 +184,7 @@ export function FormControls({
                       stroke: 'white',
                     }}
                   >
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    <path d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' />
                   </Box>
                 )}
               </Box>
@@ -200,7 +200,7 @@ export function FormControls({
           ))}
         </Stack>
       )}
-      
+
       {helperText && (
         <FormHelperText
           sx={{

@@ -8,7 +8,9 @@ import { SignUpConfirmForm } from '@/components/auth/cognito/sign-up-confirm-for
 import { GuestGuard } from '@/components/auth/guest-guard';
 import { SplitLayout } from '@/components/auth/split-layout';
 
-export const metadata = { title: `Sign up confirm | Cognito | Auth | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Sign up confirm | Cognito | Auth | ${config.site.name}`,
+} satisfies Metadata;
 
 interface PageProps {
   searchParams: Promise<{ email?: string }>;
@@ -20,7 +22,7 @@ export default async function Page({ searchParams }: PageProps) {
   if (!email) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="danger">Email is required</Alert>
+        <Alert color='danger'>Email is required</Alert>
       </Box>
     );
   }

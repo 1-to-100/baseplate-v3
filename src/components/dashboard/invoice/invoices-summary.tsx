@@ -54,15 +54,21 @@ export function InvoicesSummary({
         ] satisfies { id: number; label: string; count: number; amount: number }[]
       ).map(
         (entry): React.JSX.Element => (
-          <Stack key={entry.id} spacing={2} sx={{ alignItems: { xl: 'center' }, whiteSpace: 'nowrap' }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Typography level="body-sm">{entry.label}</Typography>
-              <Chip size="sm">{new Intl.NumberFormat('en-US').format(entry.count)}</Chip>
+          <Stack
+            key={entry.id}
+            spacing={2}
+            sx={{ alignItems: { xl: 'center' }, whiteSpace: 'nowrap' }}
+          >
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography level='body-sm'>{entry.label}</Typography>
+              <Chip size='sm'>{new Intl.NumberFormat('en-US').format(entry.count)}</Chip>
             </Stack>
-            <Typography level="h2">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
-                entry.amount
-              )}
+            <Typography level='h2'>
+              {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+              }).format(entry.amount)}
             </Typography>
           </Stack>
         )

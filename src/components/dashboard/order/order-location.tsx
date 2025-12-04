@@ -8,9 +8,9 @@ import Typography from '@mui/joy/Typography';
 import { motion } from 'framer-motion';
 
 import { config } from '@/config';
-import {Marker, ViewState} from 'react-map-gl/mapbox';
-import {Map, MapRef} from 'react-map-gl/mapbox-legacy';
-import {EasingOptions} from 'mapbox-gl';
+import { Marker, ViewState } from 'react-map-gl/mapbox';
+import { Map, MapRef } from 'react-map-gl/mapbox-legacy';
+import { EasingOptions } from 'mapbox-gl';
 
 // Map default view state
 const VIEW_STATE: Pick<ViewState, 'latitude' | 'longitude' | 'zoom'> = {
@@ -43,9 +43,14 @@ export function OrderLocation(props: OrderLocationProps): React.JSX.Element {
     return (
       <Stack
         spacing={1}
-        sx={{ alignItems: 'center', flexDirection: 'column', height: '100%', justifyContent: 'center' }}
+        sx={{
+          alignItems: 'center',
+          flexDirection: 'column',
+          height: '100%',
+          justifyContent: 'center',
+        }}
       >
-        <Typography level="title-lg" sx={{ mb: 1 }}>
+        <Typography level='title-lg' sx={{ mb: 1 }}>
           Map cannot be loaded
         </Typography>
         <Typography>Mapbox API Key is not configured.</Typography>
@@ -71,7 +76,12 @@ export function OrderLocation(props: OrderLocationProps): React.JSX.Element {
             <motion.div
               animate={{ opacity: 1, scale: 1 }}
               initial={{ opacity: 0, scale: 0 }}
-              transition={{ duration: 1, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' }}
+              transition={{
+                duration: 1,
+                ease: 'easeInOut',
+                repeat: Infinity,
+                repeatType: 'reverse',
+              }}
             >
               <Box
                 sx={{
@@ -104,7 +114,9 @@ export function OrderLocation(props: OrderLocationProps): React.JSX.Element {
 
 function useMapStyle(): string {
   const { colorScheme } = useColorScheme();
-  return colorScheme === 'dark' ? 'mapbox://styles/mapbox/dark-v9' : 'mapbox://styles/mapbox/light-v9';
+  return colorScheme === 'dark'
+    ? 'mapbox://styles/mapbox/dark-v9'
+    : 'mapbox://styles/mapbox/light-v9';
 }
 
 function useRecenter({

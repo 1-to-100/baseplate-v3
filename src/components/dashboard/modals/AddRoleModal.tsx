@@ -1,30 +1,25 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import ModalClose from "@mui/joy/ModalClose";
-import Typography from "@mui/joy/Typography";
-import Stack from "@mui/joy/Stack";
-import Input from "@mui/joy/Input";
-import Textarea from "@mui/joy/Textarea";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import Button from "@mui/joy/Button";
-import Switch from "@mui/joy/Switch";
-import Tooltip from "@mui/joy/Tooltip";
-import { getSystemModules } from "../../../lib/api/system-modules";
-import {
-  createRole,
-  addRolePermissions,
-  editRole,
-  getRoleById,
-} from "../../../lib/api/roles";
-import { Box, CircularProgress } from "@mui/joy";
-import { Role } from "@/contexts/auth/types";
-import { toast } from "@/components/core/toaster";
+import * as React from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import ModalClose from '@mui/joy/ModalClose';
+import Typography from '@mui/joy/Typography';
+import Stack from '@mui/joy/Stack';
+import Input from '@mui/joy/Input';
+import Textarea from '@mui/joy/Textarea';
+import Select from '@mui/joy/Select';
+import Option from '@mui/joy/Option';
+import Button from '@mui/joy/Button';
+import Switch from '@mui/joy/Switch';
+import Tooltip from '@mui/joy/Tooltip';
+import { getSystemModules } from '../../../lib/api/system-modules';
+import { createRole, addRolePermissions, editRole, getRoleById } from '../../../lib/api/roles';
+import { Box, CircularProgress } from '@mui/joy';
+import { Role } from '@/contexts/auth/types';
+import { toast } from '@/components/core/toaster';
 
 interface Permission {
   enabled: boolean;
@@ -68,22 +63,17 @@ interface AddRoleModalProps {
   roleId?: string;
 }
 
-export default function AddRoleModal({
-  open,
-  onClose,
-  onRoleCreated,
-  roleId,
-}: AddRoleModalProps) {
+export default function AddRoleModal({ open, onClose, onRoleCreated, roleId }: AddRoleModalProps) {
   const [formData, setFormData] = useState<FormData>({
-    roleName: "",
-    description: "",
+    roleName: '',
+    description: '',
     permissions: {},
   });
   const [errors, setErrors] = useState<Errors>({});
   const queryClient = useQueryClient();
 
   const { data: systemModules, isLoading: isModulesLoading } = useQuery({
-    queryKey: ["systemModules"],
+    queryKey: ['systemModules'],
     queryFn: getSystemModules,
   });
 
@@ -92,10 +82,10 @@ export default function AddRoleModal({
     isLoading: isRoleLoading,
     error: roleError,
   } = useQuery({
-    queryKey: ["role", roleId],
+    queryKey: ['role', roleId],
     queryFn: async () => {
       if (!roleId) {
-        return null; 
+        return null;
       }
       return getRoleById(roleId);
     },
@@ -116,25 +106,21 @@ export default function AddRoleModal({
 
       if (roleData && roleId) {
         setFormData({
-          roleName: roleData.name || "",
-          description: roleData.description || "",
-          permissions: Object.keys(initialPermissions).reduce(
-            (acc, moduleName) => {
-              const modulePermissions =
-                roleData.permissions?.[moduleName] || [];
-              acc[moduleName] = {
-                enabled: modulePermissions.length > 0,
-                accessLevel: modulePermissions.map((perm: { name: string }) => perm.name),
-              };
-              return acc;
-            },
-            initialPermissions
-          ),
+          roleName: roleData.name || '',
+          description: roleData.description || '',
+          permissions: Object.keys(initialPermissions).reduce((acc, moduleName) => {
+            const modulePermissions = roleData.permissions?.[moduleName] || [];
+            acc[moduleName] = {
+              enabled: modulePermissions.length > 0,
+              accessLevel: modulePermissions.map((perm: { name: string }) => perm.name),
+            };
+            return acc;
+          }, initialPermissions),
         });
       } else {
         setFormData({
-          roleName: "",
-          description: "",
+          roleName: '',
+          description: '',
           permissions: initialPermissions,
         });
       }
@@ -143,7 +129,7 @@ export default function AddRoleModal({
   }, [systemModules, roleData, open, isModulesLoading, roleId]);
 
   const handleInputChange = (field: string, value: string) => {
-    if (field === "description" && value.length > 255) {
+    if (field === 'description' && value.length > 255) {
       return;
     }
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -163,9 +149,7 @@ export default function AddRoleModal({
           [permissionKey]: {
             ...currentPermission,
             enabled: !currentPermission.enabled,
-            accessLevel: !currentPermission.enabled
-              ? currentPermission.accessLevel
-              : [],
+            accessLevel: !currentPermission.enabled ? currentPermission.accessLevel : [],
           },
         },
       };
@@ -197,24 +181,22 @@ export default function AddRoleModal({
   const validateForm = () => {
     const newErrors: Errors = {};
     if (!formData.roleName.trim()) {
-      newErrors.roleName = "Role name is required";
+      newErrors.roleName = 'Role name is required';
     } else if (formData.roleName.length > 96) {
-      newErrors.roleName = "Role name must be shorter than or equal to 96 characters";
+      newErrors.roleName = 'Role name must be shorter than or equal to 96 characters';
     }
     if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
+      newErrors.description = 'Description is required';
     } else if (formData.description.length > 255) {
-      newErrors.description = "Description cannot exceed 255 characters";
+      newErrors.description = 'Description cannot exceed 255 characters';
     }
 
     let hasValidPermissions = false;
-    for (const [moduleName, permission] of Object.entries(
-      formData.permissions
-    )) {
+    for (const [moduleName, permission] of Object.entries(formData.permissions)) {
       if (permission.enabled) {
         if (permission.accessLevel.length === 0) {
           newErrors.permissions =
-            "Modules with enabled permissions must have at least one permission selected";
+            'Modules with enabled permissions must have at least one permission selected';
           break;
         } else {
           hasValidPermissions = true;
@@ -222,8 +204,7 @@ export default function AddRoleModal({
       }
     }
     if (!hasValidPermissions && !newErrors.permissions) {
-      newErrors.permissions =
-        "At least one module must have permissions enabled and selected";
+      newErrors.permissions = 'At least one module must have permissions enabled and selected';
     }
 
     setErrors(newErrors);
@@ -245,27 +226,23 @@ export default function AddRoleModal({
       if (roleData && roleId) {
         role = await editRole(roleId, rolePayload);
         onClose();
-        toast.success("Role has been successfully updated");
+        toast.success('Role has been successfully updated');
       } else {
         role = await createRole(rolePayload);
         onClose();
-        toast.success("Role has been successfully created");
+        toast.success('Role has been successfully created');
       }
 
       const permissionNames: string[] = [];
-      Object.entries(formData.permissions).forEach(
-        ([moduleName, permission]) => {
-          if (permission.enabled && permission.accessLevel.length > 0) {
-            permission.accessLevel.forEach((perm) => {
-              const prefix = `${moduleName}:`;
-              const cleanPerm = perm.startsWith(prefix)
-                ? perm.slice(prefix.length)
-                : perm;
-              permissionNames.push(`${moduleName}:${cleanPerm}`);
-            });
-          }
+      Object.entries(formData.permissions).forEach(([moduleName, permission]) => {
+        if (permission.enabled && permission.accessLevel.length > 0) {
+          permission.accessLevel.forEach((perm) => {
+            const prefix = `${moduleName}:`;
+            const cleanPerm = perm.startsWith(prefix) ? perm.slice(prefix.length) : perm;
+            permissionNames.push(`${moduleName}:${cleanPerm}`);
+          });
         }
-      );
+      });
 
       if (permissionNames.length > 0) {
         const permissionsPayload: AddRolePermissionsPayload = {
@@ -275,48 +252,44 @@ export default function AddRoleModal({
         await addRolePermissions(permissionsPayload);
       }
 
-      
       if (roleId) {
         await queryClient.invalidateQueries({
-          queryKey: ["role", roleId],
+          queryKey: ['role', roleId],
         });
-        toast.success("Role has been successfully updated");
+        toast.success('Role has been successfully updated');
       }
-      
+
       await queryClient.invalidateQueries({
-        queryKey: ["roles"],
+        queryKey: ['roles'],
       });
 
       if (onRoleCreated) {
         onRoleCreated();
       }
     } catch (error) {
-      console.error(
-        "Error creating or editing role or adding permissions:",
-        error
-      );
-      
+      console.error('Error creating or editing role or adding permissions:', error);
+
       const apiError = error as ApiError;
       if (apiError.response?.data?.message) {
-        const errorMessage = Array.isArray(apiError.response.data.message) 
-          ? apiError.response.data.message[0] 
+        const errorMessage = Array.isArray(apiError.response.data.message)
+          ? apiError.response.data.message[0]
           : apiError.response.data.message;
-        
-        if (errorMessage && errorMessage.includes("name")) {
+
+        if (errorMessage && errorMessage.includes('name')) {
           setErrors({
             ...errors,
-            roleName: errorMessage
+            roleName: errorMessage,
           });
         } else {
           setErrors({
             ...errors,
-            permissions: errorMessage || "Failed to save role. Please try again."
+            permissions: errorMessage || 'Failed to save role. Please try again.',
           });
         }
       } else {
         setErrors({
           ...errors,
-          permissions: "Failed to save role. Please try again."
+          permissions: 'Failed to save role. Please try again.',
         });
       }
     }
@@ -329,11 +302,11 @@ export default function AddRoleModal({
           sx={{
             width: 500,
             p: 3,
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           }}
         >
-          <Typography color="danger">Error: {roleError.message}</Typography>
+          <Typography color='danger'>Error: {roleError.message}</Typography>
         </ModalDialog>
       </Modal>
     );
@@ -345,41 +318,41 @@ export default function AddRoleModal({
         sx={{
           width: 500,
           p: 3,
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         }}
       >
-        <ModalClose sx={{ color: "#6B7280" }} />
+        <ModalClose sx={{ color: '#6B7280' }} />
         <Typography
-          level="h3"
+          level='h3'
           sx={{
-            fontSize: "24px",
+            fontSize: '24px',
             fontWeight: 600,
-            color: "var(--joy-palette-text-primary)",
+            color: 'var(--joy-palette-text-primary)',
             mb: 2,
           }}
         >
-          {roleData ? "Edit Role" : "Add Role"}
+          {roleData ? 'Edit Role' : 'Add Role'}
         </Typography>
         {isModulesLoading || isRoleLoading ? (
           <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "45vh",
-          }}
-        >
-          <CircularProgress />
-        </Box>
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '45vh',
+            }}
+          >
+            <CircularProgress />
+          </Box>
         ) : (
           <Stack spacing={2}>
             <Stack>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -387,24 +360,21 @@ export default function AddRoleModal({
                 Role name
               </Typography>
               <Input
-                placeholder="Enter role name"
+                placeholder='Enter role name'
                 value={formData.roleName}
-                onChange={(e) => handleInputChange("roleName", e.target.value)}
+                onChange={(e) => handleInputChange('roleName', e.target.value)}
                 error={!!errors.roleName}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  borderColor: errors.roleName ? "red" : undefined,
-                  "&:focus-within": {
-                    borderColor: errors.roleName ? "red" : undefined,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  borderColor: errors.roleName ? 'red' : undefined,
+                  '&:focus-within': {
+                    borderColor: errors.roleName ? 'red' : undefined,
                   },
                 }}
               />
               {errors.roleName && (
-                <Typography
-                  level="body-sm"
-                  sx={{ fontSize: "12px", color: "red", mt: 0.5 }}
-                >
+                <Typography level='body-sm' sx={{ fontSize: '12px', color: 'red', mt: 0.5 }}>
                   {errors.roleName}
                 </Typography>
               )}
@@ -412,10 +382,10 @@ export default function AddRoleModal({
 
             <Stack>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-primary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-primary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -425,33 +395,33 @@ export default function AddRoleModal({
               <Textarea
                 placeholder="Describe this role's permissions and responsibilities"
                 value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 minRows={3}
                 error={!!errors.description}
                 sx={{
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  borderColor: errors.description ? "red" : undefined,
-                  "&:focus-within": {
-                    borderColor: errors.description ? "red" : undefined,
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  borderColor: errors.description ? 'red' : undefined,
+                  '&:focus-within': {
+                    borderColor: errors.description ? 'red' : undefined,
                   },
                 }}
               />
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack direction='row' justifyContent='space-between' alignItems='center'>
                 {errors.description && (
-                  <Typography
-                    level="body-sm"
-                    sx={{ fontSize: "12px", color: "red" }}
-                  >
+                  <Typography level='body-sm' sx={{ fontSize: '12px', color: 'red' }}>
                     {errors.description}
                   </Typography>
                 )}
                 <Typography
-                  level="body-sm"
+                  level='body-sm'
                   sx={{
-                    fontSize: "12px",
-                    color: formData.description.length > 255 ? "red" : "var(--joy-palette-text-secondary)",
-                    ml: "auto"
+                    fontSize: '12px',
+                    color:
+                      formData.description.length > 255
+                        ? 'red'
+                        : 'var(--joy-palette-text-secondary)',
+                    ml: 'auto',
                   }}
                 >
                   {formData.description.length}/255 characters
@@ -461,10 +431,10 @@ export default function AddRoleModal({
 
             <Stack spacing={1}>
               <Typography
-                level="body-sm"
+                level='body-sm'
                 sx={{
-                  fontSize: "14px",
-                  color: "var(--joy-palette-text-secondary)",
+                  fontSize: '14px',
+                  color: 'var(--joy-palette-text-secondary)',
                   mb: 0.5,
                   fontWeight: 500,
                 }}
@@ -472,40 +442,33 @@ export default function AddRoleModal({
                 Permission
               </Typography>
               {errors.permissions && (
-                <Typography
-                  level="body-sm"
-                  sx={{ fontSize: "12px", color: "red", mb: 1 }}
-                >
+                <Typography level='body-sm' sx={{ fontSize: '12px', color: 'red', mb: 1 }}>
                   {errors.permissions}
                 </Typography>
               )}
               {systemModules?.map((module) => {
-                const selectedPermissions =
-                  formData.permissions[module.name]?.accessLevel || [];
+                const selectedPermissions = formData.permissions[module.name]?.accessLevel || [];
                 return (
                   <Stack key={module.name} spacing={1}>
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction='row' spacing={2} alignItems='center'>
                       <Tooltip
-                        title="Enable or disable this permission group for the role"
-                        placement="top"
+                        title='Enable or disable this permission group for the role'
+                        placement='top'
                         sx={{
-                          background: "#DAD8FD",
-                          color: "#3D37DD",
+                          background: '#DAD8FD',
+                          color: '#3D37DD',
                         }}
                       >
-                        <Box sx={{ background: "transparent", display: "flex" }}>
+                        <Box sx={{ background: 'transparent', display: 'flex' }}>
                           <Switch
-                            checked={
-                              formData.permissions[module.name]?.enabled ||
-                              false
-                            }
+                            checked={formData.permissions[module.name]?.enabled || false}
                             onChange={() => handlePermissionToggle(module.name)}
                           />
                         </Box>
                       </Tooltip>
                       <Typography
-                        level="body-sm"
-                        sx={{ fontSize: "14px", color: "#6B7280", flex: 1 }}
+                        level='body-sm'
+                        sx={{ fontSize: '14px', color: '#6B7280', flex: 1 }}
                       >
                         {module.label}
                       </Typography>
@@ -513,20 +476,17 @@ export default function AddRoleModal({
                         multiple
                         value={selectedPermissions}
                         onChange={(e, newValue) =>
-                          handleAccessLevelChange(
-                            module.name,
-                            newValue as string[]
-                          )
+                          handleAccessLevelChange(module.name, newValue as string[])
                         }
-                        placeholder="Select permissions"
+                        placeholder='Select permissions'
                         disabled={!formData.permissions[module.name]?.enabled}
                         renderValue={(selected) => {
                           if (selected.length === 0) {
                             return (
                               <Typography
                                 sx={{
-                                  color: "var(--joy-palette-text-primary)",
-                                  fontSize: "14px",
+                                  color: 'var(--joy-palette-text-primary)',
+                                  fontSize: '14px',
                                 }}
                               >
                                 Select permissions
@@ -536,8 +496,8 @@ export default function AddRoleModal({
                           return (
                             <Typography
                               sx={{
-                                color: "var(--joy-palette-text-primary)",
-                                fontSize: "14px",
+                                color: 'var(--joy-palette-text-primary)',
+                                fontSize: '14px',
                               }}
                             >
                               Selected permissions: {selected.length}
@@ -545,25 +505,25 @@ export default function AddRoleModal({
                           );
                         }}
                         sx={{
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                          minWidth: "120px",
-                          "& .MuiSelect-placeholder": {
-                            fontSize: "14px",
-                            color: "var(--joy-palette-text-primary)",
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          minWidth: '120px',
+                          '& .MuiSelect-placeholder': {
+                            fontSize: '14px',
+                            color: 'var(--joy-palette-text-primary)',
                           },
                         }}
                         slotProps={{
                           listbox: {
                             sx: {
-                              fontSize: "13px",
-                              "& .MuiOption-root.Mui-selected": {
-                                fontSize: "12px",
-                                color: "var(--joy-palette-text-primary)",
-                                "&:after": {
+                              fontSize: '13px',
+                              '& .MuiOption-root.Mui-selected': {
+                                fontSize: '12px',
+                                color: 'var(--joy-palette-text-primary)',
+                                '&:after': {
                                   content: '"✓"',
-                                  marginRight: "8px",
-                                  color: "#4F46E5",
+                                  marginRight: '8px',
+                                  color: '#4F46E5',
                                 },
                               },
                             },
@@ -573,10 +533,7 @@ export default function AddRoleModal({
                         {module.permissions
                           .sort((a, b) => a.order - b.order)
                           .map((permission) => (
-                            <Option
-                              key={permission.name}
-                              value={permission.name}
-                            >
+                            <Option key={permission.name} value={permission.name}>
                               {permission.label}
                             </Option>
                           ))}
@@ -586,29 +543,27 @@ export default function AddRoleModal({
                       <Stack
                         spacing={0.5}
                         sx={{
-                          maxHeight: "100px",
-                          overflowY: "auto",
-                          display: "flex",
-                          flexWrap: "wrap",
-                          flexDirection: "row",
+                          maxHeight: '100px',
+                          overflowY: 'auto',
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          flexDirection: 'row',
                           gap: 1,
                         }}
                       >
                         {selectedPermissions.map((permName) => {
-                          const permission = module.permissions.find(
-                            (p) => p.name === permName
-                          );
+                          const permission = module.permissions.find((p) => p.name === permName);
                           return (
                             <Typography
                               key={permName}
-                              level="body-sm"
+                              level='body-sm'
                               sx={{
-                                fontSize: "12px",
-                                color: "#4F46E5",
-                                borderRadius: "5px",
-                                border: "1px solid #4F46E5",
-                                width: "fit-content",
-                                padding: "3px 5px",
+                                fontSize: '12px',
+                                color: '#4F46E5',
+                                borderRadius: '5px',
+                                border: '1px solid #4F46E5',
+                                width: 'fit-content',
+                                padding: '3px 5px',
                               }}
                             >
                               {permission?.label || permName}
@@ -622,24 +577,24 @@ export default function AddRoleModal({
               })}
             </Stack>
 
-            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
-              <Button variant="outlined" onClick={onClose}>
+            <Stack direction='row' spacing={2} justifyContent='flex-end' mt={2}>
+              <Button variant='outlined' onClick={onClose}>
                 Cancel
               </Button>
               <Button
-                variant="solid"
+                variant='solid'
                 onClick={handleSave}
                 sx={{
-                  borderRadius: "20px",
-                  bgcolor: "#4F46E5",
-                  color: "#FFFFFF",
+                  borderRadius: '20px',
+                  bgcolor: '#4F46E5',
+                  color: '#FFFFFF',
                   fontWeight: 500,
                   px: 3,
                   py: 1,
-                  "&:hover": { bgcolor: "#4338CA" },
+                  '&:hover': { bgcolor: '#4338CA' },
                 }}
               >
-                {roleData ? "Save Changes" : "Create Role"}
+                {roleData ? 'Save Changes' : 'Create Role'}
               </Button>
             </Stack>
           </Stack>

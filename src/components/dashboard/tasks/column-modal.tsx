@@ -17,7 +17,12 @@ export interface ColumnModalProps {
   open: boolean;
 }
 
-export function ColumnModal({ column, onClose, onColumnUpdate, open }: ColumnModalProps): React.JSX.Element {
+export function ColumnModal({
+  column,
+  onClose,
+  onColumnUpdate,
+  open,
+}: ColumnModalProps): React.JSX.Element {
   const { id, name: initialName } = column;
   const [name, setName] = React.useState<string>('');
 
@@ -37,20 +42,20 @@ export function ColumnModal({ column, onClose, onColumnUpdate, open }: ColumnMod
 
   return (
     <Modal onClose={onClose} open={open}>
-      <ModalDialog sx={{ '--ModalDialog-maxWidth': '400px', pt: 8, width: '100%' }} variant="plain">
+      <ModalDialog sx={{ '--ModalDialog-maxWidth': '400px', pt: 8, width: '100%' }} variant='plain'>
         <ModalClose />
         <Stack spacing={3}>
           <FormControl>
             <FormLabel>Name</FormLabel>
             <Input
-              name="columnName"
+              name='columnName'
               onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
                 setName(event.target.value);
               }}
               value={name}
             />
           </FormControl>
-          <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+          <Stack direction='row' sx={{ justifyContent: 'flex-end' }}>
             <Button disabled={!name} onClick={handleSave}>
               Save
             </Button>

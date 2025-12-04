@@ -27,9 +27,19 @@ const roleMapping = {
   readOnly: { label: 'Read Only', icon: EyeIcon },
 } as const;
 
-const statusMapping = { online: 'success', offline: 'neutral', away: 'warning', busy: 'danger' } as const;
+const statusMapping = {
+  online: 'success',
+  offline: 'neutral',
+  away: 'warning',
+  busy: 'danger',
+} as const;
 
-const tagMapping = { All: 'neutral', Marketing: 'primary', Design: 'success', Development: 'warning' } as const;
+const tagMapping = {
+  All: 'neutral',
+  Marketing: 'primary',
+  Design: 'success',
+  Development: 'warning',
+} as const;
 
 export interface Member {
   id: string;
@@ -49,17 +59,24 @@ export interface MemberCardProps {
 
 export function MemberCard({ member }: MemberCardProps): React.JSX.Element {
   const { avatar, name, role, position, tags, status, pending } = member;
-  const { label: roleLabel, icon: RoleIcon } = roleMapping[role] ?? { label: 'Unknown', icon: UserIcon };
+  const { label: roleLabel, icon: RoleIcon } = roleMapping[role] ?? {
+    label: 'Unknown',
+    icon: UserIcon,
+  };
 
   const router = useRouter();
 
   return (
     <Card>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Stack
+        direction='row'
+        spacing={1}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <Badge
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           color={statusMapping[status]}
-          size="sm"
+          size='sm'
           sx={{ '& .MuiBadge-badge': { right: '6px', bottom: '6px' } }}
         >
           <Avatar
@@ -76,50 +93,54 @@ export function MemberCard({ member }: MemberCardProps): React.JSX.Element {
           pending={pending}
         />
       </Stack>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
         <Stack spacing={0.5}>
           <Link
             component={RouterLink}
-            fontWeight="md"
+            fontWeight='md'
             href={paths.dashboard.team.members.details('1')}
-            level="body-sm"
-            textColor="text.primary"
-            underline="none"
+            level='body-sm'
+            textColor='text.primary'
+            underline='none'
           >
             {name}
           </Link>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <RoleIcon color="var(--joy-palette-primary-800)" fontSize="var(--joy-fontSize-md)" />
-            <Typography level="body-xs">{roleLabel}</Typography>
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+            <RoleIcon color='var(--joy-palette-primary-800)' fontSize='var(--joy-fontSize-md)' />
+            <Typography level='body-xs'>{roleLabel}</Typography>
           </Stack>
         </Stack>
         {pending ? (
-          <Tooltip title="Invitation sent" variant="solid">
-            <Avatar color="warning" size="sm" sx={{ '--Icon-fontSize': 'var(--joy-fontSize-xl)' }}>
-              <ClockCountdownIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <Tooltip title='Invitation sent' variant='solid'>
+            <Avatar color='warning' size='sm' sx={{ '--Icon-fontSize': 'var(--joy-fontSize-xl)' }}>
+              <ClockCountdownIcon fontSize='var(--Icon-fontSize)' weight='bold' />
             </Avatar>
           </Tooltip>
         ) : null}
       </Stack>
       <Divider />
       <Stack spacing={0.5}>
-        <Typography level="body-xs" textTransform="uppercase">
+        <Typography level='body-xs' textTransform='uppercase'>
           Position
         </Typography>
-        <Typography level="body-sm" textColor="text.primary">
+        <Typography level='body-sm' textColor='text.primary'>
           {position}
         </Typography>
       </Stack>
       <Stack spacing={0.5}>
-        <Typography level="body-xs" textTransform="uppercase">
+        <Typography level='body-xs' textTransform='uppercase'>
           Tags
         </Typography>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <Stack direction='row' spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           {tags.map((tag): React.JSX.Element => {
             const color = tagMapping[tag as keyof typeof tagMapping] ?? 'neutral';
 
             return (
-              <Chip color={color} key={tag} size="sm" variant="soft">
+              <Chip color={color} key={tag} size='sm' variant='soft'>
                 {tag}
               </Chip>
             );

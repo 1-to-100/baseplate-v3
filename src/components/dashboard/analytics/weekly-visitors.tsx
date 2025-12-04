@@ -17,7 +17,7 @@ export function WeeklyVisitors({ data = [] }: WeeklyVisitorsProps): React.JSX.El
 
   return (
     <Card>
-      <Typography level="h4">Weekly Visitors</Typography>
+      <Typography level='h4'>Weekly Visitors</Typography>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <NoSsr fallback={<Box sx={{ height: `${chartSize}px`, width: `${chartSize}px` }} />}>
           <RadarChart
@@ -29,24 +29,24 @@ export function WeeklyVisitors({ data = [] }: WeeklyVisitorsProps): React.JSX.El
             outerRadius={chartSize / 2 - 30}
             width={chartSize}
           >
-            <PolarGrid stroke="var(--joy-palette-divider)" />
-            <PolarAngleAxis axisLine={false} dataKey="name" tick={AngleTick} />
+            <PolarGrid stroke='var(--joy-palette-divider)' />
+            <PolarAngleAxis axisLine={false} dataKey='name' tick={AngleTick} />
             <PolarRadiusAxis angle={90} axisLine={false} domain={[0, 150]} tick={RadiusTick} />
             <Radar
               animationDuration={200}
-              dataKey="v1"
-              fill="var(--joy-palette-primary-softBg)"
+              dataKey='v1'
+              fill='var(--joy-palette-primary-softBg)'
               fillOpacity={0.5}
-              name="New Visitors"
-              stroke="var(--joy-palette-primary-solidBg)"
+              name='New Visitors'
+              stroke='var(--joy-palette-primary-solidBg)'
             />
             <Radar
               animationDuration={200}
-              dataKey="v2"
-              fill="var(--joy-palette-success-softBg)"
+              dataKey='v2'
+              fill='var(--joy-palette-success-softBg)'
               fillOpacity={0.2}
-              name="Recurring Visitors"
-              stroke="var(--joy-palette-success-solidBg)"
+              name='Recurring Visitors'
+              stroke='var(--joy-palette-success-solidBg)'
             />
           </RadarChart>
         </NoSsr>
@@ -66,11 +66,11 @@ function AngleTick({ x, y, payload }: AngleTickProps): React.JSX.Element {
 
   return (
     <text
-      fill="var(--joy-palette-text-secondary)"
-      fontFamily="var(--joy-fontFamily-body)"
-      fontSize="var(--joy-fontSize-sm)"
-      fontWeight="var(--joy-fontWeight-md)"
-      textAnchor="middle"
+      fill='var(--joy-palette-text-secondary)'
+      fontFamily='var(--joy-fontFamily-body)'
+      fontSize='var(--joy-fontSize-sm)'
+      fontWeight='var(--joy-fontWeight-md)'
+      textAnchor='middle'
       x={x}
       y={y}
     >
@@ -91,7 +91,7 @@ function RadiusTick({ x, y, payload }: RadiusTickProps): React.JSX.Element {
   return (
     <g transform={`translate(${x},${y})`}>
       <rect
-        fill="var(--joy-palette-neutral-200)"
+        fill='var(--joy-palette-neutral-200)'
         fillOpacity={0.5}
         height={20}
         rx={4}
@@ -102,10 +102,10 @@ function RadiusTick({ x, y, payload }: RadiusTickProps): React.JSX.Element {
       />
       <text
         dy={0}
-        fill="var(--joy-palette-text-secondary)"
-        fontSize="var(--joy-fontSize-xs)"
-        fontWeight="var(--joy-fontWeight-md)"
-        textAnchor="middle"
+        fill='var(--joy-palette-text-secondary)'
+        fontSize='var(--joy-fontSize-xs)'
+        fontWeight='var(--joy-fontWeight-md)'
+        textAnchor='middle'
         x={0}
         y={0}
       >

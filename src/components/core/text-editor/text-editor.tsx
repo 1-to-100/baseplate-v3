@@ -49,11 +49,18 @@ export function TextEditor({
     Link.configure({ openOnClick: false, autolink: true }),
   ] as Extension[];
 
-  const editor = useEditor({ extensions, content, editable, immediatelyRender: false, onUpdate, onCreate });
+  const editor = useEditor({
+    extensions,
+    content,
+    editable,
+    immediatelyRender: false,
+    onUpdate,
+    onCreate,
+  });
 
   return (
     <Box
-      className="tiptap-root"
+      className='tiptap-root'
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -62,7 +69,12 @@ export function TextEditor({
           borderRadius: 'var(--joy-radius-sm)',
           boxShadow: 'var(--joy-shadow-xs)',
         }),
-        '& .tiptap-container': { display: 'flex', flex: '1 1 auto', flexDirection: 'column', minHeight: 0 },
+        '& .tiptap-container': {
+          display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
+          minHeight: 0,
+        },
         '& .tiptap': {
           color: 'var(--joy-palette-text-primary)',
           flex: '1 1 auto',
@@ -81,7 +93,7 @@ export function TextEditor({
       }}
     >
       {!hideToolbar ? <TextEditorToolbar editor={editor} /> : <div />}
-      <EditorContent className="tiptap-container" editor={editor} />
+      <EditorContent className='tiptap-container' editor={editor} />
     </Box>
   );
 }

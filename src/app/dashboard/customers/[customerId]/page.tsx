@@ -25,41 +25,50 @@ import type { ShippingAddress } from '@/components/dashboard/customer/shipping-a
 import { SubscriptionsTable } from '@/components/dashboard/customer/subscriptions-table';
 import type { Subscription } from '@/components/dashboard/customer/subscriptions-table';
 
-export const metadata = { title: `Details | Customers | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Details | Customers | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={5}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Customer Details
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
               <BreadcrumbsItem href={paths.dashboard.customers.list}>Customers</BreadcrumbsItem>
-              <BreadcrumbsItem type="end">Details</BreadcrumbsItem>
+              <BreadcrumbsItem type='end'>Details</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-            <Button color="danger" startDecorator={<TrashIcon fontSize="var(--Icon-fontSize)" weight="bold" />}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+            <Button
+              color='danger'
+              startDecorator={<TrashIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+            >
               Delete
             </Button>
           </Stack>
         </Stack>
         <div>
           <Alert
-            color="warning"
-            startDecorator={<WarningIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-            variant="soft"
+            color='warning'
+            startDecorator={<WarningIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+            variant='soft'
           >
             Account will be suspended in 2 days due to unpaid invoices
           </Alert>
         </div>
         <Stack divider={<Divider />} spacing={5}>
           <Stack spacing={3}>
-            <Typography level="h4">Basic Information</Typography>
+            <Typography level='h4'>Basic Information</Typography>
             <Box
               sx={{
                 bgcolor: 'var(--joy-palette-background-level1)',
@@ -74,23 +83,32 @@ export default function Page(): React.JSX.Element {
                 [
                   {
                     label: 'Paid',
-                    value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(600),
+                    value: new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    }).format(600),
                   },
                   { label: 'Orders', value: new Intl.NumberFormat('en-US').format(1) },
                   {
                     label: 'Charged off',
-                    value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(0),
+                    value: new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    }).format(0),
                   },
                   {
                     label: 'Credits',
-                    value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(100),
+                    value: new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    }).format(100),
                   },
                 ] satisfies { label: string; value: string }[]
               ).map(
                 (item): React.JSX.Element => (
                   <Stack key={item.label} spacing={1}>
-                    <Typography level="h2">{item.value}</Typography>
-                    <Typography level="body-sm">{item.label}</Typography>
+                    <Typography level='h2'>{item.value}</Typography>
+                    <Typography level='body-sm'>{item.label}</Typography>
                   </Stack>
                 )
               )}
@@ -98,8 +116,8 @@ export default function Page(): React.JSX.Element {
             <CustomerDetailsForm />
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Shipping Addresses</Typography>
-            <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+            <Typography level='h4'>Shipping Addresses</Typography>
+            <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
               {(
                 [
                   {
@@ -128,17 +146,17 @@ export default function Page(): React.JSX.Element {
             </Stack>
             <div>
               <Button
-                color="neutral"
-                size="sm"
-                startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                variant="outlined"
+                color='neutral'
+                size='sm'
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                variant='outlined'
               >
                 Add Address
               </Button>
             </div>
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Payments</Typography>
+            <Typography level='h4'>Payments</Typography>
             <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
               <InvoicesTable
                 rows={
@@ -173,7 +191,7 @@ export default function Page(): React.JSX.Element {
             </Card>
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Subscriptions</Typography>
+            <Typography level='h4'>Subscriptions</Typography>
             <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
               <SubscriptionsTable
                 rows={
@@ -194,10 +212,10 @@ export default function Page(): React.JSX.Element {
             </Card>
             <div>
               <Button
-                color="neutral"
-                size="sm"
-                startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                variant="outlined"
+                color='neutral'
+                size='sm'
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                variant='outlined'
               >
                 Add Subscription
               </Button>

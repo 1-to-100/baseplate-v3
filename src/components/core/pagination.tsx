@@ -62,9 +62,9 @@ export function Pagination({
 
   return (
     <Stack
-      aria-label="pagination navigation"
-      component="ul"
-      direction="row"
+      aria-label='pagination navigation'
+      component='ul'
+      direction='row'
       spacing={2}
       sx={{ alignItems: 'center', flexWrap: 'wrap', listStyle: 'none', m: 0, p: 0 }}
     >
@@ -87,7 +87,11 @@ export function Pagination({
   );
 }
 
-function defaultGetAriaLabel(type: PaginationItemType, page: number | null, selected?: boolean): string {
+function defaultGetAriaLabel(
+  type: PaginationItemType,
+  page: number | null,
+  selected?: boolean
+): string {
   if (type === 'page') {
     return `${selected ? '' : 'Go to '}page ${page}`;
   }

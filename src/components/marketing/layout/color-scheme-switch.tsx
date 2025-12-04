@@ -31,10 +31,13 @@ export function ColorSchemeSwitch(): React.JSX.Element {
       onClick={handleToggle}
       sx={{
         color: 'var(--joy-palette-common-white)',
-        '&:hover': { bgcolor: 'var(--joy-palette-neutral-800)', color: 'var(--joy-palette-common-white)' },
+        '&:hover': {
+          bgcolor: 'var(--joy-palette-neutral-800)',
+          color: 'var(--joy-palette-common-white)',
+        },
       }}
     >
-      <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
     </IconButton>
   );
 }

@@ -68,7 +68,10 @@ export function BoardView(): React.JSX.Element {
       return;
     }
 
-    setActive({ id: event.active.id as string, type: event.active.data.current!.type as 'column' | 'task' });
+    setActive({
+      id: event.active.id as string,
+      type: event.active.data.current!.type as 'column' | 'task',
+    });
   }, []);
 
   const handleDragOver = React.useCallback((_: DragOverEvent): void => {
@@ -117,7 +120,7 @@ export function BoardView(): React.JSX.Element {
           );
         })}
         <Box sx={{ flex: '0 0 auto' }}>
-          <Button color="neutral" onClick={createColumn} size="sm" variant="soft">
+          <Button color='neutral' onClick={createColumn} size='sm' variant='soft'>
             Add Column
           </Button>
         </Box>
@@ -152,7 +155,9 @@ function useCollisionDetection(
       if (active?.type === 'column' && columns.has(active.id)) {
         return closestCenter({
           ...args,
-          droppableContainers: args.droppableContainers.filter((container) => columns.has(container.id as string)),
+          droppableContainers: args.droppableContainers.filter((container) =>
+            columns.has(container.id as string)
+          ),
         });
       }
 
@@ -174,7 +179,8 @@ function useCollisionDetection(
             overId = closestCenter({
               ...args,
               droppableContainers: args.droppableContainers.filter(
-                (container) => container.id !== overId && columnTasks.includes(container.id as string)
+                (container) =>
+                  container.id !== overId && columnTasks.includes(container.id as string)
               ),
             })[0]?.id as string | null;
           }

@@ -11,7 +11,9 @@ import { SessionItem } from '@/components/dashboard/settings/session-item';
 import type { Session } from '@/components/dashboard/settings/session-item';
 // import { UpdatePasswordForm } from '@/components/dashboard/settings/update-password-form';
 
-export const metadata = { title: `Security | Settings | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Security | Settings | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   return (
@@ -19,7 +21,7 @@ export default function Page(): React.JSX.Element {
       {/* <UpdatePasswordForm /> */}
       <Stack spacing={3}>
         <div>
-          <Typography level="body-sm">Activity</Typography>
+          <Typography level='body-sm'>Activity</Typography>
         </div>
         <List sx={{ '--List-gap': '24px' }}>
           {(
@@ -37,7 +39,11 @@ export default function Page(): React.JSX.Element {
                 device: 'mobile',
                 agent: 'Chrome, Android 116.0.5845.51',
                 location: 'Denver, USA',
-                createdAt: dayjs().subtract(45, 'minute').subtract(5, 'hours').subtract(2, 'day').toDate(),
+                createdAt: dayjs()
+                  .subtract(45, 'minute')
+                  .subtract(5, 'hours')
+                  .subtract(2, 'day')
+                  .toDate(),
               },
             ] satisfies Session[]
           ).map(

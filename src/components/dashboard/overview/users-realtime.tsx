@@ -35,14 +35,22 @@ export interface UsersRealtimeProps {
 export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Users Real-Time</Typography>
-      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1fr 300px', xl: '1fr 500px' } }}>
+      <Typography level='h4'>Users Real-Time</Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 3,
+          gridTemplateColumns: { xs: '1fr', lg: '1fr 300px', xl: '1fr 500px' },
+        }}
+      >
         <Box sx={{ maxHeight: '450px', maxWidth: '950px', overflow: 'hidden' }}>
           <ComposableMap height={500} width={950}>
             <Geographies geography={geoUrl}>
               {({ geographies }): (React.JSX.Element | null)[] =>
                 geographies.map(
-                  (geo: Record<string, unknown> & { id: string; rsmKey: string }): React.JSX.Element | null => {
+                  (
+                    geo: Record<string, unknown> & { id: string; rsmKey: string }
+                  ): React.JSX.Element | null => {
                     // Hide Antartica
                     if (geo.id === 'ATA') {
                       return null;
@@ -50,10 +58,10 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
 
                     return (
                       <Geography
-                        fill="var(--joy-palette-neutral-100)"
+                        fill='var(--joy-palette-neutral-100)'
                         geography={geo}
                         key={geo.rsmKey}
-                        stroke="var(--joy-palette-neutral-100)"
+                        stroke='var(--joy-palette-neutral-100)'
                       />
                     );
                   }
@@ -63,7 +71,7 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
             {markers.map(
               ({ name, coordinates }): React.JSX.Element => (
                 <Marker coordinates={coordinates} key={name}>
-                  <circle fill="var(--joy-palette-primary-solidBg)" r={4} />
+                  <circle fill='var(--joy-palette-primary-solidBg)' r={4} />
                 </Marker>
               )
             )}
@@ -71,8 +79,8 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
         </Box>
         <Stack spacing={3}>
           <div>
-            <Typography level="body-sm">Total Active Users</Typography>
-            <Typography level="h4">{new Intl.NumberFormat('en-US').format(users)}</Typography>
+            <Typography level='body-sm'>Total Active Users</Typography>
+            <Typography level='h4'>{new Intl.NumberFormat('en-US').format(users)}</Typography>
           </div>
           <List sx={{ '--List-gap': '16px', '--ListItem-paddingX  ': 0, '--ListItem-paddingY': 0 }}>
             {usersByCountry.map(
@@ -85,7 +93,7 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
                     borderRadius: 'var(--joy-radius-sm)',
                     position: 'relative',
                   }}
-                  variant="soft"
+                  variant='soft'
                 >
                   <ListItemContent
                     sx={{
@@ -101,8 +109,10 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
                       p: '8px 12px',
                     }}
                   >
-                    {country.flag ? <Image alt="" height={24} src={country.flag} width={34} /> : null}
-                    <Typography fontSize="sm" fontWeight="lg" textColor="inherit">
+                    {country.flag ? (
+                      <Image alt='' height={24} src={country.flag} width={34} />
+                    ) : null}
+                    <Typography fontSize='sm' fontWeight='lg' textColor='inherit'>
                       {country.name}
                     </Typography>
                   </ListItemContent>
@@ -117,10 +127,11 @@ export function UsersRealtime({ usersByCountry, users }: UsersRealtimeProps): Re
                       width: '100%',
                     }}
                   >
-                    <Typography level="body-xs">
-                      {new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 }).format(
-                        country.value / 100
-                      )}
+                    <Typography level='body-xs'>
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'percent',
+                        maximumFractionDigits: 2,
+                      }).format(country.value / 100)}
                     </Typography>
                   </Box>
                 </ListItem>

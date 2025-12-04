@@ -24,28 +24,28 @@ export default function Page(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <div>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Overview
           </Typography>
         </div>
         <Grid container spacing={3}>
           <Grid md={4} sx={{ '& > *': { height: '100%' } }} xs={12}>
             <Stats
-              color="primary"
+              color='primary'
               diff={35}
               icon={ShoppingCartIcon}
-              label="Total Sales"
-              trend="up"
+              label='Total Sales'
+              trend='up'
               value={new Intl.NumberFormat('en-US').format(280)}
             />
           </Grid>
           <Grid md={4} sx={{ '& > *': { height: '100%' } }} xs={12}>
             <Stats
-              color="danger"
+              color='danger'
               diff={16}
               icon={CoinVerticalIcon}
-              label="Total Revenue"
-              trend="up"
+              label='Total Revenue'
+              trend='up'
               value={new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
@@ -55,11 +55,11 @@ export default function Page(): React.JSX.Element {
           </Grid>
           <Grid md={4} sx={{ '& > *': { height: '100%' } }} xs={12}>
             <Stats
-              color="success"
+              color='success'
               diff={24}
               icon={UsersThreeIcon}
-              label="Total Users"
-              trend="up"
+              label='Total Users'
+              trend='up'
               value={new Intl.NumberFormat('en-US').format(560410)}
             />
           </Grid>
@@ -110,7 +110,8 @@ export default function Page(): React.JSX.Element {
                 },
                 {
                   id: 'EM-004',
-                  subject: "Well it's a really easy one, I'm sure we can make it half of the price.",
+                  subject:
+                    "Well it's a really easy one, I'm sure we can make it half of the price.",
                   author: { name: 'Sienna Hewitt', avatar: '/assets/avatar-2.png' },
                   createdAt: dayjs().subtract(15, 'minute').toDate(),
                 },
@@ -122,13 +123,15 @@ export default function Page(): React.JSX.Element {
                 },
                 {
                   id: 'EM-002',
-                  subject: "Hey, nice projects! I really liked the one in react. What's your quote on kinda...",
+                  subject:
+                    "Hey, nice projects! I really liked the one in react. What's your quote on kinda...",
                   author: { name: 'Ammar Foley', avatar: '/assets/avatar-3.png' },
                   createdAt: dayjs().subtract(32, 'minute').toDate(),
                 },
                 {
                   id: 'EM-001',
-                  subject: "Hey, nice projects! I really liked the one in react. What's your quote on kinda...",
+                  subject:
+                    "Hey, nice projects! I really liked the one in react. What's your quote on kinda...",
                   author: { name: 'Ammar Foley', avatar: '/assets/avatar-3.png' },
                   createdAt: dayjs().subtract(32, 'minute').toDate(),
                 },

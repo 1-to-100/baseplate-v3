@@ -39,7 +39,7 @@ const meta = {
       control: 'boolean',
     },
   },
-  args: { 
+  args: {
     onChange: fn(),
     onFocus: fn(),
     onBlur: fn(),
@@ -93,32 +93,38 @@ export const Error: Story = {
   },
 };
 
-
 export const AllVariants: Story = {
   args: {
     placeholder: 'Input',
   },
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start', minWidth: '300px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        alignItems: 'flex-start',
+        minWidth: '300px',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Types</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Input type="text" placeholder="Text input" />
-          <Input type="email" placeholder="Email input" />
-          <Input type="password" placeholder="Password input" />
-          <Input type="number" placeholder="Number input" />
+          <Input type='text' placeholder='Text input' />
+          <Input type='email' placeholder='Email input' />
+          <Input type='password' placeholder='Password input' />
+          <Input type='number' placeholder='Number input' />
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>States</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Input placeholder="Normal" />
-          <Input disabled placeholder="Disabled" />
-          <Input error placeholder="Error state" />
+          <Input placeholder='Normal' />
+          <Input disabled placeholder='Disabled' />
+          <Input error placeholder='Error state' />
         </div>
       </div>
-      
     </div>
   ),
 };

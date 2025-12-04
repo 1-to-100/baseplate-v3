@@ -15,11 +15,17 @@ export interface VehiclesStatusProps {
   needRepair: number;
 }
 
-export function VehiclesStatus({ onRoute, onHold, needRepair }: VehiclesStatusProps): React.JSX.Element {
+export function VehiclesStatus({
+  onRoute,
+  onHold,
+  needRepair,
+}: VehiclesStatusProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Vehicles Status</Typography>
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(3, 1fr)', flex: '1 1 auto' }}>
+      <Typography level='h4'>Vehicles Status</Typography>
+      <Box
+        sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(3, 1fr)', flex: '1 1 auto' }}
+      >
         {(
           [
             { id: 1, title: 'On Route', value: onRoute, icon: ArrowRightIcon, color: 'primary' },
@@ -37,7 +43,7 @@ export function VehiclesStatus({ onRoute, onHold, needRepair }: VehiclesStatusPr
 
           return (
             <Card
-              color="neutral"
+              color='neutral'
               key={entry.id}
               sx={{
                 alignItems: 'center',
@@ -47,12 +53,12 @@ export function VehiclesStatus({ onRoute, onHold, needRepair }: VehiclesStatusPr
                 justifyContent: 'center',
                 p: 1,
               }}
-              variant="soft"
+              variant='soft'
             >
-              <Typography level="body-sm" textAlign="center">
+              <Typography level='body-sm' textAlign='center'>
                 {entry.title}
               </Typography>
-              <Stack direction="row" spacing={1}>
+              <Stack direction='row' spacing={1}>
                 <Avatar
                   color={entry.color}
                   sx={{
@@ -60,11 +66,11 @@ export function VehiclesStatus({ onRoute, onHold, needRepair }: VehiclesStatusPr
                     '--Avatar-size': '24px',
                     '--Icon-fontSize': 'var(--joy-fontSize-md)',
                   }}
-                  variant="soft"
+                  variant='soft'
                 >
-                  <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+                  <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
                 </Avatar>
-                <Typography level="title-md">{entry.value}</Typography>
+                <Typography level='title-md'>{entry.value}</Typography>
               </Stack>
             </Card>
           );

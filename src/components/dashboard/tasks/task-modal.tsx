@@ -33,7 +33,11 @@ import type { Comment, Task } from './types';
 
 // Each task should have its own activity log events.
 const events = [
-  { id: 'EV-001', description: 'Task has been created', createdAt: dayjs().subtract(5, 'minute').toDate() },
+  {
+    id: 'EV-001',
+    description: 'Task has been created',
+    createdAt: dayjs().subtract(5, 'minute').toDate(),
+  },
 ] satisfies { id: string; description: string; createdAt: Date }[];
 
 export interface TaskModalProps {
@@ -69,7 +73,10 @@ export function TaskModal({
 
   return (
     <Modal onClose={onClose} open={open}>
-      <ModalDialog sx={{ '--ModalDialog-maxWidth': '1200px', pt: 8, width: '100%' }} variant="plain">
+      <ModalDialog
+        sx={{ '--ModalDialog-maxWidth': '1200px', pt: 8, width: '100%' }}
+        variant='plain'
+      >
         <ModalClose />
         <Box
           sx={{
@@ -82,8 +89,14 @@ export function TaskModal({
         >
           <Stack spacing={3}>
             <Sheet
-              sx={{ borderRadius: 'var(--joy-radius-sm)', display: 'flex', flexDirection: 'column', gap: 2, p: 3 }}
-              variant="outlined"
+              sx={{
+                borderRadius: 'var(--joy-radius-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                p: 3,
+              }}
+              variant='outlined'
             >
               <EditableTitle
                 onUpdate={(newTitle: string) => {
@@ -99,23 +112,29 @@ export function TaskModal({
               />
             </Sheet>
             <Sheet
-              sx={{ borderRadius: 'var(--joy-radius-sm)', display: 'flex', flexDirection: 'column', gap: 2, p: 3 }}
-              variant="outlined"
+              sx={{
+                borderRadius: 'var(--joy-radius-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                p: 3,
+              }}
+              variant='outlined'
             >
-              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level="h4">
+              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level='h4'>
                 Subtasks
               </Typography>
               {subtasks.length ? (
                 <Stack spacing={2}>
                   <Stack spacing={1}>
-                    <Typography level="body-xs" textAlign="right">
+                    <Typography level='body-xs' textAlign='right'>
                       {countDoneSubtasks(subtasks)} of 5
                     </Typography>
                     <LinearProgress
                       determinate
                       sx={{ bgcolor: 'var(--joy-palette-background-level1)' }}
                       value={(100 / subtasks.length) * countDoneSubtasks(subtasks)}
-                      variant="plain"
+                      variant='plain'
                     />
                   </Stack>
                   <Stack gap={1}>
@@ -123,10 +142,10 @@ export function TaskModal({
                       (subtask): React.JSX.Element => (
                         <Checkbox
                           checked={subtask.done}
-                          color="neutral"
+                          color='neutral'
                           key={subtask.id}
                           label={subtask.title}
-                          variant="outlined"
+                          variant='outlined'
                         />
                       )
                     )}
@@ -135,52 +154,64 @@ export function TaskModal({
               ) : null}
               <div>
                 <Button
-                  color="neutral"
-                  size="sm"
-                  startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                  variant="outlined"
+                  color='neutral'
+                  size='sm'
+                  startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                  variant='outlined'
                 >
                   Add Subtask
                 </Button>
               </div>
             </Sheet>
             <Sheet
-              sx={{ borderRadius: 'var(--joy-radius-sm)', display: 'flex', flexDirection: 'column', gap: 2, p: 3 }}
-              variant="outlined"
+              sx={{
+                borderRadius: 'var(--joy-radius-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                p: 3,
+              }}
+              variant='outlined'
             >
-              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level="h4">
+              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level='h4'>
                 Attachments
               </Typography>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                 {attachments?.map(
                   (attachment): React.JSX.Element => (
                     <Sheet
                       key={attachment.id}
                       sx={{ borderRadius: 'var(--joy-radius-md)', p: '4px 8px' }}
-                      variant="outlined"
+                      variant='outlined'
                     >
-                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
                         <div>
-                          <FileIcon fontSize="var(--joy-fontSize-xl)" weight="bold" />
+                          <FileIcon fontSize='var(--joy-fontSize-xl)' weight='bold' />
                         </div>
                         <div>
-                          <Typography fontSize="xs">{attachment.name}</Typography>
-                          <Typography level="body-xs">{attachment.size}</Typography>
+                          <Typography fontSize='xs'>{attachment.name}</Typography>
+                          <Typography level='body-xs'>{attachment.size}</Typography>
                         </div>
                       </Stack>
                     </Sheet>
                   )
                 )}
-                <IconButton color="neutral" size="sm">
-                  <PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                <IconButton color='neutral' size='sm'>
+                  <PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                 </IconButton>
               </Stack>
             </Sheet>
             <Sheet
-              sx={{ borderRadius: 'var(--joy-radius-sm)', display: 'flex', flexDirection: 'column', gap: 2, p: 3 }}
-              variant="outlined"
+              sx={{
+                borderRadius: 'var(--joy-radius-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                p: 3,
+              }}
+              variant='outlined'
             >
-              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level="h4">
+              <Typography fontSize={{ xs: 'lg', md: 'xl' }} level='h4'>
                 Comments
               </Typography>
               <Stack spacing={5}>
@@ -188,12 +219,16 @@ export function TaskModal({
                   <Stack spacing={3}>
                     {comments.map(
                       (comment, index): React.JSX.Element => (
-                        <CommentItem comment={comment} connector={index < comments.length - 1} key={comment.id} />
+                        <CommentItem
+                          comment={comment}
+                          connector={index < comments.length - 1}
+                          key={comment.id}
+                        />
                       )
                     )}
                   </Stack>
                 ) : (
-                  <Typography fontStyle="italic" level="body-sm">
+                  <Typography fontStyle='italic' level='body-sm'>
                     No comments yet
                   </Typography>
                 )}
@@ -206,93 +241,122 @@ export function TaskModal({
             </Sheet>
           </Stack>
           <Stack spacing={3}>
-            <Sheet sx={{ borderRadius: 'var(--joy-radius-sm)', p: 3 }} variant="outlined">
+            <Sheet sx={{ borderRadius: 'var(--joy-radius-sm)', p: 3 }} variant='outlined'>
               <Stack divider={<Divider />} spacing={2}>
                 <Stack spacing={2}>
-                  <Typography fontSize="sm" fontWeight="xl">
+                  <Typography fontSize='sm' fontWeight='xl'>
                     Created By
                   </Typography>
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                  <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
                     <Avatar src={author.avatar} />
                     <div>
-                      <Typography fontSize="sm" fontWeight="md">
+                      <Typography fontSize='sm' fontWeight='md'>
                         {author.name}
                       </Typography>
-                      <Typography level="body-sm">@{author.username}</Typography>
+                      <Typography level='body-sm'>@{author.username}</Typography>
                     </div>
                   </Stack>
                 </Stack>
                 <Stack spacing={2}>
-                  <Typography fontSize="sm" fontWeight="xl">
+                  <Typography fontSize='sm' fontWeight='xl'>
                     Asignees
                   </Typography>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Stack
+                    direction='row'
+                    spacing={2}
+                    sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+                  >
                     {assignees?.map(
-                      (assignee): React.JSX.Element => <Avatar key={assignee.id} src={assignee.avatar} />
+                      (assignee): React.JSX.Element => (
+                        <Avatar key={assignee.id} src={assignee.avatar} />
+                      )
                     )}
-                    <IconButton color="neutral" size="sm" variant="soft">
-                      <PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                    <IconButton color='neutral' size='sm' variant='soft'>
+                      <PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                     </IconButton>
                   </Stack>
                 </Stack>
-                <Stack spacing={2} sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography fontSize="sm" fontWeight="xl">
+                <Stack
+                  spacing={2}
+                  sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}
+                >
+                  <Stack
+                    direction='row'
+                    spacing={2}
+                    sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <Typography fontSize='sm' fontWeight='xl'>
                       Due Date
                     </Typography>
                     <IconButton
-                      color="neutral"
-                      size="sm"
+                      color='neutral'
+                      size='sm'
                       sx={{ '--Icon-fontSize': 'var(--joy-fontSize-md)' }}
-                      variant="plain"
+                      variant='plain'
                     >
-                      <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                      <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                     </IconButton>
                   </Stack>
                   {dueDate ? (
                     <Typography
-                      fontSize="sm"
-                      fontWeight="md"
-                      startDecorator={<CalendarIcon fontSize="var(--joy-fontSize-xl)" weight="bold" />}
+                      fontSize='sm'
+                      fontWeight='md'
+                      startDecorator={
+                        <CalendarIcon fontSize='var(--joy-fontSize-xl)' weight='bold' />
+                      }
                     >
                       {dayjs(dueDate).format('MMM D, YYYY h:mm A')}
                     </Typography>
                   ) : null}
                 </Stack>
-                <Stack spacing={2} sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography fontSize="sm" fontWeight="xl">
+                <Stack
+                  spacing={2}
+                  sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}
+                >
+                  <Stack
+                    direction='row'
+                    spacing={2}
+                    sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <Typography fontSize='sm' fontWeight='xl'>
                       Priority
                     </Typography>
                     <IconButton
-                      color="neutral"
-                      size="sm"
+                      color='neutral'
+                      size='sm'
                       sx={{ '--Icon-fontSize': 'var(--joy-fontSize-md)' }}
-                      variant="plain"
+                      variant='plain'
                     >
-                      <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                      <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                     </IconButton>
                   </Stack>
                   {priority ? <TaskPriority priority={priority} /> : null}
                 </Stack>
-                <Stack spacing={2} sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography fontSize="sm" fontWeight="xl">
+                <Stack
+                  spacing={2}
+                  sx={{ '&:not(:hover) > div:first-of-type button': { visibility: 'hidden' } }}
+                >
+                  <Stack
+                    direction='row'
+                    spacing={2}
+                    sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <Typography fontSize='sm' fontWeight='xl'>
                       Category
                     </Typography>
                     <IconButton
-                      color="neutral"
-                      size="sm"
+                      color='neutral'
+                      size='sm'
                       sx={{ '--Icon-fontSize': 'var(--joy-fontSize-md)' }}
-                      variant="plain"
+                      variant='plain'
                     >
-                      <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                      <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                     </IconButton>
                   </Stack>
                   {category ? <TaskCategory category={category} /> : null}
                 </Stack>
                 <Stack spacing={2}>
-                  <Typography fontSize="sm" fontWeight="xl">
+                  <Typography fontSize='sm' fontWeight='xl'>
                     Activity
                   </Typography>
                   <Timeline>
@@ -301,10 +365,10 @@ export function TaskModal({
                         <TimelineItem key={event.id}>
                           <TimelineContent>
                             <Stack spacing={1}>
-                              <Typography level="body-xs">
+                              <Typography level='body-xs'>
                                 {dayjs(event.createdAt).format('MMM D, YYYY h:mm A')}
                               </Typography>
-                              <Typography fontSize="sm">{event.description}</Typography>
+                              <Typography fontSize='sm'>{event.description}</Typography>
                             </Stack>
                           </TimelineContent>
                         </TimelineItem>
@@ -314,7 +378,7 @@ export function TaskModal({
                 </Stack>
               </Stack>
             </Sheet>
-            <Button color="danger" onClick={(): void => onTaskDelete?.(id)} variant="soft">
+            <Button color='danger' onClick={(): void => onTaskDelete?.(id)} variant='soft'>
               Delete
             </Button>
           </Stack>
@@ -348,9 +412,9 @@ function EditableTitle({ onUpdate, title }: EditableTitleProps): React.JSX.Eleme
 
   if (edit) {
     return (
-      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
+      <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap' }}>
         <Input
-          name="title"
+          name='title'
           onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
             setCopy(event.target.value);
           }}
@@ -358,23 +422,23 @@ function EditableTitle({ onUpdate, title }: EditableTitleProps): React.JSX.Eleme
           value={copy}
         />
         <Button
-          color="danger"
+          color='danger'
           onClick={(): void => {
             setCopy(title);
             setEdit(false);
           }}
-          size="sm"
-          variant="plain"
+          size='sm'
+          variant='plain'
         >
           Dismiss
         </Button>
         <Button
-          color="neutral"
+          color='neutral'
           onClick={(): void => {
             handleSave();
           }}
-          size="sm"
-          variant="outlined"
+          size='sm'
+          variant='outlined'
         >
           Save
         </Button>
@@ -383,21 +447,21 @@ function EditableTitle({ onUpdate, title }: EditableTitleProps): React.JSX.Eleme
   }
 
   return (
-    <Stack direction="row" spacing={2}>
-      <Typography fontSize={{ xs: 'lg', md: 'xl2' }} level="h4" noWrap sx={{ flex: '1 1 auto' }}>
+    <Stack direction='row' spacing={2}>
+      <Typography fontSize={{ xs: 'lg', md: 'xl2' }} level='h4' noWrap sx={{ flex: '1 1 auto' }}>
         {copy}
       </Typography>
       <div>
         <IconButton
-          color="neutral"
+          color='neutral'
           onClick={(): void => {
             setEdit(true);
           }}
-          size="sm"
+          size='sm'
           sx={{ '--Icon-fontSize': 'var(--joy-fontSize-md)' }}
-          variant="plain"
+          variant='plain'
         >
-          <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       </div>
     </Stack>
@@ -409,7 +473,10 @@ interface EditableDescriptionProps {
   description: string;
 }
 
-function EditableDescription({ onUpdate, description }: EditableDescriptionProps): React.JSX.Element {
+function EditableDescription({
+  onUpdate,
+  description,
+}: EditableDescriptionProps): React.JSX.Element {
   const [copy, setCopy] = React.useState<string>('');
 
   React.useEffect((): void => {
@@ -428,12 +495,12 @@ function EditableDescription({ onUpdate, description }: EditableDescriptionProps
         onChange={(event: React.ChangeEvent<HTMLTextAreaElement>): void => {
           setCopy(event.target.value);
         }}
-        placeholder="No description"
+        placeholder='No description'
         sx={{ pb: '40px' }}
         value={copy}
       />
       <Stack
-        direction="row"
+        direction='row'
         spacing={1}
         sx={{
           bottom: 0,
@@ -447,16 +514,16 @@ function EditableDescription({ onUpdate, description }: EditableDescriptionProps
         }}
       >
         <Button
-          color="neutral"
+          color='neutral'
           onClick={(): void => {
             setCopy(description);
           }}
-          size="sm"
-          variant="plain"
+          size='sm'
+          variant='plain'
         >
           Cancel
         </Button>
-        <Button onClick={handleSave} size="sm">
+        <Button onClick={handleSave} size='sm'>
           Save
         </Button>
       </Stack>
@@ -474,7 +541,7 @@ function CommentItem({ comment, connector }: CommentItemProps): React.JSX.Elemen
   const canReply = author.id !== 'USR-000'; // authenticated user
 
   return (
-    <Stack direction="row" spacing={2}>
+    <Stack direction='row' spacing={2}>
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         <Avatar src={author.avatar} />
         {connector ? (
@@ -493,22 +560,26 @@ function CommentItem({ comment, connector }: CommentItemProps): React.JSX.Elemen
       </Box>
       <Stack spacing={3} sx={{ flex: '1 1 auto' }}>
         <div>
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <Stack
+            direction='row'
+            spacing={1}
+            sx={{ flexWrap: 'wrap', justifyContent: 'space-between' }}
+          >
             <Tooltip arrow title={`@${author.username}`}>
-              <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+              <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                 {author.name}
               </Typography>
             </Tooltip>
             {createdAt ? (
-              <Typography level="body-xs" whiteSpace="nowrap">
+              <Typography level='body-xs' whiteSpace='nowrap'>
                 {dayjs().diff(createdAt, 'minute')} min ago
               </Typography>
             ) : null}
           </Stack>
-          <Typography level="body-sm">{content}</Typography>
+          <Typography level='body-sm'>{content}</Typography>
           {canReply ? (
             <div>
-              <Link fontSize="xs" fontWeight="lg" underline="none">
+              <Link fontSize='xs' fontWeight='lg' underline='none'>
                 Reply
               </Link>
             </div>
@@ -518,7 +589,11 @@ function CommentItem({ comment, connector }: CommentItemProps): React.JSX.Elemen
           <Stack spacing={2}>
             {comments.map(
               (subComment, index): React.JSX.Element => (
-                <CommentItem comment={subComment} connector={index < comments.length - 1} key={subComment.id} />
+                <CommentItem
+                  comment={subComment}
+                  connector={index < comments.length - 1}
+                  key={subComment.id}
+                />
               )
             )}
           </Stack>
@@ -548,16 +623,16 @@ function CommentAdd({ onAdd }: CommentAddProps): React.JSX.Element {
     <Input
       endDecorator={
         <IconButton
-          color="neutral"
+          color='neutral'
           onClick={(): void => {
             handleAdd();
           }}
-          variant="plain"
+          variant='plain'
         >
-          <PaperPlaneTiltIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PaperPlaneTiltIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       }
-      name="comment"
+      name='comment'
       onChange={(event: React.ChangeEvent<HTMLInputElement>): void => {
         setContent(event.target.value);
       }}
@@ -566,8 +641,8 @@ function CommentAdd({ onAdd }: CommentAddProps): React.JSX.Element {
           handleAdd();
         }
       }}
-      placeholder="Add a comment..."
-      startDecorator={<Avatar src="/assets/avatar.png" />}
+      placeholder='Add a comment...'
+      startDecorator={<Avatar src='/assets/avatar.png' />}
       sx={{ '--Input-radius': 'var(--joy-radius-md)', px: '12px', py: '8px' }}
       value={content}
     />

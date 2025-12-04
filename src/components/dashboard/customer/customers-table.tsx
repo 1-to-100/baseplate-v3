@@ -34,10 +34,10 @@ const columns = [
     formatter: (row): React.JSX.Element => (
       <Link
         component={RouterLink}
-        fontSize="sm"
-        fontWeight="md"
+        fontSize='sm'
+        fontWeight='md'
         href={paths.dashboard.customers.details('1')}
-        underline="none"
+        underline='none'
       >
         {row.id}
       </Link>
@@ -47,13 +47,13 @@ const columns = [
   },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
         <Avatar src={row.avatar ?? undefined} />
         <div>
-          <Typography level="body-sm" textColor="text.primary">
+          <Typography level='body-sm' textColor='text.primary'>
             {row.name}
           </Typography>
-          <Typography level="body-xs">{row.email}</Typography>
+          <Typography level='body-xs'>{row.email}</Typography>
         </div>
       </Stack>
     ),
@@ -77,15 +77,17 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.paid);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.paid
+      );
     },
     name: 'Paid',
     width: '100px',
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -117,7 +119,7 @@ export function CustomersTable({ rows }: CustomersTableProps): React.JSX.Element
       rows={rows}
       selectable
       selected={selection.selected}
-      stripe="even"
+      stripe='even'
     />
   );
 }

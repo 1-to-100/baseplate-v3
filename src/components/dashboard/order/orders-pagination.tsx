@@ -13,7 +13,11 @@ interface OrdersPaginationProps {
   rowsPerPage: number;
 }
 
-export function OrdersPagination({ count, page, rowsPerPage }: OrdersPaginationProps): React.JSX.Element {
+export function OrdersPagination({
+  count,
+  page,
+  rowsPerPage,
+}: OrdersPaginationProps): React.JSX.Element {
   const router = useRouter();
 
   const handleChange = (_: React.MouseEvent, newPage: number | null): void => {
@@ -39,8 +43,8 @@ export function OrdersPagination({ count, page, rowsPerPage }: OrdersPaginationP
         page={page}
         showFirstButton
         showLastButton
-        size="sm"
-        variant="outlined"
+        size='sm'
+        variant='outlined'
       />
     </Box>
   );

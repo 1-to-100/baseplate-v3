@@ -50,7 +50,7 @@ export const Tabs = ({
   };
 
   const currentValue = value !== undefined ? value : internalValue;
-  const currentTab = tabs.find(tab => tab.value === currentValue);
+  const currentTab = tabs.find((tab) => tab.value === currentValue);
 
   return (
     <div>
@@ -94,9 +94,16 @@ export const Tabs = ({
           ))}
         </TabList>
       </JoyTabs>
-      
+
       {showContent && currentTab?.content && (
-        <div style={{ marginTop: '16px', padding: '16px', border: '1px solid var(--joy-palette-divider)', borderRadius: '8px' }}>
+        <div
+          style={{
+            marginTop: '16px',
+            padding: '16px',
+            border: '1px solid var(--joy-palette-divider)',
+            borderRadius: '8px',
+          }}
+        >
           {currentTab.content}
         </div>
       )}

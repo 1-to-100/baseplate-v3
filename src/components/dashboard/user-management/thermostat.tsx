@@ -48,8 +48,12 @@ export function Thermostat({
 
   return (
     <Card>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography level="h4">Thermostat</Typography>
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <Typography level='h4'>Thermostat</Typography>
         <Switch checked={status === 'on'} />
       </Stack>
       <NoSsr fallback={<Box sx={{ height: `${chartSize}px` }} />}>
@@ -78,9 +82,9 @@ export function Thermostat({
               animationDuration={300}
               background
               cornerRadius={8}
-              dataKey="value"
+              dataKey='value'
               endAngle={-320}
-              fill="var(--joy-palette-primary-solidBg)"
+              fill='var(--joy-palette-primary-solidBg)'
               startAngle={20}
             />
           </RadialBarChart>
@@ -97,13 +101,17 @@ export function Thermostat({
             }}
           >
             <Stack spacing={1} sx={{ alignItems: 'center', justifyContent: 'center' }}>
-              <Typography level="h2">{temp}°C</Typography>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'center' }}>
-                <IconButton color="neutral" variant="outlined">
-                  <PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+              <Typography level='h2'>{temp}°C</Typography>
+              <Stack
+                direction='row'
+                spacing={1}
+                sx={{ alignItems: 'center', justifyContent: 'center' }}
+              >
+                <IconButton color='neutral' variant='outlined'>
+                  <PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                 </IconButton>
-                <IconButton color="neutral" variant="outlined">
-                  <MinusIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                <IconButton color='neutral' variant='outlined'>
+                  <MinusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                 </IconButton>
               </Stack>
             </Stack>
@@ -128,17 +136,21 @@ export function Thermostat({
               spacing={1}
               sx={{
                 alignItems: 'center',
-                bgcolor: active ? 'var(--joy-palette-primary-solidBg)' : 'var(--joy-palette-background-level1)',
+                bgcolor: active
+                  ? 'var(--joy-palette-primary-solidBg)'
+                  : 'var(--joy-palette-background-level1)',
                 borderRadius: 'var(--joy-radius-md)',
-                color: active ? 'var(--joy-palette-primary-solidColor)' : 'var(--joy-palette-text-primary)',
+                color: active
+                  ? 'var(--joy-palette-primary-solidColor)'
+                  : 'var(--joy-palette-text-primary)',
                 cursor: 'pointer',
                 justifyContent: 'center',
                 height: '78px',
                 width: 'var(--Mode-width)',
               }}
             >
-              {Icon ? <Icon fontSize="var(--joy-fontSize-xl)" weight="bold" /> : null}
-              <Typography textColor="inherit">{mode}</Typography>
+              {Icon ? <Icon fontSize='var(--joy-fontSize-xl)' weight='bold' /> : null}
+              <Typography textColor='inherit'>{mode}</Typography>
             </Stack>
           );
         })}

@@ -21,12 +21,18 @@ import { OrdersSummary } from '@/components/dashboard/order/orders-summary';
 import { OrdersTable } from '@/components/dashboard/order/orders-table';
 import type { Order } from '@/components/dashboard/order/orders-table';
 
-export const metadata = { title: `List | Orders | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `List | Orders | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 const orders = [
   {
     id: 'ORD-006',
-    customer: { name: 'Zaid Schwartz', email: 'zaid.schwartz@domain.com', avatar: '/assets/avatar-1.png' },
+    customer: {
+      name: 'Zaid Schwartz',
+      email: 'zaid.schwartz@domain.com',
+      avatar: '/assets/avatar-1.png',
+    },
     lineItems: 1,
     currency: 'USD',
     amount: 49.1,
@@ -35,7 +41,11 @@ const orders = [
   },
   {
     id: 'ORD-005',
-    customer: { name: 'Mathilde Lewis', email: 'mathilde.lewis@domain.com', avatar: '/assets/avatar-6.png' },
+    customer: {
+      name: 'Mathilde Lewis',
+      email: 'mathilde.lewis@domain.com',
+      avatar: '/assets/avatar-6.png',
+    },
     lineItems: 1,
     currency: 'USD',
     amount: 600,
@@ -44,7 +54,11 @@ const orders = [
   },
   {
     id: 'ORD-004',
-    customer: { name: 'Ammar Foley', email: 'ammar.foley@domain.com', avatar: '/assets/avatar-3.png' },
+    customer: {
+      name: 'Ammar Foley',
+      email: 'ammar.foley@domain.com',
+      avatar: '/assets/avatar-3.png',
+    },
     lineItems: 2,
     currency: 'USD',
     amount: 240,
@@ -53,7 +67,11 @@ const orders = [
   },
   {
     id: 'ORD-003',
-    customer: { name: 'Julius Vaughan', email: 'julius.vaughan@domain.com', avatar: '/assets/avatar-7.png' },
+    customer: {
+      name: 'Julius Vaughan',
+      email: 'julius.vaughan@domain.com',
+      avatar: '/assets/avatar-7.png',
+    },
     lineItems: 1,
     currency: 'USD',
     amount: 56.24,
@@ -62,7 +80,11 @@ const orders = [
   },
   {
     id: 'ORD-002',
-    customer: { name: 'Pippa Wilkinson', email: 'pippa.wilkinson@domain.com', avatar: '/assets/avatar-4.png' },
+    customer: {
+      name: 'Pippa Wilkinson',
+      email: 'pippa.wilkinson@domain.com',
+      avatar: '/assets/avatar-4.png',
+    },
     lineItems: 1,
     currency: 'USD',
     amount: 14.99,
@@ -71,7 +93,11 @@ const orders = [
   },
   {
     id: 'ORD-001',
-    customer: { name: 'Zaid Schwartz', email: 'zaid.schwartz@domain.com', avatar: '/assets/avatar-1.png' },
+    customer: {
+      name: 'Zaid Schwartz',
+      email: 'zaid.schwartz@domain.com',
+      avatar: '/assets/avatar-1.png',
+    },
     lineItems: 2,
     currency: 'USD',
     amount: 285,
@@ -93,28 +119,32 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Orders
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
-              <BreadcrumbsItem type="end">Orders</BreadcrumbsItem>
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
+              <BreadcrumbsItem type='end'>Orders</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Button
-              color="neutral"
-              startDecorator={<PrinterIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-              variant="outlined"
+              color='neutral'
+              startDecorator={<PrinterIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+              variant='outlined'
             >
               Download
             </Button>
             <Button
               component={RouterLink}
               href={paths.dashboard.orders.create}
-              startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
             >
               Create
             </Button>

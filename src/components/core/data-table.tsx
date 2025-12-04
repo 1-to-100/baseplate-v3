@@ -46,7 +46,7 @@ export function DataTable<TRowModel extends object & { id?: RowId | null }>({
   const selectedAll = rows.length > 0 && selected?.size === rows.length;
 
   return (
-    <Table borderAxis="header" hoverRow={hoverRow} {...props}>
+    <Table borderAxis='header' hoverRow={hoverRow} {...props}>
       <thead>
         <tr>
           {selectable ? (
@@ -85,7 +85,7 @@ export function DataTable<TRowModel extends object & { id?: RowId | null }>({
       <tbody>
         {rows.map((row, index): React.JSX.Element => {
           const rowId = row.id ? row.id : uniqueRowId?.(row);
-          const rowSelected = rowId ? selected?.has(rowId) ?? false : false;
+          const rowSelected = rowId ? (selected?.has(rowId) ?? false) : false;
 
           return (
             <tr key={rowId ?? index}>
@@ -105,7 +105,10 @@ export function DataTable<TRowModel extends object & { id?: RowId | null }>({
               ) : null}
               {columns.map(
                 (column): React.JSX.Element => (
-                  <td key={column.name} style={{ ...(column.align && { textAlign: column.align }) }}>
+                  <td
+                    key={column.name}
+                    style={{ ...(column.align && { textAlign: column.align }) }}
+                  >
                     {
                       (column.formatter
                         ? column.formatter(row, index)

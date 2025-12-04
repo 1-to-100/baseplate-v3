@@ -6,7 +6,9 @@ import { NewPasswordRequiredForm } from '@/components/auth/cognito/new-password-
 import { GuestGuard } from '@/components/auth/guest-guard';
 import { SplitLayout } from '@/components/auth/split-layout';
 
-export const metadata = { title: `New password required | Cognito | Auth | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `New password required | Cognito | Auth | ${config.site.name}`,
+} satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   return (

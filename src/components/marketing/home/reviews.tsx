@@ -76,10 +76,10 @@ export function Reviews(): React.JSX.Element {
         >
           <Stack spacing={6} sx={{ maxWidth: 'md', mx: 'auto' }}>
             <Stack spacing={2}>
-              <Typography color="primary" level="body-sm" textAlign="center">
+              <Typography color='primary' level='body-sm' textAlign='center'>
                 Reviews
               </Typography>
-              <Typography level="h1" textAlign="center">
+              <Typography level='h1' textAlign='center'>
                 What are our customers are saying
               </Typography>
             </Stack>
@@ -110,7 +110,7 @@ export function Reviews(): React.JSX.Element {
   );
 }
 
-export type ReviewCardProps = Review
+export type ReviewCardProps = Review;
 
 function ReviewCard({ author, comment }: ReviewCardProps): React.JSX.Element {
   return (
@@ -126,7 +126,7 @@ function ReviewCard({ author, comment }: ReviewCardProps): React.JSX.Element {
         }}
       >
         <Typography sx={{ flex: '1 1 auto' }}>{comment}</Typography>
-        <Typography level="title-sm">{author}</Typography>
+        <Typography level='title-sm'>{author}</Typography>
       </Box>
     </Card>
   );

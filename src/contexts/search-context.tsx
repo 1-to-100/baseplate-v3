@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useDebounce } from "@/hooks/use-debounce";
-import { usePathname } from "next/navigation";
+import * as React from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
+import { usePathname } from 'next/navigation';
 
 export interface SearchContextType {
   searchValue: string;
@@ -17,15 +17,15 @@ export interface SearchProviderProps {
 }
 
 export function SearchProvider({ children }: SearchProviderProps): React.JSX.Element {
-  const [searchValue, setSearchValue] = React.useState<string>("");
+  const [searchValue, setSearchValue] = React.useState<string>('');
   const pathname = usePathname();
 
   const clearSearch = React.useCallback(() => {
-    setSearchValue("");
+    setSearchValue('');
   }, []);
 
   React.useEffect(() => {
-    setSearchValue("");
+    setSearchValue('');
   }, [pathname]);
 
   const contextValue = React.useMemo<SearchContextType>(
@@ -43,7 +43,7 @@ export function SearchProvider({ children }: SearchProviderProps): React.JSX.Ele
 export function useSearch(): SearchContextType {
   const context = React.useContext(SearchContext);
   if (context === undefined) {
-    throw new Error("useSearch must be used within a SearchProvider");
+    throw new Error('useSearch must be used within a SearchProvider');
   }
   return context;
 }

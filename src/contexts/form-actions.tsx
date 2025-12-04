@@ -8,4 +8,4 @@ interface FormActions {
   setSubmitHandler?: (handler: () => void) => void;
 }
 
-export const FormActionsContext = React.createContext<FormActions>({}); 
+export const FormActionsContext = React.createContext<FormActions>({});

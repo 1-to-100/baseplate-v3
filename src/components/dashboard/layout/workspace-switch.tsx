@@ -21,7 +21,9 @@ export function WorkspaceSwitch(): React.JSX.Element {
   const [organizationId, setOrganizationId] = React.useState<Organization['id']>('ORG-002');
   const popover = usePopover<HTMLDivElement>();
 
-  const organization = organizationId ? organizations.find((org) => org.id === organizationId) : null;
+  const organization = organizationId
+    ? organizations.find((org) => org.id === organizationId)
+    : null;
 
   return (
     <React.Fragment>
@@ -37,7 +39,7 @@ export function WorkspaceSwitch(): React.JSX.Element {
           '&:hover': { bgcolor: 'var(--joy-palette-neutral-700)' },
         }}
       >
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
           <Box
             sx={{
               bgcolor: 'var(--joy-palette-neutral-950)',
@@ -48,17 +50,22 @@ export function WorkspaceSwitch(): React.JSX.Element {
               width: '40px',
             }}
           >
-            {organization?.logo ? <Image alt="" height={24} src={organization.logo} width={24} /> : null}
+            {organization?.logo ? (
+              <Image alt='' height={24} src={organization.logo} width={24} />
+            ) : null}
           </Box>
           <Box sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize="xs" textColor="neutral.400">
+            <Typography fontSize='xs' textColor='neutral.400'>
               Workspace
             </Typography>
-            <Typography fontSize="sm" fontWeight="md" textColor="inherit">
+            <Typography fontSize='sm' fontWeight='md' textColor='inherit'>
               {organization?.name}
             </Typography>
           </Box>
-          <CaretUpDownIcon fill="var(--joy-palette-neutral-400)" fontSize="var(--joy-fontSize-lg)" />
+          <CaretUpDownIcon
+            fill='var(--joy-palette-neutral-400)'
+            fontSize='var(--joy-fontSize-lg)'
+          />
         </Stack>
       </Box>
       <WorkspacePoppover

@@ -15,7 +15,7 @@ export function Auth0SignOut(): React.JSX.Element {
   const handleSignOut = React.useCallback(() => {
     // Clear all React Query cache to ensure no stale data remains
     queryClient.clear();
-    
+
     // Navigate to Auth0 sign-out endpoint
     window.location.href = paths.auth.auth0.signOut;
   }, [queryClient]);
@@ -23,7 +23,11 @@ export function Auth0SignOut(): React.JSX.Element {
   return (
     <ListItemButton onClick={handleSignOut}>
       <ListItemDecorator>
-        <SignOutIcon fontSize="var(--Icon-fontSize)" weight="bold" style={{ color: "var(--joy-palette-text-secondary)" }}/>
+        <SignOutIcon
+          fontSize='var(--Icon-fontSize)'
+          weight='bold'
+          style={{ color: 'var(--joy-palette-text-secondary)' }}
+        />
       </ListItemDecorator>
       <ListItemContent>Sign Out</ListItemContent>
     </ListItemButton>

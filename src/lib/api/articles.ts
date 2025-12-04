@@ -1,12 +1,12 @@
-import { Article } from "@/contexts/auth/types";
-import { createClient } from "@/lib/supabase/client";
-import { supabaseDB } from "@/lib/supabase/database";
-import { generateSlug } from "@/lib/helpers/string-helpers";
-import { NotificationTypes } from "@/lib/constants/notification-types";
-import { NotificationChannel } from "@/lib/constants/notification-channel";
-import { createUserNotification } from "@/lib/api/notifications";
-import { SYSTEM_ROLES } from "@/lib/user-utils";
-import { authService } from "@/lib/auth/auth-service";
+import { Article } from '@/contexts/auth/types';
+import { createClient } from '@/lib/supabase/client';
+import { supabaseDB } from '@/lib/supabase/database';
+import { generateSlug } from '@/lib/helpers/string-helpers';
+import { NotificationTypes } from '@/lib/constants/notification-types';
+import { NotificationChannel } from '@/lib/constants/notification-channel';
+import { createUserNotification } from '@/lib/api/notifications';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
+import { authService } from '@/lib/auth/auth-service';
 
 interface CreateArticlePayload {
   title?: string;
@@ -80,146 +80,150 @@ interface ArticleWithRelations {
 }
 
 export interface GetArticlesParams {
-    page?: number;
-    perPage?: number;
-    search?: string;
-    orderBy?: string;
-    orderDirection?: 'asc' | 'desc';
-    categoryId?: string[];
-    statusId?: string[];
-  }
+  page?: number;
+  perPage?: number;
+  search?: string;
+  orderBy?: string;
+  orderDirection?: 'asc' | 'desc';
+  categoryId?: string[];
+  statusId?: string[];
+}
 
-  interface GetArticlesResponse {
-    data: Article[]; 
-    meta: {
-      total: number;
-      page: number;
-      lastPage: number;
-      perPage: number;
-      currentPage: number;
-      prev: number | null;
-      next: number | null;
-    };
-  }
+interface GetArticlesResponse {
+  data: Article[];
+  meta: {
+    total: number;
+    page: number;
+    lastPage: number;
+    perPage: number;
+    currentPage: number;
+    prev: number | null;
+    next: number | null;
+  };
+}
 
-
-export async function getArticlesList(params: GetArticlesParams = {}): Promise<GetArticlesResponse> {
-    const supabase = createClient();
-    const currentUser = await supabaseDB.getCurrentUser();
-
-    console.log("currentUser ", currentUser);
-    
-    // For system admins, get customerId from JWT context
-    let customerId = currentUser.customer_id;
-    if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
-      const context = await authService.getCurrentContext();
-      customerId = context.customerId || undefined;
-    }
-    
-    if (!customerId) {
-      throw new Error('User must have a customer_id or select a customer context');
-    }
-
-    const page = params.page || 1;
-    const perPage = params.perPage || 10;
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
-
-    // Build query with relationships
-    let query = supabase
-      .from('help_articles')
-      .select(`
-        *,
-        help_article_categories!category_id(*),
-        users!created_by(user_id, full_name)
-      `, { count: 'exact' })
-      .eq('customer_id', customerId)
-      .range(from, to);
-
-    // Apply filters
-    if (params.categoryId && params.categoryId.length > 0) {
-      query = query.in('category_id', params.categoryId);
-    }
-
-    if (params.statusId && params.statusId.length > 0) {
-      query = query.in('status', params.statusId);
-    }
-
-    // Apply search filter
-    if (params.search) {
-      query = query.or(`title.ilike.%${params.search}%,subcategory.ilike.%${params.search}%,content.ilike.%${params.search}%`);
-    }
-
-    // Apply sorting
-    const orderBy = params.orderBy || 'help_article_id';
-    const orderDirection = params.orderDirection || 'desc';
-    query = query.order(orderBy, { ascending: orderDirection === 'asc' });
-
-    const { data, error, count } = await query;
-
-    if (error) throw error;
-
-    const total = count || 0;
-    const lastPage = Math.ceil(total / perPage);
-
-    // Transform data to Article format
-    const articles = ((data || []) as ArticleWithRelations[]).map((article) => {
-      const { firstName, lastName } = parseUserName(article.users?.full_name || null);
-
-      return {
-        id: article.help_article_id,
-        title: article.title,
-        articleCategoryId: article.category_id,
-        subcategory: article.subcategory ?? '',
-        status: article.status,
-        content: article.content ?? '',
-        videoUrl: article.video_url ?? '',
-        updatedAt: article.updated_at || article.created_at,
-        viewsNumber: article.view_count || 0,
-        Creator: {
-          id: article.created_by || '',
-          firstName,
-          lastName,
-        },
-        Category: article.help_article_categories
-          ? {
-              id: article.help_article_categories.help_article_category_id,
-              name: article.help_article_categories.name,
-            }
-          : {
-              id: '',
-              name: '',
-            },
-      } as Article;
-    });
-
-    return {
-      data: articles,
-      meta: {
-        total,
-        page,
-        lastPage,
-        perPage,
-        currentPage: page,
-        prev: page > 1 ? page - 1 : null,
-        next: page < lastPage ? page + 1 : null,
-      },
-    };
-  }
-
-export async function createArticle(
-  payload: CreateArticlePayload
-): Promise<Article> {
+export async function getArticlesList(
+  params: GetArticlesParams = {}
+): Promise<GetArticlesResponse> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
+  console.log('currentUser ', currentUser);
+
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
   if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
-  
+
+  if (!customerId) {
+    throw new Error('User must have a customer_id or select a customer context');
+  }
+
+  const page = params.page || 1;
+  const perPage = params.perPage || 10;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+
+  // Build query with relationships
+  let query = supabase
+    .from('help_articles')
+    .select(
+      `
+        *,
+        help_article_categories!category_id(*),
+        users!created_by(user_id, full_name)
+      `,
+      { count: 'exact' }
+    )
+    .eq('customer_id', customerId)
+    .range(from, to);
+
+  // Apply filters
+  if (params.categoryId && params.categoryId.length > 0) {
+    query = query.in('category_id', params.categoryId);
+  }
+
+  if (params.statusId && params.statusId.length > 0) {
+    query = query.in('status', params.statusId);
+  }
+
+  // Apply search filter
+  if (params.search) {
+    query = query.or(
+      `title.ilike.%${params.search}%,subcategory.ilike.%${params.search}%,content.ilike.%${params.search}%`
+    );
+  }
+
+  // Apply sorting
+  const orderBy = params.orderBy || 'help_article_id';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  const total = count || 0;
+  const lastPage = Math.ceil(total / perPage);
+
+  // Transform data to Article format
+  const articles = ((data || []) as ArticleWithRelations[]).map((article) => {
+    const { firstName, lastName } = parseUserName(article.users?.full_name || null);
+
+    return {
+      id: article.help_article_id,
+      title: article.title,
+      articleCategoryId: article.category_id,
+      subcategory: article.subcategory ?? '',
+      status: article.status,
+      content: article.content ?? '',
+      videoUrl: article.video_url ?? '',
+      updatedAt: article.updated_at || article.created_at,
+      viewsNumber: article.view_count || 0,
+      Creator: {
+        id: article.created_by || '',
+        firstName,
+        lastName,
+      },
+      Category: article.help_article_categories
+        ? {
+            id: article.help_article_categories.help_article_category_id,
+            name: article.help_article_categories.name,
+          }
+        : {
+            id: '',
+            name: '',
+          },
+    } as Article;
+  });
+
+  return {
+    data: articles,
+    meta: {
+      total,
+      page,
+      lastPage,
+      perPage,
+      currentPage: page,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
+}
+
+export async function createArticle(payload: CreateArticlePayload): Promise<Article> {
+  const supabase = createClient();
+  const currentUser = await supabaseDB.getCurrentUser();
+
+  // For system admins, get customerId from JWT context
+  let customerId = currentUser.customer_id;
+  if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
+    const context = await authService.getCurrentContext();
+    customerId = context.customerId || undefined;
+  }
+
   if (!customerId) {
     throw new Error('User must have a customer_id or select a customer context');
   }
@@ -247,11 +251,13 @@ export async function createArticle(
       customer_id: customerId,
       created_by: currentUser.user_id,
     })
-    .select(`
+    .select(
+      `
       *,
       help_article_categories!category_id(*),
       users!created_by(user_id, full_name)
-    `)
+    `
+    )
     .single();
 
   if (error) throw error;
@@ -293,25 +299,27 @@ export async function createArticle(
 export async function getArticleById(id: string): Promise<Article> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
   if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
-  
+
   if (!customerId) {
     throw new Error('User must have a customer_id or select a customer context');
   }
 
   const { data, error } = await supabase
     .from('help_articles')
-    .select(`
+    .select(
+      `
       *,
       help_article_categories!category_id(*),
       users!created_by(user_id, full_name)
-    `)
+    `
+    )
     .eq('help_article_id', id)
     .eq('customer_id', customerId)
     .single();
@@ -351,14 +359,14 @@ export async function getArticleById(id: string): Promise<Article> {
 export async function deleteArticle(id: string): Promise<Article> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
   if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
-  
+
   if (!customerId) {
     throw new Error('User must have a customer_id or select a customer context');
   }
@@ -384,23 +392,22 @@ export async function editArticle(
 ): Promise<Article> {
   const supabase = createClient();
   const currentUser = await supabaseDB.getCurrentUser();
-  
+
   // For system admins, get customerId from JWT context
   let customerId = currentUser.customer_id;
   if (!customerId && currentUser.role?.name === SYSTEM_ROLES.SYSTEM_ADMINISTRATOR) {
     const context = await authService.getCurrentContext();
     customerId = context.customerId || undefined;
   }
-  
+
   if (!customerId) {
     throw new Error('User must have a customer_id or select a customer context');
   }
 
   // Get the current article to check if status is changing to published
   const currentArticle = await getArticleById(articleId);
-  const isStatusChangingToPublished = 
-    currentArticle.status !== 'published' && 
-    payload.status === 'published';
+  const isStatusChangingToPublished =
+    currentArticle.status !== 'published' && payload.status === 'published';
 
   // Build update data
   const updateData: {

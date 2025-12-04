@@ -12,7 +12,13 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
     <React.Fragment>
       <GlobalStyles
-        styles={{ body: { '--MainNav-zIndex': 1000, '--MobileNav-width': '320px', '--MobileNav-zIndex': 1100 } }}
+        styles={{
+          body: {
+            '--MainNav-zIndex': 1000,
+            '--MobileNav-width': '320px',
+            '--MobileNav-zIndex': 1100,
+          },
+        }}
       />
       <div>
         <MainNav />

@@ -35,7 +35,7 @@ const meta = {
       control: 'boolean',
     },
   },
-  args: { 
+  args: {
     onChange: fn(),
     variant: 'outlined',
   },
@@ -112,58 +112,43 @@ export const AllVariants: Story = {
     placeholder: 'Select an option',
   },
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'flex-start', minWidth: '300px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        alignItems: 'flex-start',
+        minWidth: '300px',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Basic Select</h4>
-        <Select
-          options={basicOptions}
-          placeholder="Select an option"
-        />
+        <Select options={basicOptions} placeholder='Select an option' />
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Sizes</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Select
-            size="sm"
-            options={basicOptions}
-            placeholder="Small"
-          />
-          <Select
-            size="md"
-            options={basicOptions}
-            placeholder="Medium"
-          />
-          <Select
-            size="lg"
-            options={basicOptions}
-            placeholder="Large"
-          />
+          <Select size='sm' options={basicOptions} placeholder='Small' />
+          <Select size='md' options={basicOptions} placeholder='Medium' />
+          <Select size='lg' options={basicOptions} placeholder='Large' />
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>States</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <Select
-            options={basicOptions}
-            placeholder="Normal"
-          />
-          <Select
-            options={basicOptions}
-            disabled
-            value="option1"
-            placeholder="Disabled"
-          />
+          <Select options={basicOptions} placeholder='Normal' />
+          <Select options={basicOptions} disabled value='option1' placeholder='Disabled' />
         </div>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Multiple Selection</h4>
         <Select
           multiple
           options={categoryOptions}
-          placeholder="Select multiple categories"
+          placeholder='Select multiple categories'
           renderValue={(selected) => {
             if (Array.isArray(selected) && selected.length > 0) {
               return `Selected: ${selected.length} items`;
@@ -172,7 +157,7 @@ export const AllVariants: Story = {
           }}
         />
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>With Disabled Options</h4>
         <Select
@@ -183,7 +168,7 @@ export const AllVariants: Story = {
             { value: 'option4', label: 'Option 4', disabled: true },
             { value: 'option5', label: 'Option 5' },
           ]}
-          placeholder="Select an option"
+          placeholder='Select an option'
         />
       </div>
     </div>

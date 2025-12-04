@@ -35,10 +35,10 @@ const columns = [
     formatter: (row): React.JSX.Element => (
       <Link
         component={RouterLink}
-        fontSize="sm"
-        fontWeight="md"
+        fontSize='sm'
+        fontWeight='md'
         href={paths.dashboard.products.details('1')}
-        underline="none"
+        underline='none'
       >
         {row.id}
       </Link>
@@ -48,7 +48,7 @@ const columns = [
   },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Avatar
           src={row.image}
           sx={{
@@ -58,7 +58,7 @@ const columns = [
             width: '42px',
           }}
         >
-          <PackageIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PackageIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </Avatar>
         <Typography>{row.name}</Typography>
       </Stack>
@@ -68,7 +68,7 @@ const columns = [
   },
   {
     formatter: (row): React.JSX.Element => (
-      <Chip size="sm" variant="soft">
+      <Chip size='sm' variant='soft'>
         {row.category}
       </Chip>
     ),
@@ -84,7 +84,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.price);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.price
+      );
     },
     name: 'Price',
     width: '200px',
@@ -94,7 +96,7 @@ const columns = [
       const { label, color } = statusMapping[row.status] ?? { label: 'Unknown', color: 'neutral' };
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -126,7 +128,7 @@ export function ProductsTable({ rows = [] }: ProductsTableProps): React.JSX.Elem
       rows={rows}
       selectable
       selected={selection.selected}
-      stripe="even"
+      stripe='even'
     />
   );
 }

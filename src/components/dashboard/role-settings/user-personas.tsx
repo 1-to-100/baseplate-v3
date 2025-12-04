@@ -1,10 +1,10 @@
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Typography from "@mui/joy/Typography";
-import Button from "@mui/joy/Button";
-import { Plus } from "@phosphor-icons/react/dist/ssr/Plus";
-import AddRoleModal from "../modals/AddRoleModal";
-import { useState } from "react";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Button from '@mui/joy/Button';
+import { Plus } from '@phosphor-icons/react/dist/ssr/Plus';
+import AddRoleModal from '../modals/AddRoleModal';
+import { useState } from 'react';
 
 const UserPersonas: React.FC = () => {
   const [openAddRoleModal, setOpenAddRoleModal] = useState(false);
@@ -18,21 +18,21 @@ const UserPersonas: React.FC = () => {
   };
 
   return (
-    <Box sx={{ textAlign: "center", mt: 20 }}>
+    <Box sx={{ textAlign: 'center', mt: 20 }}>
       <Typography
         sx={{
-          fontSize: "24px",
-          fontWeight: "600",
-          color: "var(--joy-palette-text-primary)",
+          fontSize: '24px',
+          fontWeight: '600',
+          color: 'var(--joy-palette-text-primary)',
         }}
       >
         No roles created yet
       </Typography>
       <Typography
         sx={{
-          fontSize: "14px",
-          fontWeight: "300",
-          color: "var(--joy-palette-text-secondary)",
+          fontSize: '14px',
+          fontWeight: '300',
+          color: 'var(--joy-palette-text-secondary)',
           mt: 1,
         }}
       >
@@ -41,9 +41,9 @@ const UserPersonas: React.FC = () => {
       </Typography>
       <Button
         onClick={handleAddRoleModal}
-        variant="outlined"
-        startDecorator={<Plus size={20} weight="bold" />}
-        sx={{ mt: 2, color: "var(--joy-palette-text-secondary)" }}
+        variant='outlined'
+        startDecorator={<Plus size={20} weight='bold' />}
+        sx={{ mt: 2, color: 'var(--joy-palette-text-secondary)' }}
       >
         Add role
       </Button>

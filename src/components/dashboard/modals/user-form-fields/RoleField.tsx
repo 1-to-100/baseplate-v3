@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Stack from "@mui/joy/Stack";
-import Autocomplete from "@mui/joy/Autocomplete";
-import Typography from "@mui/joy/Typography";
-import FormHelperText from "@mui/joy/FormHelperText";
+import * as React from 'react';
+import Stack from '@mui/joy/Stack';
+import Autocomplete from '@mui/joy/Autocomplete';
+import Typography from '@mui/joy/Typography';
+import FormHelperText from '@mui/joy/FormHelperText';
 
 interface RoleFieldProps {
   value: string;
@@ -26,18 +26,18 @@ export function RoleField({
   return (
     <Stack sx={{ flex: 1 }}>
       <Typography
-        level="body-sm"
+        level='body-sm'
         sx={{
-          fontSize: { xs: "12px", sm: "14px" },
-          color: "var(--joy-palette-text-primary)",
+          fontSize: { xs: '12px', sm: '14px' },
+          color: 'var(--joy-palette-text-primary)',
           mb: 0.5,
           fontWeight: 500,
         }}
       >
-        Role <span style={{ color: "var(--joy-palette-danger-500)" }}>*</span>
+        Role <span style={{ color: 'var(--joy-palette-danger-500)' }}>*</span>
       </Typography>
       <Autocomplete
-        placeholder="Select role"
+        placeholder='Select role'
         value={value || null}
         onChange={(event, newValue) => onChange(newValue)}
         options={options}
@@ -49,18 +49,16 @@ export function RoleField({
           },
         }}
         sx={{
-          borderRadius: "6px",
-          fontSize: { xs: "12px", sm: "14px" },
-          border: error
-            ? "1px solid var(--joy-palette-danger-500)"
-            : undefined,
+          borderRadius: '6px',
+          fontSize: { xs: '12px', sm: '14px' },
+          border: error ? '1px solid var(--joy-palette-danger-500)' : undefined,
         }}
       />
       {error && (
         <FormHelperText
           sx={{
-            color: "var(--joy-palette-danger-500)",
-            fontSize: { xs: "10px", sm: "12px" },
+            color: 'var(--joy-palette-danger-500)',
+            fontSize: { xs: '10px', sm: '12px' },
           }}
         >
           {error}
@@ -69,4 +67,3 @@ export function RoleField({
     </Stack>
   );
 }
-

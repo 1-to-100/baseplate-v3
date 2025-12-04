@@ -25,9 +25,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-      <BreadcrumbsItem href="/" type="start" />
-      <BreadcrumbsItem href="/dashboard">Dashboard</BreadcrumbsItem>
-      <BreadcrumbsItem type="end">Customer Management</BreadcrumbsItem>
+      <BreadcrumbsItem href='/' type='start' />
+      <BreadcrumbsItem href='/dashboard'>Dashboard</BreadcrumbsItem>
+      <BreadcrumbsItem type='end'>Customer Management</BreadcrumbsItem>
     </Breadcrumbs>
   ),
 };
@@ -35,41 +35,49 @@ export const Default: Story = {
 export const WithMultipleLevels: Story = {
   render: () => (
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-      <BreadcrumbsItem href="/" type="start" />
-      <BreadcrumbsItem href="/dashboard">Dashboard</BreadcrumbsItem>
-      <BreadcrumbsItem href="/dashboard/customers">Customers</BreadcrumbsItem>
-      <BreadcrumbsItem type="end">Customer Details</BreadcrumbsItem>
+      <BreadcrumbsItem href='/' type='start' />
+      <BreadcrumbsItem href='/dashboard'>Dashboard</BreadcrumbsItem>
+      <BreadcrumbsItem href='/dashboard/customers'>Customers</BreadcrumbsItem>
+      <BreadcrumbsItem type='end'>Customer Details</BreadcrumbsItem>
     </Breadcrumbs>
   ),
 };
 
 export const AllVariants: Story = {
   render: () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'flex-start', minWidth: '400px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        alignItems: 'flex-start',
+        minWidth: '400px',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Default</h4>
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/" type="start" />
-          <BreadcrumbsItem href="/dashboard">Dashboard</BreadcrumbsItem>
-          <BreadcrumbsItem type="end">Page</BreadcrumbsItem>
+          <BreadcrumbsItem href='/' type='start' />
+          <BreadcrumbsItem href='/dashboard'>Dashboard</BreadcrumbsItem>
+          <BreadcrumbsItem type='end'>Page</BreadcrumbsItem>
         </Breadcrumbs>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>With Multiple Levels</h4>
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/" type="start" />
-          <BreadcrumbsItem href="/dashboard">Dashboard</BreadcrumbsItem>
-          <BreadcrumbsItem href="/dashboard/section">Section</BreadcrumbsItem>
-          <BreadcrumbsItem type="end">Current Page</BreadcrumbsItem>
+          <BreadcrumbsItem href='/' type='start' />
+          <BreadcrumbsItem href='/dashboard'>Dashboard</BreadcrumbsItem>
+          <BreadcrumbsItem href='/dashboard/section'>Section</BreadcrumbsItem>
+          <BreadcrumbsItem type='end'>Current Page</BreadcrumbsItem>
         </Breadcrumbs>
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h4>Simple Navigation</h4>
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/" type="start" />
-          <BreadcrumbsItem type="end">Home</BreadcrumbsItem>
+          <BreadcrumbsItem href='/' type='start' />
+          <BreadcrumbsItem type='end'>Home</BreadcrumbsItem>
         </Breadcrumbs>
       </div>
     </div>

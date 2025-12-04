@@ -80,7 +80,7 @@ export function Plans(): React.JSX.Element {
     >
       <Container sx={{ py: '100px' }}>
         <Stack spacing={6}>
-          <Typography level="h1" textAlign="center">
+          <Typography level='h1' textAlign='center'>
             Pricing Plans
           </Typography>
           <Grid container spacing={3}>
@@ -93,7 +93,7 @@ export function Plans(): React.JSX.Element {
             )}
           </Grid>
           <Stack spacing={1.5} sx={{ alignItems: 'center', maxWidth: 'sm', mx: 'auto' }}>
-            <Typography textAlign="center" textColor="text.secondary">
+            <Typography textAlign='center' textColor='text.secondary'>
               Not ready to pay yet? Experience the product firsthand before making a purchase.
             </Typography>
             <Button component={RouterLink} href={paths.dashboard.overview}>
@@ -125,24 +125,24 @@ function PlanCard({ features, name, price, delay }: PlanCardProps): React.JSX.El
           sx={{ ...(colorScheme === 'light' && { boxShadow: 'var(--joy-shadow-md)' }) }}
           variant={colorScheme === 'dark' ? 'outlined' : 'plain'}
         >
-          <Typography level="title-md" textColor="primary.plainColor">
+          <Typography level='title-md' textColor='primary.plainColor'>
             {name}
           </Typography>
           <Box sx={{ display: 'flex' }}>
-            <Typography textColor="text.secondary">$</Typography>
-            <Typography level="h1">{price}</Typography>
+            <Typography textColor='text.secondary'>$</Typography>
+            <Typography level='h1'>{price}</Typography>
           </Box>
-          <Stack component="ul" spacing={2} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+          <Stack component='ul' spacing={2} sx={{ listStyle: 'none', m: 0, p: 0 }}>
             {features.map(
               (feature, index): React.JSX.Element => (
                 <React.Fragment key={feature.id}>
-                  <Stack component="li" direction="row" spacing={1.5}>
+                  <Stack component='li' direction='row' spacing={1.5}>
                     <Avatar
                       color={feature.included ? 'primary' : 'neutral'}
                       sx={{ '--Avatar-size': '24px', '--Icon-fontSize': 'var(--joy-fontSize-sm)' }}
-                      variant="outlined"
+                      variant='outlined'
                     >
-                      <CheckIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+                      <CheckIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                     </Avatar>
                     <Typography textColor={feature.included ? 'text.primary' : 'text.tertiary'}>
                       {feature.label}

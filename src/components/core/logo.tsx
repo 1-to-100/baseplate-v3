@@ -18,11 +18,15 @@ export interface LogoProps {
   width?: number;
 }
 
-export function Logo({ color = 'dark', height = HEIGHT, width = WIDTH }: LogoProps): React.JSX.Element {
+export function Logo({
+  color = 'dark',
+  height = HEIGHT,
+  width = WIDTH,
+}: LogoProps): React.JSX.Element {
   const { colorScheme } = useColorScheme();
   const url = colorScheme === 'light' ? '/assets/logo--light.svg' : '/assets/logo--dark.svg';
 
-  return <Image alt="logo" height={height} src={url} width={width} />;
+  return <Image alt='logo' height={height} src={url} width={width} />;
 }
 
 export interface DynamicLogoProps {

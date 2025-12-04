@@ -36,10 +36,10 @@ const columns = [
     formatter: (row): React.JSX.Element => (
       <Link
         component={RouterLink}
-        fontSize="sm"
-        fontWeight="md"
+        fontSize='sm'
+        fontWeight='md'
         href={paths.dashboard.orders.details('1')}
-        underline="none"
+        underline='none'
       >
         {row.id}
       </Link>
@@ -49,13 +49,13 @@ const columns = [
   },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
         <Avatar src={row.customer.avatar} />
         <div>
-          <Typography level="body-sm" textColor="text.primary">
+          <Typography level='body-sm' textColor='text.primary'>
             {row.customer.name}
           </Typography>
-          <Typography level="body-xs">{row.customer.email}</Typography>
+          <Typography level='body-xs'>{row.customer.email}</Typography>
         </div>
       </Stack>
     ),
@@ -72,7 +72,9 @@ const columns = [
   { field: 'lineItems', name: 'Items', width: '150px' },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(row.amount);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: row.currency }).format(
+        row.amount
+      );
     },
     name: 'Amount',
     width: '150px',
@@ -82,7 +84,7 @@ const columns = [
       const { label, color } = statusMapping[row.status] ?? { label: 'Unknown', color: 'neutral' };
 
       return (
-        <Chip color={color} size="sm" variant="soft">
+        <Chip color={color} size='sm' variant='soft'>
           {label}
         </Chip>
       );
@@ -92,11 +94,11 @@ const columns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-        <Button color="neutral" size="sm" variant="plain">
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+        <Button color='neutral' size='sm' variant='plain'>
           Archive
         </Button>
-        <Button size="sm" variant="plain">
+        <Button size='sm' variant='plain'>
           Download
         </Button>
       </Stack>
@@ -129,7 +131,7 @@ export function OrdersTable({ rows = [] }: OrdersTableProps): React.JSX.Element 
       rows={rows}
       selectable
       selected={selection.selected}
-      stripe="even"
+      stripe='even'
     />
   );
 }

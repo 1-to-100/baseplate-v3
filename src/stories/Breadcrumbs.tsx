@@ -34,15 +34,16 @@ export const Breadcrumbs = ({
   lastItemClickable = false,
 }: BreadcrumbsProps) => {
   const renderBreadcrumbItem = (item: BreadcrumbItem, index: number, isLast: boolean) => {
-    const isClickable = item.clickable !== undefined ? item.clickable : (isLast ? lastItemClickable : true);
-    
+    const isClickable =
+      item.clickable !== undefined ? item.clickable : isLast ? lastItemClickable : true;
+
     if (isClickable && item.href) {
       return (
         <Link
           key={index}
           href={item.href}
           color={color}
-          underline="hover"
+          underline='hover'
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -95,9 +96,7 @@ export const Breadcrumbs = ({
         },
       }}
     >
-      {items.map((item, index) => 
-        renderBreadcrumbItem(item, index, index === items.length - 1)
-      )}
+      {items.map((item, index) => renderBreadcrumbItem(item, index, index === items.length - 1))}
     </JoyBreadcrumbs>
   );
 };

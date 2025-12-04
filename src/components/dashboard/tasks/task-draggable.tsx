@@ -15,7 +15,11 @@ export function TaskDraggable({ children, id }: TaskDraggableProps): React.JSX.E
     data: { type: 'task' } satisfies DnDData,
   });
 
-  const style = { transform: CSS.Transform.toString(transform), transition, ...(isDragging && { opacity: 0 }) };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(isDragging && { opacity: 0 }),
+  };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

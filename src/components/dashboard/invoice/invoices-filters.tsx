@@ -16,41 +16,41 @@ export function InvoicesFilters(): React.JSX.Element {
       <FormControl>
         <FormLabel>Search</FormLabel>
         <Input
-          name="invoiceId"
-          placeholder="Invoice ID"
-          startDecorator={<MagnifyingGlassIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+          name='invoiceId'
+          placeholder='Invoice ID'
+          startDecorator={<MagnifyingGlassIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
         />
       </FormControl>
       <Stack spacing={1}>
         <FormControl>
           <FormLabel>Date Range</FormLabel>
-          <RadioGroup defaultValue="custom" name="range">
-            <Radio label="Last Week" value="lastWeek" />
-            <Radio label="Last Month" value="lastMonth" />
-            <Radio label="Last Year" value="lastYear" />
-            <Radio label="Custom" value="custom" />
+          <RadioGroup defaultValue='custom' name='range'>
+            <Radio label='Last Week' value='lastWeek' />
+            <Radio label='Last Month' value='lastMonth' />
+            <Radio label='Last Year' value='lastYear' />
+            <Radio label='Custom' value='custom' />
           </RadioGroup>
         </FormControl>
         <FormControl>
           <FormLabel>From</FormLabel>
-          <Input defaultValue="2024-03-24" name="rangeFrom" type="date" />
+          <Input defaultValue='2024-03-24' name='rangeFrom' type='date' />
         </FormControl>
         <FormControl>
           <FormLabel>To</FormLabel>
-          <Input defaultValue="2024-09-24" name="rangeTo" type="date" />
+          <Input defaultValue='2024-09-24' name='rangeTo' type='date' />
         </FormControl>
       </Stack>
       <Stack spacing={1}>
         <FormControl>
           <FormLabel>Customer</FormLabel>
           <Input
-            name="customer"
-            startDecorator={<MagnifyingGlassIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+            name='customer'
+            startDecorator={<MagnifyingGlassIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
           />
         </FormControl>
         <Stack spacing={1}>
-          <Checkbox label="Sienna Hewitt" />
-          <Checkbox label="Iva Ryan" />
+          <Checkbox label='Sienna Hewitt' />
+          <Checkbox label='Iva Ryan' />
         </Stack>
       </Stack>
     </Stack>

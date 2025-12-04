@@ -25,7 +25,7 @@ const columns = [
   { field: 'id', name: 'ID', width: '150px' },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Avatar
           src={row.image}
           sx={{
@@ -35,7 +35,7 @@ const columns = [
             width: '42px',
           }}
         >
-          <PackageIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PackageIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </Avatar>
         <Typography>{row.name}</Typography>
       </Stack>
@@ -52,7 +52,9 @@ const columns = [
   },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(row.price);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+        row.price
+      );
     },
     name: 'Price',
     width: '120px',
@@ -60,8 +62,8 @@ const columns = [
   { field: 'sku', name: 'SKU', width: '150px' },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton size="sm">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton size='sm'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -76,5 +78,5 @@ export interface VariantsTableProps {
 }
 
 export function VariantsTable({ rows }: VariantsTableProps): React.JSX.Element {
-  return <DataTable<Variant> columns={columns} rows={rows} stripe="even" />;
+  return <DataTable<Variant> columns={columns} rows={rows} stripe='even' />;
 }

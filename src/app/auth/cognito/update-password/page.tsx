@@ -8,19 +8,21 @@ import { UpdatePasswordForm } from '@/components/auth/cognito/update-password-fo
 import { GuestGuard } from '@/components/auth/guest-guard';
 import { SplitLayout } from '@/components/auth/split-layout';
 
-export const metadata = { title: `Update password | Cognito | Auth | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Update password | Cognito | Auth | ${config.site.name}`,
+} satisfies Metadata;
 
 interface PageProps {
   searchParams: Promise<{ email?: string }>;
 }
 
-export default async  function Page({ searchParams }: PageProps) {
+export default async function Page({ searchParams }: PageProps) {
   const { email } = await searchParams;
 
   if (!email) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="danger">Email is required</Alert>
+        <Alert color='danger'>Email is required</Alert>
       </Box>
     );
   }

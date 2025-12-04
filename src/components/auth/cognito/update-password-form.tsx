@@ -79,20 +79,21 @@ export function UpdatePasswordForm({ email }: UpdatePasswordFormProps): React.JS
     <Stack spacing={5}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-          <DynamicLogo colorDark="light" colorLight="dark" height={32} width={154} />
+          <DynamicLogo colorDark='light' colorLight='dark' height={32} width={154} />
         </Box>
       </Box>
       <Stack spacing={3}>
-        <Typography level="h3" textAlign="center">
+        <Typography level='h3' textAlign='center'>
           Update Password
         </Typography>
         <Stack spacing={1} sx={{ alignItems: 'center' }}>
-          <Typography textAlign="center">
-            If an account exists with email <Typography fontWeight="lg">&quot;{email}&quot;</Typography>, you will
-            receive a recovery email.
+          <Typography textAlign='center'>
+            If an account exists with email{' '}
+            <Typography fontWeight='lg'>&quot;{email}&quot;</Typography>, you will receive a
+            recovery email.
           </Typography>
           <div>
-            <Link component={RouterLink} href={paths.auth.cognito.resetPassword} textAlign="center">
+            <Link component={RouterLink} href={paths.auth.cognito.resetPassword} textAlign='center'>
               Use another email
             </Link>
           </div>
@@ -101,39 +102,45 @@ export function UpdatePasswordForm({ email }: UpdatePasswordFormProps): React.JS
           <Stack spacing={2}>
             <Controller
               control={control}
-              name="confirmationCode"
+              name='confirmationCode'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.confirmationCode)}>
                   <FormLabel>Confirmation Code</FormLabel>
                   <Input {...field} />
-                  {errors.confirmationCode ? <FormHelperText>{errors.confirmationCode.message}</FormHelperText> : null}
+                  {errors.confirmationCode ? (
+                    <FormHelperText>{errors.confirmationCode.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
             <Controller
               control={control}
-              name="password"
+              name='password'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.password)}>
                   <FormLabel>Password</FormLabel>
-                  <Input {...field} type="password" />
-                  {errors.password ? <FormHelperText>{errors.password.message}</FormHelperText> : null}
+                  <Input {...field} type='password' />
+                  {errors.password ? (
+                    <FormHelperText>{errors.password.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
             <Controller
               control={control}
-              name="confirmPassword"
+              name='confirmPassword'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.confirmPassword)}>
                   <FormLabel>Confirm Password</FormLabel>
-                  <Input {...field} type="password" />
-                  {errors.confirmPassword ? <FormHelperText>{errors.confirmPassword.message}</FormHelperText> : null}
+                  <Input {...field} type='password' />
+                  {errors.confirmPassword ? (
+                    <FormHelperText>{errors.confirmPassword.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
-            {errors.root ? <Alert color="danger">{errors.root.message}</Alert> : null}
-            <Button disabled={isPending} type="submit">
+            {errors.root ? <Alert color='danger'>{errors.root.message}</Alert> : null}
+            <Button disabled={isPending} type='submit'>
               Update Password
             </Button>
           </Stack>

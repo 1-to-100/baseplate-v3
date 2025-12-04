@@ -22,7 +22,10 @@ export interface SettingsProviderProps {
   settings: Settings;
 }
 
-export function SettingsProvider({ children, settings: initialSettings }: SettingsProviderProps): React.JSX.Element {
+export function SettingsProvider({
+  children,
+  settings: initialSettings,
+}: SettingsProviderProps): React.JSX.Element {
   const [state, setState] = React.useState<Settings>(initialSettings);
 
   React.useEffect(() => {

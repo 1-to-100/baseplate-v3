@@ -24,7 +24,7 @@ export function ListView(): React.JSX.Element {
   return (
     <div>
       <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
-        <Table stripe="even" sx={{ '--TableCell-paddingX': '12px', '--TableCell-paddingY': '8px' }}>
+        <Table stripe='even' sx={{ '--TableCell-paddingX': '12px', '--TableCell-paddingY': '8px' }}>
           <thead>
             <tr>
               <th style={{ width: '340px' }}>Task</th>
@@ -37,7 +37,12 @@ export function ListView(): React.JSX.Element {
           <tbody>
             {tasksSorted.map(
               ({ columnId, ...task }): React.JSX.Element => (
-                <TaskRow column={columns.get(columnId)} key={task.id} onOpen={setCurrentTaskId} task={task} />
+                <TaskRow
+                  column={columns.get(columnId)}
+                  key={task.id}
+                  onOpen={setCurrentTaskId}
+                  task={task}
+                />
               )
             )}
           </tbody>

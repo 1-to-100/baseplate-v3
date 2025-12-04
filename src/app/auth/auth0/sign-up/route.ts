@@ -8,6 +8,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest): Promise<Response> {
   return auth0.handleLogin(req, {} as AppRouteHandlerFnContext, {
-    authorizationParams: { redirect_uri: `${config.auth0.baseUrl}/auth/auth0/callback`, login_hint: 'signup' },
+    authorizationParams: {
+      redirect_uri: `${config.auth0.baseUrl}/auth/auth0/callback`,
+      login_hint: 'signup',
+    },
   });
 }

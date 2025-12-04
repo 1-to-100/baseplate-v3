@@ -32,7 +32,10 @@ export function TaskRow({ column, onOpen, task }: TaskRowProps): React.JSX.Eleme
       <td>{category ? <TaskCategory category={category} /> : null}</td>
       <td>
         {dueDate ? (
-          <Typography level="body-xs" startDecorator={<ClockIcon fontSize="var(--Icon-fontSize)" weight="bold" />}>
+          <Typography
+            level='body-xs'
+            startDecorator={<ClockIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+          >
             {dayjs(dueDate).diff(dayjs(), 'day')} days
           </Typography>
         ) : null}

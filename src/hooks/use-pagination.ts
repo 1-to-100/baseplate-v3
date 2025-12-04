@@ -9,7 +9,14 @@ export interface PaginationItem {
   'aria-current'?: 'true';
 }
 
-export type PaginationItemType = 'first' | 'previous' | 'page' | 'start-ellipsis' | 'end-ellipsis' | 'next' | 'last';
+export type PaginationItemType =
+  | 'first'
+  | 'previous'
+  | 'page'
+  | 'start-ellipsis'
+  | 'end-ellipsis'
+  | 'next'
+  | 'last';
 
 export interface PaginationHookProps {
   boundaryCount?: number;
@@ -88,7 +95,7 @@ export function usePagination({
       boundaryCount + siblingCount * 2 + 2
     ),
     // Less than endPages
-      endPages?.[0] !== undefined ? endPages[0] - 2 : count - 1
+    endPages?.[0] !== undefined ? endPages[0] - 2 : count - 1
   );
 
   // Basic list of items to render
@@ -158,7 +165,8 @@ export function usePagination({
           selected: false,
           disabled:
             disabled ||
-            (!item.includes('ellipsis') && (item === 'next' || item === 'last' ? page >= count : page <= 1)),
+            (!item.includes('ellipsis') &&
+              (item === 'next' || item === 'last' ? page >= count : page <= 1)),
         };
   }) as PaginationItem[];
 

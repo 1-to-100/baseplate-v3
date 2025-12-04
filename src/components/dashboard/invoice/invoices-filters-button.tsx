@@ -12,13 +12,13 @@ export function InvoicesFiltersButton(): React.JSX.Element {
   return (
     <React.Fragment>
       <Button
-        color="neutral"
+        color='neutral'
         onClick={(): void => {
           setOpen(!open);
         }}
-        startDecorator={<FunnelIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
+        startDecorator={<FunnelIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
         sx={{ display: { lg: 'none' } }}
-        variant="outlined"
+        variant='outlined'
       >
         Filters
       </Button>

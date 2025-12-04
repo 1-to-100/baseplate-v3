@@ -139,7 +139,10 @@ export function ProductCreateForm(): React.JSX.Element {
   );
 
   const handleMetadataAdd = React.useCallback(() => {
-    setValue('metadata', [...getValues('metadata'), { id: `META-${Date.now()}`, key: '', value: '' }]);
+    setValue('metadata', [
+      ...getValues('metadata'),
+      { id: `META-${Date.now()}`, key: '', value: '' },
+    ]);
   }, [getValues, setValue]);
 
   const images = watch('images');
@@ -149,13 +152,13 @@ export function ProductCreateForm(): React.JSX.Element {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack divider={<Divider />} spacing={5}>
         <Stack spacing={3}>
-          <Typography level="h4">Information</Typography>
+          <Typography level='h4'>Information</Typography>
           <Stack spacing={3} sx={{ maxWidth: 'md' }}>
             <Grid container spacing={3}>
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="name"
+                  name='name'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.name)}>
                       <FormLabel>Display Name</FormLabel>
@@ -170,7 +173,7 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="category"
+                  name='category'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.category)}>
                       <FormLabel>Category</FormLabel>
@@ -180,12 +183,14 @@ export function ProductCreateForm(): React.JSX.Element {
                           field.onChange(value);
                         }}
                       >
-                        <Option value="">Choose a category</Option>
-                        <Option value="clothing">Clothing</Option>
-                        <Option value="shoes">Shoes</Option>
-                        <Option value="accessories">Accessories</Option>
+                        <Option value=''>Choose a category</Option>
+                        <Option value='clothing'>Clothing</Option>
+                        <Option value='shoes'>Shoes</Option>
+                        <Option value='accessories'>Accessories</Option>
                       </Select>
-                      {errors.category ? <FormHelperText>{errors.category.message}</FormHelperText> : null}
+                      {errors.category ? (
+                        <FormHelperText>{errors.category.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -193,7 +198,7 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="brand"
+                  name='brand'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.brand)}>
                       <FormLabel>Brand</FormLabel>
@@ -203,12 +208,14 @@ export function ProductCreateForm(): React.JSX.Element {
                           field.onChange(value);
                         }}
                       >
-                        <Option value="">Choose a brand</Option>
-                        <Option value="puma">Puma</Option>
-                        <Option value="nike">Nike</Option>
-                        <Option value="adidas">Adidas</Option>
+                        <Option value=''>Choose a brand</Option>
+                        <Option value='puma'>Puma</Option>
+                        <Option value='nike'>Nike</Option>
+                        <Option value='adidas'>Adidas</Option>
                       </Select>
-                      {errors.brand ? <FormHelperText>{errors.brand.message}</FormHelperText> : null}
+                      {errors.brand ? (
+                        <FormHelperText>{errors.brand.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -217,7 +224,7 @@ export function ProductCreateForm(): React.JSX.Element {
             <Box sx={{ '& .tiptap-container': { height: '300px' } }}>
               <Controller
                 control={control}
-                name="description"
+                name='description'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.description)}>
                     <FormLabel>Description</FormLabel>
@@ -226,9 +233,11 @@ export function ProductCreateForm(): React.JSX.Element {
                       onUpdate={({ editor }) => {
                         field.onChange(editor.getHTML());
                       }}
-                      placeholder="Write something"
+                      placeholder='Write something'
                     />
-                    {errors.description ? <FormHelperText>{errors.description.message}</FormHelperText> : null}
+                    {errors.description ? (
+                      <FormHelperText>{errors.description.message}</FormHelperText>
+                    ) : null}
                   </FormControl>
                 )}
               />
@@ -238,11 +247,11 @@ export function ProductCreateForm(): React.JSX.Element {
                 <FormLabel>Images</FormLabel>
                 <FileDropzone
                   accept={{ 'image/*': [] }}
-                  caption="(SVG, JPG, PNG, or gif maximum 900x400)"
+                  caption='(SVG, JPG, PNG, or gif maximum 900x400)'
                   onDrop={handleImageDrop}
                 />
               </FormControl>
-              <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+              <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
                 {images.map(
                   (image): React.JSX.Element => (
                     <ProductImage
@@ -257,7 +266,7 @@ export function ProductCreateForm(): React.JSX.Element {
               </Stack>
             </Stack>
             <Stack spacing={2}>
-              <Stack spacing="4px">
+              <Stack spacing='4px'>
                 <FormLabel>Metadata</FormLabel>
                 <Stack spacing={2}>
                   {metadata.map(
@@ -267,14 +276,14 @@ export function ProductCreateForm(): React.JSX.Element {
                           <Controller
                             control={control}
                             name={`metadata.${index}.key`}
-                            render={({ field }) => <Input {...field} placeholder="Key" />}
+                            render={({ field }) => <Input {...field} placeholder='Key' />}
                           />
                         </Grid>
                         <Grid md={6} xs={12}>
                           <Controller
                             control={control}
                             name={`metadata.${index}.value`}
-                            render={({ field }) => <Input {...field} placeholder="Value" />}
+                            render={({ field }) => <Input {...field} placeholder='Value' />}
                           />
                         </Grid>
                       </Grid>
@@ -284,9 +293,9 @@ export function ProductCreateForm(): React.JSX.Element {
               </Stack>
               <div>
                 <Link
-                  level="body-sm"
+                  level='body-sm'
                   onClick={handleMetadataAdd}
-                  startDecorator={<PlusIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}
+                  startDecorator={<PlusIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
                 >
                   Add More Metadata
                 </Link>
@@ -295,17 +304,17 @@ export function ProductCreateForm(): React.JSX.Element {
           </Stack>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Inventory</Typography>
+          <Typography level='h4'>Inventory</Typography>
           <Stack spacing={3} sx={{ maxWidth: 'md' }}>
             <div>
               <Controller
                 control={control}
-                name="type"
+                name='type'
                 render={({ field }) => (
                   <Checkbox
                     {...field}
                     checked={field.value === 'physical'}
-                    label="This is a physical product"
+                    label='This is a physical product'
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       field.onChange(event.target.checked ? 'physical' : 'digital');
                     }}
@@ -317,7 +326,7 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="sku"
+                  name='sku'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.sku)}>
                       <FormLabel>SKU</FormLabel>
@@ -330,12 +339,14 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="barcode"
+                  name='barcode'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.barcode)}>
                       <FormLabel>Barcode</FormLabel>
                       <Input {...field} />
-                      {errors.barcode ? <FormHelperText>{errors.barcode.message}</FormHelperText> : null}
+                      {errors.barcode ? (
+                        <FormHelperText>{errors.barcode.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -345,13 +356,13 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="weight"
+                  name='weight'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.weight)}>
                       <FormLabel>Weight</FormLabel>
                       <Input
                         {...field}
-                        endDecorator="kg"
+                        endDecorator='kg'
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                           const value = event.target.valueAsNumber;
 
@@ -362,10 +373,12 @@ export function ProductCreateForm(): React.JSX.Element {
 
                           field.onChange(parseFloat(value.toFixed(2)));
                         }}
-                        type="number"
+                        type='number'
                         value={field.value ?? ''}
                       />
-                      {errors.weight ? <FormHelperText>{errors.weight.message}</FormHelperText> : null}
+                      {errors.weight ? (
+                        <FormHelperText>{errors.weight.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -373,13 +386,13 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="volume"
+                  name='volume'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.volume)}>
                       <FormLabel>Volume</FormLabel>
                       <Input
                         {...field}
-                        endDecorator="cm3"
+                        endDecorator='cm3'
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                           const value = event.target.valueAsNumber;
 
@@ -390,10 +403,12 @@ export function ProductCreateForm(): React.JSX.Element {
 
                           field.onChange(parseFloat(value.toFixed(2)));
                         }}
-                        type="number"
+                        type='number'
                         value={field.value ?? ''}
                       />
-                      {errors.volume ? <FormHelperText>{errors.volume.message}</FormHelperText> : null}
+                      {errors.volume ? (
+                        <FormHelperText>{errors.volume.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -405,12 +420,12 @@ export function ProductCreateForm(): React.JSX.Element {
                 <Grid md={4} xs={12}>
                   <Controller
                     control={control}
-                    name="depth"
+                    name='depth'
                     render={({ field }) => (
                       <FormControl error={Boolean(errors.depth)}>
                         <Input
                           {...field}
-                          endDecorator="cm"
+                          endDecorator='cm'
                           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             const value = event.target.valueAsNumber;
 
@@ -421,11 +436,13 @@ export function ProductCreateForm(): React.JSX.Element {
 
                             field.onChange(parseFloat(value.toFixed(2)));
                           }}
-                          placeholder="Depth"
-                          type="number"
+                          placeholder='Depth'
+                          type='number'
                           value={field.value ?? ''}
                         />
-                        {errors.depth ? <FormHelperText>{errors.depth.message}</FormHelperText> : null}
+                        {errors.depth ? (
+                          <FormHelperText>{errors.depth.message}</FormHelperText>
+                        ) : null}
                       </FormControl>
                     )}
                   />
@@ -433,12 +450,12 @@ export function ProductCreateForm(): React.JSX.Element {
                 <Grid md={4} xs={12}>
                   <Controller
                     control={control}
-                    name="width"
+                    name='width'
                     render={({ field }) => (
                       <FormControl error={Boolean(errors.width)}>
                         <Input
                           {...field}
-                          endDecorator="cm"
+                          endDecorator='cm'
                           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             const value = event.target.valueAsNumber;
 
@@ -449,11 +466,13 @@ export function ProductCreateForm(): React.JSX.Element {
 
                             field.onChange(parseFloat(value.toFixed(2)));
                           }}
-                          placeholder="Width"
-                          type="number"
+                          placeholder='Width'
+                          type='number'
                           value={field.value ?? ''}
                         />
-                        {errors.width ? <FormHelperText>{errors.width.message}</FormHelperText> : null}
+                        {errors.width ? (
+                          <FormHelperText>{errors.width.message}</FormHelperText>
+                        ) : null}
                       </FormControl>
                     )}
                   />
@@ -461,12 +480,12 @@ export function ProductCreateForm(): React.JSX.Element {
                 <Grid md={4} xs={12}>
                   <Controller
                     control={control}
-                    name="height"
+                    name='height'
                     render={({ field }) => (
                       <FormControl error={Boolean(errors.height)}>
                         <Input
                           {...field}
-                          endDecorator="cm"
+                          endDecorator='cm'
                           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             const value = event.target.valueAsNumber;
 
@@ -477,11 +496,13 @@ export function ProductCreateForm(): React.JSX.Element {
 
                             field.onChange(parseFloat(value.toFixed(2)));
                           }}
-                          placeholder="Height"
-                          type="number"
+                          placeholder='Height'
+                          type='number'
                           value={field.value ?? ''}
                         />
-                        {errors.height ? <FormHelperText>{errors.height.message}</FormHelperText> : null}
+                        {errors.height ? (
+                          <FormHelperText>{errors.height.message}</FormHelperText>
+                        ) : null}
                       </FormControl>
                     )}
                   />
@@ -491,13 +512,13 @@ export function ProductCreateForm(): React.JSX.Element {
           </Stack>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Pricing</Typography>
+          <Typography level='h4'>Pricing</Typography>
           <Stack spacing={3} sx={{ maxWidth: 'md' }}>
             <Grid container spacing={3}>
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="pricingModel"
+                  name='pricingModel'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.pricingModel)}>
                       <FormLabel>Pricing Model</FormLabel>
@@ -507,12 +528,14 @@ export function ProductCreateForm(): React.JSX.Element {
                           field.onChange(value);
                         }}
                       >
-                        <Option value="standard">Standard Pricing</Option>
-                        <Option value="package">Package Pricing</Option>
-                        <Option value="graduated">Graduated Pricing</Option>
-                        <Option value="volume">Volume Pricing</Option>
+                        <Option value='standard'>Standard Pricing</Option>
+                        <Option value='package'>Package Pricing</Option>
+                        <Option value='graduated'>Graduated Pricing</Option>
+                        <Option value='volume'>Volume Pricing</Option>
                       </Select>
-                      {errors.pricingModel ? <FormHelperText>{errors.pricingModel.message}</FormHelperText> : null}
+                      {errors.pricingModel ? (
+                        <FormHelperText>{errors.pricingModel.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -522,7 +545,7 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="price"
+                  name='price'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.price)}>
                       <FormLabel>Price</FormLabel>
@@ -531,7 +554,7 @@ export function ProductCreateForm(): React.JSX.Element {
                         endDecorator={
                           <Controller
                             control={control}
-                            name="currency"
+                            name='currency'
                             render={({ field: innerField }) => (
                               <FormControl>
                                 <Select
@@ -539,11 +562,11 @@ export function ProductCreateForm(): React.JSX.Element {
                                   onChange={(_, value) => {
                                     innerField.onChange(value);
                                   }}
-                                  size="sm"
-                                  variant="plain"
+                                  size='sm'
+                                  variant='plain'
                                 >
-                                  <Option value="usd">USD</Option>
-                                  <Option value="eur">EUR</Option>
+                                  <Option value='usd'>USD</Option>
+                                  <Option value='eur'>EUR</Option>
                                 </Select>
                               </FormControl>
                             )}
@@ -559,17 +582,22 @@ export function ProductCreateForm(): React.JSX.Element {
 
                           field.onChange(parseFloat(value.toFixed(2)));
                         }}
-                        placeholder="0.00"
+                        placeholder='0.00'
                         slotProps={{ input: { lang: 'en', min: 0, step: 0.01 } }}
-                        startDecorator="$"
+                        startDecorator='$'
                         sx={{
                           pr: 0,
-                          '& .MuiInput-endDecorator': { borderLeft: '1px solid var(--joy-palette-divider)', p: '4px' },
+                          '& .MuiInput-endDecorator': {
+                            borderLeft: '1px solid var(--joy-palette-divider)',
+                            p: '4px',
+                          },
                         }}
-                        type="number"
+                        type='number'
                         value={field.value}
                       />
-                      {errors.price ? <FormHelperText>{errors.price.message}</FormHelperText> : null}
+                      {errors.price ? (
+                        <FormHelperText>{errors.price.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -578,16 +606,16 @@ export function ProductCreateForm(): React.JSX.Element {
             <div>
               <Controller
                 control={control}
-                name="isRecurring"
+                name='isRecurring'
                 render={({ field }) => (
-                  <Stack direction="row" spacing={2}>
+                  <Stack direction='row' spacing={2}>
                     <Button
                       color={field.value ? 'primary' : 'neutral'}
                       onClick={() => {
                         field.onChange(true);
                       }}
-                      size="sm"
-                      variant="outlined"
+                      size='sm'
+                      variant='outlined'
                     >
                       Recurring
                     </Button>
@@ -596,8 +624,8 @@ export function ProductCreateForm(): React.JSX.Element {
                       onClick={() => {
                         field.onChange(false);
                       }}
-                      size="sm"
-                      variant="outlined"
+                      size='sm'
+                      variant='outlined'
                     >
                       One Time
                     </Button>
@@ -609,7 +637,7 @@ export function ProductCreateForm(): React.JSX.Element {
               <Grid md={6} xs={12}>
                 <Controller
                   control={control}
-                  name="billingCycle"
+                  name='billingCycle'
                   render={({ field }) => (
                     <FormControl error={Boolean(errors.billingCycle)}>
                       <FormLabel>Billing Cycle</FormLabel>
@@ -619,12 +647,14 @@ export function ProductCreateForm(): React.JSX.Element {
                           field.onChange(value);
                         }}
                       >
-                        <Option value="daily">Daily</Option>
-                        <Option value="weekly">Weekly</Option>
-                        <Option value="monthly">Monthly</Option>
-                        <Option value="yearly">Yearly</Option>
+                        <Option value='daily'>Daily</Option>
+                        <Option value='weekly'>Weekly</Option>
+                        <Option value='monthly'>Monthly</Option>
+                        <Option value='yearly'>Yearly</Option>
                       </Select>
-                      {errors.billingCycle ? <FormHelperText>{errors.billingCycle.message}</FormHelperText> : null}
+                      {errors.billingCycle ? (
+                        <FormHelperText>{errors.billingCycle.message}</FormHelperText>
+                      ) : null}
                     </FormControl>
                   )}
                 />
@@ -632,11 +662,15 @@ export function ProductCreateForm(): React.JSX.Element {
             </Grid>
           </Stack>
         </Stack>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-          <Button color="neutral" type="submit" variant="outlined">
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
+          <Button color='neutral' type='submit' variant='outlined'>
             Save as Draft
           </Button>
-          <Button type="submit">Publish</Button>
+          <Button type='submit'>Publish</Button>
         </Stack>
       </Stack>
     </form>

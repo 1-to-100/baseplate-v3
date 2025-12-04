@@ -51,56 +51,66 @@ export function UpdatePasswordForm(): React.JSX.Element {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={3}>
         <Stack spacing={3} sx={{ maxWidth: 'sm' }}>
-          <Typography level="h4">Change Password</Typography>
+          <Typography level='h4'>Change Password</Typography>
           <Controller
             control={control}
-            name="currentPassword"
+            name='currentPassword'
             render={({ field }) => (
               <FormControl error={Boolean(errors.currentPassword)}>
                 <FormLabel>Current Password</FormLabel>
-                <Input {...field} type="password" />
-                {errors.currentPassword ? <FormHelperText>{errors.currentPassword.message}</FormHelperText> : null}
+                <Input {...field} type='password' />
+                {errors.currentPassword ? (
+                  <FormHelperText>{errors.currentPassword.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="password"
+            name='password'
             render={({ field }) => (
               <FormControl error={Boolean(errors.password)}>
                 <FormLabel>New Password</FormLabel>
-                <Input {...field} type="password" />
+                <Input {...field} type='password' />
                 {errors.password ? (
                   <FormHelperText>{errors.password.message}</FormHelperText>
                 ) : (
-                  <FormHelperText>Make sure it&apos;s a secure password and stored in a safe place.</FormHelperText>
+                  <FormHelperText>
+                    Make sure it&apos;s a secure password and stored in a safe place.
+                  </FormHelperText>
                 )}
               </FormControl>
             )}
           />
           <Controller
             control={control}
-            name="confirmPassword"
+            name='confirmPassword'
             render={({ field }) => (
               <FormControl error={Boolean(errors.confirmPassword)}>
                 <FormLabel>Confirm New Password</FormLabel>
-                <Input {...field} type="password" />
-                {errors.confirmPassword ? <FormHelperText>{errors.confirmPassword.message}</FormHelperText> : null}
+                <Input {...field} type='password' />
+                {errors.confirmPassword ? (
+                  <FormHelperText>{errors.confirmPassword.message}</FormHelperText>
+                ) : null}
               </FormControl>
             )}
           />
         </Stack>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+        <Stack
+          direction='row'
+          spacing={1}
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
           <Button
-            color="neutral"
+            color='neutral'
             onClick={() => {
               reset();
             }}
-            variant="outlined"
+            variant='outlined'
           >
             Discard
           </Button>
-          <Button type="submit">Save Changes</Button>
+          <Button type='submit'>Save Changes</Button>
         </Stack>
       </Stack>
     </form>

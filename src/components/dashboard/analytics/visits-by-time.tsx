@@ -15,7 +15,7 @@ export function VisitsByTime({ data = [] }: VisitsByTimeProps): React.JSX.Elemen
 
   return (
     <Card>
-      <Typography level="h4">Visits by Time</Typography>
+      <Typography level='h4'>Visits by Time</Typography>
       <Stack direction={{ lg: 'row' }} spacing={3}>
         <Box sx={{ flex: '1 1 auto' }}>
           <Box
@@ -30,12 +30,13 @@ export function VisitsByTime({ data = [] }: VisitsByTimeProps): React.JSX.Elemen
               (row, rowIndex): React.JSX.Element => (
                 <React.Fragment key={row.name}>
                   <Box sx={{ alignItems: 'center', display: 'flex' }}>
-                    {rowIndex % 2 === 0 ? <Typography level="body-xs">{row.name}</Typography> : null}
+                    {rowIndex % 2 === 0 ? (
+                      <Typography level='body-xs'>{row.name}</Typography>
+                    ) : null}
                   </Box>
                   {row.values.map(
                     (value, colIndex): React.JSX.Element => (
                       <Box
-                         
                         key={colIndex}
                         sx={{
                           bgcolor: getCellColor(value),
@@ -51,14 +52,21 @@ export function VisitsByTime({ data = [] }: VisitsByTimeProps): React.JSX.Elemen
             <div />
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
               (day): React.JSX.Element => (
-                <Box key={day} sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center' }}>
-                  <Typography level="body-xs">{day}</Typography>
+                <Box
+                  key={day}
+                  sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center' }}
+                >
+                  <Typography level='body-xs'>{day}</Typography>
                 </Box>
               )
             )}
           </Box>
         </Box>
-        <Stack direction={{ xs: 'row', lg: 'column' }} spacing={{ xs: 3, lg: 2 }} sx={{ flexWrap: 'wrap' }}>
+        <Stack
+          direction={{ xs: 'row', lg: 'column' }}
+          spacing={{ xs: 3, lg: 2 }}
+          sx={{ flexWrap: 'wrap' }}
+        >
           {(
             [
               { label: '500', color: 'var(--joy-palette-primary-100)' },
@@ -68,9 +76,16 @@ export function VisitsByTime({ data = [] }: VisitsByTimeProps): React.JSX.Elemen
             ] satisfies { label: string; color: string }[]
           ).map(
             (item): React.JSX.Element => (
-              <Stack direction="row" key={item.label} spacing={1} sx={{ alignItems: 'center' }}>
-                <Box sx={{ bgcolor: item.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-                <Typography sx={{ whiteSpace: 'nowrap' }} textColor="text.secondary">
+              <Stack direction='row' key={item.label} spacing={1} sx={{ alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    bgcolor: item.color,
+                    borderRadius: 'var(--joy-radius-xs)',
+                    height: '8px',
+                    width: '8px',
+                  }}
+                />
+                <Typography sx={{ whiteSpace: 'nowrap' }} textColor='text.secondary'>
                   {item.label} &gt;
                 </Typography>
               </Stack>

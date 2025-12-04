@@ -35,34 +35,45 @@ const iconsMapping = {
 
 export interface PowerUsageByDeviceProps {
   data: { name: string; value: number }[];
-  dataByDevice: { id: string; name: string; type: keyof typeof iconsMapping; units: number; value: number }[];
+  dataByDevice: {
+    id: string;
+    name: string;
+    type: keyof typeof iconsMapping;
+    units: number;
+    value: number;
+  }[];
 }
 
-export function PowerUsageByDevice({ data = [], dataByDevice = [] }: PowerUsageByDeviceProps): React.JSX.Element {
+export function PowerUsageByDevice({
+  data = [],
+  dataByDevice = [],
+}: PowerUsageByDeviceProps): React.JSX.Element {
   const chartHeight = 240;
 
   return (
     <Card>
-      <Typography level="h4">Power Consumption</Typography>
+      <Typography level='h4'>Power Consumption</Typography>
       <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
-        <ResponsiveContainer height={chartHeight} width="100%">
+        <ResponsiveContainer height={chartHeight} width='100%'>
           <BarChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="4 4" vertical={false} />
-            <XAxis axisLine={false} dataKey="name" tickLine={false} type="category" />
-            <YAxis axisLine={false} domain={[0, 1000]} tickLine={false} type="number" />
+            <CartesianGrid strokeDasharray='4 4' vertical={false} />
+            <XAxis axisLine={false} dataKey='name' tickLine={false} type='category' />
+            <YAxis axisLine={false} domain={[0, 1000]} tickLine={false} type='number' />
             <Bar
               animationDuration={300}
               barSize={16}
-              dataKey="value"
-              fill="var(--joy-palette-primary-solidBg)"
-              name="Direct"
+              dataKey='value'
+              fill='var(--joy-palette-primary-solidBg)'
+              name='Direct'
               radius={[6, 6, 6, 6]}
             />
           </BarChart>
         </ResponsiveContainer>
       </NoSsr>
-      <Typography level="h4">Device Power Consumption</Typography>
-      <List sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '56px' }}>
+      <Typography level='h4'>Device Power Consumption</Typography>
+      <List
+        sx={{ '--List-padding': 0, '--ListItem-paddingX': 0, '--ListItemDecorator-size': '56px' }}
+      >
         {dataByDevice.map((device): React.JSX.Element => {
           const Icon = iconsMapping[device.type] as Icon | undefined;
 
@@ -70,14 +81,14 @@ export function PowerUsageByDevice({ data = [], dataByDevice = [] }: PowerUsageB
             <ListItem key={device.id}>
               <ListItemDecorator>
                 <Avatar sx={{ '--Avatar-radius': 'var(--joy-radius-sm)' }}>
-                  {Icon ? <Icon fontSize="var(--Icon-fontSize)" weight="bold" /> : null}
+                  {Icon ? <Icon fontSize='var(--Icon-fontSize)' weight='bold' /> : null}
                 </Avatar>
               </ListItemDecorator>
               <ListItemContent>
-                <Typography level="title-sm">{device.name}</Typography>
-                <Typography level="body-sm">{device.units} units</Typography>
+                <Typography level='title-sm'>{device.name}</Typography>
+                <Typography level='body-sm'>{device.units} units</Typography>
               </ListItemContent>
-              <Typography level="body-xs">{device.value}kWh</Typography>
+              <Typography level='body-xs'>{device.value}kWh</Typography>
             </ListItem>
           );
         })}

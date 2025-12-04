@@ -1,10 +1,10 @@
-import * as React from "react";
-import Box from "@mui/joy/Box";
-import Typography from "@mui/joy/Typography";
-import Button from "@mui/joy/Button";
-import Modal from "@mui/joy/Modal";
-import ModalDialog from "@mui/joy/ModalDialog";
-import { X as XIcon } from "@phosphor-icons/react/dist/ssr/X";
+import * as React from 'react';
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
+import Button from '@mui/joy/Button';
+import Modal from '@mui/joy/Modal';
+import ModalDialog from '@mui/joy/ModalDialog';
+import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 
 interface DeleteItemModalProps {
   open: boolean;
@@ -27,49 +27,48 @@ export default function DeleteItemModal({
 }: DeleteItemModalProps) {
   return (
     <Modal open={open} onClose={onClose}>
-      <ModalDialog sx={{ maxWidth: 520, borderRadius: "8px", p: 2 }}>
+      <ModalDialog sx={{ maxWidth: 520, borderRadius: '8px', p: 2 }}>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
-          <Typography level="h3">
-            {title}
-          </Typography>
-          <Button variant="plain" onClick={onClose} sx={{ p: 0, minWidth: 0, "&:hover": { bgcolor: "transparent" } }}>
-            <XIcon fontSize="var(--Icon-fontSize)" />
+          <Typography level='h3'>{title}</Typography>
+          <Button
+            variant='plain'
+            onClick={onClose}
+            sx={{ p: 0, minWidth: 0, '&:hover': { bgcolor: 'transparent' } }}
+          >
+            <XIcon fontSize='var(--Icon-fontSize)' />
           </Button>
         </Box>
-        <Typography level="body-md" sx={{ mt: 2, color: "#636B74" }}>
+        <Typography level='body-md' sx={{ mt: 2, color: '#636B74' }}>
           {/* <Typography component="span" sx={{ color: 'var(--joy-palette-text-primary)' }}>
             {usersToDelete?.join(", ")}
           </Typography>{" "} */}
           {description}
-          {!isDeactivate && " This action cannot be undone."}
+          {!isDeactivate && ' This action cannot be undone.'}
         </Typography>
-        <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={onClose}
-          >
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Button variant='outlined' onClick={onClose}>
             Cancel
           </Button>
           <Button
-            variant="solid"
+            variant='solid'
             onClick={onConfirm}
-            style={{background: isDeactivate ? "#4F46E5" : "#EF4444"}}
+            style={{ background: isDeactivate ? '#4F46E5' : '#EF4444' }}
             sx={{
-              borderRadius: "20px",
-              color: "#FFFFFF",
-              padding: "8px 16px",
-              "&:hover": {
-                bgcolor: isDeactivate ? "#4338CA" : "#DC2626",
+              borderRadius: '20px',
+              color: '#FFFFFF',
+              padding: '8px 16px',
+              '&:hover': {
+                bgcolor: isDeactivate ? '#4338CA' : '#DC2626',
               },
             }}
           >
-            {isDeactivate ? "Deactivate" : "Delete permanently"}
+            {isDeactivate ? 'Deactivate' : 'Delete permanently'}
           </Button>
         </Box>
       </ModalDialog>

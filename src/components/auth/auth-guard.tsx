@@ -71,7 +71,7 @@ export function AuthGuard({ children }: AuthGuardProps): React.JSX.Element | nul
   }
 
   if (error) {
-    return <Alert color="danger">{error}</Alert>;
+    return <Alert color='danger'>{error}</Alert>;
   }
 
   return <React.Fragment>{children}</React.Fragment>;

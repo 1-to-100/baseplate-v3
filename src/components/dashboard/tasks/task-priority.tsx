@@ -15,10 +15,13 @@ export interface TaskPriorityProps {
 }
 
 export function TaskPriority({ priority }: TaskPriorityProps): React.JSX.Element {
-  const { label, color } = priorityMapping[priority] ?? { label: 'Unknown', color: 'var(--joy-palette-neutral-600)' };
+  const { label, color } = priorityMapping[priority] ?? {
+    label: 'Unknown',
+    color: 'var(--joy-palette-neutral-600)',
+  };
 
   return (
-    <Typography level="body-xs" startDecorator={<DiamondIcon fill={color} weight="fill" />}>
+    <Typography level='body-xs' startDecorator={<DiamondIcon fill={color} weight='fill' />}>
       {label}
     </Typography>
   );

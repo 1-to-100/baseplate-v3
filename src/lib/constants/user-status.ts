@@ -14,4 +14,3 @@ export const UserStatusDisplayNames: Record<UserStatusType, string> = {
   [UserStatus.INACTIVE]: 'Inactive',
   [UserStatus.SUSPENDED]: 'Suspended',
 } as const;
-

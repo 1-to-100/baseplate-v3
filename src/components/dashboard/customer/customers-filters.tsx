@@ -8,18 +8,22 @@ import Stack from '@mui/joy/Stack';
 
 export function CustomersFilters(): React.JSX.Element {
   return (
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <Stack
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={3}
+      sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
+    >
       <FormControl sx={{ maxWidth: '240px', mr: 'auto', width: '100%' }}>
         <FormLabel>Customer ID</FormLabel>
-        <Input defaultValue="" name="id" />
+        <Input defaultValue='' name='id' />
       </FormControl>
       <FormControl sx={{ maxWidth: '240px', width: '100%' }}>
         <FormLabel>Status</FormLabel>
-        <Select defaultValue="all" name="status">
-          <Option value="all">All</Option>
-          <Option value="active">Active</Option>
-          <Option value="canceled">Canceled</Option>
-          <Option value="completed">Completed</Option>
+        <Select defaultValue='all' name='status'>
+          <Option value='all'>All</Option>
+          <Option value='active'>Active</Option>
+          <Option value='canceled'>Canceled</Option>
+          <Option value='completed'>Completed</Option>
         </Select>
       </FormControl>
     </Stack>

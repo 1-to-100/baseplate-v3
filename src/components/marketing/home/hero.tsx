@@ -17,7 +17,7 @@ export function Hero(): React.JSX.Element {
   return (
     // NOTE: Transform style property is required to fix
     // Safari issue with perspective property messing the zIndex of other elements.
-    <Box component="section" sx={{ position: 'relative', transformStyle: 'preserve-3d' }}>
+    <Box component='section' sx={{ position: 'relative', transformStyle: 'preserve-3d' }}>
       <Box
         sx={{
           bgcolor: 'var(--joy-palette-neutral-950)',
@@ -42,9 +42,9 @@ export function Hero(): React.JSX.Element {
             zIndex: 1,
           }}
         >
-          <Image alt="pattern" fill priority sizes="1600px" src="/assets/home-hero-pattern.png" />
+          <Image alt='pattern' fill priority sizes='1600px' src='/assets/home-hero-pattern.png' />
         </Box>
-        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 3 }}>
+        <Container maxWidth='md' sx={{ position: 'relative', zIndex: 3 }}>
           <motion.div
             animate={{ opacity: 1, scale: 1, y: 0 }}
             initial={{ opacity: 0, scale: 0.9, y: '-40px' }}
@@ -53,22 +53,22 @@ export function Hero(): React.JSX.Element {
             <Stack spacing={3}>
               <Typography
                 fontSize={{ xs: '32px', sm: '46px', md: '56px' }}
-                fontWeight="xl"
-                textAlign="center"
-                textColor="inherit"
+                fontWeight='xl'
+                textAlign='center'
+                textColor='inherit'
               >
                 BasePlate: Redefining SaaS Product Management
               </Typography>
               <Typography
                 fontSize={{ xs: 'md', sm: 'lg', md: 'xl' }}
-                fontWeight="sm"
-                textAlign="center"
-                textColor="neutral.400"
+                fontWeight='sm'
+                textAlign='center'
+                textColor='neutral.400'
               >
-                Premium template that comes with ready-to-use Joy UI components, developed to help you build apps faster
-                and with a beautiful design.
+                Premium template that comes with ready-to-use Joy UI components, developed to help
+                you build apps faster and with a beautiful design.
               </Typography>
-              <Stack direction="row" spacing={3} sx={{ justifyContent: 'center' }}>
+              <Stack direction='row' spacing={3} sx={{ justifyContent: 'center' }}>
                 {/* <Button
                   color="neutral"
                   component="a"

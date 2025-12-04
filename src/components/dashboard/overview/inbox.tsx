@@ -24,7 +24,7 @@ interface InboxProps {
 export function Inbox({ messages = [] }: InboxProps): React.JSX.Element {
   return (
     <Card>
-      <Typography level="h4">Inbox</Typography>
+      <Typography level='h4'>Inbox</Typography>
       <CardOverflow sx={{ mb: 'var(--CardOverflow-offset)', mx: 'var(--CardOverflow-offset)' }}>
         <List sx={{ '--List-padding': 0, '--ListItemDecorator-size': '56px', minWidth: '1px' }}>
           {messages.map(
@@ -32,15 +32,15 @@ export function Inbox({ messages = [] }: InboxProps): React.JSX.Element {
               <React.Fragment key={message.id}>
                 <ListItem>
                   <ListItemDecorator sx={{ alignSelf: 'flex-start' }}>
-                    <Avatar color="primary" src={message.author.avatar} />
+                    <Avatar color='primary' src={message.author.avatar} />
                   </ListItemDecorator>
                   <ListItemContent>
                     <Typography>{message.author.name}</Typography>
-                    <Typography level="body-sm" noWrap>
+                    <Typography level='body-sm' noWrap>
                       {message.subject}
                     </Typography>
                   </ListItemContent>
-                  <Typography level="body-xs" whiteSpace="nowrap">
+                  <Typography level='body-xs' whiteSpace='nowrap'>
                     {dayjs().diff(message.createdAt, 'minute')} min ago
                   </Typography>
                 </ListItem>

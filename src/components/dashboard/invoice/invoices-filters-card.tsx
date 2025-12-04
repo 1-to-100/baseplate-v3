@@ -9,7 +9,7 @@ import { InvoicesFilters } from './invoices-filters';
 export function InvoicesFiltersCard(): React.JSX.Element {
   return (
     <Card sx={{ display: { xs: 'none', lg: 'flex' } }}>
-      <Typography fontSize="sm" fontWeight="xl">
+      <Typography fontSize='sm' fontWeight='xl'>
         Filters
       </Typography>
       <InvoicesFilters />

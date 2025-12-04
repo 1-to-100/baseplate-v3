@@ -46,23 +46,32 @@ export function ColumnItem({
   return (
     <React.Fragment>
       <Stack spacing={3} sx={{ flex: '0 0 auto', width: '320px' }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Typography level="title-md">{name}</Typography>
-            <Chip size="sm" variant="soft">
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+            <Typography level='title-md'>{name}</Typography>
+            <Chip size='sm' variant='soft'>
               {tasks.length}
             </Chip>
           </Stack>
-          <IconButton color="neutral" onClick={morePopover.handleOpen} ref={morePopover.anchorRef} size="sm">
-            <DotsThreeVerticalIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <IconButton
+            color='neutral'
+            onClick={morePopover.handleOpen}
+            ref={morePopover.anchorRef}
+            size='sm'
+          >
+            <DotsThreeVerticalIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </IconButton>
         </Stack>
         <Button
-          color="neutral"
+          color='neutral'
           onClick={(): void => onTaskCreate?.(id)}
-          size="sm"
-          startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-          variant="outlined"
+          size='sm'
+          startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+          variant='outlined'
         >
           Add Task
         </Button>
@@ -86,7 +95,7 @@ export function ColumnItem({
           }}
         >
           <ListItemDecorator>
-            <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           <ListItemContent>Edit</ListItemContent>
         </MenuItem>
@@ -97,7 +106,7 @@ export function ColumnItem({
           }}
         >
           <ListItemDecorator>
-            <ArchiveIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <ArchiveIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </ListItemDecorator>
           <ListItemContent>Clear</ListItemContent>
         </MenuItem>
@@ -108,9 +117,14 @@ export function ColumnItem({
           }}
         >
           <ListItemDecorator>
-            <TrashIcon color="var(--joy-palette-danger-plainColor)" fontSize="var(--Icon-fontSize)" />
+            <TrashIcon
+              color='var(--joy-palette-danger-plainColor)'
+              fontSize='var(--Icon-fontSize)'
+            />
           </ListItemDecorator>
-          <ListItemContent sx={{ color: 'var(--joy-palette-danger-plainColor)' }}>Delete</ListItemContent>
+          <ListItemContent sx={{ color: 'var(--joy-palette-danger-plainColor)' }}>
+            Delete
+          </ListItemContent>
         </MenuItem>
       </Menu>
     </React.Fragment>

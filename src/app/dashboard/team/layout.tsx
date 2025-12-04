@@ -13,7 +13,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+        <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
           Team
         </Typography>
         <TeamTabs />

@@ -24,35 +24,41 @@ import { ProductImage } from '@/components/dashboard/product/product-image';
 import { VariantsTable } from '@/components/dashboard/product/variants-table';
 import type { Variant } from '@/components/dashboard/product/variants-table';
 
-export const metadata = { title: `Details | Products | Dashboard | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Details | Products | Dashboard | ${config.site.name}`,
+} satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ alignItems: 'flex-start' }}
+        >
           <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Product Details
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-              <BreadcrumbsItem href={paths.dashboard.overview} type="start" />
+              <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
               <BreadcrumbsItem href={paths.dashboard.products.list}>Products</BreadcrumbsItem>
-              <BreadcrumbsItem type="end">Details</BreadcrumbsItem>
+              <BreadcrumbsItem type='end'>Details</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
-          <Stack direction="column" spacing={2} sx={{ alignItems: { sm: 'flex-end' } }}>
+          <Stack direction='column' spacing={2} sx={{ alignItems: { sm: 'flex-end' } }}>
             <div>
               <Button>Publish</Button>
             </div>
             <Stack>
               <Typography
                 endDecorator={
-                  <Chip component="span" size="sm" variant="soft">
+                  <Chip component='span' size='sm' variant='soft'>
                     Draft
                   </Chip>
                 }
-                level="body-sm"
+                level='body-sm'
               >
                 Status
               </Typography>
@@ -62,11 +68,16 @@ export default function Page(): React.JSX.Element {
         <Stack divider={<Divider />} spacing={5}>
           <ProductDetialsForm />
           <Stack spacing={3}>
-            <Typography level="h4">Images</Typography>
+            <Typography level='h4'>Images</Typography>
             <Stack spacing={3} sx={{ maxWidth: 'md' }}>
               <FileDropzone />
-              <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
-                {([{ id: 'PRD-IMG-001', url: '/assets/product-1.png' }] satisfies { id: string; url: string }[]).map(
+              <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
+                {(
+                  [{ id: 'PRD-IMG-001', url: '/assets/product-1.png' }] satisfies {
+                    id: string;
+                    url: string;
+                  }[]
+                ).map(
                   (image): React.JSX.Element => (
                     <ProductImage key={image.id} url={image.url} />
                   )
@@ -75,7 +86,7 @@ export default function Page(): React.JSX.Element {
             </Stack>
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Metadata</Typography>
+            <Typography level='h4'>Metadata</Typography>
             <Stack spacing={2}>
               <PropertyList>
                 {(
@@ -91,14 +102,17 @@ export default function Page(): React.JSX.Element {
                 )}
               </PropertyList>
               <div>
-                <Link level="body-sm" startDecorator={<PenIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}>
+                <Link
+                  level='body-sm'
+                  startDecorator={<PenIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
+                >
                   Edit Metadata
                 </Link>
               </div>
             </Stack>
           </Stack>
           <Stack spacing={2}>
-            <Typography level="h4">Inventory</Typography>
+            <Typography level='h4'>Inventory</Typography>
             <Stack spacing={3} sx={{ maxWidth: 'md' }}>
               <PropertyList>
                 {(
@@ -115,14 +129,17 @@ export default function Page(): React.JSX.Element {
                 )}
               </PropertyList>
               <div>
-                <Link level="body-sm" startDecorator={<PenIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}>
+                <Link
+                  level='body-sm'
+                  startDecorator={<PenIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
+                >
                   Edit Inventory
                 </Link>
               </div>
             </Stack>
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Pricing</Typography>
+            <Typography level='h4'>Pricing</Typography>
             <Stack spacing={2}>
               <PropertyList>
                 {(
@@ -130,7 +147,10 @@ export default function Page(): React.JSX.Element {
                     { key: 'Pricing Model', value: 'Standard Pricing' },
                     {
                       key: 'Price',
-                      value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(150),
+                      value: new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                      }).format(150),
                     },
                     { key: 'Payment Type', value: 'Recurring' },
                     { key: 'Billing Cycle', value: 'Monthly' },
@@ -142,14 +162,17 @@ export default function Page(): React.JSX.Element {
                 )}
               </PropertyList>
               <div>
-                <Link level="body-sm" startDecorator={<PenIcon fontSize="var(--joy-fontSize-md)" weight="bold" />}>
+                <Link
+                  level='body-sm'
+                  startDecorator={<PenIcon fontSize='var(--joy-fontSize-md)' weight='bold' />}
+                >
                   Edit Pricing
                 </Link>
               </div>
             </Stack>
           </Stack>
           <Stack spacing={3}>
-            <Typography level="h4">Variants</Typography>
+            <Typography level='h4'>Variants</Typography>
             <Stack spacing={2}>
               <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
                 <VariantsTable
@@ -170,18 +193,18 @@ export default function Page(): React.JSX.Element {
               </Card>
               <div>
                 <Button
-                  color="neutral"
-                  size="sm"
-                  startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                  variant="outlined"
+                  color='neutral'
+                  size='sm'
+                  startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                  variant='outlined'
                 >
                   Add Variant
                 </Button>
               </div>
             </Stack>
           </Stack>
-          <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
-            <Button color="danger" variant="outlined">
+          <Stack direction='row' sx={{ justifyContent: 'flex-end' }}>
+            <Button color='danger' variant='outlined'>
               Delete
             </Button>
           </Stack>

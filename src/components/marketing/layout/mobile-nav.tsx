@@ -27,7 +27,7 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
 
   return (
     <Drawer
-      anchor="right"
+      anchor='right'
       onClose={onClose}
       open={canOpen ? open : false}
       sx={{
@@ -41,7 +41,11 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
         },
       }}
     >
-      <Stack direction="row" spacing={3} sx={{ alignItems: 'center', justifyContent: 'space-between', p: '16px' }}>
+      <Stack
+        direction='row'
+        spacing={3}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', p: '16px' }}
+      >
         {/* <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
           <Logo color="light" height={16} width={77} />
         </Box> */}
@@ -50,18 +54,31 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
           sx={{
             bgcolor: 'transparent',
             color: 'inherit',
-            '&:hover': { bgcolor: 'var(--joy-palette-neutral-800)', color: 'var(--joy-palette-common-white)' },
+            '&:hover': {
+              bgcolor: 'var(--joy-palette-neutral-800)',
+              color: 'var(--joy-palette-common-white)',
+            },
           }}
-          variant="plain"
+          variant='plain'
         >
-          <XIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <XIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </IconButton>
       </Stack>
       <Stack spacing={2} sx={{ p: '16px' }}>
-            <NavItem href={paths.home} pathname={pathname} title="Home" />
-            <NavItem external href="https://1to100.com/baseplate/" pathname={pathname} title="Documentation" />
-            <NavItem external href="https://github.com/1-to-100/baseplate" pathname={pathname} title="Sources" />
-            <NavItem href={paths.dashboard.overview} pathname={pathname} title="Application" />
+        <NavItem href={paths.home} pathname={pathname} title='Home' />
+        <NavItem
+          external
+          href='https://1to100.com/baseplate/'
+          pathname={pathname}
+          title='Documentation'
+        />
+        <NavItem
+          external
+          href='https://github.com/1-to-100/baseplate'
+          pathname={pathname}
+          title='Sources'
+        />
+        <NavItem href={paths.dashboard.overview} pathname={pathname} title='Application' />
       </Stack>
     </Drawer>
   );

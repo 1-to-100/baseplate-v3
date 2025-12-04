@@ -20,18 +20,22 @@ export function PowerUsageByRoom({ data = [] }: PowerUsageByRoomProps): React.JS
 
   return (
     <Card>
-      <Typography level="h4">Consumption By Room</Typography>
-      <Stack direction="row" spacing={3} sx={{ alignItems: 'center', flex: '1 1 auto' }}>
+      <Typography level='h4'>Consumption By Room</Typography>
+      <Stack direction='row' spacing={3} sx={{ alignItems: 'center', flex: '1 1 auto' }}>
         <NoSsr fallback={<Box sx={{ height: chartSize, width: chartSize }} />}>
-          <PieChart height={chartSize} margin={{ top: 0, right: 0, bottom: 0, left: 0 }} width={chartSize}>
+          <PieChart
+            height={chartSize}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            width={chartSize}
+          >
             <Pie
               animationDuration={300}
               cx={chartSize / 2}
               cy={chartSize / 2}
               data={data}
-              dataKey="value"
+              dataKey='value'
               innerRadius={chartSize / 2 - chartThickness}
-              nameKey="name"
+              nameKey='name'
               outerRadius={chartSize / 2}
               strokeWidth={0}
             >
@@ -40,7 +44,7 @@ export function PowerUsageByRoom({ data = [] }: PowerUsageByRoomProps): React.JS
                   <Cell fill={room.color} key={room.id} />
                 )
               )}
-              <Label content={<LabelContent value="657kWh" />} position="center" />
+              <Label content={<LabelContent value='657kWh' />} position='center' />
             </Pie>
             <Tooltip animationDuration={50} content={<TooltipContent />} />
           </PieChart>
@@ -60,11 +64,11 @@ function LabelContent({ viewBox, value }: LabelContentProps): React.JSX.Element 
   const { cx, cy } = viewBox ?? { cx: 0, cy: 0 };
 
   return (
-    <text dominantBaseline="middle" textAnchor="middle" x={cx} y={cy}>
+    <text dominantBaseline='middle' textAnchor='middle' x={cx} y={cy}>
       <tspan
-        fill="var(--joy-palette-text-primary)"
-        fontSize="var(--joy-fontSize-lg)"
-        fontWeight="var(--joy-fontWeight-lg)"
+        fill='var(--joy-palette-text-primary)'
+        fontSize='var(--joy-fontSize-lg)'
+        fontWeight='var(--joy-fontWeight-lg)'
       >
         {value}
       </tspan>
@@ -81,9 +85,16 @@ function Legend({ payload }: LegendProps): React.JSX.Element {
     <Stack spacing={1}>
       {payload?.map(
         (entry): React.JSX.Element => (
-          <Stack direction="row" key={entry.name} spacing={1} sx={{ alignItems: 'center' }}>
-            <Box sx={{ bgcolor: entry.color, borderRadius: 'var(--joy-radius-xs)', height: '8px', width: '8px' }} />
-            <Typography textColor="text.secondary">{entry.name}</Typography>
+          <Stack direction='row' key={entry.name} spacing={1} sx={{ alignItems: 'center' }}>
+            <Box
+              sx={{
+                bgcolor: entry.color,
+                borderRadius: 'var(--joy-radius-xs)',
+                height: '8px',
+                width: '8px',
+              }}
+            />
+            <Typography textColor='text.secondary'>{entry.name}</Typography>
           </Stack>
         )
       )}
@@ -113,18 +124,25 @@ function TooltipContent({ active, payload }: TooltipContentProps): React.JSX.Ele
       {payload?.map(
         (entry): React.JSX.Element => (
           <Stack
-            direction="row"
+            direction='row'
             key={entry.name}
             spacing={3}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Box sx={{ bgcolor: entry.payload.fill, borderRadius: '2px', height: '8px', width: '8px' }} />
-              <Typography fontSize="sm" fontWeight="md" whiteSpace="nowrap">
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <Box
+                sx={{
+                  bgcolor: entry.payload.fill,
+                  borderRadius: '2px',
+                  height: '8px',
+                  width: '8px',
+                }}
+              />
+              <Typography fontSize='sm' fontWeight='md' whiteSpace='nowrap'>
                 {entry.name}
               </Typography>
             </Stack>
-            <Typography fontSize="sm" textColor="text.tertiary">
+            <Typography fontSize='sm' textColor='text.tertiary'>
               {entry.value}kWh
             </Typography>
           </Stack>

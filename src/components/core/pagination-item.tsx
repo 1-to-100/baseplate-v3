@@ -33,7 +33,7 @@ export function PaginationItem({
   if (type === 'start-ellipsis' || type === 'end-ellipsis') {
     return (
       <IconButton color={color} disabled={disabled} size={size} variant={variant}>
-        <DotsThreeIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+        <DotsThreeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     );
   }
@@ -47,7 +47,12 @@ export function PaginationItem({
           onClick(event, page);
         }}
         size={size}
-        sx={{ ...(selected && { outlineOffset: '2px', outline: '2px solid var(--joy-palette-neutral-200)' }) }}
+        sx={{
+          ...(selected && {
+            outlineOffset: '2px',
+            outline: '2px solid var(--joy-palette-neutral-200)',
+          }),
+        }}
         variant={variant}
       >
         {page}
@@ -62,7 +67,12 @@ export function PaginationItem({
     last: ArrowLineRightIcon,
   } as const;
 
-  const labelsNormalized = { first: 'First', previous: 'Previous', next: 'Next', last: 'Last' } as const;
+  const labelsNormalized = {
+    first: 'First',
+    previous: 'Previous',
+    next: 'Next',
+    last: 'Last',
+  } as const;
 
   const Icon = iconsNormalized[type];
   const iconPosition = type === 'first' || type === 'previous' ? 'start' : 'end';
@@ -79,7 +89,7 @@ export function PaginationItem({
       variant={variant}
       {...(Icon && {
         [iconPosition === 'start' ? 'startDecorator' : 'endDecorator']: (
-          <Icon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <Icon fontSize='var(--Icon-fontSize)' weight='bold' />
         ),
       })}
     >

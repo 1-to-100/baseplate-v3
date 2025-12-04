@@ -26,9 +26,13 @@ import { ColorSchemeSwitch } from './color-scheme-switch';
 import { CurrentUser } from './current-user';
 import { icons } from './nav-icons';
 import { WorkspaceSwitch } from './workspace-switch';
-import { useUserInfo } from "@/hooks/use-user-info";
-import { CustomerSelect } from "./customer-select";
-import { isSystemAdministrator, isCustomerSuccess, isCustomerAdminOrManager } from "@/lib/user-utils";
+import { useUserInfo } from '@/hooks/use-user-info';
+import { CustomerSelect } from './customer-select';
+import {
+  isSystemAdministrator,
+  isCustomerSuccess,
+  isCustomerAdminOrManager,
+} from '@/lib/user-utils';
 
 export interface MobileNavProps {
   items: NavItemConfig[];
@@ -45,15 +49,26 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
     ...group,
     items: group.items?.filter((item) => {
       if (isCustomerSuccess(userInfo)) {
-        return item.key !== "role" && item.key !== "system-users";
+        return item.key !== 'role' && item.key !== 'system-users';
       }
 
       if (isCustomerAdminOrManager(userInfo)) {
-        return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management";
+        return (
+          item.key !== 'role' &&
+          item.key !== 'customer' &&
+          item.key !== 'system-users' &&
+          item.key !== 'notification-management'
+        );
       }
 
       if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
-        return item.key !== "role" && item.key !== "customer" && item.key !== "system-users"  && item.key !== "notification-management" && item.key !== "management";
+        return (
+          item.key !== 'role' &&
+          item.key !== 'customer' &&
+          item.key !== 'system-users' &&
+          item.key !== 'notification-management' &&
+          item.key !== 'management'
+        );
       }
       return true;
     }),
@@ -61,7 +76,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
 
   return (
     <Drawer
-      anchor="left"
+      anchor='left'
       onClose={onClose}
       open={canOpen ? open : false}
       sx={{
@@ -72,8 +87,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
           '--MobileNav-background': 'var(--Layout-bg)',
           '--MobileNav-color': 'var(--joy-palette-common-white)',
           '--NavItem-color': 'var(--joy-palette-neutral-200)',
-          "--NavItem-active-background":
-          "var(--joy-palette-background-navActiveBg)",
+          '--NavItem-active-background': 'var(--joy-palette-background-navActiveBg)',
           '--NavItem-active-color': 'var(--joy-palette-common-white)',
           '--NavItem-active-icon-color': 'var(--joy-palette-common-white)',
           '--NavItem-open-color': 'var(--joy-palette-common-white)',
@@ -92,10 +106,21 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
         },
       }}
     >
-      <Stack spacing={3} sx={{ left: 0, p: '16px', pl:0, position: 'absolute', top: 0, width: '100%', zIndex: 1 }}>
-        <Stack direction="row" spacing={3} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-block', fontSize: 0 }}>
-            <Logo color="light" height={46} width={120} />
+      <Stack
+        spacing={3}
+        sx={{ left: 0, p: '16px', pl: 0, position: 'absolute', top: 0, width: '100%', zIndex: 1 }}
+      >
+        <Stack
+          direction='row'
+          spacing={3}
+          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <Box
+            component={RouterLink}
+            href={paths.home}
+            sx={{ display: 'inline-block', fontSize: 0 }}
+          >
+            <Logo color='light' height={46} width={120} />
           </Box>
           <IconButton
             onClick={onClose}
@@ -104,9 +129,9 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
               color: 'var(--joy-palette-text-primary)',
               '&:hover': { bgcolor: 'transparent', opacity: 0.8 },
             }}
-            variant="plain"
+            variant='plain'
           >
-            <XIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+            <XIcon fontSize='var(--Icon-fontSize)' weight='bold' />
           </IconButton>
         </Stack>
       </Stack>
@@ -126,7 +151,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
             <CustomerSelect />
           </Box>
         ) : null}
-        <Box component="nav" sx={{ flex: '1 1 auto' }}>
+        <Box component='nav' sx={{ flex: '1 1 auto' }}>
           {renderNavGroups({ items: filteredItems, onClose, pathname })}
         </Box>
         <NoSsr>
@@ -146,27 +171,34 @@ function renderNavGroups({
   onClose?: () => void;
   pathname: string;
 }): React.JSX.Element {
-  const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-    acc.push(
-      <ListItem
-        key={curr.key}
-        sx={{ '--ListItem-paddingRight': 0, '--ListItem-paddingLeft': 0, '--ListItem-paddingY': 0 }}
-      >
-        <ListItemContent>
-          {curr.title ? (
-            <Box sx={{ py: '12px' }}>
-              <Typography  fontWeight="lg" textColor="neutral.500">
-                {curr.title}
-              </Typography>
-            </Box>
-          ) : null}
-          {renderNavItems({ depth: 0, items: curr.items, pathname, onClose })}
-        </ListItemContent>
-      </ListItem>
-    );
+  const children = items.reduce(
+    (acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
+      acc.push(
+        <ListItem
+          key={curr.key}
+          sx={{
+            '--ListItem-paddingRight': 0,
+            '--ListItem-paddingLeft': 0,
+            '--ListItem-paddingY': 0,
+          }}
+        >
+          <ListItemContent>
+            {curr.title ? (
+              <Box sx={{ py: '12px' }}>
+                <Typography fontWeight='lg' textColor='neutral.500'>
+                  {curr.title}
+                </Typography>
+              </Box>
+            ) : null}
+            {renderNavItems({ depth: 0, items: curr.items, pathname, onClose })}
+          </ListItemContent>
+        </ListItem>
+      );
 
-    return acc;
-  }, []);
+      return acc;
+    },
+    []
+  );
 
   return <List sx={{ '--List-padding': 0 }}>{children}</List>;
 }
@@ -182,21 +214,35 @@ function renderNavItems({
   onClose?: () => void;
   pathname: string;
 }): React.JSX.Element {
-  const children = items.reduce((acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-    const { items: childItems, key, ...item } = curr;
+  const children = items.reduce(
+    (acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
+      const { items: childItems, key, ...item } = curr;
 
-    const forceOpen = childItems
-      ? Boolean(childItems.find((childItem) => childItem.href && pathname.startsWith(childItem.href)))
-      : false;
+      const forceOpen = childItems
+        ? Boolean(
+            childItems.find((childItem) => childItem.href && pathname.startsWith(childItem.href))
+          )
+        : false;
 
-    acc.push(
-      <NavItem depth={depth} forceOpen={forceOpen} key={key} onClose={onClose} pathname={pathname} {...item}>
-        {childItems ? renderNavItems({ depth: depth + 1, items: childItems, pathname, onClose }) : null}
-      </NavItem>
-    );
+      acc.push(
+        <NavItem
+          depth={depth}
+          forceOpen={forceOpen}
+          key={key}
+          onClose={onClose}
+          pathname={pathname}
+          {...item}
+        >
+          {childItems
+            ? renderNavItems({ depth: depth + 1, items: childItems, pathname, onClose })
+            : null}
+        </NavItem>
+      );
 
-    return acc;
-  }, []);
+      return acc;
+    },
+    []
+  );
 
   return (
     <List data-depth={depth} sx={{ '--List-gap': '4px', '--List-padding': 0 }}>
@@ -272,7 +318,12 @@ function NavItem({
   return (
     <ListItem
       data-depth={depth}
-      sx={{ '--ListItem-paddingRight': 0, '--ListItem-paddingLeft': 0, '--ListItem-paddingY': 0, userSelect: 'none' }}
+      sx={{
+        '--ListItem-paddingRight': 0,
+        '--ListItem-paddingLeft': 0,
+        '--ListItem-paddingY': 0,
+        userSelect: 'none',
+      }}
     >
       <ListItemContent>
         <Box
@@ -294,7 +345,7 @@ function NavItem({
               })}
           sx={{
             alignItems: 'center',
-            borderRadius: "var(--joy-radius-sm)",
+            borderRadius: 'var(--joy-radius-sm)',
             color: 'var(--joy-palette-text-primary)',
             cursor: 'pointer',
             display: 'flex',
@@ -307,7 +358,11 @@ function NavItem({
               color: 'var(--NavItem-disabled-color)',
               cursor: 'not-allowed',
             }),
-            ...(active && { bgcolor: 'var(--NavItem-active-background)', color: 'var(--joy-palette-text-primary)', fontWeight: '500' }),
+            ...(active && {
+              bgcolor: 'var(--NavItem-active-background)',
+              color: 'var(--joy-palette-text-primary)',
+              fontWeight: '500',
+            }),
             ...(open && { color: 'var(--NavItem-open-color)' }),
             // '&:hover': {
             //   ...(!active && { bgcolor: 'var(--NavItem-hover-background)', color: 'var(--NavItem-hover-color)' }),
@@ -317,22 +372,26 @@ function NavItem({
           {Icon ? (
             <Box sx={{ alignItems: 'center', display: 'flex', justifyContent: 'center' }}>
               <Icon
-                fill={active ? 'var(--joy-palette-text-primary)' : 'var(--joy-palette-text-primary)'}
-                fontSize="var(--joy-fontSize-xl)"
+                fill={
+                  active ? 'var(--joy-palette-text-primary)' : 'var(--joy-palette-text-primary)'
+                }
+                fontSize='var(--joy-fontSize-xl)'
                 weight={forceOpen || active ? 'bold' : 'thin'}
               />
             </Box>
           ) : null}
           <Box sx={{ flex: '1 1 auto' }}>
-            <Typography component="span" fontSize="sm"  textColor="inherit">
+            <Typography component='span' fontSize='sm' textColor='inherit'>
               {title}
             </Typography>
           </Box>
-          {isBranch ? <ExpandIcon fontSize="var(--joy-fontSize-sm)" weight="bold" /> : null}
+          {isBranch ? <ExpandIcon fontSize='var(--joy-fontSize-sm)' weight='bold' /> : null}
         </Box>
         {showChildren ? (
           <Box sx={{ pl: '20px' }}>
-            <Box sx={{ borderLeft: '1px solid var(--joy-palette-neutral-700)', pl: '12px' }}>{children}</Box>
+            <Box sx={{ borderLeft: '1px solid var(--joy-palette-neutral-700)', pl: '12px' }}>
+              {children}
+            </Box>
           </Box>
         ) : null}
       </ListItemContent>

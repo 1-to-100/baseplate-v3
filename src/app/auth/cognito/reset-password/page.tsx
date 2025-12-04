@@ -6,7 +6,9 @@ import { ResetPasswordForm } from '@/components/auth/cognito/reset-password-form
 import { GuestGuard } from '@/components/auth/guest-guard';
 import { SplitLayout } from '@/components/auth/split-layout';
 
-export const metadata = { title: `Reset password | Cognito | Auth | ${config.site.name}` } satisfies Metadata;
+export const metadata = {
+  title: `Reset password | Cognito | Auth | ${config.site.name}`,
+} satisfies Metadata;
 
 export default function Page(): React.JSX.Element {
   return (

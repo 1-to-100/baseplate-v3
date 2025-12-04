@@ -40,11 +40,18 @@ interface LineItem {
 }
 
 function calculateSubtotal(lineItems: LineItem[]): number {
-  const subtotal = lineItems.reduce((acc, lineItem) => acc + lineItem.quantity * lineItem.unitPrice, 0);
+  const subtotal = lineItems.reduce(
+    (acc, lineItem) => acc + lineItem.quantity * lineItem.unitPrice,
+    0
+  );
   return parseFloat(subtotal.toFixed(2));
 }
 
-function calculateTotalWithoutTaxes(subtotal: number, discount: number, shippingRate: number): number {
+function calculateTotalWithoutTaxes(
+  subtotal: number,
+  discount: number,
+  shippingRate: number
+): number {
   return subtotal - discount + shippingRate;
 }
 
@@ -84,7 +91,13 @@ type Values = zod.infer<typeof schema>;
 const defaultValues = {
   customer: '',
   lineItems: [
-    { id: 'PRD-001', product: 'Puma XForce Sneakers', image: '/assets/product-1.png', quantity: 1, unitPrice: 150 },
+    {
+      id: 'PRD-001',
+      product: 'Puma XForce Sneakers',
+      image: '/assets/product-1.png',
+      quantity: 1,
+      unitPrice: 150,
+    },
   ],
   billingAddress: { country: '', state: '', city: '', zipCode: '', line1: '', line2: '' },
   notes: '',
@@ -94,7 +107,7 @@ const lineItemsColumns = [
   { field: 'id', name: 'ID', width: '100px' },
   {
     formatter: (row): React.JSX.Element => (
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+      <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
         <Avatar
           src={row.image}
           sx={{
@@ -104,7 +117,7 @@ const lineItemsColumns = [
             width: '42px',
           }}
         >
-          <PackageIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+          <PackageIcon fontSize='var(--Icon-fontSize)' weight='bold' />
         </Avatar>
         <Typography>{row.product}</Typography>
       </Stack>
@@ -115,7 +128,9 @@ const lineItemsColumns = [
   { field: 'quantity', name: 'Qty', width: '100px' },
   {
     formatter: (row): string => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(row.unitPrice);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+        row.unitPrice
+      );
     },
     name: 'Unit Price',
     width: '100px',
@@ -131,8 +146,8 @@ const lineItemsColumns = [
   },
   {
     formatter: (): React.JSX.Element => (
-      <IconButton color="neutral" size="sm" variant="plain">
-        <PenIcon fontSize="var(--Icon-fontSize)" weight="bold" />
+      <IconButton color='neutral' size='sm' variant='plain'>
+        <PenIcon fontSize='var(--Icon-fontSize)' weight='bold' />
       </IconButton>
     ),
     name: 'Actions',
@@ -178,73 +193,99 @@ export function OrderCreateForm(): React.JSX.Element {
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack divider={<Divider />} spacing={5}>
         <Stack spacing={3}>
-          <Typography level="h4">Customer</Typography>
+          <Typography level='h4'>Customer</Typography>
           <Box sx={{ maxWidth: 'md' }}>
             <Controller
               control={control}
-              name="customer"
+              name='customer'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.customer)}>
-                  <Input {...field} placeholder="Find a customer" />
-                  {errors.customer ? <FormHelperText>{errors.customer.message}</FormHelperText> : null}
+                  <Input {...field} placeholder='Find a customer' />
+                  {errors.customer ? (
+                    <FormHelperText>{errors.customer.message}</FormHelperText>
+                  ) : null}
                 </FormControl>
               )}
             />
           </Box>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Products</Typography>
+          <Typography level='h4'>Products</Typography>
           <Card sx={{ '--Card-padding': 0, overflowX: 'auto' }}>
-            <DataTable<LineItem> columns={lineItemsColumns} rows={lineItems} stripe="even" />
+            <DataTable<LineItem> columns={lineItemsColumns} rows={lineItems} stripe='even' />
           </Card>
-          <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
+          <Stack direction='row' spacing={3} sx={{ flexWrap: 'wrap' }}>
             <Box sx={{ flex: '1 1 auto' }}>
               <Button
-                color="neutral"
-                size="sm"
-                startDecorator={<PlusIcon fontSize="var(--Icon-fontSize)" weight="bold" />}
-                variant="outlined"
+                color='neutral'
+                size='sm'
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />}
+                variant='outlined'
               >
                 Add Product
               </Button>
             </Box>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Subtotal</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Subtotal</Typography>
                 <Typography>
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(subtotal)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    subtotal
+                  )}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Shipping</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Shipping</Typography>
                 <Typography>
                   {shippingRate
-                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(shippingRate)
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                        shippingRate
+                      )
                     : '-'}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="sm">Taxes</Typography>
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='sm'>Taxes</Typography>
                 <Typography>
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tax)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    tax
+                  )}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={8} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography fontSize="lg">Total</Typography>
-                <Typography level="h4">
-                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(total)}
+              <Stack
+                direction='row'
+                spacing={8}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Typography fontSize='lg'>Total</Typography>
+                <Typography level='h4'>
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                    total
+                  )}
                 </Typography>
               </Stack>
             </Stack>
           </Stack>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Billing Information</Typography>
+          <Typography level='h4'>Billing Information</Typography>
           <Grid container disableEqualOverflow spacing={3} sx={{ maxWidth: 'md' }}>
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="billingAddress.country"
+                name='billingAddress.country'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.billingAddress?.country)}>
                     <FormLabel>Country</FormLabel>
@@ -254,10 +295,10 @@ export function OrderCreateForm(): React.JSX.Element {
                         field.onChange(value);
                       }}
                     >
-                      <Option value="">Choose a country</Option>
-                      <Option value="ca">Canada</Option>
-                      <Option value="uk">United Kingdom</Option>
-                      <Option value="us">United States</Option>
+                      <Option value=''>Choose a country</Option>
+                      <Option value='ca'>Canada</Option>
+                      <Option value='uk'>United Kingdom</Option>
+                      <Option value='us'>United States</Option>
                     </Select>
                     {errors.billingAddress?.country ? (
                       <FormHelperText>{errors.billingAddress.country.message}</FormHelperText>
@@ -269,7 +310,7 @@ export function OrderCreateForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="billingAddress.state"
+                name='billingAddress.state'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.billingAddress?.state)}>
                     <FormLabel>State</FormLabel>
@@ -284,7 +325,7 @@ export function OrderCreateForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="billingAddress.city"
+                name='billingAddress.city'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.billingAddress?.city)}>
                     <FormLabel>City</FormLabel>
@@ -299,7 +340,7 @@ export function OrderCreateForm(): React.JSX.Element {
             <Grid md={6} xs={12}>
               <Controller
                 control={control}
-                name="billingAddress.zipCode"
+                name='billingAddress.zipCode'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.billingAddress?.zipCode)}>
                     <FormLabel>Zip Code</FormLabel>
@@ -314,7 +355,7 @@ export function OrderCreateForm(): React.JSX.Element {
             <Grid xs={12}>
               <Controller
                 control={control}
-                name="billingAddress.line1"
+                name='billingAddress.line1'
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.billingAddress?.line1)}>
                     <FormLabel>Address</FormLabel>
@@ -329,15 +370,15 @@ export function OrderCreateForm(): React.JSX.Element {
           </Grid>
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Shipping Details</Typography>
-          <Checkbox checked label="Same as billing address" />
+          <Typography level='h4'>Shipping Details</Typography>
+          <Checkbox checked label='Same as billing address' />
         </Stack>
         <Stack spacing={3}>
-          <Typography level="h4">Additional Notes</Typography>
+          <Typography level='h4'>Additional Notes</Typography>
           <Stack spacing={1} sx={{ maxWidth: 'md' }}>
             <Controller
               control={control}
-              name="notes"
+              name='notes'
               render={({ field }) => (
                 <FormControl error={Boolean(errors.notes)}>
                   <Textarea {...field} maxRows={5} minRows={3} />
@@ -345,14 +386,20 @@ export function OrderCreateForm(): React.JSX.Element {
                 </FormControl>
               )}
             />
-            <Typography level="body-sm">* This is a public note, it will appear on the order</Typography>
+            <Typography level='body-sm'>
+              * This is a public note, it will appear on the order
+            </Typography>
           </Stack>
         </Stack>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-          <Button color="neutral" type="submit" variant="outlined">
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'flex-end' }}
+        >
+          <Button color='neutral' type='submit' variant='outlined'>
             Save as Draft
           </Button>
-          <Button type="submit">Publish</Button>
+          <Button type='submit'>Publish</Button>
         </Stack>
       </Stack>
     </form>

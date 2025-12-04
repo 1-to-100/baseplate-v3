@@ -24,10 +24,9 @@ export function SplitLayout({ children }: SplitLayoutProps): React.JSX.Element {
             backgroundPosition: 'center',
           },
         }}
-        
       />
       <Box
-        component="main"
+        component='main'
         sx={{
           display: { xs: 'flex', md: 'grid' },
           flexDirection: 'column',
