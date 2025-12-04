@@ -23,9 +23,12 @@ import type {
 // ============================================================================
 
 // Helper function to check if a user has Manager role by user_id
-async function isUserManagerRole(supabase: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+async function isUserManagerRole(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<boolean> {
   if (!userId) return false;
-  
+
   const { data, error } = await supabase
     .from('users')
     .select('role:roles(name)')
@@ -821,10 +824,7 @@ export async function removeTeamMember(teamMemberId: string): Promise<ApiRespons
 
     // If the removed member is a Manager and is the team's manager, remove them as manager too
     if (isManagerRole && isTeamManager) {
-      await supabase
-        .from('teams')
-        .update({ manager_id: null })
-        .eq('team_id', teamMember.team_id);
+      await supabase.from('teams').update({ manager_id: null }).eq('team_id', teamMember.team_id);
     }
 
     // Remove team member
