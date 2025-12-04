@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { getTeams, deleteTeam } from '@/lib/api/teams';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { isSystemAdministrator } from '@/lib/user-utils';
+import { authService } from '@/lib/auth/auth-service';
 import type { TeamWithRelations } from '@/types/database';
 import AddEditTeamModal from '@/components/dashboard/modals/AddEditTeamModal';
 import DeleteItemModal from '@/components/dashboard/modals/DeleteItemModal';
@@ -40,8 +41,27 @@ export default function Page(): React.JSX.Element {
   const rowsPerPage = 10;
 
   const isSystemAdmin = isSystemAdministrator(userInfo);
-  // For system admin, pass undefined to get all teams; otherwise pass customerId
-  const teamsCustomerId = isSystemAdmin ? undefined : customerId;
+
+  // Load customer context for system admins
+  const { data: context } = useQuery({
+    queryKey: ['customer-context'],
+    queryFn: async () => {
+      if (isSystemAdmin) {
+        return await authService.getCurrentContext();
+      }
+      return null;
+    },
+    enabled: isSystemAdmin,
+  });
+
+  // For system admin, use context customer ID if selected, otherwise undefined (all teams)
+  // For non-system admin, use their own customerId
+  const teamsCustomerId = React.useMemo(() => {
+    if (isSystemAdmin) {
+      return context?.customerId || undefined;
+    }
+    return customerId;
+  }, [isSystemAdmin, context?.customerId, customerId]);
 
   const {
     data: teamsResponse,
