@@ -259,60 +259,101 @@ export default function AddEditUser({ open, onClose, userId }: AddEditUserProps)
 
       if (!userId) return;
 
-      // Handle team assignment changes
-      const previousTeamId = userTeams && userTeams.length > 0 ? userTeams[0]?.team_id || '' : '';
-      const newTeamId = formData.team || '';
+      // Get previous and new customer IDs
+      const previousCustomerId = userData?.customerId || userData?.customer?.id || '';
+      const newCustomerId = customerId || '';
 
-      // If team changed or cleared
-      if (previousTeamId !== newTeamId) {
-        // Remove from old team if exists
-        if (previousTeamId) {
-          // Find the team member ID
-          const currentMembersData = await queryClient.fetchQuery({
-            queryKey: ['team-members', previousTeamId, 1],
-            queryFn: async () => {
-              const { getTeamMembers } = await import('../../../lib/api/teams');
-              const response = await getTeamMembers(previousTeamId, { page: 1, perPage: 1000 });
-              if (response.error) {
-                throw new Error(response.error);
+      // Handle customer change - remove user from all teams and unassign as manager
+      if (previousCustomerId !== newCustomerId) {
+        try {
+          // Remove user from all teams in a single query
+          const { createClient } = await import('@/lib/supabase/client');
+          const supabase = createClient();
+
+          const { error: membersError } = await supabase
+            .from('team_members')
+            .delete()
+            .eq('user_id', userId);
+
+          if (membersError) {
+            console.error('Failed to remove user from teams:', membersError);
+          }
+
+          // Unassign user as manager from all teams in a single query
+          const { error: teamsError } = await supabase
+            .from('teams')
+            .update({ manager_id: null })
+            .eq('manager_id', userId);
+
+          if (teamsError) {
+            console.error('Failed to unassign user as manager from teams:', teamsError);
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['teams'] });
+          queryClient.invalidateQueries({ queryKey: ['team-members'] });
+          queryClient.invalidateQueries({ queryKey: ['user-teams', userId] });
+        } catch (error) {
+          console.error('Error handling customer change:', error);
+          toast.warning('User updated successfully, but failed to remove from some teams.');
+        }
+      }
+
+      // Handle team assignment changes (only if customer didn't change)
+      if (previousCustomerId === newCustomerId) {
+        const previousTeamId = userTeams && userTeams.length > 0 ? userTeams[0]?.team_id || '' : '';
+        const newTeamId = formData.team || '';
+
+        // If team changed or cleared
+        if (previousTeamId !== newTeamId) {
+          // Remove from old team if exists
+          if (previousTeamId) {
+            // Find the team member ID
+            const currentMembersData = await queryClient.fetchQuery({
+              queryKey: ['team-members', previousTeamId, 1],
+              queryFn: async () => {
+                const { getTeamMembers } = await import('../../../lib/api/teams');
+                const response = await getTeamMembers(previousTeamId, { page: 1, perPage: 1000 });
+                if (response.error) {
+                  throw new Error(response.error);
+                }
+                return response.data?.data || [];
+              },
+            });
+
+            const currentMember = currentMembersData?.find(
+              (member: TeamMemberWithRelations) => member.user_id === userId
+            );
+
+            if (currentMember) {
+              try {
+                await removeTeamMember(currentMember.team_member_id);
+                queryClient.invalidateQueries({ queryKey: ['team-members'] });
+                queryClient.invalidateQueries({ queryKey: ['teams'] });
+              } catch (error) {
+                toast.warning('Failed to remove user from previous team.');
               }
-              return response.data?.data || [];
-            },
-          });
-
-          const currentMember = currentMembersData?.find(
-            (member: TeamMemberWithRelations) => member.user_id === userId
-          );
-
-          if (currentMember) {
-            try {
-              await removeTeamMember(currentMember.team_member_id);
-              queryClient.invalidateQueries({ queryKey: ['team-members'] });
-              queryClient.invalidateQueries({ queryKey: ['teams'] });
-            } catch (error) {
-              toast.warning('Failed to remove user from previous team.');
             }
           }
-        }
 
-        // Add to new team if selected
-        if (newTeamId) {
-          try {
-            const response = await addTeamMember({
-              team_id: newTeamId,
-              user_id: userId,
-            });
-            if (response.error) {
-              toast.warning(
-                `User updated successfully, but failed to add to team: ${response.error}`
-              );
-            } else {
-              queryClient.invalidateQueries({ queryKey: ['teams'] });
-              queryClient.invalidateQueries({ queryKey: ['team-members'] });
-              queryClient.invalidateQueries({ queryKey: ['user-teams', userId] });
+          // Add to new team if selected
+          if (newTeamId) {
+            try {
+              const response = await addTeamMember({
+                team_id: newTeamId,
+                user_id: userId,
+              });
+              if (response.error) {
+                toast.warning(
+                  `User updated successfully, but failed to add to team: ${response.error}`
+                );
+              } else {
+                queryClient.invalidateQueries({ queryKey: ['teams'] });
+                queryClient.invalidateQueries({ queryKey: ['team-members'] });
+                queryClient.invalidateQueries({ queryKey: ['user-teams', userId] });
+              }
+            } catch (error) {
+              toast.warning('User updated successfully, but failed to add to team.');
             }
-          } catch (error) {
-            toast.warning('User updated successfully, but failed to add to team.');
           }
         }
       }
