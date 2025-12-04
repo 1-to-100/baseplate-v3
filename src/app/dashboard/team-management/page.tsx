@@ -43,7 +43,11 @@ export default function Page(): React.JSX.Element {
   // For system admin, pass undefined to get all teams; otherwise pass customerId
   const teamsCustomerId = isSystemAdmin ? undefined : customerId;
 
-  const { data: teamsResponse, isLoading, error } = useQuery({
+  const {
+    data: teamsResponse,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['teams', teamsCustomerId, isSystemAdmin, currentPage],
     queryFn: async () => {
       const response = await getTeams(teamsCustomerId, {
@@ -58,10 +62,7 @@ export default function Page(): React.JSX.Element {
     enabled: isSystemAdmin || !!customerId,
   });
 
-  const teams = React.useMemo(
-    () => teamsResponse?.data || [],
-    [teamsResponse]
-  );
+  const teams = React.useMemo(() => teamsResponse?.data || [], [teamsResponse]);
   const totalPages = teamsResponse?.meta?.lastPage || 1;
   const hasResults = teams.length > 0;
 
