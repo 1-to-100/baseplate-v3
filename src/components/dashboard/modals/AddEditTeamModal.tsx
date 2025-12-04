@@ -20,7 +20,7 @@ import type { UpdateTeamInput } from '@/types/database';
 import { toast } from '@/components/core/toaster';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { edgeFunctions } from '@/lib/supabase/edge-functions';
-import { isSystemAdministrator } from '@/lib/user-utils';
+import { isSystemAdministrator, isManager } from '@/lib/user-utils';
 import { getCustomers } from '@/lib/api/customers';
 
 interface AddEditTeamModalProps {
@@ -57,6 +57,7 @@ export default function AddEditTeamModal({
   const { userInfo } = useUserInfo();
   const customerId = userInfo?.customerId;
   const isSystemAdmin = isSystemAdministrator(userInfo);
+  const isUserManager = isManager(userInfo);
 
   // Get team data when editing
   const { data: teamData, isLoading: isTeamLoading } = useQuery({
@@ -125,15 +126,17 @@ export default function AddEditTeamModal({
     } else if (!teamId && open) {
       // For new team, set customerId based on user role
       const initialCustomerId = isSystemAdmin ? '' : customerId || '';
+      // If user is Manager, set them as default manager
+      const initialManagerId = isUserManager && userInfo?.id ? userInfo.id : '';
       setFormData({
         name: '',
         description: '',
-        managerId: '',
+        managerId: initialManagerId,
         customerId: initialCustomerId,
       });
       setErrors({});
     }
-  }, [teamId, teamData, open, isSystemAdmin, customerId]);
+  }, [teamId, teamData, open, isSystemAdmin, customerId, isUserManager, userInfo?.id]);
 
   const createTeamMutation = useMutation({
     mutationFn: createTeam,

@@ -5,7 +5,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { supabaseDB } from '@/lib/supabase/database';
-import { isSystemAdministrator, SYSTEM_ROLES } from '@/lib/user-utils';
+import { isSystemAdministrator, isManager, SYSTEM_ROLES } from '@/lib/user-utils';
 import type { ApiUser, Status } from '@/contexts/auth/types';
 import type {
   Team,
@@ -21,6 +21,22 @@ import type {
 // ============================================================================
 // Teams API
 // ============================================================================
+
+// Helper function to check if a user has Manager role by user_id
+async function isUserManagerRole(supabase: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+  if (!userId) return false;
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('role:roles(name)')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) return false;
+
+  const role = Array.isArray(data.role) ? data.role[0] : data.role;
+  return role?.name === SYSTEM_ROLES.MANAGER;
+}
 
 interface TeamData {
   team_id: string;
@@ -128,8 +144,9 @@ export async function getTeams(
         : undefined,
     } as ApiUser;
 
-    // Check if user is system admin
+    // Check if user is system admin or manager
     const isSystemAdmin = isSystemAdministrator(currentUser);
+    const isUserManager = isManager(currentUser);
 
     // Determine which customer ID to use for filtering
     let targetCustomerId: string | undefined = customerId;
@@ -190,6 +207,11 @@ export async function getTeams(
     // System admins can pass undefined to get all teams
     if (targetCustomerId) {
       query = query.eq('customer_id', targetCustomerId);
+    }
+
+    // For Managers, filter to only show teams where they are assigned as manager
+    if (isUserManager && !isSystemAdmin) {
+      query = query.eq('manager_id', currentUser.id);
     }
 
     // Apply pagination
@@ -395,6 +417,28 @@ export async function createTeam(input: CreateTeamInput): Promise<ApiResponse<Te
       updated_at: data.updated_at,
     };
 
+    // If manager is assigned and has Manager role, add them as a team member
+    if (data.manager_id) {
+      const managerIsManagerRole = await isUserManagerRole(supabase, data.manager_id);
+      if (managerIsManagerRole) {
+        // Check if manager is already a team member
+        const { data: existingMember } = await supabase
+          .from('team_members')
+          .select('team_member_id')
+          .eq('team_id', data.team_id)
+          .eq('user_id', data.manager_id)
+          .maybeSingle();
+
+        // Only add if not already a member
+        if (!existingMember) {
+          await supabase.from('team_members').insert({
+            team_id: data.team_id,
+            user_id: data.manager_id,
+          });
+        }
+      }
+    }
+
     return { data: team, error: null, status: 201 };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to create team';
@@ -450,6 +494,15 @@ export async function updateTeam(
       }
     }
 
+    // Get current team to check manager_id before update
+    const { data: currentTeamData } = await supabase
+      .from('teams')
+      .select('manager_id')
+      .eq('team_id', teamId)
+      .single();
+
+    const oldManagerId = currentTeamData?.manager_id || null;
+
     // Build update object (only include defined fields)
     const updateData: Partial<TeamData> = {};
     if (input.customer_id !== undefined) updateData.customer_id = input.customer_id;
@@ -487,6 +540,54 @@ export async function updateTeam(
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
+
+    // Handle manager changes for Manager role users
+    if (input.manager_id !== undefined) {
+      const newManagerId = input.manager_id || null;
+
+      // If old manager was a Manager role, remove them from team_members
+      if (oldManagerId && oldManagerId !== newManagerId) {
+        const oldManagerIsManagerRole = await isUserManagerRole(supabase, oldManagerId);
+        if (oldManagerIsManagerRole) {
+          // Find and remove team member entry for old manager
+          const { data: oldManagerMember } = await supabase
+            .from('team_members')
+            .select('team_member_id')
+            .eq('team_id', teamId)
+            .eq('user_id', oldManagerId)
+            .maybeSingle();
+
+          if (oldManagerMember) {
+            await supabase
+              .from('team_members')
+              .delete()
+              .eq('team_member_id', oldManagerMember.team_member_id);
+          }
+        }
+      }
+
+      // If new manager is assigned and has Manager role, add them as a team member
+      if (newManagerId) {
+        const newManagerIsManagerRole = await isUserManagerRole(supabase, newManagerId);
+        if (newManagerIsManagerRole) {
+          // Check if new manager is already a team member
+          const { data: existingMember } = await supabase
+            .from('team_members')
+            .select('team_member_id')
+            .eq('team_id', teamId)
+            .eq('user_id', newManagerId)
+            .maybeSingle();
+
+          // Only add if not already a member
+          if (!existingMember) {
+            await supabase.from('team_members').insert({
+              team_id: teamId,
+              user_id: newManagerId,
+            });
+          }
+        }
+      }
+    }
 
     return { data: team, error: null, status: 200 };
   } catch (error) {
@@ -697,6 +798,36 @@ export async function removeTeamMember(teamMemberId: string): Promise<ApiRespons
   try {
     const supabase = createClient();
 
+    // Get team member info before deletion to check if it's a Manager
+    const { data: teamMember } = await supabase
+      .from('team_members')
+      .select('team_id, user_id')
+      .eq('team_member_id', teamMemberId)
+      .single();
+
+    if (!teamMember) {
+      return { data: null, error: 'Team member not found', status: 404 };
+    }
+
+    // Check if the user being removed is a Manager and is the manager of the team
+    const { data: teamData } = await supabase
+      .from('teams')
+      .select('manager_id')
+      .eq('team_id', teamMember.team_id)
+      .single();
+
+    const isTeamManager = teamData?.manager_id === teamMember.user_id;
+    const isManagerRole = await isUserManagerRole(supabase, teamMember.user_id);
+
+    // If the removed member is a Manager and is the team's manager, remove them as manager too
+    if (isManagerRole && isTeamManager) {
+      await supabase
+        .from('teams')
+        .update({ manager_id: null })
+        .eq('team_id', teamMember.team_id);
+    }
+
+    // Remove team member
     const { error } = await supabase
       .from('team_members')
       .delete()
