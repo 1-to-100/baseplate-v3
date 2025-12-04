@@ -95,6 +95,26 @@ interface StatusData {
   display_name: string | null;
 }
 
+interface TeamData {
+  team_id: string;
+  team_name: string;
+  customer_id: string;
+  manager_id: string | null;
+  description: string | null;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+interface TeamMemberData {
+  team_member_id: string;
+  team_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string | null;
+  team?: TeamData | TeamData[] | null;
+}
+
 interface UserWithRelations {
   user_id: string;
   auth_user_id: string;
@@ -111,6 +131,7 @@ interface UserWithRelations {
   deleted_at: string | null;
   customer: CustomerData | CustomerData[] | null;
   role: RoleData | RoleData[] | null;
+  team_members?: TeamMemberData | TeamMemberData[] | null;
 }
 
 interface RegisterUserPayload {
@@ -1243,7 +1264,24 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
       updated_at,
       deleted_at,
       customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
-      role:roles(role_id, name, display_name)
+      role:roles(role_id, name, display_name),
+      team_members:team_members!team_members_user_id_fkey(
+        team_member_id,
+        team_id,
+        user_id,
+        created_at,
+        updated_at,
+        team:teams!team_members_team_id_fkey(
+          team_id,
+          team_name,
+          customer_id,
+          manager_id,
+          description,
+          is_primary,
+          created_at,
+          updated_at
+        )
+      )
     `,
       { count: 'exact' }
     )
@@ -1407,49 +1445,77 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
   const lastPage = Math.ceil(total / perPage);
 
   return {
-    data: (data || []).map((user: UserWithRelations) => ({
-      id: user.user_id,
-      uid: user.auth_user_id,
-      email: user.email,
-      name: user.full_name || '',
-      firstName: user.full_name?.split(' ')[0] || '',
-      lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
-      avatar: user.avatar_url || undefined,
-      phoneNumber: user.phone_number || undefined,
-      customerId: user.customer_id || undefined,
-      roleId: user.role_id || undefined,
-      managerId: user.manager_id || undefined,
-      status: user.status as Status,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      deletedAt: user.deleted_at || undefined,
-      customer: user.customer
-        ? Array.isArray(user.customer)
-          ? {
-              id: user.customer[0]?.customer_id || '',
-              name: user.customer[0]?.name || '',
-              domain: user.customer[0]?.email_domain || '',
-            }
-          : {
-              id: user.customer.customer_id,
-              name: user.customer.name,
-              domain: user.customer.email_domain,
-            }
-        : undefined,
-      role: user.role
-        ? Array.isArray(user.role)
-          ? {
-              id: user.role[0]?.role_id || '',
-              name: user.role[0]?.name || '',
-              displayName: user.role[0]?.display_name || '',
-            }
-          : {
-              id: user.role.role_id,
-              name: user.role.name,
-              displayName: user.role.display_name,
-            }
-        : undefined,
-    })) as ApiUser[],
+    data: (data || []).map((user: UserWithRelations) => {
+      // Extract teams from team_members
+      const teamMembers = user.team_members
+        ? Array.isArray(user.team_members)
+          ? user.team_members
+          : [user.team_members]
+        : [];
+
+      const teams = teamMembers
+        .map((member) => {
+          const team = Array.isArray(member.team) ? member.team[0] : member.team;
+          return team
+            ? {
+                id: team.team_id,
+                name: team.team_name,
+                customerId: team.customer_id,
+                managerId: team.manager_id || undefined,
+                description: team.description || undefined,
+                isPrimary: team.is_primary,
+                createdAt: team.created_at,
+                updatedAt: team.updated_at || undefined,
+              }
+            : null;
+        })
+        .filter((team): team is NonNullable<typeof team> => team !== null);
+
+      return {
+        id: user.user_id,
+        uid: user.auth_user_id,
+        email: user.email,
+        name: user.full_name || '',
+        firstName: user.full_name?.split(' ')[0] || '',
+        lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
+        avatar: user.avatar_url || undefined,
+        phoneNumber: user.phone_number || undefined,
+        customerId: user.customer_id || undefined,
+        roleId: user.role_id || undefined,
+        managerId: user.manager_id || undefined,
+        status: user.status as Status,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+        deletedAt: user.deleted_at || undefined,
+        customer: user.customer
+          ? Array.isArray(user.customer)
+            ? {
+                id: user.customer[0]?.customer_id || '',
+                name: user.customer[0]?.name || '',
+                domain: user.customer[0]?.email_domain || '',
+              }
+            : {
+                id: user.customer.customer_id,
+                name: user.customer.name,
+                domain: user.customer.email_domain,
+              }
+          : undefined,
+        role: user.role
+          ? Array.isArray(user.role)
+            ? {
+                id: user.role[0]?.role_id || '',
+                name: user.role[0]?.name || '',
+                displayName: user.role[0]?.display_name || '',
+              }
+            : {
+                id: user.role.role_id,
+                name: user.role.name,
+                displayName: user.role.display_name,
+              }
+          : undefined,
+        teams: teams.length > 0 ? teams : undefined,
+      };
+    }) as ApiUser[],
     meta: {
       total,
       page,
@@ -1490,7 +1556,24 @@ export async function getUserById(id: string): Promise<ApiUser> {
       deleted_at,
       customer:customers!users_customer_id_fkey(customer_id, name, email_domain),
       role:roles(role_id, name, display_name),
-      manager:managers(manager_id, full_name, email)
+      manager:managers(manager_id, full_name, email),
+      team_members:team_members!team_members_user_id_fkey(
+        team_member_id,
+        team_id,
+        user_id,
+        created_at,
+        updated_at,
+        team:teams!team_members_team_id_fkey(
+          team_id,
+          team_name,
+          customer_id,
+          manager_id,
+          description,
+          is_primary,
+          created_at,
+          updated_at
+        )
+      )
     `
     )
     .eq('user_id', id)
@@ -1508,6 +1591,32 @@ export async function getUserById(id: string): Promise<ApiUser> {
   const customer = data.customer as CustomerData | CustomerData[] | null;
   const role = data.role as RoleData | RoleData[] | null;
   const manager = data.manager as ManagerData | ManagerData[] | null;
+  const teamMembers = data.team_members as TeamMemberData | TeamMemberData[] | null;
+
+  // Extract teams from team_members
+  const teamMembersArray = teamMembers
+    ? Array.isArray(teamMembers)
+      ? teamMembers
+      : [teamMembers]
+    : [];
+
+  const teams = teamMembersArray
+    .map((member) => {
+      const team = Array.isArray(member.team) ? member.team[0] : member.team;
+      return team
+        ? {
+            id: team.team_id,
+            name: team.team_name,
+            customerId: team.customer_id,
+            managerId: team.manager_id || undefined,
+            description: team.description || undefined,
+            isPrimary: team.is_primary,
+            createdAt: team.created_at,
+            updatedAt: team.updated_at || undefined,
+          }
+        : null;
+    })
+    .filter((team): team is NonNullable<typeof team> => team !== null);
 
   return {
     id: data.user_id,
@@ -1562,6 +1671,7 @@ export async function getUserById(id: string): Promise<ApiUser> {
             name: manager.full_name || manager.email,
           }
       : undefined,
+    teams: teams.length > 0 ? teams : undefined,
   } as ApiUser;
 }
 

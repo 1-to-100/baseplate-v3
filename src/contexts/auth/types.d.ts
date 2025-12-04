@@ -41,6 +41,16 @@ export interface ApiUser {
     browserOs: string;
     locationTime: string;
   }[];
+  teams?: Array<{
+    id: string;
+    name: string;
+    customerId: string;
+    managerId?: string;
+    description?: string;
+    isPrimary: boolean;
+    createdAt: string;
+    updatedAt?: string;
+  }>;
 }
 
 export interface Role {

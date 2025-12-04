@@ -169,6 +169,7 @@ export default function Page(): React.JSX.Element {
       status: apiUser.status,
       avatar: apiUser.avatar || undefined,
       activity: apiUser.activity,
+      teams: apiUser.teams,
     };
   };
 
@@ -785,7 +786,7 @@ export default function Page(): React.JSX.Element {
                 <Table
                   aria-label='user management table'
                   sx={{
-                    minWidth: '800px',
+                    minWidth: '1000px',
                     tableLayout: 'fixed',
                     '& th, & td': {
                       px: { xs: 1, sm: 2 },
@@ -807,7 +808,7 @@ export default function Page(): React.JSX.Element {
                           disabled={!hasResults}
                         />
                       </th>
-                      <th style={{ width: '30%' }} onClick={() => handleSort('name')}>
+                      <th style={{ width: '25%' }} onClick={() => handleSort('name')}>
                         <Box
                           sx={{
                             display: 'flex',
@@ -828,7 +829,7 @@ export default function Page(): React.JSX.Element {
                           />
                         </Box>
                       </th>
-                      <th style={{ width: '25%' }} onClick={() => handleSort('email')}>
+                      <th style={{ width: '20%' }} onClick={() => handleSort('email')}>
                         <Box
                           sx={{
                             display: 'flex',
@@ -849,15 +850,16 @@ export default function Page(): React.JSX.Element {
                           />
                         </Box>
                       </th>
-                      <th style={{ width: '20%' }}>Customer</th>
+                      <th style={{ width: '18%' }}>Customer</th>
                       <th style={{ width: '15%' }}>Role</th>
+                      <th style={{ width: '15%' }}>Team</th>
                       <th style={{ width: '60px' }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.length === 0 ? (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>
                           <Typography level='body-md' color='neutral'>
                             No items found
                           </Typography>
@@ -1087,6 +1089,77 @@ export default function Page(): React.JSX.Element {
                               >
                                 {user.role?.display_name?.slice(0, 75)}
                               </Box>
+                            </td>
+                            <td>
+                              <Stack direction='row' spacing={0.5} alignItems='flex-start'>
+                                {user.teams &&
+                                Array.isArray(user.teams) &&
+                                user.teams.length > 0 &&
+                                user.teams[0] ? (
+                                  <>
+                                    <Box>
+                                      <Typography
+                                        sx={{
+                                          fontWeight: 400,
+                                          color: 'var(--joy-palette-text-secondary)',
+                                          wordBreak: 'break-all',
+                                          fontSize: { xs: '12px', sm: '14px' },
+                                          maxWidth: { xs: '80px', sm: 'none' },
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {user.teams[0].name}
+                                      </Typography>
+                                    </Box>
+                                    {user.teams.length > 1 && (
+                                      <Tooltip
+                                        title={
+                                          <Stack spacing={1}>
+                                            {user.teams.slice(1).map((team) => (
+                                              <Box key={team.id}>
+                                                <Typography
+                                                  level='body-xs'
+                                                  sx={{ color: 'inherit' }}
+                                                >
+                                                  {team.name}
+                                                </Typography>
+                                              </Box>
+                                            ))}
+                                          </Stack>
+                                        }
+                                        arrow
+                                        placement='top'
+                                      >
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 400,
+                                            color: 'var(--joy-palette-text-secondary)',
+                                            fontSize: { xs: '12px', sm: '14px' },
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                              color: 'var(--joy-palette-text-primary)',
+                                            },
+                                          }}
+                                        >
+                                          +{user.teams.length - 1}
+                                        </Typography>
+                                      </Tooltip>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Typography
+                                    sx={{
+                                      fontWeight: 400,
+                                      color: 'var(--joy-palette-text-secondary)',
+                                      fontSize: { xs: '12px', sm: '14px' },
+                                    }}
+                                  >
+                                    N/A
+                                  </Typography>
+                                )}
+                              </Stack>
                             </td>
                             <td>
                               <IconButton
