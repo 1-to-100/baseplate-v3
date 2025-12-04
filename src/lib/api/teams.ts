@@ -689,6 +689,7 @@ export async function getTeamMembers(
           full_name, 
           email, 
           avatar_url,
+          status,
           role:roles(role_id, name, display_name)
         )
       `,
