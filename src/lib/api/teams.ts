@@ -485,13 +485,37 @@ export async function deleteTeam(teamId: string): Promise<ApiResponse<void>> {
 // Team Members API
 // ============================================================================
 
+export interface GetTeamMembersParams {
+  page?: number;
+  perPage?: number;
+}
+
+export interface GetTeamMembersResponse {
+  data: TeamMemberWithRelations[];
+  meta: {
+    total: number;
+    page: number;
+    lastPage: number;
+    perPage: number;
+    currentPage: number;
+    prev: number | null;
+    next: number | null;
+  };
+}
+
 export async function getTeamMembers(
-  teamId: string
-): Promise<ApiResponse<TeamMemberWithRelations[]>> {
+  teamId: string,
+  params: GetTeamMembersParams = {}
+): Promise<ApiResponse<GetTeamMembersResponse>> {
   try {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const page = params.page || 1;
+    const perPage = params.perPage || 10;
+    const from = (page - 1) * perPage;
+    const to = from + perPage - 1;
+
+    const { data, error, count } = await supabase
       .from('team_members')
       .select(
         `
@@ -517,10 +541,12 @@ export async function getTeamMembers(
           avatar_url,
           role:roles(role_id, name, display_name)
         )
-      `
+      `,
+        { count: 'exact' }
       )
       .eq('team_id', teamId)
-      .order('created_at');
+      .order('created_at')
+      .range(from, to);
 
     if (error) {
       return { data: null, error: error.message, status: 500 };
@@ -542,7 +568,23 @@ export async function getTeamMembers(
       };
     });
 
-    return { data: members, error: null, status: 200 };
+    const total = count || 0;
+    const lastPage = Math.ceil(total / perPage);
+
+    const response: GetTeamMembersResponse = {
+      data: members,
+      meta: {
+        total,
+        page,
+        lastPage,
+        perPage,
+        currentPage: page,
+        prev: page > 1 ? page - 1 : null,
+        next: page < lastPage ? page + 1 : null,
+      },
+    };
+
+    return { data: response, error: null, status: 200 };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch team members';
     return { data: null, error: errorMessage, status: 500 };

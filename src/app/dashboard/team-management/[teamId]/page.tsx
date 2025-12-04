@@ -21,6 +21,7 @@ import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import AddUserToTeamModal from '@/components/dashboard/modals/AddUserToTeamModal';
 import DeleteDeactivateUserModal from '@/components/dashboard/modals/DeleteItemModal';
 import { toast } from '@/components/core/toaster';
+import Pagination from '@/components/dashboard/layout/pagination';
 
 export default function Page(): React.JSX.Element {
   const params = useParams();
@@ -31,7 +32,9 @@ export default function Page(): React.JSX.Element {
     teamMemberId: string;
     userName: string;
   } | null>(null);
+  const [currentPage, setCurrentPage] = React.useState(1);
   const queryClient = useQueryClient();
+  const rowsPerPage = 10;
 
   const {
     data: teamData,
@@ -49,17 +52,28 @@ export default function Page(): React.JSX.Element {
     enabled: !!teamId,
   });
 
-  const { data: teamMembersData, isLoading: isMembersLoading } = useQuery({
-    queryKey: ['team-members', teamId],
+  const { data: teamMembersResponse, isLoading: isMembersLoading } = useQuery({
+    queryKey: ['team-members', teamId, currentPage],
     queryFn: async () => {
-      const response = await getTeamMembers(teamId);
+      const response = await getTeamMembers(teamId, {
+        page: currentPage,
+        perPage: rowsPerPage,
+      });
       if (response.error) {
         throw new Error(response.error);
       }
-      return response.data || [];
+      return response.data;
     },
     enabled: !!teamId,
   });
+
+  const teamMembersData = React.useMemo(
+    () => teamMembersResponse?.data || [],
+    [teamMembersResponse]
+  );
+
+  const totalPages = teamMembersResponse?.meta?.lastPage || 1;
+  const hasResults = teamMembersData.length > 0;
 
   const handleAddUser = useCallback(() => {
     setOpenAddUserModal(true);
@@ -108,6 +122,10 @@ export default function Page(): React.JSX.Element {
 
   const handleCloseAddUserModal = useCallback(() => {
     setOpenAddUserModal(false);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
   }, []);
 
   if (isLoading) {
@@ -201,113 +219,121 @@ export default function Page(): React.JSX.Element {
             <CircularProgress size='lg' />
           </Box>
         ) : (
-          <Box
-            sx={{
-              overflowX: 'auto',
-              width: '100%',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: { xs: 'thin', sm: 'auto' },
-              '&::-webkit-scrollbar': {
-                height: { xs: '8px', sm: '12px' },
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: 'var(--joy-palette-divider)',
-                borderRadius: '4px',
-              },
-            }}
-          >
-            <Table
-              aria-label='team members table'
+          <>
+            <Box
               sx={{
-                minWidth: '800px',
-                tableLayout: 'fixed',
-                '& th, & td': {
-                  px: { xs: 1, sm: 2 },
-                  py: { xs: 1, sm: 1.5 },
+                overflowX: 'auto',
+                width: '100%',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: { xs: 'thin', sm: 'auto' },
+                '&::-webkit-scrollbar': {
+                  height: { xs: '8px', sm: '12px' },
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'var(--joy-palette-divider)',
+                  borderRadius: '4px',
                 },
               }}
             >
-              <thead>
-                <tr>
-                  <th style={{ width: '40%' }}>User Name</th>
-                  <th style={{ width: '35%' }}>Email</th>
-                  <th style={{ width: '20%' }}>Role</th>
-                  <th style={{ width: '5%', textAlign: 'right' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {!teamMembersData || teamMembersData.length === 0 ? (
+              <Table
+                aria-label='team members table'
+                sx={{
+                  minWidth: '800px',
+                  tableLayout: 'fixed',
+                  '& th, & td': {
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 1.5 },
+                  },
+                }}
+              >
+                <thead>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography level='body-md' color='neutral'>
-                        No team members found
-                      </Typography>
-                    </td>
+                    <th style={{ width: '40%' }}>User Name</th>
+                    <th style={{ width: '35%' }}>Email</th>
+                    <th style={{ width: '20%' }}>Role</th>
+                    <th style={{ width: '5%', textAlign: 'right' }}></th>
                   </tr>
-                ) : (
-                  teamMembersData.map((member) => {
-                    const userName = member.user?.full_name || '-';
-                    const userEmail = member.user?.email || '-';
-                    const roleName =
-                      member.user?.role?.display_name || member.user?.role?.name || '-';
+                </thead>
+                <tbody>
+                  {!teamMembersData || teamMembersData.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
+                        <Typography level='body-md' color='neutral'>
+                          No team members found
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : (
+                    teamMembersData.map((member) => {
+                      const userName = member.user?.full_name || '-';
+                      const userEmail = member.user?.email || '-';
+                      const roleName =
+                        member.user?.role?.display_name || member.user?.role?.name || '-';
 
-                    return (
-                      <tr key={member.team_member_id}>
-                        <td>
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              fontWeight: 500,
-                            }}
-                          >
-                            {userName}
-                          </Typography>
-                        </td>
-                        <td>
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              color: 'var(--joy-palette-text-secondary)',
-                            }}
-                          >
-                            {userEmail}
-                          </Typography>
-                        </td>
-                        <td>
-                          <Typography
-                            sx={{
-                              fontSize: { xs: '12px', sm: '14px' },
-                              color: 'var(--joy-palette-text-secondary)',
-                            }}
-                          >
-                            {roleName}
-                          </Typography>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <IconButton
-                            size='sm'
-                            variant='plain'
-                            color='danger'
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleRemoveMember(member.team_member_id);
-                            }}
-                            sx={{
-                              '&:hover': {
-                                bgcolor: 'var(--joy-palette-danger-50)',
-                              },
-                            }}
-                          >
-                            <TrashIcon fontSize='var(--Icon-fontSize)' />
-                          </IconButton>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </Box>
+                      return (
+                        <tr key={member.team_member_id}>
+                          <td>
+                            <Typography
+                              sx={{
+                                fontSize: { xs: '12px', sm: '14px' },
+                                fontWeight: 500,
+                              }}
+                            >
+                              {userName}
+                            </Typography>
+                          </td>
+                          <td>
+                            <Typography
+                              sx={{
+                                fontSize: { xs: '12px', sm: '14px' },
+                                color: 'var(--joy-palette-text-secondary)',
+                              }}
+                            >
+                              {userEmail}
+                            </Typography>
+                          </td>
+                          <td>
+                            <Typography
+                              sx={{
+                                fontSize: { xs: '12px', sm: '14px' },
+                                color: 'var(--joy-palette-text-secondary)',
+                              }}
+                            >
+                              {roleName}
+                            </Typography>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <IconButton
+                              size='sm'
+                              variant='plain'
+                              color='danger'
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleRemoveMember(member.team_member_id);
+                              }}
+                              sx={{
+                                '&:hover': {
+                                  bgcolor: 'var(--joy-palette-danger-50)',
+                                },
+                              }}
+                            >
+                              <TrashIcon fontSize='var(--Icon-fontSize)' />
+                            </IconButton>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            </Box>
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+              disabled={!hasResults}
+            />
+          </>
         )}
       </Stack>
       <AddUserToTeamModal

@@ -269,14 +269,14 @@ export default function AddEditUser({ open, onClose, userId }: AddEditUserProps)
         if (previousTeamId) {
           // Find the team member ID
           const currentMembersData = await queryClient.fetchQuery({
-            queryKey: ['team-members', previousTeamId],
+            queryKey: ['team-members', previousTeamId, 1],
             queryFn: async () => {
               const { getTeamMembers } = await import('../../../lib/api/teams');
-              const response = await getTeamMembers(previousTeamId);
+              const response = await getTeamMembers(previousTeamId, { page: 1, perPage: 1000 });
               if (response.error) {
                 throw new Error(response.error);
               }
-              return response.data || [];
+              return response.data?.data || [];
             },
           });
 
