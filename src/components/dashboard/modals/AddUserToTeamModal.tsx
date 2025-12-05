@@ -237,7 +237,7 @@ export default function AddUserToTeamModal({
                 width: { xs: '100%', sm: 'auto' },
               }}
             >
-              {selectedTab === TabName.SELECT ? 'Save to list' : 'Save'}
+              {selectedTab === TabName.SELECT ? 'Save to team' : 'Save'}
             </Button>
           </Stack>
         </Stack>
