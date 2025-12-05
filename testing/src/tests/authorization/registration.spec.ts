@@ -33,6 +33,21 @@ test.describe('Registration', () => {
     navPagePage = new NavPagePage(page);
   });
 
+  test.afterEach(async () => {
+    await test.step('Delete created user', async () => {
+      if (emailHelper.email) {
+        try {
+          const apiKey = await apiMethods.getAccessToken(admin);
+          const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
+          const userId = (await userData.json())[0].user_id;
+          await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
+        } catch {
+          // Ignore errors if user doesn't exist or already deleted
+        }
+      }
+    });
+  });
+
   test('Self-Register new user as a Standard User', async () => {
     await test.step('Get temporary mail', async () => {
       await emailHelper.generateNewEmail();
@@ -169,13 +184,6 @@ test.describe('Registration', () => {
       await commonPage.checkRowValues(1, columnsToCheck);
       const cell = commonPage.getRowColumnValue(1, await commonPage.getHeaderIndex(userManagementTable.userName));
       await expect(commonPage.userStatus(cell, appData.userStatuses.active)).toBeVisible();
-    });
-
-    await test.step('Delete created user', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userId = (await userData.json())[0].user_id;
-      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
     });
   });
 
@@ -348,13 +356,6 @@ test.describe('Registration', () => {
       await commonPage.checkRowValues(1, columnsToCheck);
       const cell = commonPage.getRowColumnValue(1, await commonPage.getHeaderIndex(userManagementTable.userName));
       await expect(commonPage.userStatus(cell, appData.userStatuses.active)).toBeVisible();
-    });
-
-    await test.step('Delete created user', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userId = (await userData.json())[0].user_id;
-      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
     });
   });
 

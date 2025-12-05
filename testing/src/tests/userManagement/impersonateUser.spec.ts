@@ -52,6 +52,21 @@ test.describe('Impersonate user', () => {
     documentationPage = new DocumentationPage(page);
   });
 
+  test.afterEach(async () => {
+    await test.step('Delete created user', async () => {
+      if (emailHelper.email) {
+        try {
+          const apiKey = await apiMethods.getAccessToken(admin);
+          const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
+          const userId = (await userData.json())[0].user_id;
+          await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
+        } catch {
+          // Ignore errors if user doesn't exist or already deleted
+        }
+      }
+    });
+  });
+
   test('Check impersonate button is not visible for inactive user as System Administrator', async () => {
     await test.step('Get temporary email', async () => {
       await emailHelper.generateNewEmail();
@@ -118,13 +133,6 @@ test.describe('Impersonate user', () => {
     await test.step('Check impersonate button is not visible for inactive user', async () => {
       await expect(commonPage.actionButtonInMoreMenu(userManagementData.impersonateUserButton)).not.toBeVisible();
     });
-
-    await test.step('Delete created user', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userId = (await userData.json())[0].user_id;
-      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
-    });
   });
 
   test.skip('Check impersonate button is not visible for inactive user as Customer Success', async () => {
@@ -189,13 +197,6 @@ test.describe('Impersonate user', () => {
 
     await test.step('Check impersonate button is not visible for inactive user', async () => {
       await expect(commonPage.actionButtonInMoreMenu(userManagementData.impersonateUserButton)).not.toBeVisible();
-    });
-
-    await test.step('Delete created user', async () => {
-      const apiKey = await apiMethods.getAccessToken(admin);
-      const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
-      const userId = (await userData.json())[0].user_id;
-      await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
     });
   });
 

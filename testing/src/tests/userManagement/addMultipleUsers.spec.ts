@@ -10,6 +10,7 @@ import { generateNewUser } from '@utils/fakers';
 import { ApiMethods } from '@apiPage/methods';
 
 test.describe('Create multiple users', () => {
+  let apiMethods: ApiMethods;
   let emailHelper: EmailHelper;
   let loginPage: LoginPage;
   let commonPage: CommonPage;
@@ -30,6 +31,7 @@ test.describe('Create multiple users', () => {
   const newUser = generateNewUser();
 
   test.beforeEach(async ({ page, request }) => {
+    apiMethods = new ApiMethods(request);
     emailHelper = new EmailHelper(request);
     loginPage = new LoginPage(page);
     commonPage = new CommonPage(page);
@@ -44,6 +46,21 @@ test.describe('Create multiple users', () => {
           email: emailHelper.email,
           token: emailHelper.token,
         });
+      }
+    });
+  });
+
+  test.afterEach(async () => {
+    await test.step('Delete created users', async () => {
+      const apiKey = await apiMethods.getAccessToken(admin);
+      for (const data of emailData) {
+        try {
+          const userData = await apiMethods.getUserData(apiKey, data.email);
+          const userId = (await userData.json())[0].user_id;
+          await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
+        } catch {
+          // Ignore errors if user doesn't exist or already deleted
+        }
       }
     });
   });
