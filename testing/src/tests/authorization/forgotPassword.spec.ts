@@ -6,16 +6,20 @@ import { CommonPage } from '@pages/common.page';
 import { NavPagePage } from '@pages/navPage.page';
 import { EmailHelper } from '@pages/email/helper';
 import { generateNewUser } from '@utils/fakers';
+import { ApiMethods } from '@apiPage/methods';
 
 test.describe('Forgot Password', () => {
+  let apiMethods: ApiMethods;
   let emailHelper: EmailHelper;
   let loginPage: LoginPage;
   let commonPage: CommonPage;
   let navPagePage: NavPagePage;
 
+  const admin = ConfigData.users.admin;
   const newUser = generateNewUser();
 
   test.beforeEach(async ({ page, request }) => {
+    apiMethods = new ApiMethods(request);
     emailHelper = new EmailHelper(request);
     loginPage = new LoginPage(page);
     commonPage = new CommonPage(page);
@@ -23,6 +27,21 @@ test.describe('Forgot Password', () => {
 
     await test.step('Get temporary email', async () => {
       await emailHelper.generateNewEmail();
+    });
+  });
+
+  test.afterEach(async () => {
+    await test.step('Delete created user', async () => {
+      if (emailHelper.email) {
+        try {
+          const apiKey = await apiMethods.getAccessToken(admin);
+          const userData = await apiMethods.getUserData(apiKey, emailHelper.email);
+          const userId = (await userData.json())[0].user_id;
+          await expect(await apiMethods.deleteUser(apiKey, userId)).toBe(204);
+        } catch {
+          // Ignore errors if user doesn't exist or already deleted
+        }
+      }
     });
   });
 

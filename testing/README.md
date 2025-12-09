@@ -2,19 +2,30 @@
 
 ### Setup Instructions
 
-1. **Install dependencies:**
+1. **Navigate to the testing directory:**
+
+   ```bash
+   cd testing
+   ```
+
+2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
-2. **Configure environment variables:**
-   
-   Copy the example environment file and fill in your values:
+3. **Configure environment variables:**
+
+   Copy the example environment file and fill in your values (make sure you're in the `testing` directory):
+
    ```bash
    cp .env.example .env
    ```
-   
+
+   **Important:** The `.env` file should be created in the root of the `testing` directory, not in the project root.
+
    See [`.env.example`](.env.example) for required environment variables:
+
    - `BASE_URL` - Base URL of the application
    - `API_URL` - API endpoint URL
    - `SUPABASE_API_URL` - Supabase API URL
@@ -27,7 +38,7 @@
    - `STANDARD_USER` - Standard User email
    - `MAIL_GENERATOR` - Email generator service configuration
 
-3. **Install Playwright browsers:**
+4. **Install Playwright browsers:**
    ```bash
    npx playwright install
    ```
@@ -375,11 +386,12 @@ npm run test -- --ui
 **User impersonation** tested for Standard User and Manager roles
 
 **Notification system** comprehensively tested:
-  - Single and multi-recipient notifications
-  - All notification channels (Warning, Alert, Info, Article)
-  - Notification editing and details
-  - Notification history with filters
-  - Negative validation
+
+- Single and multi-recipient notifications
+- All notification channels (Warning, Alert, Info, Article)
+- Notification editing and details
+- Notification history with filters
+- Negative validation
 
 **System users management** tested for Customer Success and System Administrator roles
 
