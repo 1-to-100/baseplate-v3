@@ -301,11 +301,19 @@ export default function Page(): React.JSX.Element {
                             onClick={() =>
                               router.push(paths.dashboard.teamManagement.details(team.team_id))
                             }
-                            style={{ cursor: 'pointer' }}
+                            style={{
+                              cursor: 'pointer',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}
                           >
                             <Typography
                               sx={{
                                 fontSize: { xs: '12px', sm: '14px' },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               {team.team_name}
