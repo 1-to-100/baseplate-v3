@@ -216,10 +216,21 @@ export default function Page(): React.JSX.Element {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={3}
+          justifyContent='space-between'
           sx={{ alignItems: { xs: 'stretch', sm: 'flex-start' } }}
         >
-          <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1' marginBottom={2}>
+          <Stack spacing={1} sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}>
+            <Typography
+              fontSize={{ xs: 'xl3', lg: 'xl4' }}
+              level='h1'
+              marginBottom={2}
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+              }}
+            >
               {teamData.team_name}
             </Typography>
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
@@ -236,6 +247,7 @@ export default function Page(): React.JSX.Element {
             sx={{
               alignItems: { xs: 'stretch', sm: 'center' },
               width: { xs: '100%', sm: 'auto' },
+              flexShrink: 0,
             }}
           >
             <Button
