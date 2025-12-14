@@ -29,7 +29,7 @@ export function TeamField({
   isLoading,
 }: TeamFieldProps): React.JSX.Element {
   return (
-    <Stack sx={{ flex: 1 }}>
+    <Stack sx={{ flex: 1, minWidth: 0 }}>
       <Typography
         level='body-sm'
         sx={{
@@ -49,14 +49,64 @@ export function TeamField({
           onChange(teamValue);
         }}
         disabled={disabled || isLoading}
+        renderValue={(selected) => {
+          if (!selected) {
+            return null;
+          }
+          // Handle both single select (object) and multiple select (array) cases
+          const selectedValue = Array.isArray(selected)
+            ? selected[0]?.value
+            : selected?.value || selected;
+          const team = options.find((team) => String(team.team_id) === String(selectedValue));
+          const teamName = team?.team_name || '';
+
+          if (!teamName) {
+            return null;
+          }
+
+          return (
+            <Typography
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                maxWidth: '100%',
+                fontSize: { xs: '12px', sm: '14px' },
+              }}
+            >
+              {teamName}
+            </Typography>
+          );
+        }}
         slotProps={{
           listbox: {
             placement: 'top',
+          },
+          button: {
+            sx: {
+              minWidth: 0,
+              maxWidth: '100%',
+              overflow: 'hidden',
+            },
           },
         }}
         sx={{
           borderRadius: '6px',
           fontSize: { xs: '12px', sm: '14px' },
+          minWidth: 0,
+          maxWidth: '100%',
+          width: '100%',
+          '& > div': {
+            minWidth: 0,
+            maxWidth: '100%',
+          },
+          '& .MuiSelect-button': {
+            minWidth: 0,
+            maxWidth: '100%',
+            width: '100%',
+            overflow: 'hidden',
+          },
         }}
       >
         <Option value=''>None</Option>
