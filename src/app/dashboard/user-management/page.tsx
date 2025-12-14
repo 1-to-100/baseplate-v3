@@ -1097,7 +1097,7 @@ export default function Page(): React.JSX.Element {
                                 user.teams.length > 0 &&
                                 user.teams[0] ? (
                                   <>
-                                    <Box>
+                                    <Box style={{ maxWidth: '100%' }}>
                                       <Typography
                                         sx={{
                                           fontWeight: 400,
