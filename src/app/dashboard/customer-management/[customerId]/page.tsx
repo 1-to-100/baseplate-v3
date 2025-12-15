@@ -344,6 +344,10 @@ const Customer: React.FC = () => {
         // Invalidate and refetch queries after all deletions are complete
         await queryClient.invalidateQueries({ queryKey: ['users'] });
         await queryClient.refetchQueries({ queryKey: ['users'] });
+        // Invalidate teams and team-members queries since user was removed from teams
+        await queryClient.invalidateQueries({ queryKey: ['teams'] });
+        await queryClient.invalidateQueries({ queryKey: ['team-members'] });
+        await queryClient.invalidateQueries({ queryKey: ['team'] });
         if (customerId) {
           await queryClient.invalidateQueries({
             queryKey: ['customer', customerId],

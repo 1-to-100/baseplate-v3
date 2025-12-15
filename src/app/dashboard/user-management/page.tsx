@@ -343,6 +343,10 @@ export default function Page(): React.JSX.Element {
         // Invalidate and refetch queries after all deletions are complete
         await queryClient.invalidateQueries({ queryKey: ['users'] });
         await queryClient.refetchQueries({ queryKey: ['users'] });
+        // Invalidate teams and team-members queries since user was removed from teams
+        await queryClient.invalidateQueries({ queryKey: ['teams'] });
+        await queryClient.invalidateQueries({ queryKey: ['team-members'] });
+        await queryClient.invalidateQueries({ queryKey: ['team'] });
 
         // Show success message only if at least one deletion succeeded
         if (successCount > 0) {

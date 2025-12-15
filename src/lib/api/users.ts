@@ -1153,6 +1153,31 @@ export async function createUser(payload: CreateUserPayload): Promise<ApiUser> {
 export async function updateUser(payload: UpdateUserPayload): Promise<ApiUser> {
   const supabase = createClient();
 
+  // Check if customer is being changed
+  if (payload.customerId !== undefined) {
+    // Fetch current user to compare customer_id
+    const currentUser = await getUserById(payload.id);
+
+    // If customer is actually changing, remove user from all teams and clear manager assignments
+    if (currentUser.customerId !== payload.customerId) {
+      // Remove user from all teams (team_members)
+      const { error: teamMembersError } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('user_id', payload.id);
+
+      if (teamMembersError) throw teamMembersError;
+
+      // If user is a manager of any team, set manager_id to null
+      const { error: teamsError } = await supabase
+        .from('teams')
+        .update({ manager_id: null })
+        .eq('manager_id', payload.id);
+
+      if (teamsError) throw teamsError;
+    }
+  }
+
   const fullName =
     payload.firstName && payload.lastName
       ? `${payload.firstName} ${payload.lastName}`.trim()
@@ -1740,6 +1765,23 @@ export async function deleteUser(id: string): Promise<ApiUser> {
   // Fetch user before deletion
   const userToDelete = await getUserById(id);
 
+  // Remove user from all teams (team_members)
+  const { error: teamMembersError } = await supabase
+    .from('team_members')
+    .delete()
+    .eq('user_id', id);
+
+  if (teamMembersError) throw teamMembersError;
+
+  // If user is a manager of any team, set manager_id to null
+  const { error: teamsError } = await supabase
+    .from('teams')
+    .update({ manager_id: null })
+    .eq('manager_id', id);
+
+  if (teamsError) throw teamsError;
+
+  // Soft delete the user
   const { error } = await supabase
     .from('users')
     .update({
