@@ -30,16 +30,30 @@ Ensure you have the following installed:
 │   ├── components/    # React components
 │   ├── lib/           # Utilities and helpers
 │   ├── hooks/         # React hooks
-│   └── contexts/      # React contexts
+│   ├── contexts/      # React contexts
+│   ├── styles/        # Global styles and theme
+│   ├── types/         # TypeScript type definitions
+│   ├── stories/       # Storybook stories
+│   ├── config.ts      # Application configuration
+│   ├── middleware.ts  # Next.js middleware
+│   └── paths.ts       # Path constants
 ├── supabase/          # Supabase configuration
 │   ├── functions/     # Edge Functions
 │   ├── migrations/    # Database migrations
-│   └── scripts/       # Deployment scripts
+│   ├── scripts/       # Deployment and setup scripts
+│   ├── types/         # Generated Supabase types
+│   └── config.toml    # Supabase configuration
 ├── testing/           # E2E tests (Playwright)
+│   ├── src/           # Test source files
+│   └── playwright.config.ts
 ├── public/            # Static assets
 ├── Dockerfile         # Docker configuration
 ├── docker-compose.yml # Docker Compose config
-└── README.md
+├── next.config.ts     # Next.js configuration
+├── tsconfig.json      # TypeScript configuration
+├── eslint.config.mjs  # ESLint configuration
+├── commitlint.config.ts
+
 ```
 
 ---
@@ -56,19 +70,15 @@ cd baseplate-v3
 Create a `.env` file in the root directory with the following variables:
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+# Public auth strategy (e.g., SUPABASE, AUTH0, etc.)
+NEXT_PUBLIC_AUTH_STRATEGY="SUPABASE"
 
-# Optional: Auth providers
-NEXT_PUBLIC_AUTH_STRATEGY=custom
-AUTH0_SECRET=...
-AUTH0_CLIENT_ID=...
-AUTH0_CLIENT_SECRET=...
+# URLs of your backend API and web app
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 
-# Optional: Other services
-NEXT_PUBLIC_MAPBOX_API_KEY=...
-NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID=...
+# Supabase public config
+NEXT_PUBLIC_SUPABASE_URL="https://<your_project_ref>.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<your_supabase_anon_key>"
 ```
 
 ### 2. Configure Supabase
@@ -77,10 +87,10 @@ This README assumes you have a Supabase project created. If not, create one firs
 
 #### 🌐 Connect App Frameworks
 
-1. Go to **Settings > Data API**
-2. Copy the **Project URL** and set `NEXT_PUBLIC_SUPABASE_URL` in your `.env` file
-3. Go to **Settings > API Keys**
-4. Copy the **anon/public** key and set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in your `.env` file
+1. Go to **Project Settings**
+2. Copy the **Project ID** key and set `NEXT_PUBLIC_SUPABASE_URL` in your `.env` file
+3. Go to **Project Settings > API Keys > Legacy anon, service_role API keys**
+4. Copy the **anon public** and set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in your `.env` file
 
 #### 🗄️ Database Migrations
 
@@ -103,12 +113,17 @@ supabase link --project-ref your-project-ref
 To apply migrations:
 
 ```bash
+cd supabase
+
 npx supabase db push
 ```
 
-### 📦 Supabase Package Management
+### 📦 Other Supabase Actions
 
-The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup:
+The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup.
+For more details see `supabase/README.md`.
+
+**/supabase/.env required for running bootstrap**
 
 ```bash
 cd supabase
@@ -122,8 +137,6 @@ npx supabase db push
 # Create default system administrator
 npm install && npm run bootstrap
 ```
-
-For detailed migration management, see `supabase/README.md`.
 
 ---
 
@@ -224,7 +237,6 @@ The application will be available at: http://localhost:3000
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc  # or ~/.zshrc
 nvm install 22
 nvm use 22
 ```

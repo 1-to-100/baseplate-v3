@@ -36,10 +36,10 @@ Create `.env` file:
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-SUPABASE_ANON_KEY=your_anon_key
 ```
 
-Get from: **Supabase Dashboard → Settings → API**
+Get `SUPABASE_URL` from: **Supabase -> Project Settings**
+Get `SUPABASE_SERVICE_ROLE_KEY` from: **Supabase -> Project Settings → API Keys -> Legacy anon, service_role API keys**
 
 ## Common Commands
 
