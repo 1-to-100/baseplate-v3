@@ -120,7 +120,10 @@ npx supabase db push
 
 ### 📦 Other Supabase Actions
 
-The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup:
+The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup.
+For more details see `supabase/README.md`.
+
+**/supabase/.env required for running bootstrap**
 
 ```bash
 cd supabase
@@ -134,8 +137,6 @@ npx supabase db push
 # Create default system administrator
 npm install && npm run bootstrap
 ```
-
-For detailed migration management, see `supabase/README.md`.
 
 ---
 
