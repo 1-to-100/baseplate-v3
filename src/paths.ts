@@ -112,6 +112,11 @@ export const paths = {
     test: {
       list: '/dashboard/test',
     },
+    voiceLock: {
+      styleGuide: {
+        editor: '/style-guide/pages/written-style-guide',
+      },
+    },
   },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',
