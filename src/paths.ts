@@ -118,6 +118,14 @@ export const paths = {
       },
     },
   },
+  sourceAndSnap: {
+    capture: '/source-and-snap/capture',
+    captures: {
+      list: '/source-and-snap/captures',
+      details: (id: string) => `/source-and-snap/captures/${id}`,
+    },
+    diagnostics: '/source-and-snap/diagnostics',
+  },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',
 } as const;
