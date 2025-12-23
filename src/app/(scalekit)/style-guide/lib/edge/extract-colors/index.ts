@@ -38,20 +38,24 @@ function generateColorExtractionPrompt(screenshotUrl: string, htmlContent?: stri
   let contentAnalysis = '';
   
   if (htmlContent || cssContent) {
-    contentAnalysis = `\n\nSOURCE CODE ANALYSIS:\n`;
+    contentAnalysis = `\n\nSOURCE CODE PROVIDED:\n`;
+    contentAnalysis += `The HTML and CSS content from the captured webpage has been provided below. Use this to identify color values defined in stylesheets and inline styles.\n\n`;
     if (htmlContent) {
       contentAnalysis += `HTML Content (first 5000 chars):\n${htmlContent.substring(0, 5000)}${htmlContent.length > 5000 ? '...' : ''}\n\n`;
     }
     if (cssContent) {
       contentAnalysis += `CSS Content (first 5000 chars):\n${cssContent.substring(0, 5000)}${cssContent.length > 5000 ? '...' : ''}\n\n`;
     }
-    contentAnalysis += `Use the HTML and CSS content to identify color values defined in stylesheets and inline styles.\n`;
   }
   
-  return `Analyze the screenshot image at ${screenshotUrl} to extract the complete color palette.${contentAnalysis}
+  return `IMPORTANT: You are being provided with a screenshot image directly in this request (attached as an image_url). You are also being provided with the raw HTML and CSS content from the captured webpage below.
+
+DO NOT attempt to access any external URLs or websites. Analyze ONLY the screenshot image provided in this request and the HTML/CSS content provided below.
+
+Your task is to extract the complete color palette from the provided screenshot image and source code.${contentAnalysis}
 
 ANALYSIS APPROACH:
-Examine the screenshot image and identify all colors used across:
+Examine the provided screenshot image and the HTML/CSS content to identify all colors used across:
 - Brand colors (logos, headers, primary UI elements)
 - Text colors (headings, body text, links)
 - Background colors (page backgrounds, sections)
@@ -389,13 +393,47 @@ Deno.serve(async (req) => {
     }
 
     console.log('Response content length:', responseContent.length);
-
+    
+    // Clean the response content - remove markdown code blocks if present
+    let cleanedContent = responseContent.trim();
+    
+    // Remove markdown code block markers (```json ... ``` or ``` ... ```)
+    // Handle cases like: ```json\n...\n``` or ```\n...\n```
+    if (cleanedContent.startsWith('```')) {
+      // Find the first newline after ``` (could be ```json or just ```)
+      const firstNewline = cleanedContent.indexOf('\n');
+      if (firstNewline !== -1) {
+        // Remove opening ```json or ``` and the newline
+        cleanedContent = cleanedContent.substring(firstNewline + 1);
+      } else {
+        // No newline found, look for closing ``` immediately after opening
+        const closingIndex = cleanedContent.indexOf('```', 3);
+        if (closingIndex !== -1) {
+          // Remove both opening and closing ```
+          cleanedContent = cleanedContent.substring(3, closingIndex);
+        } else {
+          // Just remove opening ```
+          cleanedContent = cleanedContent.substring(3);
+        }
+      }
+      
+      // Remove closing ``` if it exists (handle cases where it's on same line or separate line)
+      const lastBackticks = cleanedContent.lastIndexOf('```');
+      if (lastBackticks !== -1 && lastBackticks > 0) {
+        cleanedContent = cleanedContent.substring(0, lastBackticks);
+      }
+      
+      cleanedContent = cleanedContent.trim();
+    }
+    
+    console.log('Cleaned content preview:', cleanedContent.substring(0, 200));
+    
     // Parse and validate
     let parsedResponse: unknown;
     try {
-      parsedResponse = JSON.parse(responseContent);
+      parsedResponse = JSON.parse(cleanedContent);
     } catch (parseError) {
-      console.error('Failed to parse response:', responseContent);
+      console.error('Failed to parse response:', cleanedContent);
       throw new Error('Invalid JSON response from OpenAI');
     }
 

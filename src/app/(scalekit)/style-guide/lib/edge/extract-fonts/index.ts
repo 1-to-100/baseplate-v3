@@ -5,8 +5,8 @@ import OpenAI from 'https://esm.sh/openai@4';
 
 // Request body interface
 interface RequestBody {
-  visual_style_guide_id: string;
-  starting_url: string;
+  web_screenshot_capture_id: string;
+  visual_style_guide_id?: string; // Optional - if provided, typography styles will be inserted into typography_styles
 }
 
 // CORS headers
@@ -52,14 +52,33 @@ const SYSTEM_PROMPT = `You are an expert typography analyst and web design speci
  * Generates the user prompt for typography extraction
  */
 function generateTypographyExtractionPrompt(
-  websiteUrl: string,
+  screenshotUrl: string,
+  htmlContent: string | undefined,
+  cssContent: string | undefined,
   typographyOptions: TypographyStyleOption[],
   fontOptions: FontOption[]
 ): string {
-  return `Analyze the website ${websiteUrl}, take a screenshot of two or more pages, and extract all typography information.
+  let contentAnalysis = '';
+  
+  if (htmlContent || cssContent) {
+    contentAnalysis = `\n\nSOURCE CODE PROVIDED:\n`;
+    contentAnalysis += `The HTML and CSS content from the captured webpage has been provided below. Use this to identify font families, sizes, weights, and other typography properties defined in stylesheets and inline styles.\n\n`;
+    if (htmlContent) {
+      contentAnalysis += `HTML Content (first 5000 chars):\n${htmlContent.substring(0, 5000)}${htmlContent.length > 5000 ? '...' : ''}\n\n`;
+    }
+    if (cssContent) {
+      contentAnalysis += `CSS Content (first 5000 chars):\n${cssContent.substring(0, 5000)}${cssContent.length > 5000 ? '...' : ''}\n\n`;
+    }
+  }
+  
+  return `IMPORTANT: You are being provided with a screenshot image directly in this request (attached as an image_url). You are also being provided with the raw HTML and CSS content from the captured webpage below. 
+
+DO NOT attempt to access any external URLs or websites. Analyze ONLY the screenshot image provided in this request and the HTML/CSS content provided below.
+
+Your task is to extract typography information from the provided screenshot image and source code.${contentAnalysis}
 
 ANALYSIS APPROACH:
-Browse the website, take a screenshot of two or more pages, and identify the fonts used for each text element type. Look at:
+Examine the provided screenshot image and the HTML/CSS content to identify the fonts used for each text element type. Look at:
 - Headings (H1-H6)
 - Body text
 - Buttons and labels
@@ -74,7 +93,7 @@ ${typographyOptions.map((opt) => `- UUID: ${opt.typography_style_option_id} | Na
 AVAILABLE FONT OPTIONS (try to match fonts to these if possible):
 ${fontOptions.map((opt) => `- UUID: ${opt.font_option_id} | Font: ${opt.display_name} | Source: ${opt.source}`).join('\n')}
 
-For EACH typography_style_option above, analyze the website and provide:
+For EACH typography_style_option above, analyze the provided screenshot image and HTML/CSS content to determine and provide:
 - typography_style_option_id: UUID from the list above (REQUIRED)
 - font_option_id: UUID from font options if you can match it, otherwise null (OPTIONAL)
 - font_family: The actual font name used (REQUIRED - e.g., "Inter", "Roboto", "Arial")
@@ -176,25 +195,27 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Invalid request body',
-          usage: 'Please provide: { "visual_style_guide_id": "uuid", "starting_url": "https://..." }'
+          usage: 'Please provide: { "web_screenshot_capture_id": "uuid", "visual_style_guide_id": "uuid" (optional) }'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { visual_style_guide_id, starting_url } = requestBody;
+    const { web_screenshot_capture_id, visual_style_guide_id } = requestBody;
     
-    if (!visual_style_guide_id || !starting_url) {
+    if (!web_screenshot_capture_id) {
       return new Response(
         JSON.stringify({ 
-          error: 'Both visual_style_guide_id and starting_url are required'
+          error: 'web_screenshot_capture_id is required'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Visual Style Guide ID:', visual_style_guide_id);
-    console.log('Starting URL:', starting_url);
+    console.log('Web Screenshot Capture ID:', web_screenshot_capture_id);
+    if (visual_style_guide_id) {
+      console.log('Visual Style Guide ID:', visual_style_guide_id);
+    }
 
     // Authentication
     const authHeader = req.headers.get('Authorization');
@@ -223,20 +244,75 @@ Deno.serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    // Verify visual style guide exists and get customer_id
-    console.log('Fetching visual style guide...');
-    const { data: visualGuide, error: guideError } = await supabase
-      .from('visual_style_guides')
-      .select('visual_style_guide_id, customer_id')
-      .eq('visual_style_guide_id', visual_style_guide_id)
+    // Fetch the capture record with related request
+    console.log('Fetching capture record...');
+    const { data: capture, error: captureError } = await supabase
+      .from('web_screenshot_captures')
+      .select(`
+        web_screenshot_capture_id, 
+        customer_id, 
+        screenshot_storage_path, 
+        raw_html, 
+        raw_css,
+        capture_request:web_screenshot_capture_request_id (
+          requested_url
+        )
+      `)
+      .eq('web_screenshot_capture_id', web_screenshot_capture_id)
       .maybeSingle();
 
-    if (guideError || !visualGuide) {
-      throw new Error('Visual style guide not found. Create one first.');
+    if (captureError || !capture) {
+      throw new Error('Capture not found. Make sure the capture exists and you have access to it.');
     }
 
-    const customerId = visualGuide.customer_id;
+    const customerId = capture.customer_id;
     console.log('Customer ID:', customerId);
+
+    // Get signed URL for the screenshot
+    console.log('Generating signed URL for screenshot...');
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('screenshots')
+      .createSignedUrl(capture.screenshot_storage_path, 3600); // 1 hour expiry
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      throw new Error(`Failed to generate signed URL: ${signedUrlError?.message || 'Unknown error'}`);
+    }
+
+    const screenshotUrl = signedUrlData.signedUrl;
+    console.log('Screenshot URL generated');
+
+    // Get HTML and CSS content
+    const htmlContent = capture.raw_html || undefined;
+    const cssContent = capture.raw_css || undefined;
+    const captureRequest = Array.isArray(capture.capture_request) 
+      ? capture.capture_request[0] 
+      : capture.capture_request;
+    const requestedUrl = (captureRequest as { requested_url?: string })?.requested_url || '';
+
+    console.log('HTML content available:', !!htmlContent);
+    console.log('CSS content available:', !!cssContent);
+
+    // Get customer_id for typography style insertion (if visual_style_guide_id provided)
+    let visualGuideCustomerId: string | undefined;
+    if (visual_style_guide_id) {
+      console.log('Fetching visual style guide...');
+      const { data: visualGuide, error: guideError } = await supabase
+        .from('visual_style_guides')
+        .select('visual_style_guide_id, customer_id')
+        .eq('visual_style_guide_id', visual_style_guide_id)
+        .maybeSingle();
+
+      if (guideError || !visualGuide) {
+        throw new Error('Visual style guide not found. Create one first.');
+      }
+
+      visualGuideCustomerId = visualGuide.customer_id;
+      
+      // Verify customer matches
+      if (visualGuideCustomerId !== customerId) {
+        throw new Error('Visual style guide customer does not match capture customer');
+      }
+    }
 
     // Fetch option tables
     console.log('Fetching typography and font options...');
@@ -258,7 +334,9 @@ Deno.serve(async (req) => {
 
     // Build the prompt
     const userPrompt = generateTypographyExtractionPrompt(
-      starting_url,
+      screenshotUrl,
+      htmlContent,
+      cssContent,
       typographyOptions as TypographyStyleOption[],
       fontOptions as FontOption[]
     );
@@ -272,30 +350,42 @@ Deno.serve(async (req) => {
       throw new Error('Missing OPENAI_API_KEY');
     }
 
-    // Call GPT-5 with web_search
-    console.log('Calling GPT-5 with web_search...');
-    
-    const urlObj = new URL(starting_url);
-    const domain = urlObj.hostname.replace(/^www\./, '');
-    console.log('Filtering web search to domain:', domain);
+    // Call GPT-4o with image analysis
+    console.log('Calling GPT-4o with image analysis...');
     
     const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}\n\nCRITICAL: Return ONLY valid JSON, no markdown or code blocks.`;
 
+    // Use GPT-4 Vision or GPT-4o with image input
     const responsePayload = {
-      model: 'gpt-5',
-      input: combinedPrompt,
-      tools: [{
-        type: 'web_search',
-        filters: { allowed_domains: [domain] }
-      }],
+      model: 'gpt-4o', // Using GPT-4o for vision capabilities
+      messages: [
+        {
+          role: 'system',
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: userPrompt,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: screenshotUrl,
+              },
+            },
+          ],
+        },
+      ],
     };
 
-    const apiResponse = await fetch('https://api.openai.com/v1/responses', {
+    const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openaiKey}`,
-        'OpenAI-Beta': 'responses=v1',
       },
       body: JSON.stringify(responsePayload),
     });
@@ -307,79 +397,111 @@ Deno.serve(async (req) => {
     }
 
     const responseData = await apiResponse.json();
-    console.log('Response received from GPT-5');
+    console.log('Response received from GPT-4o');
     
-    const output = (responseData.output || []) as Array<Record<string, unknown>>;
-    const messageItem = output.find((item) => item.type === 'message') as { content?: Array<Record<string, unknown>> } | undefined;
+    const responseContent = responseData.choices?.[0]?.message?.content;
     
-    if (!messageItem) {
-      throw new Error('No message in OpenAI response');
+    if (!responseContent) {
+      throw new Error('No content in OpenAI response');
     }
 
-    const content = (messageItem.content || []) as Array<Record<string, unknown>>;
-    const textItem = content.find((item) => item.type === 'output_text') as { text?: string } | undefined;
-    
-    if (!textItem || !textItem.text) {
-      throw new Error('No text in message content');
-    }
-
-    const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
     
-    // Log web search calls
-    const webSearchCalls = output.filter((item) => item.type === 'web_search_call');
-    console.log(`✓ Web searches performed: ${webSearchCalls.length}`);
+    // Clean the response content - remove markdown code blocks if present
+    let cleanedContent = responseContent.trim();
+    
+    // Remove markdown code block markers (```json ... ``` or ``` ... ```)
+    // Handle cases like: ```json\n...\n``` or ```\n...\n```
+    if (cleanedContent.startsWith('```')) {
+      // Find the first newline after ``` (could be ```json or just ```)
+      const firstNewline = cleanedContent.indexOf('\n');
+      if (firstNewline !== -1) {
+        // Remove opening ```json or ``` and the newline
+        cleanedContent = cleanedContent.substring(firstNewline + 1);
+      } else {
+        // No newline found, look for closing ``` immediately after opening
+        const closingIndex = cleanedContent.indexOf('```', 3);
+        if (closingIndex !== -1) {
+          // Remove both opening and closing ```
+          cleanedContent = cleanedContent.substring(3, closingIndex);
+        } else {
+          // Just remove opening ```
+          cleanedContent = cleanedContent.substring(3);
+        }
+      }
+      
+      // Remove closing ``` if it exists (handle cases where it's on same line or separate line)
+      const lastBackticks = cleanedContent.lastIndexOf('```');
+      if (lastBackticks !== -1 && lastBackticks > 0) {
+        cleanedContent = cleanedContent.substring(0, lastBackticks);
+      }
+      
+      cleanedContent = cleanedContent.trim();
+    }
+    
+    console.log('Cleaned content preview:', cleanedContent.substring(0, 200));
 
     // Parse and validate
     let parsedResponse: unknown;
     try {
-      parsedResponse = JSON.parse(responseContent);
+      parsedResponse = JSON.parse(cleanedContent);
     } catch (parseError) {
-      console.error('Failed to parse response:', responseContent);
+      console.error('Failed to parse response:', cleanedContent);
       throw new Error('Invalid JSON response from OpenAI');
     }
 
     const extractedData = validateTypographyResponse(parsedResponse, typographyOptions?.length || 0);
     console.log('Typography data validated');
 
-    // Insert typography styles
-    console.log(`Inserting ${extractedData.typography_styles.length} typography styles...`);
-    
-    const typographyRecords = extractedData.typography_styles.map((typo) => ({
-      customer_id: customerId,
-      visual_style_guide_id: visual_style_guide_id,
-      typography_style_option_id: typo.typography_style_option_id,
-      font_option_id: typo.font_option_id || null,
-      font_family: typo.font_family,
-      font_fallbacks: null,
-      font_size_px: typo.font_size_px,
-      line_height: typo.line_height || null,
-      font_weight: typo.font_weight || null,
-      color: typo.color || null,
-      css_snippet: null,
-      licensing_notes: null,
-      created_by_user_id: null,
-    }));
+    // Insert typography styles if visual_style_guide_id is provided
+    if (visual_style_guide_id && visualGuideCustomerId) {
+      console.log(`Inserting ${extractedData.typography_styles.length} typography styles...`);
+      
+      const typographyRecords = extractedData.typography_styles.map((typo) => ({
+        customer_id: visualGuideCustomerId,
+        visual_style_guide_id: visual_style_guide_id,
+        typography_style_option_id: typo.typography_style_option_id,
+        font_option_id: typo.font_option_id || null,
+        font_family: typo.font_family,
+        font_fallbacks: null,
+        font_size_px: typo.font_size_px,
+        line_height: typo.line_height || null,
+        font_weight: typo.font_weight || null,
+        color: typo.color || null,
+        css_snippet: null,
+        licensing_notes: null,
+        created_by_user_id: null,
+      }));
 
-    const { data: insertedTypos, error: typosError } = await supabase
-      .from('typography_styles')
-      .insert(typographyRecords)
-      .select('typography_style_id');
+      const { data: insertedTypos, error: typosError } = await supabase
+        .from('typography_styles')
+        .insert(typographyRecords)
+        .select('typography_style_id');
 
-    if (typosError) {
-      console.error('Error inserting typography styles:', typosError);
-      throw new Error('Failed to insert typography styles: ' + typosError.message);
+      if (typosError) {
+        console.error('Error inserting typography styles:', typosError);
+        throw new Error('Failed to insert typography styles: ' + typosError.message);
+      }
+
+      const insertedCount = insertedTypos?.length || 0;
+      console.log(`✓ Inserted ${insertedCount} typography styles`);
+    } else {
+      console.log('No visual_style_guide_id provided - typography styles extracted but not stored');
     }
 
-    const insertedCount = insertedTypos?.length || 0;
-    console.log(`✓ Inserted ${insertedCount} typography styles`);
     console.log('=== EXTRACT FONTS COMPLETE ===');
 
-    // Return 204 No Content (success, no return value)
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
+    // Return the extracted typography styles
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        typography_styles: extractedData.typography_styles,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
 
   } catch (error) {
     console.error('Error in extract-fonts:', error);

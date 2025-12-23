@@ -3,7 +3,7 @@ import Button from "@mui/joy/Button";
 import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
 import { Export as ExportIcon } from "@phosphor-icons/react/dist/ssr";
-import { PencilLine } from "@phosphor-icons/react";
+import { PencilLine, ArrowClockwise } from "@phosphor-icons/react";
 import { formLabelClasses } from "@mui/joy";
 
 type VisualStyleGuideHeaderProps = {
@@ -12,6 +12,9 @@ type VisualStyleGuideHeaderProps = {
   onPublish: () => void;
   isEditableView: boolean;
   handleVisualStyleGuideEdit: (isEditable: boolean) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  showRefresh?: boolean;
 };
 
 export default function VisualStyleGuideHeader({
@@ -20,6 +23,9 @@ export default function VisualStyleGuideHeader({
   onPublish,
   isEditableView,
   handleVisualStyleGuideEdit,
+  onRefresh,
+  isRefreshing = false,
+  showRefresh = false,
 }: VisualStyleGuideHeaderProps): React.JSX.Element {
   return (
     <Stack
@@ -38,6 +44,18 @@ export default function VisualStyleGuideHeader({
         ) : null}
       </Stack> */}
       <Stack direction="row" spacing={1}>
+        {showRefresh && onRefresh && (
+          <Button
+            variant="outlined"
+            color="neutral"
+            startDecorator={<ArrowClockwise />}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            loading={isRefreshing}
+          >
+            Refresh
+          </Button>
+        )}
         {isEditableView ? (
           <Button
             variant="soft"
@@ -48,8 +66,8 @@ export default function VisualStyleGuideHeader({
           </Button>
         ) : (
           <Button
-            variant="soft"
-            color="neutral"
+            variant="solid"
+            color="primary"
             startDecorator={<PencilLine />}
             onClick={() => handleVisualStyleGuideEdit(true)}
           >

@@ -1,16 +1,20 @@
 "use client";
 
 import {
-  useVisualStyleGuide
+  useVisualStyleGuide,
+  useSystemRole
 } from "@/app/(scalekit)/style-guide/lib/hooks";
+import { scanVisualStyleGuide } from "@/app/(scalekit)/style-guide/lib/utils/scan-visual-style-guide";
+import { useCreateCaptureRequest } from "@/app/(scalekit)/source-and-snap/lib/hooks";
 import { toast } from "@/components/core/toaster";
 import { Grid, Sheet } from "@mui/joy";
 import Alert from "@mui/joy/Alert";
 import Box from "@mui/joy/Box";
 import CircularProgress from "@mui/joy/CircularProgress";
 import Stack from "@mui/joy/Stack";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
+import { createClient } from "@/lib/supabase/client";
 import VisualStyleGuideActivityTracker from "./components/visual-style-guide-activity-tracker";
 import VisualStyleGuideBreadcrumbs from "./components/visual-style-guide-breadcrumbs";
 import VisualStyleGuideColors from "./components/visual-style-guide-colors";
@@ -20,11 +24,15 @@ import VisualStyleGuideTypography from "./components/visual-style-guide-typograp
 
 export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const params = useParams();
+  const router = useRouter();
   const guideId = params?.guideId as string;
 
   const [isEditableView, setIsEditableView] = React.useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
 
-  const { data: guide, isLoading } = useVisualStyleGuide(guideId);
+  const { data: guide, isLoading, refetch } = useVisualStyleGuide(guideId);
+  const { data: isSystemRole } = useSystemRole();
+  const createCaptureRequest = useCreateCaptureRequest();
 
   // // Show all colors for the customer, not just for this guide
   // const sortedColors = React.useMemo(() => {
@@ -37,6 +45,76 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const handlePublish = React.useCallback(() => {
     toast.info("Publish functionality coming soon");
   }, []);
+
+  const handleRefresh = React.useCallback(async () => {
+    if (!guide || !guide.customer_id) {
+      toast.error("Unable to refresh: guide data not available");
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      const supabase = createClient();
+      
+      // Get customer email_domain to build URL
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('email_domain, name')
+        .eq('customer_id', guide.customer_id)
+        .single();
+
+      if (customerError || !customerData?.email_domain) {
+        throw new Error('Failed to get customer email domain');
+      }
+
+      const url = `https://www.${customerData.email_domain}`;
+      const name = guide.name || `${customerData.name} Visual Style Guide`;
+
+      // Delete existing palette colors, typography styles, and logo assets for this guide
+      console.log('Clearing existing guide data...');
+      const [colorsDelete, typographyDelete, logosDelete] = await Promise.all([
+        supabase.from('palette_colors').delete().eq('style_guide_id', guideId),
+        supabase.from('typography_styles').delete().eq('visual_style_guide_id', guideId),
+        supabase.from('logo_assets').delete().eq('visual_style_guide_id', guideId),
+      ]);
+
+      if (colorsDelete.error || typographyDelete.error || logosDelete.error) {
+        console.warn('Some deletions failed, continuing anyway...');
+      }
+
+      console.log('✓ Cleared existing guide data');
+
+      // Execute scan & create process (will update existing guide)
+      const result = await scanVisualStyleGuide(
+        {
+          url,
+          name,
+          customerId: guide.customer_id,
+          visualStyleGuideId: guideId, // Update existing guide
+          openCaptureViewer: true,
+        },
+        async (payload) => {
+          const request = await createCaptureRequest.mutateAsync(payload);
+          return { web_screenshot_capture_request_id: request.web_screenshot_capture_request_id };
+        }
+      );
+
+      if (result.errors.length > 0) {
+        toast.warning(`Visual style guide refreshed, but some extractions failed. Check the guide for details.`);
+      } else {
+        toast.success('Visual style guide refreshed successfully!');
+      }
+
+      // Refetch the guide data
+      await refetch();
+    } catch (error) {
+      console.error('Error refreshing visual style guide:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to refresh visual style guide');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [guide, guideId, createCaptureRequest, refetch, router]);
 
   if (isLoading) {
     return (
@@ -64,6 +142,9 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
             onPublish={handlePublish}
             isEditableView={isEditableView}
             handleVisualStyleGuideEdit={setIsEditableView}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+            showRefresh={isSystemRole === true}
           />
           <VisualStyleGuideBreadcrumbs guideName={String(guide.name || "")} />
         </Stack>
