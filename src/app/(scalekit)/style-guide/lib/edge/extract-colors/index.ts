@@ -5,8 +5,8 @@ import OpenAI from 'https://esm.sh/openai@4';
 
 // Request body interface
 interface RequestBody {
-  visual_style_guide_id: string;
-  starting_url: string;
+  web_screenshot_capture_id: string;
+  visual_style_guide_id?: string; // Optional - if provided, colors will be inserted into palette_colors
 }
 
 // CORS headers
@@ -34,11 +34,24 @@ const SYSTEM_PROMPT = `You are an expert color analyst and brand designer. Your 
 /**
  * Generates the user prompt for color extraction
  */
-function generateColorExtractionPrompt(websiteUrl: string): string {
-  return `Analyze the website ${websiteUrl} to extract the complete color palette.
+function generateColorExtractionPrompt(screenshotUrl: string, htmlContent?: string, cssContent?: string): string {
+  let contentAnalysis = '';
+  
+  if (htmlContent || cssContent) {
+    contentAnalysis = `\n\nSOURCE CODE ANALYSIS:\n`;
+    if (htmlContent) {
+      contentAnalysis += `HTML Content (first 5000 chars):\n${htmlContent.substring(0, 5000)}${htmlContent.length > 5000 ? '...' : ''}\n\n`;
+    }
+    if (cssContent) {
+      contentAnalysis += `CSS Content (first 5000 chars):\n${cssContent.substring(0, 5000)}${cssContent.length > 5000 ? '...' : ''}\n\n`;
+    }
+    contentAnalysis += `Use the HTML and CSS content to identify color values defined in stylesheets and inline styles.\n`;
+  }
+  
+  return `Analyze the screenshot image at ${screenshotUrl} to extract the complete color palette.${contentAnalysis}
 
 ANALYSIS APPROACH:
-Browse the website, take a screenshot of two or more pages, and identify all colors used across:
+Examine the screenshot image and identify all colors used across:
 - Brand colors (logos, headers, primary UI elements)
 - Text colors (headings, body text, links)
 - Background colors (page backgrounds, sections)
@@ -189,25 +202,27 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Invalid request body',
-          usage: 'Please provide: { "visual_style_guide_id": "uuid", "starting_url": "https://..." }'
+          usage: 'Please provide: { "web_screenshot_capture_id": "uuid", "visual_style_guide_id": "uuid" (optional) }'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { visual_style_guide_id, starting_url } = requestBody;
+    const { web_screenshot_capture_id, visual_style_guide_id } = requestBody;
     
-    if (!visual_style_guide_id || !starting_url) {
+    if (!web_screenshot_capture_id) {
       return new Response(
         JSON.stringify({ 
-          error: 'Both visual_style_guide_id and starting_url are required'
+          error: 'web_screenshot_capture_id is required'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Visual Style Guide ID:', visual_style_guide_id);
-    console.log('Starting URL:', starting_url);
+    console.log('Web Screenshot Capture ID:', web_screenshot_capture_id);
+    if (visual_style_guide_id) {
+      console.log('Visual Style Guide ID:', visual_style_guide_id);
+    }
 
     // Authentication
     const authHeader = req.headers.get('Authorization');
@@ -236,23 +251,78 @@ Deno.serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    // Verify visual style guide exists and get customer_id
-    console.log('Fetching visual style guide...');
-    const { data: visualGuide, error: guideError } = await supabase
-      .from('visual_style_guides')
-      .select('visual_style_guide_id, customer_id')
-      .eq('visual_style_guide_id', visual_style_guide_id)
+    // Fetch the capture record with related request
+    console.log('Fetching capture record...');
+    const { data: capture, error: captureError } = await supabase
+      .from('web_screenshot_captures')
+      .select(`
+        web_screenshot_capture_id, 
+        customer_id, 
+        screenshot_storage_path, 
+        raw_html, 
+        raw_css,
+        capture_request:web_screenshot_capture_request_id (
+          requested_url
+        )
+      `)
+      .eq('web_screenshot_capture_id', web_screenshot_capture_id)
       .maybeSingle();
 
-    if (guideError || !visualGuide) {
-      throw new Error('Visual style guide not found. Create one first.');
+    if (captureError || !capture) {
+      throw new Error('Capture not found. Make sure the capture exists and you have access to it.');
     }
 
-    const customerId = visualGuide.customer_id;
+    const customerId = capture.customer_id;
     console.log('Customer ID:', customerId);
 
+    // Get signed URL for the screenshot
+    console.log('Generating signed URL for screenshot...');
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('screenshots')
+      .createSignedUrl(capture.screenshot_storage_path, 3600); // 1 hour expiry
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      throw new Error(`Failed to generate signed URL: ${signedUrlError?.message || 'Unknown error'}`);
+    }
+
+    const screenshotUrl = signedUrlData.signedUrl;
+    console.log('Screenshot URL generated');
+
+    // Get HTML and CSS content
+    const htmlContent = capture.raw_html || undefined;
+    const cssContent = capture.raw_css || undefined;
+    const captureRequest = Array.isArray(capture.capture_request) 
+      ? capture.capture_request[0] 
+      : capture.capture_request;
+    const requestedUrl = (captureRequest as { requested_url?: string })?.requested_url || '';
+
+    console.log('HTML content available:', !!htmlContent);
+    console.log('CSS content available:', !!cssContent);
+
+    // Get customer_id for palette color insertion (if visual_style_guide_id provided)
+    let visualGuideCustomerId: string | undefined;
+    if (visual_style_guide_id) {
+      console.log('Fetching visual style guide...');
+      const { data: visualGuide, error: guideError } = await supabase
+        .from('visual_style_guides')
+        .select('visual_style_guide_id, customer_id')
+        .eq('visual_style_guide_id', visual_style_guide_id)
+        .maybeSingle();
+
+      if (guideError || !visualGuide) {
+        throw new Error('Visual style guide not found. Create one first.');
+      }
+
+      visualGuideCustomerId = visualGuide.customer_id;
+      
+      // Verify customer matches
+      if (visualGuideCustomerId !== customerId) {
+        throw new Error('Visual style guide customer does not match capture customer');
+      }
+    }
+
     // Build the prompt
-    const userPrompt = generateColorExtractionPrompt(starting_url);
+    const userPrompt = generateColorExtractionPrompt(screenshotUrl, htmlContent, cssContent);
 
     console.log('System prompt length:', SYSTEM_PROMPT.length);
     console.log('User prompt length:', userPrompt.length);
@@ -263,30 +333,42 @@ Deno.serve(async (req) => {
       throw new Error('Missing OPENAI_API_KEY');
     }
 
-    // Call GPT-5 with web_search
-    console.log('Calling GPT-5 with web_search...');
-    
-    const urlObj = new URL(starting_url);
-    const domain = urlObj.hostname.replace(/^www\./, '');
-    console.log('Filtering web search to domain:', domain);
+    // Call GPT-5 with image analysis
+    console.log('Calling GPT-5 with image analysis...');
     
     const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}\n\nCRITICAL: Return ONLY valid JSON, no markdown or code blocks.`;
 
+    // Use GPT-4 Vision or GPT-5 with image input
     const responsePayload = {
-      model: 'gpt-5',
-      input: combinedPrompt,
-      tools: [{
-        type: 'web_search',
-        filters: { allowed_domains: [domain] }
-      }],
+      model: 'gpt-4o', // Using GPT-4o for vision capabilities
+      messages: [
+        {
+          role: 'system',
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: userPrompt,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: screenshotUrl,
+              },
+            },
+          ],
+        },
+      ],
     };
 
-    const apiResponse = await fetch('https://api.openai.com/v1/responses', {
+    const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openaiKey}`,
-        'OpenAI-Beta': 'responses=v1',
       },
       body: JSON.stringify(responsePayload),
     });
@@ -298,28 +380,15 @@ Deno.serve(async (req) => {
     }
 
     const responseData = await apiResponse.json();
-    console.log('Response received from GPT-5');
+    console.log('Response received from GPT-4o');
     
-    const output = (responseData.output || []) as Array<Record<string, unknown>>;
-    const messageItem = output.find((item) => item.type === 'message') as { content?: Array<Record<string, unknown>> } | undefined;
+    const responseContent = responseData.choices?.[0]?.message?.content;
     
-    if (!messageItem) {
-      throw new Error('No message in OpenAI response');
+    if (!responseContent) {
+      throw new Error('No content in OpenAI response');
     }
 
-    const content = (messageItem.content || []) as Array<Record<string, unknown>>;
-    const textItem = content.find((item) => item.type === 'output_text') as { text?: string } | undefined;
-    
-    if (!textItem || !textItem.text) {
-      throw new Error('No text in message content');
-    }
-
-    const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
-    
-    // Log web search calls
-    const webSearchCalls = output.filter((item) => item.type === 'web_search_call');
-    console.log(`✓ Web searches performed: ${webSearchCalls.length}`);
 
     // Parse and validate
     let parsedResponse: unknown;
@@ -333,38 +402,49 @@ Deno.serve(async (req) => {
     const extractedData = validateColorsResponse(parsedResponse);
     console.log('Color data validated');
 
-    // Insert palette colors
-    console.log(`Inserting ${extractedData.palette_colors.length} palette colors...`);
-    
-    const paletteRecords = extractedData.palette_colors.map((color) => ({
-      customer_id: customerId,
-      style_guide_id: visual_style_guide_id,
-      hex: color.hex,
-      name: color.name,
-      usage_option: color.usage_option,
-      sort_order: color.sort_order,
-      contrast_ratio_against_background: null,
-    }));
+    // Insert palette colors if visual_style_guide_id is provided
+    if (visual_style_guide_id && visualGuideCustomerId) {
+      console.log(`Inserting ${extractedData.palette_colors.length} palette colors...`);
+      
+      const paletteRecords = extractedData.palette_colors.map((color) => ({
+        customer_id: visualGuideCustomerId,
+        style_guide_id: visual_style_guide_id,
+        hex: color.hex,
+        name: color.name,
+        usage_option: color.usage_option,
+        sort_order: color.sort_order,
+        contrast_ratio_against_background: null,
+      }));
 
-    const { data: insertedColors, error: colorsError } = await supabase
-      .from('palette_colors')
-      .insert(paletteRecords)
-      .select('palette_color_id');
+      const { data: insertedColors, error: colorsError } = await supabase
+        .from('palette_colors')
+        .insert(paletteRecords)
+        .select('palette_color_id');
 
-    if (colorsError) {
-      console.error('Error inserting palette colors:', colorsError);
-      throw new Error('Failed to insert palette colors: ' + colorsError.message);
+      if (colorsError) {
+        console.error('Error inserting palette colors:', colorsError);
+        throw new Error('Failed to insert palette colors: ' + colorsError.message);
+      }
+
+      const insertedCount = insertedColors?.length || 0;
+      console.log(`✓ Inserted ${insertedCount} palette colors`);
+    } else {
+      console.log('No visual_style_guide_id provided - colors extracted but not stored');
     }
 
-    const insertedCount = insertedColors?.length || 0;
-    console.log(`✓ Inserted ${insertedCount} palette colors`);
     console.log('=== EXTRACT COLORS COMPLETE ===');
 
-    // Return 204 No Content (success, no return value)
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
+    // Return the extracted colors
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        palette_colors: extractedData.palette_colors,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
 
   } catch (error) {
     console.error('Error in extract-colors:', error);

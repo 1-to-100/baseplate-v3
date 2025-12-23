@@ -107,14 +107,44 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
           throw new Error(functionError.message || 'Failed to capture screenshot');
         }
 
-        if (functionData?.success) {
+        if (functionData?.success && functionData.capture_id) {
           toast.success('Screenshot captured successfully!');
+          
+          const captureId = functionData.capture_id;
+          
+          // Step 3: Open a new window with the capture viewer
+          const captureViewerUrl = `/source-and-snap/captures/${captureId}`;
+          window.open(captureViewerUrl, '_blank');
+          
+          // Step 4: Call extract-colors function with the capture ID
+          try {
+            console.log('Calling extract-colors function for capture:', captureId);
+            const { error: extractError } = await supabase.functions.invoke(
+              'extract-colors',
+              {
+                body: {
+                  web_screenshot_capture_id: captureId,
+                },
+              }
+            );
+
+            if (extractError) {
+              console.error('Extract colors error:', extractError);
+              // Don't throw - this is a background operation
+              toast.error(`Color extraction failed: ${extractError.message}`);
+            } else {
+              toast.success('Color extraction started');
+            }
+          } catch (extractErr) {
+            console.error('Exception calling extract-colors:', extractErr);
+            // Don't throw - this is a background operation
+          }
           
           if (onSuccess) {
             onSuccess(result.web_screenshot_capture_request_id);
           } else {
-            // Navigate to the capture detail page
-            router.push(`/source-and-snap/captures/${functionData.capture_id}`);
+            // Navigate to the captures list
+            router.push('/source-and-snap/captures');
           }
         } else {
           throw new Error(functionData?.message || 'Failed to capture screenshot');
@@ -287,10 +317,10 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
                   type="submit"
                   loading={isSubmitting || isCapturing}
                   disabled={isSubmitting || isCapturing}
-                  aria-label="Capture page"
+                  aria-label="Scan and create capture"
                   aria-busy={isSubmitting || isCapturing}
                 >
-                  {isCapturing ? 'Capturing...' : 'Capture'}
+                  {isCapturing ? 'Scanning and Creating...' : 'Scan and Create'}
                 </Button>
               </Stack>
             </Stack>
