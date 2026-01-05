@@ -24,6 +24,7 @@ import {
   useCreatePaletteColor,
   useCreateTypographyStyle,
 } from '@/app/(scalekit)/style-guide/lib/hooks';
+import { COLOR_USAGE_OPTION } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
 import { paths } from '@/paths';
 import { toast } from '@/components/core/toaster';
 import { useUserInfo } from '@/hooks/use-user-info';
@@ -286,10 +287,10 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
 
         // Create default palette colors
         const defaultColors = [
-          { hex: method === 'default' ? '#000000' : '#000000', name: 'Foreground Text', usage: 'foreground' as const, sort_order: 1 },
-          { hex: method === 'default' ? '#FFFFFF' : '#FFFFFF', name: 'Background', usage: 'background' as const, sort_order: 2 },
-          { hex: method === 'default' ? '#1976D2' : '#0000FF', name: 'Primary', usage: 'primary' as const, sort_order: 3 },
-          { hex: method === 'default' ? '#757575' : '#666666', name: 'Secondary', usage: 'secondary' as const, sort_order: 4 },
+          { hex: method === 'default' ? '#000000' : '#000000', name: 'Foreground Text', usage: COLOR_USAGE_OPTION.FOREGROUND, sort_order: 1 },
+          { hex: method === 'default' ? '#FFFFFF' : '#FFFFFF', name: 'Background', usage: COLOR_USAGE_OPTION.BACKGROUND, sort_order: 2 },
+          { hex: method === 'default' ? '#1976D2' : '#0000FF', name: 'Primary', usage: COLOR_USAGE_OPTION.PRIMARY, sort_order: 3 },
+          { hex: method === 'default' ? '#757575' : '#666666', name: 'Secondary', usage: COLOR_USAGE_OPTION.SECONDARY, sort_order: 4 },
         ];
 
         for (const color of defaultColors) {

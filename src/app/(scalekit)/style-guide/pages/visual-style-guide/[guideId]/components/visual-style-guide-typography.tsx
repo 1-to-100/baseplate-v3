@@ -3,6 +3,7 @@
 import { toast } from "@/components/core/toaster";
 import { Box, Card, Grid, Option, Select } from "@mui/joy";
 import CircularProgress from "@mui/joy/CircularProgress";
+import Input from "@mui/joy/Input";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
 import Stack from "@mui/joy/Stack";
@@ -11,15 +12,155 @@ import * as React from "react";
 
 import {
   useFontOptions,
+  usePaletteColors,
   useTypographyStyleOptions,
   useTypographyStyles,
+  useUpdatePaletteColor,
   useUpdateTypographyStyle,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
+import {
+  COLOR_USAGE_OPTION,
+  USAGE_OPTIONS,
+} from "@/app/(scalekit)/style-guide/lib/constants/palette-colors";
+import type {
+  FontOption,
+  PaletteColor,
+  TypographyStyle,
+  TypographyStyleOption,
+} from "@/app/(scalekit)/style-guide/lib/types";
+import {
+  ColorEditItem,
+  ColorPreviewItem,
+} from "./visual-style-guide-colors";
 
 type VisualStyleGuideTypographyProps = {
   guideId: string;
   isEditableView: boolean;
 };
+
+type TypographyEditItemProps = {
+  style: TypographyStyle;
+  option: TypographyStyleOption | undefined;
+  fontOptions: FontOption[] | undefined;
+  onUpdateTypography: (styleId: string, field: string, value: unknown) => Promise<void>;
+};
+
+function TypographyEditItem({
+  style,
+  option,
+  fontOptions,
+  onUpdateTypography,
+}: TypographyEditItemProps): React.JSX.Element {
+  return (
+    <ListItem
+      sx={{
+        flexDirection: { xs: "column", sm: "row" },
+        p: 0,
+      }}
+    >
+      <Stack gap={1} sx={{ width: "100%" }}>
+        <Typography level="body-sm">
+          {String(
+            option?.display_name ||
+              option?.programmatic_name ||
+              "Unknown"
+          )}
+        </Typography>
+        <Select
+          value={String(style.font_family || "")}
+          onChange={(_, newValue) => {
+            if (newValue) {
+              const selectedFont = fontOptions?.find(
+                (f) =>
+                  String(f.programmatic_name || "") ===
+                  String(newValue)
+              );
+              if (selectedFont) {
+                onUpdateTypography(
+                  String(style.typography_style_id),
+                  "font_family",
+                  String(selectedFont.programmatic_name || "")
+                );
+              }
+            }
+          }}
+          size="sm"
+          aria-label={`Select font for ${String(
+            option?.display_name || "Unknown"
+          )}`}
+        >
+          {fontOptions?.map((font) => (
+            <Option
+              key={String(font.font_option_id)}
+              value={String(font.programmatic_name || "")}
+              sx={(theme) => ({
+                fontFamily: font.programmatic_name
+                  ? `${font.programmatic_name}, ${theme.fontFamily.body}`
+                  : theme.fontFamily.body,
+              })}
+            >
+              {String(font.display_name || "")}
+            </Option>
+          ))}
+        </Select>
+      </Stack>
+    </ListItem>
+  );
+}
+
+type TypographyPreviewItemProps = {
+  style: TypographyStyle;
+  option: TypographyStyleOption | undefined;
+};
+
+function TypographyPreviewItem({
+  style,
+  option,
+}: TypographyPreviewItemProps): React.JSX.Element {
+  return (
+    <ListItem
+      sx={{
+        p: 1,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        "&:last-of-type": { borderBottom: "none" },
+      }}
+    >
+      <Grid
+        container
+        spacing={1}
+        sx={{ width: "100%", alignItems: "center" }}
+      >
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">
+            {String(
+              option?.display_name ||
+                option?.programmatic_name ||
+                "Unknown"
+            )}
+          </Typography>
+        </Grid>
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">
+            {String(style.font_family || "")}
+          </Typography>
+        </Grid>
+        <Grid xs={12} sm={4}>
+          <Typography
+            level="body-sm"
+            sx={(theme) => ({
+              fontFamily: style.font_family
+                ? `${style.font_family}, ${theme.fontFamily.body}`
+                : theme.fontFamily.body,
+            })}
+          >
+            Here how your font looks
+          </Typography>
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
 
 export default function VisualStyleGuideTypography({
   guideId,
@@ -30,8 +171,36 @@ export default function VisualStyleGuideTypography({
   const { data: typographyOptions } = useTypographyStyleOptions();
 
   const { data: fontOptions } = useFontOptions();
+  const { data: colors, isLoading: colorsLoading } = usePaletteColors();
+
+  const foregroundAndBackgroundColors = React.useMemo(() => {
+    return (colors || [])
+      .filter(
+        (c: PaletteColor) =>
+          String(c.usage_option || "") === COLOR_USAGE_OPTION.FOREGROUND ||
+          String(c.usage_option || "") === COLOR_USAGE_OPTION.BACKGROUND
+      )
+      .sort(
+        (a: PaletteColor, b: PaletteColor) =>
+          (a.sort_order as number) - (b.sort_order as number)
+      );
+  }, [colors]);
+
+  // Merged list of colors and typography styles
+  const mergedItems = React.useMemo(() => {
+    const colorItems = foregroundAndBackgroundColors.map((color) => ({
+      type: "color" as const,
+      data: color,
+    }));
+    const typographyItems = (typographyStyles || []).map((style) => ({
+      type: "typography" as const,
+      data: style,
+    }));
+    return [...colorItems, ...typographyItems];
+  }, [foregroundAndBackgroundColors, typographyStyles]);
 
   const updateTypography = useUpdateTypographyStyle();
+  const updateColor = useUpdatePaletteColor();
   const [cssSnippet, setCssSnippet] = React.useState("");
   const [showCss, setShowCss] = React.useState(false);
 
@@ -47,6 +216,22 @@ export default function VisualStyleGuideTypography({
       }
     },
     [updateTypography]
+  );
+
+  const handleUpdateColor = React.useCallback(
+    async (color: PaletteColor, field: string, value: unknown) => {
+      try {
+        const normalizedValue = field === "name" && value === "" ? null : value;
+
+        await updateColor.mutateAsync({
+          id: String(color.palette_color_id),
+          input: { [field]: normalizedValue },
+        });
+      } catch (error) {
+        toast.error("Failed to update color");
+      }
+    },
+    [updateColor]
   );
 
   const handleGenerateCss = React.useCallback(() => {
@@ -87,81 +272,53 @@ export default function VisualStyleGuideTypography({
       </Typography>
 
       {(() => {
-        if (typographyLoading) return <CircularProgress />;
+        if (typographyLoading || colorsLoading) return <CircularProgress />;
 
-        if (!typographyStyles?.length)
+        if (!mergedItems.length)
           return (
             <Typography level="body-sm" color="neutral">
               No typography styles configured yet.
             </Typography>
           );
 
-        // // edit mode
+        // Edit mode
         if (isEditableView)
           return (
             <List sx={{ p: 0, gap: 2 }}>
-              {typographyStyles.map((style) => {
-                const option = typographyOptions?.find(
-                  (opt) =>
-                    String(opt.typography_style_option_id) ===
-                    String(style.typography_style_option_id)
-                );
-                return (
-                  <ListItem
-                    key={String(style.typography_style_id)}
-                    sx={{
-                      flexDirection: { xs: "column", sm: "row" },
-                      p: 0,
-                    }}
-                  >
-                    <Stack gap={1} sx={{ width: "100%" }}>
-                      <Typography level="body-sm">
-                        {String(
-                          option?.display_name ||
-                            option?.programmatic_name ||
-                            "Unknown"
-                        )}
-                      </Typography>
-                      <Select
-                        value={String(style.font_family || "")}
-                        onChange={(_, newValue) => {
-                          if (newValue) {
-                            const selectedFont = fontOptions?.find(
-                              (f) =>
-                                String(f.programmatic_name || "") ===
-                                String(newValue)
-                            );
-                            if (selectedFont) {
-                              handleUpdateTypography(
-                                String(style.typography_style_id),
-                                "font_family",
-                                String(selectedFont.programmatic_name || "")
-                              );
-                            }
-                          }
-                        }}
-                        size="sm"
-                        aria-label={`Select font for ${String(
-                          option?.display_name || "Unknown"
-                        )}`}
-                      >
-                        {fontOptions?.map((font) => (
-                          <Option
-                            key={String(font.font_option_id)}
-                            value={String(font.programmatic_name || "")}
-                            sx={(theme) => ({
-                              fontFamily: font.programmatic_name
-                                ? `${font.programmatic_name}, ${theme.fontFamily.body}`
-                                : theme.fontFamily.body,
-                            })}
-                          >
-                            {String(font.display_name || "")}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Stack>
-                  </ListItem>
-                );
+              {mergedItems.map((item) => {
+                if (item.type === "color") {
+                  const color = item.data as PaletteColor;
+                  const colorLabel =
+                    (color.name as string) ||
+                    USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)
+                      ?.label ||
+                    "Color";
+
+                  return (
+                    <ColorEditItem
+                      key={String(color.palette_color_id)}
+                      color={color}
+                      colorLabel={colorLabel}
+                      onUpdateColor={handleUpdateColor}
+                    />
+                  );
+                } else {
+                  const style = item.data as TypographyStyle;
+                  const option = typographyOptions?.find(
+                    (opt) =>
+                      String(opt.typography_style_option_id) ===
+                      String(style.typography_style_option_id)
+                  );
+                  return (
+                    <TypographyEditItem
+                      key={String(style.typography_style_id)}
+                      style={style}
+                      option={option}
+                      fontOptions={fontOptions}
+                      onUpdateTypography={handleUpdateTypography}
+                    />
+                  );
+                }
               })}
             </List>
           );
@@ -170,56 +327,37 @@ export default function VisualStyleGuideTypography({
         return (
           <Card variant="outlined" sx={{ p: 0 }}>
             <List>
-              {typographyStyles.map((style) => {
-                const option = typographyOptions?.find(
-                  (opt) =>
-                    String(opt.typography_style_option_id) ===
-                    String(style.typography_style_option_id)
-                );
-                return (
-                  <ListItem
-                    key={String(style.typography_style_id)}
-                    sx={{
-                      p: 1,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                      "&:last-of-type": { borderBottom: "none" },
-                    }}
-                  >
-                    <Grid
-                      container
-                      spacing={1}
-                      sx={{ width: "100%", alignItems: "center" }}
-                    >
-                      <Grid xs={12} sm={4}>
-                        <Typography level="body-sm">
-                          {String(
-                            option?.display_name ||
-                              option?.programmatic_name ||
-                              "Unknown"
-                          )}
-                        </Typography>
-                      </Grid>
-                      <Grid xs={12} sm={4}>
-                        <Typography level="body-sm">
-                          {String(style.font_family || "")}
-                        </Typography>
-                      </Grid>
-                      <Grid xs={12} sm={4}>
-                        <Typography
-                          level="body-sm"
-                          sx={(theme) => ({
-                            fontFamily: style.font_family
-                              ? `${style.font_family}, ${theme.fontFamily.body}`
-                              : theme.fontFamily.body,
-                          })}
-                        >
-                          Here how your font looks
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </ListItem>
-                );
+              {mergedItems.map((item) => {
+                if (item.type === "color") {
+                  const color = item.data as PaletteColor;
+                  const colorLabel =
+                    (color.name as string) ||
+                    USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)
+                      ?.label ||
+                    "Color";
+
+                  return (
+                    <ColorPreviewItem
+                      key={String(color.palette_color_id)}
+                      color={color}
+                      colorLabel={colorLabel}
+                    />
+                  );
+                } else {
+                  const style = item.data as TypographyStyle;
+                  const option = typographyOptions?.find(
+                    (opt) =>
+                      String(opt.typography_style_option_id) ===
+                      String(style.typography_style_option_id)
+                  );
+                  return (
+                    <TypographyPreviewItem
+                      key={String(style.typography_style_id)}
+                      style={style}
+                      option={option}
+                    />
+                  );
+                }
               })}
             </List>
           </Card>

@@ -6,6 +6,10 @@ import {
   usePaletteColors,
   useUpdatePaletteColor,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
+import {
+  COLOR_USAGE_OPTION,
+  USAGE_OPTIONS,
+} from "@/app/(scalekit)/style-guide/lib/constants/palette-colors";
 import type { PaletteColor } from "@/app/(scalekit)/style-guide/lib/types";
 import { toast } from "@/components/core/toaster";
 import { Card, Grid } from "@mui/joy";
@@ -26,14 +30,6 @@ import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
 import { Plus } from "@phosphor-icons/react";
 import * as React from "react";
-
-export const USAGE_OPTIONS = [
-  { value: "primary", label: "Primary" },
-  { value: "secondary", label: "Secondary" },
-  { value: "foreground", label: "Foreground" },
-  { value: "background", label: "Background" },
-  { value: "accent", label: "Accent" },
-] as const;
 
 type ColorDraft = {
   hex: string;
@@ -159,6 +155,130 @@ function DeleteColorModal({ open, onClose, onDelete }: DeleteColorModalProps) {
   );
 }
 
+export type ColorEditItemProps = {
+  color: PaletteColor;
+  colorLabel: string;
+  onUpdateColor: (color: PaletteColor, field: string, value: unknown) => void;
+};
+
+export function ColorEditItem({ color, colorLabel, onUpdateColor }: ColorEditItemProps) {
+  return (
+    <ListItem
+      sx={{
+        flexDirection: { xs: "column", sm: "row" },
+        p: 0,
+      }}
+    >
+      <Grid
+        container
+        spacing={1}
+        sx={{ width: "100%", alignItems: "flex-end" }}
+      >
+        <Grid xs={12} sm={9}>
+          <Stack>
+            <Typography level="body-sm">{colorLabel}</Typography>
+
+            <Input
+              value={String(color.hex || "").replace(/^#/, "")}
+              onChange={(e) => {
+                const rawValue = e.target.value.trim();
+                const nextValue = rawValue.startsWith("#")
+                  ? rawValue
+                  : `#${rawValue}`;
+                onUpdateColor(color, "hex", nextValue);
+              }}
+              startDecorator="#"
+            />
+          </Stack>
+        </Grid>
+        <Grid xs={12} sm={3}>
+          {/* Color picker */}
+          <Input
+            type="color"
+            value={String(color.hex || "#3f51ff")}
+            onChange={(e) => onUpdateColor(color, "hex", e.target.value)}
+            aria-label={`Pick color for ${colorLabel}`}
+            slotProps={{
+              root: {
+                sx: {
+                  position: "relative",
+                  width: "100%",
+                  height: 36,
+                  borderRadius: "md",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  border: 1,
+                  background: String(color.hex || "#3f51ff"),
+                  borderColor: "neutral.outlinedBorder",
+                  p: 0,
+                },
+              },
+              input: {
+                sx: {
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  p: 0,
+                  border: "none",
+                  opacity: 0,
+                  cursor: "pointer",
+                },
+              },
+            }}
+          />
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
+
+export type ColorPreviewItemProps = {
+  color: PaletteColor;
+  colorLabel: string;
+};
+
+export function ColorPreviewItem({ color, colorLabel }: ColorPreviewItemProps) {
+  return (
+    <ListItem
+      sx={{
+        p: 1,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        "&:last-of-type": { borderBottom: "none" },
+      }}
+    >
+      <Grid
+        container
+        spacing={1}
+        sx={{ width: "100%", alignItems: "center" }}
+      >
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">{colorLabel}</Typography>
+        </Grid>
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">
+            {String(color.hex || "")
+              .replace(/^#/, "")
+              .toUpperCase()}
+          </Typography>
+        </Grid>
+        <Grid xs={12} sm={4}>
+          <Box
+            sx={{
+              height: 18,
+              bgcolor: String(color.hex || "#000000"),
+              borderRadius: "8px",
+              border: 1,
+              borderColor: "divider",
+            }}
+          />
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
+
 type VisualStyleGuideColorsProps = {
   guideId: string;
   isEditable: boolean;
@@ -177,7 +297,7 @@ export default function VisualStyleGuideColors({
   const [newColor, setNewColor] = React.useState<ColorDraft>({
     hex: "#000000",
     name: "",
-    usage: "primary",
+    usage: COLOR_USAGE_OPTION.PRIMARY,
   });
   const [deleteColorDialogOpen, setDeleteColorDialogOpen] =
     React.useState(false);
@@ -186,14 +306,21 @@ export default function VisualStyleGuideColors({
   );
 
   const sortedColors = React.useMemo(() => {
-    return (colors || []).sort(
-      (a: PaletteColor, b: PaletteColor) =>
-        (a.sort_order as number) - (b.sort_order as number)
-    );
+    return (colors || [])
+      .filter(
+        (c: PaletteColor) =>
+          // these colors are a part of typography styles
+          String(c.usage_option || "") !== COLOR_USAGE_OPTION.FOREGROUND &&
+          String(c.usage_option || "") !== COLOR_USAGE_OPTION.BACKGROUND
+      )
+      .sort(
+        (a: PaletteColor, b: PaletteColor) =>
+          (a.sort_order as number) - (b.sort_order as number)
+      );
   }, [colors]);
 
   const hasBackground = sortedColors.some(
-    (c: PaletteColor) => String(c.usage_option || "") === "background"
+    (c: PaletteColor) => String(c.usage_option || "") === COLOR_USAGE_OPTION.BACKGROUND
   );
 
   const handleAddColor = React.useCallback(async () => {
@@ -220,7 +347,7 @@ export default function VisualStyleGuideColors({
       });
 
       setAddColorDialogOpen(false);
-      setNewColor({ hex: "#000000", name: "", usage: "primary" });
+      setNewColor({ hex: "#000000", name: "", usage: COLOR_USAGE_OPTION.PRIMARY });
       toast.success("Color added successfully");
     } catch (error) {
       toast.error("Failed to add color");
@@ -334,78 +461,12 @@ export default function VisualStyleGuideColors({
                     "Color";
 
                   return (
-                    <ListItem
+                    <ColorEditItem
                       key={String(color.palette_color_id)}
-                      sx={{
-                        flexDirection: { xs: "column", sm: "row" },
-                        p: 0,
-                      }}
-                    >
-                      <Grid
-                        container
-                        spacing={1}
-                        sx={{ width: "100%", alignItems: "flex-end" }}
-                      >
-                        <Grid xs={12} sm={9}>
-                          <Stack>
-                            <Typography level="body-sm">
-                              {colorLabel}
-                            </Typography>
-
-                            <Input
-                              value={String(color.hex || "").replace(/^#/, "")}
-                              onChange={(e) => {
-                                const rawValue = e.target.value.trim();
-                                const nextValue = rawValue.startsWith("#")
-                                  ? rawValue
-                                  : `#${rawValue}`;
-                                handleUpdateColor(color, "hex", nextValue);
-                              }}
-                              startDecorator="#"
-                            />
-                          </Stack>
-                        </Grid>
-                        <Grid xs={12} sm={3}>
-                          {/* Color picker */}
-                          <Input
-                            type="color"
-                            value={String(color.hex || "#3f51ff")}
-                            onChange={(e) =>
-                              handleUpdateColor(color, "hex", e.target.value)
-                            }
-                            aria-label={`Pick color for ${colorLabel}`}
-                            slotProps={{
-                              root: {
-                                sx: {
-                                  position: "relative",
-                                  width: "100%",
-                                  height: 36,
-                                  borderRadius: "md",
-                                  overflow: "hidden",
-                                  cursor: "pointer",
-                                  border: 1,
-                                  background: String(color.hex || "#3f51ff"),
-                                  borderColor: "neutral.outlinedBorder",
-                                  p: 0,
-                                },
-                              },
-                              input: {
-                                sx: {
-                                  position: "absolute",
-                                  inset: 0,
-                                  width: "100%",
-                                  height: "100%",
-                                  p: 0,
-                                  border: "none",
-                                  opacity: 0,
-                                  cursor: "pointer",
-                                },
-                              },
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </ListItem>
+                      color={color}
+                      colorLabel={colorLabel}
+                      onUpdateColor={handleUpdateColor}
+                    />
                   );
                 })}
               </List>
@@ -432,43 +493,11 @@ export default function VisualStyleGuideColors({
                   "Color";
 
                 return (
-                  <ListItem
+                  <ColorPreviewItem
                     key={String(color.palette_color_id)}
-                    sx={{
-                      p: 1,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                      "&:last-of-type": { borderBottom: "none" },
-                    }}
-                  >
-                    <Grid
-                      container
-                      spacing={1}
-                      sx={{ width: "100%", alignItems: "center" }}
-                    >
-                      <Grid xs={12} sm={4}>
-                        <Typography level="body-sm">{colorLabel}</Typography>
-                      </Grid>
-                      <Grid xs={12} sm={4}>
-                        <Typography level="body-sm">
-                          {String(color.hex || "")
-                            .replace(/^#/, "")
-                            .toUpperCase()}
-                        </Typography>
-                      </Grid>
-                      <Grid xs={12} sm={4}>
-                        <Box
-                          sx={{
-                            height: 18,
-                            bgcolor: String(color.hex || "#000000"),
-                            borderRadius: "8px",
-                            border: 1,
-                            borderColor: "divider",
-                          }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </ListItem>
+                    color={color}
+                    colorLabel={colorLabel}
+                  />
                 );
               })}
             </List>
