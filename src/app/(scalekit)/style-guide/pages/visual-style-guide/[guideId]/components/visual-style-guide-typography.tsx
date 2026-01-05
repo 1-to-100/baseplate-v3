@@ -22,6 +22,7 @@ import {
   COLOR_USAGE_OPTION,
   USAGE_OPTIONS,
 } from "@/app/(scalekit)/style-guide/lib/constants/palette-colors";
+import { FONT_SIZE_OPTIONS } from "@/app/(scalekit)/style-guide/lib/constants/typography";
 import type {
   FontOption,
   PaletteColor,
@@ -100,6 +101,31 @@ function TypographyEditItem({
               })}
             >
               {String(font.display_name || "")}
+            </Option>
+          ))}
+        </Select>
+        <Select
+          value={String(style.font_size_px || 16)}
+          onChange={(_, newValue) => {
+            if (newValue) {
+              const fontSize = parseInt(String(newValue), 10);
+              if (!isNaN(fontSize) && fontSize > 0) {
+                onUpdateTypography(
+                  String(style.typography_style_id),
+                  "font_size_px",
+                  fontSize
+                );
+              }
+            }
+          }}
+          size="sm"
+          aria-label={`Select font size for ${String(
+            option?.display_name || "Unknown"
+          )}`}
+        >
+          {FONT_SIZE_OPTIONS.map((size) => (
+            <Option key={size} value={String(size)}>
+              {String(size)}px
             </Option>
           ))}
         </Select>
