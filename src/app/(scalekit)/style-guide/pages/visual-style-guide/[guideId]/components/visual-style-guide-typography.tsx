@@ -169,6 +169,7 @@ function TypographyPreviewItem({
         <Grid xs={12} sm={4}>
           <Typography level="body-sm">
             {String(style.font_family || "")}
+            {style.font_family  && style.font_size_px ? `, ${String(style.font_size_px)}px` : ""}
           </Typography>
         </Grid>
         <Grid xs={12} sm={4}>
@@ -178,6 +179,7 @@ function TypographyPreviewItem({
               fontFamily: style.font_family
                 ? `${style.font_family}, ${theme.fontFamily.body}`
                 : theme.fontFamily.body,
+              fontSize: style.font_size_px ? `${String(style.font_size_px)}px` : undefined,
             })}
           >
             Here how your font looks
