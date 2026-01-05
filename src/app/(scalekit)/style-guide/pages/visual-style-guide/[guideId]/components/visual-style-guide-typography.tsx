@@ -192,12 +192,20 @@ export default function VisualStyleGuideTypography({
       type: "color" as const,
       data: color,
     }));
-    const typographyItems = (typographyStyles || []).map((style) => ({
-      type: "typography" as const,
-      data: style,
-    }));
+    const typographyItems = (typographyStyles || [])
+      .map((style) => ({
+        type: "typography" as const,
+        data: style,
+        sortOrder: typographyOptions?.find(
+          (opt) =>
+            String(opt.typography_style_option_id) ===
+            String(style.typography_style_option_id)
+        )?.sort_order ?? Infinity,
+      }))
+      .sort((a, b) => (a.sortOrder as number) - (b.sortOrder as number))
+      .map(({ sortOrder, ...item }) => item);
     return [...colorItems, ...typographyItems];
-  }, [foregroundAndBackgroundColors, typographyStyles]);
+  }, [foregroundAndBackgroundColors, typographyStyles, typographyOptions]);
 
   const updateTypography = useUpdateTypographyStyle();
   const updateColor = useUpdatePaletteColor();
