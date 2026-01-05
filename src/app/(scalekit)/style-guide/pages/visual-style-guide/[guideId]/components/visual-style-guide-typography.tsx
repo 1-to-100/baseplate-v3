@@ -149,6 +149,11 @@ export default function VisualStyleGuideTypography({
                           <Option
                             key={String(font.font_option_id)}
                             value={String(font.programmatic_name || "")}
+                            sx={(theme) => ({
+                              fontFamily: font.programmatic_name
+                                ? `${font.programmatic_name}, ${theme.fontFamily.body}`
+                                : theme.fontFamily.body,
+                            })}
                           >
                             {String(font.display_name || "")}
                           </Option>
