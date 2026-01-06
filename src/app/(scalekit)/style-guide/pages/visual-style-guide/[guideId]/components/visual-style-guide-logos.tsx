@@ -25,7 +25,7 @@ import {
   useUpdateLogoAsset,
   useUpdateVisualStyleGuide,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
-import type { LogoAsset } from "@/app/(scalekit)/style-guide/lib/types";
+import type { LogoAsset, LogoTypeOption } from "@/app/(scalekit)/style-guide/lib/types";
 import Image from "next/image";
 import { Logo } from "@/components/core/logo";
 
@@ -140,6 +140,178 @@ export function DefaultLogoSelector({
   );
 }
 
+type LogoEditItemProps = {
+  logoType: LogoTypeOption;
+  logo: LogoAsset | undefined;
+  onDeleteClick: () => void;
+};
+
+function LogoEditItem({
+  logoType,
+  logo,
+  onDeleteClick,
+}: LogoEditItemProps): React.JSX.Element {
+  return (
+    <ListItem
+      key={String(logoType.logo_type_option_id)}
+      sx={{ p: 0 }}
+    >
+      <Box sx={{ width: "100%" }}>
+        <Typography level="body-sm" sx={{ mb: 1 }}>
+          {String(logoType.display_name || "")}
+        </Typography>
+        <Grid container spacing={1} sx={{ width: "100%" }}>
+          <Grid
+            xs={12}
+            sm={4}
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+              sx={{
+                height: "72px",
+                position: "relative",
+                backgroundColor: "background.level2",
+                borderRadius: "var(--joy-radius-sm)",
+                py: 1.5,
+                px: 2,
+              }}
+            >
+              {logo?.file_url || logo?.file_blob ? (
+                <Image
+                  src={String(
+                    logo?.file_url || logo?.file_blob || ""
+                  )}
+                  alt={String(logoType.display_name || "")}
+                  fill
+                  style={{ objectFit: "contain" }}
+                />
+              ) : (
+                <FileImage size={32} />
+              )}
+            </Stack>
+          </Grid>
+          <Grid
+            xs={12}
+            sm={8}
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ height: "100%", width: "100%" }}
+            >
+              <Typography level="body-sm">
+                {/* @TODO: Add actual filename from the api response */}
+                {(logo as { filename?: string })?.filename
+                  ? String((logo as { filename?: string }).filename)
+                  : "imagename.png"}
+              </Typography>
+              <IconButton
+                variant="plain"
+                size="sm"
+                color="danger"
+                sx={{ p: 1 }}
+                onClick={onDeleteClick}
+              >
+                <Trash />
+              </IconButton>
+            </Stack>
+          </Grid>
+        </Grid>
+      </Box>
+    </ListItem>
+  );
+}
+
+type LogoPreviewItemProps = {
+  logoType: LogoTypeOption;
+  logo: LogoAsset | undefined;
+};
+
+function LogoPreviewItem({
+  logoType,
+  logo,
+}: LogoPreviewItemProps): React.JSX.Element {
+  return (
+    <ListItem
+      key={String(logoType.logo_type_option_id)}
+      sx={{
+        p: 1,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        "&:last-of-type": { borderBottom: "none" },
+      }}
+    >
+      <Grid
+        container
+        spacing={1}
+        sx={{ width: "100%", alignItems: "flex-start" }}
+      >
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">
+            {String(logoType.display_name || "")}
+          </Typography>
+          <Button
+            variant="plain"
+            size="sm"
+            startDecorator={<Download />}
+            sx={{ p: 1 }}
+          >
+            Download
+          </Button>
+        </Grid>
+        <Grid xs={12} sm={4}>
+          <Typography level="body-sm">
+            {/* @TODO: Add description to the api response */}
+            {String(
+              (logo as { description?: string })?.description ||
+                "Primary logo for websites, marketing materials, print collateral"
+            )}
+          </Typography>
+        </Grid>
+        <Grid
+          xs={12}
+          sm={4}
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Stack
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            sx={{
+              backgroundColor: "background.level2",
+              borderRadius: "var(--joy-radius-sm)",
+              height: "72px",
+              position: "relative",
+              py: 1.5,
+              px: 2,
+            }}
+          >
+            {logo?.file_url || logo?.file_blob ? (
+              <Image
+                src={String(
+                  logo?.file_url || logo?.file_blob || ""
+                )}
+                alt={String(logoType.display_name || "")}
+                fill
+                style={{ objectFit: "contain" }}
+              />
+            ) : (
+              <FileImage size={32} />
+            )}
+          </Stack>
+        </Grid>
+      </Grid>
+    </ListItem>
+  );
+}
+
 export default function VisualStyleGuideLogos({
   guideId,
   isEditableView,
@@ -206,7 +378,7 @@ export default function VisualStyleGuideLogos({
           const logoTypeOptionId =
             selectedLogoTypeId || logoTypes?.[0]?.logo_type_option_id || "";
 
-          if (!logoTypeOptionId) {
+          if (!logoTypeOptionId) {  
             toast.error("No logo types available to upload against.");
             return;
           }
@@ -353,86 +525,19 @@ export default function VisualStyleGuideLogos({
                     (l) =>
                       l.logo_type_option_id === logoType.logo_type_option_id
                   );
-                  const isDefault = logo
-                    ? String(defaultLogoId || "") === String(logo.logo_asset_id)
-                    : false;
 
                   return (
-                    <ListItem
+                    <LogoEditItem
                       key={String(logoType.logo_type_option_id)}
-                      sx={{ p: 0 }}
-                    >
-                      <Box sx={{ width: "100%" }}>
-                        <Typography level="body-sm" sx={{ mb: 1 }}>
-                          {String(logoType.display_name || "")}
-                        </Typography>
-                        <Grid container spacing={1} sx={{ width: "100%" }}>
-                          <Grid
-                            xs={12}
-                            sm={4}
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Stack
-                              direction="row"
-                              justifyContent="center"
-                              alignItems="center"
-                              sx={{
-                                height: "72px",
-                                position: "relative",
-                                backgroundColor: "background.level2",
-                                borderRadius: "var(--joy-radius-sm)",
-                                py: 1.5,
-                                px: 2,
-                              }}
-                            >
-                              {logo?.file_url || logo?.file_blob ? (
-                                <Image
-                                  src={String(
-                                    logo?.file_url || logo?.file_blob || ""
-                                  )}
-                                  alt={String(logoType.display_name || "")}
-                                  fill
-                                  style={{ objectFit: "contain" }}
-                                />
-                              ) : (
-                                <FileImage size={32} />
-                              )}
-                            </Stack>
-                          </Grid>
-                          <Grid
-                            xs={12}
-                            sm={8}
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <Stack
-                              direction="row"
-                              justifyContent="space-between"
-                              alignItems="center"
-                              sx={{ height: "100%", width: "100%" }}
-                            >
-                              <Typography level="body-sm">
-                                {/* @TODO: Add actual filename from the api response */}
-                                {logo?.filename
-                                  ? String(logo.filename)
-                                  : "imagename.png"}
-                              </Typography>
-                              <IconButton
-                                variant="plain"
-                                size="sm"
-                                color="danger"
-                                sx={{ p: 1 }}
-                                onClick={() => {
-                                  setDeleteLogoDialogOpen(true);
-                                }}
-                              >
-                                <Trash />
-                              </IconButton>
-                            </Stack>
-                          </Grid>
-                        </Grid>
-                      </Box>
-                    </ListItem>
+                      logoType={logoType}
+                      logo={logo}
+                      onDeleteClick={() => {
+                        if (logo) {
+                          setLogoToDelete(logo);
+                        }
+                        setDeleteLogoDialogOpen(true);
+                      }}
+                    />
                   );
                 })}
               </List>
@@ -447,82 +552,13 @@ export default function VisualStyleGuideLogos({
                     (l) =>
                       l.logo_type_option_id === logoType.logo_type_option_id
                   );
-                  const isDefault = logo
-                    ? String(defaultLogoId || "") === String(logo.logo_asset_id)
-                    : false;
 
                   return (
-                    <ListItem
+                    <LogoPreviewItem
                       key={String(logoType.logo_type_option_id)}
-                      sx={{
-                        p: 1,
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                        "&:last-of-type": { borderBottom: "none" },
-                      }}
-                    >
-                      <Grid
-                        container
-                        spacing={1}
-                        sx={{ width: "100%", alignItems: "flex-start" }}
-                      >
-                        <Grid xs={12} sm={4}>
-                          <Typography level="body-sm">
-                            {String(logoType.display_name || "")}
-                          </Typography>
-                          <Button
-                            variant="plain"
-                            size="sm"
-                            startDecorator={<Download />}
-                            sx={{ p: 1 }}
-                          >
-                            Download
-                          </Button>
-                        </Grid>
-                        <Grid xs={12} sm={4}>
-                          <Typography level="body-sm">
-                            {/* @TODO: Add description to the api response */}
-                            {String(
-                              logo?.description ||
-                                "Primary logo for websites, marketing materials, print collateral"
-                            )}
-                          </Typography>
-                        </Grid>
-                        <Grid
-                          xs={12}
-                          sm={4}
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          <Stack
-                            direction="row"
-                            justifyContent="center"
-                            alignItems="center"
-                            sx={{
-                              backgroundColor: "background.level2",
-                              borderRadius: "var(--joy-radius-sm)",
-                              height: "72px",
-                              position: "relative",
-                              py: 1.5,
-                              px: 2,
-                            }}
-                          >
-                            {logo?.file_url || logo?.file_blob ? (
-                              <Image
-                                src={String(
-                                  logo?.file_url || logo?.file_blob || ""
-                                )}
-                                alt={String(logoType.display_name || "")}
-                                fill
-                                style={{ objectFit: "contain" }}
-                              />
-                            ) : (
-                              <FileImage size={32} />
-                            )}
-                          </Stack>
-                        </Grid>
-                      </Grid>
-                    </ListItem>
+                      logoType={logoType}
+                      logo={logo}
+                    />
                   );
                 })}
               </List>
