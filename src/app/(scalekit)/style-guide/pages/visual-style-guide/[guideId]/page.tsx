@@ -1,26 +1,68 @@
-"use client";
+'use client';
 
 import {
   useVisualStyleGuide,
-  useSystemRole
-} from "@/app/(scalekit)/style-guide/lib/hooks";
-import { scanVisualStyleGuide } from "@/app/(scalekit)/style-guide/lib/utils/scan-visual-style-guide";
-import { useCreateCaptureRequest } from "@/app/(scalekit)/source-and-snap/lib/hooks";
-import { toast } from "@/components/core/toaster";
-import { Grid, Sheet } from "@mui/joy";
-import Alert from "@mui/joy/Alert";
-import Box from "@mui/joy/Box";
-import CircularProgress from "@mui/joy/CircularProgress";
-import Stack from "@mui/joy/Stack";
-import { useParams, useRouter } from "next/navigation";
-import * as React from "react";
-import { createClient } from "@/lib/supabase/client";
-import VisualStyleGuideActivityTracker from "./components/visual-style-guide-activity-tracker";
-import VisualStyleGuideBreadcrumbs from "./components/visual-style-guide-breadcrumbs";
-import VisualStyleGuideColors from "./components/visual-style-guide-colors";
-import VisualStyleGuideHeader from "./components/visual-style-guide-header";
-import VisualStyleGuideLogos from "./components/visual-style-guide-logos";
-import VisualStyleGuideTypography from "./components/visual-style-guide-typography";
+  useSystemRole,
+  usePaletteColors,
+  useTypographyStyles,
+  useLogoAssets,
+} from '@/app/(scalekit)/style-guide/lib/hooks';
+import { COLOR_USAGE_OPTION } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
+import { scanVisualStyleGuide } from '@/app/(scalekit)/style-guide/lib/utils/scan-visual-style-guide';
+import { useCreateCaptureRequest } from '@/app/(scalekit)/source-and-snap/lib/hooks';
+import { toast } from '@/components/core/toaster';
+import { Grid, Sheet } from '@mui/joy';
+import Alert from '@mui/joy/Alert';
+import Button from '@mui/joy/Button';
+import Box from '@mui/joy/Box';
+import CircularProgress from '@mui/joy/CircularProgress';
+import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
+import { useParams, useRouter } from 'next/navigation';
+import * as React from 'react';
+import { createClient } from '@/lib/supabase/client';
+import VisualStyleGuideActivityTracker from './components/visual-style-guide-activity-tracker';
+import VisualStyleGuideBreadcrumbs from './components/visual-style-guide-breadcrumbs';
+import VisualStyleGuideColors from './components/visual-style-guide-colors';
+import VisualStyleGuideHeader from './components/visual-style-guide-header';
+import VisualStyleGuideLogos from './components/visual-style-guide-logos';
+import VisualStyleGuideTypography from './components/visual-style-guide-typography';
+import { Plus } from '@phosphor-icons/react';
+
+function EmptyVisualStyleGuideState({ onEditMood }: { onEditMood: () => void }): React.JSX.Element {
+  return (
+    <Stack spacing={4}>
+      <Alert variant='soft' color='neutral' sx={{ alignItems: 'flex-start' }}>
+        <Stack spacing={0.5}>
+          <Typography level='title-sm'>
+            We couldn&apos;t detect or extract your fonts and colors.
+          </Typography>
+          <Typography level='body-sm' color='neutral'>
+            Default options have been applied that match your style, but you can edit and customize
+            them in Edit mode.
+          </Typography>
+        </Stack>
+      </Alert>
+
+      <Stack spacing={3} alignItems='center' textAlign='center' sx={{ py: 4 }}>
+        <Box>
+          <Typography level='h2' sx={{ display: 'block' }}>
+            Don&apos;t have any logos,
+          </Typography>
+          <Typography level='h2' sx={{ display: 'block' }}>
+            typography and colors yet.
+          </Typography>
+        </Box>
+        <Typography level='body-md' sx={{ display: 'block' }}>
+          Go to Edit mode to upload your own or generate new ones.
+        </Typography>
+        <Button variant='soft' size='lg' startDecorator={<Plus />} onClick={onEditMood}>
+          Go to Edit Mode
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}
 
 export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const params = useParams();
@@ -33,6 +75,50 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const { data: guide, isLoading, refetch } = useVisualStyleGuide(guideId);
   const { data: isSystemRole } = useSystemRole();
   const createCaptureRequest = useCreateCaptureRequest();
+  const { data: paletteColors, isLoading: colorsLoading } = usePaletteColors();
+  const { data: typographyStyles, isLoading: typographyLoading } = useTypographyStyles(guideId);
+  const { data: logoAssets, isLoading: logosLoading } = useLogoAssets(guideId);
+
+  const guideColors = React.useMemo(
+    () => (paletteColors || []).filter((color) => String(color.style_guide_id || '') === guideId),
+    [paletteColors, guideId]
+  );
+
+  const colorSchemeColors = React.useMemo(
+    () =>
+      guideColors.filter(
+        (color) =>
+          String(color.usage_option || '') !== COLOR_USAGE_OPTION.FOREGROUND &&
+          String(color.usage_option || '') !== COLOR_USAGE_OPTION.BACKGROUND
+      ),
+    [guideColors]
+  );
+
+  const typographyColors = React.useMemo(
+    () =>
+      guideColors.filter(
+        (color) =>
+          String(color.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
+          String(color.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND
+      ),
+    [guideColors]
+  );
+
+  const hasColorSchemeColors = colorSchemeColors.length > 0;
+  const hasLogos = (logoAssets?.length || 0) > 0;
+  const hasTypographyItems = typographyColors.length + (typographyStyles?.length || 0) > 0;
+
+  const showEmptyState =
+    !colorsLoading &&
+    !typographyLoading &&
+    !logosLoading &&
+    !hasColorSchemeColors &&
+    !hasTypographyItems &&
+    !hasLogos;
+
+  const handleGoToEditMood = React.useCallback(() => {
+    setIsEditableView(true);
+  }, []);
 
   // // Show all colors for the customer, not just for this guide
   // const sortedColors = React.useMemo(() => {
@@ -43,12 +129,12 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   // }, [colors]);
 
   const handlePublish = React.useCallback(() => {
-    toast.info("Publish functionality coming soon");
+    toast.info('Publish functionality coming soon');
   }, []);
 
   const handleRefresh = React.useCallback(async () => {
     if (!guide || !guide.customer_id) {
-      toast.error("Unable to refresh: guide data not available");
+      toast.error('Unable to refresh: guide data not available');
       return;
     }
 
@@ -56,7 +142,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
 
     try {
       const supabase = createClient();
-      
+
       // Get customer email_domain to build URL
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
@@ -101,7 +187,9 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
       );
 
       if (result.errors.length > 0) {
-        toast.warning(`Visual style guide refreshed, but some extractions failed. Check the guide for details.`);
+        toast.warning(
+          `Visual style guide refreshed, but some extractions failed. Check the guide for details.`
+        );
       } else {
         toast.success('Visual style guide refreshed successfully!');
       }
@@ -118,7 +206,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
         <CircularProgress />
       </Box>
     );
@@ -127,17 +215,17 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   if (!guide) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="danger">Style guide not found</Alert>
+        <Alert color='danger'>Style guide not found</Alert>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: "var(--Content-padding)" }}>
+    <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <Stack spacing={1}>
           <VisualStyleGuideHeader
-            name={String(guide.name || "")}
+            name={String(guide.name || '')}
             description={guide.description ? String(guide.description) : null}
             onPublish={handlePublish}
             isEditableView={isEditableView}
@@ -146,11 +234,11 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
             isRefreshing={isRefreshing}
             showRefresh={isSystemRole === true}
           />
-          <VisualStyleGuideBreadcrumbs guideName={String(guide.name || "")} />
+          <VisualStyleGuideBreadcrumbs guideName={String(guide.name || '')} />
         </Stack>
         <Sheet
           sx={{
-            borderTop: "1px solid var(--joy-palette-divider)",
+            borderTop: '1px solid var(--joy-palette-divider)',
             p: 2,
           }}
         >
@@ -159,31 +247,25 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
               xs={12}
               md={9}
               sx={{
-                borderRight: { md: "1px solid var(--joy-palette-divider)" },
+                borderRight: { md: '1px solid var(--joy-palette-divider)' },
                 pr: { md: 2.5 },
               }}
             >
-              <Stack spacing={4.5}>
-                <VisualStyleGuideColors
-                  guideId={guideId}
-                  isEditable={isEditableView}
-                />
-                <VisualStyleGuideTypography
-                  guideId={guideId}
-                  isEditableView={isEditableView}
-                />
-                <VisualStyleGuideLogos
-                  guideId={guideId}
-                  isEditableView={isEditableView}
-                  defaultLogoAssetId={
-                    guide.default_logo_asset_id as
-                      | string
-                      | number
-                      | null
-                      | undefined
-                  }
-                />
-              </Stack>
+              {showEmptyState ? (
+                <EmptyVisualStyleGuideState onEditMood={handleGoToEditMood} />
+              ) : (
+                <Stack spacing={4.5}>
+                  <VisualStyleGuideColors guideId={guideId} isEditable={isEditableView} />
+                  <VisualStyleGuideTypography guideId={guideId} isEditableView={isEditableView} />
+                  <VisualStyleGuideLogos
+                    guideId={guideId}
+                    isEditableView={isEditableView}
+                    defaultLogoAssetId={
+                      guide.default_logo_asset_id as string | number | null | undefined
+                    }
+                  />
+                </Stack>
+              )}
             </Grid>
 
             <Grid xs={12} md={3}>
