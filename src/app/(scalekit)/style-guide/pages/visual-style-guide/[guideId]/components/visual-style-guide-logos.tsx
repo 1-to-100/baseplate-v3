@@ -75,6 +75,7 @@ type LogoEditItemProps = {
   logoType: LogoTypeOption;
   logo: LogoAsset | undefined;
   onDeleteClick: () => void;
+  onImageError?: (logo: LogoAsset) => void;
 };
 
 type LogoEditItemPropsWithUpload = LogoEditItemProps & {
@@ -88,6 +89,7 @@ function LogoEditItem({
   onDeleteClick,
   onUploadClick,
   onDownloadClick,
+  onImageError,
 }: LogoEditItemPropsWithUpload): React.JSX.Element {
   const getImageSrc = () => {
     if (logo?.file_url) return logo.file_url;
@@ -138,6 +140,7 @@ function LogoEditItem({
                   fill
                   style={{ objectFit: "contain" }}
                   unoptimized
+                  onError={() => (logo ? onImageError?.(logo) : undefined)}
                 />
               ) : (
                 <FileImage size={32} />
@@ -208,12 +211,14 @@ type LogoPreviewItemProps = {
   logoType: LogoTypeOption;
   logo: LogoAsset | undefined;
   onDownloadClick: (logo: LogoAsset) => void;
+  onImageError?: (logo: LogoAsset) => void;
 };
 
 function LogoPreviewItem({
   logoType,
   logo,
   onDownloadClick,
+  onImageError,
 }: LogoPreviewItemProps): React.JSX.Element {
   const getImageSrc = () => {
     if (logo?.file_url) return logo.file_url;
@@ -293,6 +298,7 @@ function LogoPreviewItem({
                 fill
                 style={{ objectFit: "contain" }}
                 unoptimized
+                onError={() => (logo ? onImageError?.(logo) : undefined)}
               />
             ) : (
               <FileImage size={32} />
@@ -374,7 +380,10 @@ export default function VisualStyleGuideLogos({
     return storagePath;
   };
 
-  const getSignedUrl = async (storagePath: string): Promise<string> => {
+  const SIGNED_URL_TTL_SECONDS = 6 * 60 * 60; // 6 hours to reduce churn
+
+  const getSignedUrl = React.useCallback(
+    async (storagePath: string): Promise<string> => {
     // Validate and clean the storage path
     const cleanPath = storagePath.trim().startsWith('/') ? storagePath.trim().slice(1) : storagePath.trim();
     
@@ -384,14 +393,16 @@ export default function VisualStyleGuideLogos({
 
     const { data, error } = await supabase.storage
       .from("logos")
-      .createSignedUrl(cleanPath, 3600); // 1 hour expiry
+      .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS); // 6 hour expiry
 
     if (error || !data?.signedUrl) {
       throw new Error(`Failed to create signed URL: ${error?.message || "Unknown error"}`);
     }
 
     return data.signedUrl;
-  };
+    },
+    [supabase]
+  );
 
   const handleFileSelect = React.useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -605,12 +616,68 @@ export default function VisualStyleGuideLogos({
     }
   }, [logoToDelete, deleteLogo, supabase]);
 
+  const refreshLogoUrl = React.useCallback(
+    async (logo: LogoAsset) => {
+      if (!logo.storage_path) return;
+      
+      try {
+        const signedUrl = await getSignedUrl(logo.storage_path);
+        const cacheBusted = `${signedUrl}${signedUrl.includes("?") ? "&" : "?"}ts=${Date.now()}`;
+        setLogoImageUrls((prev) => ({
+          ...prev,
+          [String(logo.logo_asset_id)]: cacheBusted,
+        }));
+      } catch (error) {
+        console.error("Failed to refresh logo URL:", error);
+      }
+    },
+    [getSignedUrl]
+  );
+
+
+  const addCacheBust = React.useCallback((url: string): string => {
+    return `${url}${url.includes("?") ? "&" : "?"}ts=${Date.now()}`;
+  }, []);
 
   // Generate signed URLs for logos with storage_path
   const [logoImageUrls, setLogoImageUrls] = React.useState<Record<string, string>>({});
   const [isGeneratingUrls, setIsGeneratingUrls] = React.useState(false);
+  const SIGNED_URL_REFRESH_MS = 30 * 60 * 1000; // refresh every 30 minutes to stay well ahead of 6h expiry
 
   React.useEffect(() => {
+    let isCancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const buildUrlForLogo = async (
+      logo: LogoAsset
+    ): Promise<{ logoId: string; url: string | null }> => {
+      const logoId = String(logo.logo_asset_id);
+
+      // Priority: file_url > storage_path (signed URL) > file_blob
+      if (logo.file_url) {
+        return { logoId, url: logo.file_url };
+      }
+
+      if (logo.storage_path) {
+        try {
+          const signedUrl = await getSignedUrl(logo.storage_path);
+          return { logoId, url: signedUrl };
+        } catch (error) {
+          console.warn(`Failed to generate signed URL for logo ${logoId}:`, {
+            error: error instanceof Error ? error.message : String(error),
+            storagePath: logo.storage_path,
+          });
+        }
+        return { logoId, url: null };
+      }
+
+      if (logo.file_blob) {
+        return { logoId, url: logo.file_blob };
+      }
+
+      return { logoId, url: null };
+    };
+
     const generateImageUrls = async () => {
       if (!logos || logos.length === 0) {
         setLogoImageUrls({});
@@ -620,70 +687,32 @@ export default function VisualStyleGuideLogos({
       setIsGeneratingUrls(true);
       
       // Process logos in parallel for better performance
-      const urlPromises = logos.map(async (logo) => {
-        const logoId = String(logo.logo_asset_id);
-        
-        // Priority: file_url > storage_path (generate signed URL) > file_blob
-        if (logo.file_url) {
-          return { logoId, url: logo.file_url };
-        }
-        
-        if (logo.storage_path) {
-          try {
-            // Validate and clean the storage path
-            const storagePath = logo.storage_path.trim();
-            if (!storagePath) {
-              console.warn(`Empty storage_path for logo ${logoId}`);
-              return { logoId, url: null };
-            }
-
-            // Remove leading slash if present (Supabase storage paths shouldn't start with /)
-            const cleanPath = storagePath.startsWith('/') ? storagePath.slice(1) : storagePath;
-            
-            const { data, error } = await supabase.storage
-              .from("logos")
-              .createSignedUrl(cleanPath, 3600); // 1 hour expiry
-            
-            if (!error && data?.signedUrl) {
-              return { logoId, url: data.signedUrl };
-            } else {
-              console.warn(`Failed to generate signed URL for logo ${logoId}:`, {
-                error: error?.message,
-                storagePath: cleanPath,
-                originalPath: logo.storage_path
-              });
-            }
-          } catch (error) {
-            console.error(`Failed to generate URL for logo ${logoId}:`, {
-              error: error instanceof Error ? error.message : String(error),
-              storagePath: logo.storage_path
-            });
-          }
-          return { logoId, url: null };
-        }
-        
-        if (logo.file_blob) {
-          return { logoId, url: logo.file_blob };
-        }
-        
-        return { logoId, url: null };
-      });
+      const urlPromises = logos.map(buildUrlForLogo);
 
       const results = await Promise.all(urlPromises);
       const urlMap: Record<string, string> = {};
       
       for (const { logoId, url } of results) {
         if (url) {
-          urlMap[logoId] = url;
+          urlMap[logoId] = addCacheBust(url);
         }
       }
       
-      setLogoImageUrls(urlMap);
-      setIsGeneratingUrls(false);
+      if (!isCancelled) {
+        setLogoImageUrls(urlMap);
+        setIsGeneratingUrls(false);
+      }
     };
 
     generateImageUrls();
-  }, [logos, supabase]);
+    // Refresh signed URLs periodically so they don't expire in the UI
+    intervalId = setInterval(generateImageUrls, SIGNED_URL_REFRESH_MS);
+
+    return () => {
+      isCancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [logos, supabase, addCacheBust, getSignedUrl]);
 
   return (
     <>
@@ -747,18 +776,19 @@ export default function VisualStyleGuideLogos({
 
                   return (
                     <Box key={String(logoType.logo_type_option_id)}>
-                      <LogoEditItem
-                        logoType={logoType}
-                        logo={logoWithUrl}
-                        onDeleteClick={() => {
-                          if (logo) {
-                            setLogoToDelete(logo);
-                          }
-                          setDeleteLogoDialogOpen(true);
-                        }}
-                        onUploadClick={handleUploadClick}
-                        onDownloadClick={handleDownloadLogo}
-                      />
+                  <LogoEditItem
+                    logoType={logoType}
+                    logo={logoWithUrl}
+                    onDeleteClick={() => {
+                      if (logo) {
+                        setLogoToDelete(logo);
+                      }
+                      setDeleteLogoDialogOpen(true);
+                    }}
+                    onUploadClick={handleUploadClick}
+                    onDownloadClick={handleDownloadLogo}
+                    onImageError={(l) => refreshLogoUrl(l)}
+                  />
                       {uploadingLogoId === String(logoType.logo_type_option_id) && (
                         <Box sx={{ display: "flex", justifyContent: "center", py: 1 }}>
                           <CircularProgress size="sm" />
@@ -801,6 +831,7 @@ export default function VisualStyleGuideLogos({
                       logoType={logoType}
                       logo={logoWithUrl}
                       onDownloadClick={handleDownloadLogo}
+                      onImageError={(l) => refreshLogoUrl(l)}
                     />
                   );
                 })}
