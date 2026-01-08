@@ -179,7 +179,6 @@ function ColorPalettePresetSelector({
         sx={{
           justifyContent: 'space-between',
           alignItems: 'center',
-          mb: 2,
         }}
       >
         <Typography level='body-sm' color='neutral'>
