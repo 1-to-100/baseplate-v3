@@ -193,18 +193,18 @@ function ColorPalettePresetSelector({
       <Grid container spacing={2}>
         {COLOR_PALETTE_PRESETS.map((preset) => (
           <Grid key={preset.id} xs={6} sm={4}>
-            <Box
+            <Stack
+              direction='row'
               onClick={() => onSelectPreset(preset.colors)}
               sx={{
-                display: 'flex',
                 gap: 0.5,
                 p: 0.5,
                 borderRadius: 'lg',
                 cursor: 'pointer',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                border: '2px solid transparent',
+                transition: 'border-color 0.15s ease',
                 '&:hover': {
-                  transform: 'scale(1.02)',
-                  boxShadow: 'sm',
+                  borderColor: 'primary.outlinedColor',
                 },
               }}
             >
@@ -219,7 +219,7 @@ function ColorPalettePresetSelector({
                   }}
                 />
               ))}
-            </Box>
+            </Stack>
           </Grid>
         ))}
       </Grid>
@@ -521,7 +521,7 @@ export default function VisualStyleGuideColors({
                 startDecorator={<Plus />}
                 sx={{ mt: 2.5 }}
               >
-                Add Color
+                Add Additional Color
               </Button>
             </>
           );
