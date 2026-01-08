@@ -6,12 +6,12 @@ import { CommonPage } from '@pages/common.page';
 import { NavPagePage } from '@pages/navPage.page';
 import { RoleSettingsPage } from '@pages/roleSettings.page';
 import { DocumentationPage } from '@pages/documentation.page';
-import { generateArticleText, randomLetters } from '@utils/fakers';
-import { ApiMethods } from '@apiPage/methods';
+import { randomLetters } from '@utils/fakers';
+// import { ApiMethods } from '@apiPage/methods';
 
 // TODO - functionality has been changed
 test.describe.skip('Create new role', () => {
-  let apiMethods: ApiMethods;
+  // let apiMethods: ApiMethods;
   let loginPage: LoginPage;
   let commonPage: CommonPage;
   let navPagePage: NavPagePage;
@@ -19,23 +19,23 @@ test.describe.skip('Create new role', () => {
   let documentationPage: DocumentationPage;
 
   const admin = ConfigData.users.admin;
-  const userWithAllPermissions = ConfigData.users.userWithPermissions;
+  // const userWithAllPermissions = ConfigData.users.userWithPermissions;
   const user = ConfigData.users.userForRoles;
   const addRolePage = appData.addRolePageData;
   const addRoleModal = appData.addRolePageData.addRole;
   const userManagementTable = appData.userManagementTable;
   const userManagementData = appData.userManagementPageData;
   const editUserData = appData.userManagementPageData.editUserData;
-  const addCategoryModal = appData.documentationPageData.categoryModal;
+  // const addCategoryModal = appData.documentationPageData.categoryModal;
   const addRoleErrors = appData.addRoleErrors;
-  const categoryName = 'Test Category ' + Date.now();
-  const articleTitle = 'Test Article ' + Date.now();
-  const articleText = generateArticleText();
-  const subCategory = 'Subcategory for automation';
+  // const categoryName = 'Test Category ' + Date.now();
+  // const articleTitle = 'Test Article ' + Date.now();
+  // const articleText = generateArticleText();
+  // const subCategory = 'Subcategory for automation';
 
-  test.beforeEach(async ({ page, request }) => {
+  test.beforeEach(async ({ page }) => {
     await test.step('Login to app as admin', async () => {
-      apiMethods = new ApiMethods(request);
+      // apiMethods = new ApiMethods(request);
       loginPage = new LoginPage(page);
       commonPage = new CommonPage(page);
       navPagePage = new NavPagePage(page);
@@ -145,24 +145,24 @@ test.describe.skip('Create new role', () => {
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-      }
-    });
+    // await test.step('Create documentation if empty', async () => {
+    //   const categoryCount = await documentationPage.categoryCards.count();
+    //   if (categoryCount === 0) {
+    //     const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
+    //     const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
+    //     const categoryDataJson = await categoryData.json();
+    //     await expect(
+    //       await apiMethods.createArticle(
+    //         apiKey,
+    //         categoryDataJson.id,
+    //         articleText,
+    //         appData.statuses.published,
+    //         subCategory,
+    //         articleTitle,
+    //       ),
+    //     ).toBe(201);
+    //   }
+    // });
 
     await test.step('Sign out', async () => {
       await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
@@ -350,24 +350,24 @@ test.describe.skip('Create new role', () => {
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-      }
-    });
+    // await test.step('Create documentation if empty', async () => {
+    //   const categoryCount = await documentationPage.categoryCards.count();
+    //   if (categoryCount === 0) {
+    //     const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
+    //     const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
+    //     const categoryDataJson = await categoryData.json();
+    //     await expect(
+    //       await apiMethods.createArticle(
+    //         apiKey,
+    //         categoryDataJson.id,
+    //         articleText,
+    //         appData.statuses.published,
+    //         subCategory,
+    //         articleTitle,
+    //       ),
+    //     ).toBe(201);
+    //   }
+    // });
 
     await test.step('Sign out', async () => {
       await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
@@ -555,24 +555,24 @@ test.describe.skip('Create new role', () => {
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-      }
-    });
+    // await test.step('Create documentation if empty', async () => {
+    //   const categoryCount = await documentationPage.categoryCards.count();
+    //   if (categoryCount === 0) {
+    //     const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
+    //     const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
+    //     const categoryDataJson = await categoryData.json();
+    //     await expect(
+    //       await apiMethods.createArticle(
+    //         apiKey,
+    //         categoryDataJson.id,
+    //         articleText,
+    //         appData.statuses.published,
+    //         subCategory,
+    //         articleTitle,
+    //       ),
+    //     ).toBe(201);
+    //   }
+    // });
 
     await test.step('Sign out', async () => {
       await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);
@@ -767,24 +767,24 @@ test.describe.skip('Create new role', () => {
       await expect(commonPage.pageName).toHaveText(appData.pages.documentation);
     });
 
-    await test.step('Create documentation if empty', async () => {
-      const categoryCount = await documentationPage.categoryCards.count();
-      if (categoryCount === 0) {
-        const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
-        const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
-        const categoryDataJson = await categoryData.json();
-        await expect(
-          await apiMethods.createArticle(
-            apiKey,
-            categoryDataJson.id,
-            articleText,
-            appData.statuses.published,
-            subCategory,
-            articleTitle,
-          ),
-        ).toBe(201);
-      }
-    });
+    // await test.step('Create documentation if empty', async () => {
+    //   const categoryCount = await documentationPage.categoryCards.count();
+    //   if (categoryCount === 0) {
+    //     const apiKey = await apiMethods.getAccessToken(userWithAllPermissions);
+    //     const categoryData = await apiMethods.createCategory(apiKey, addCategoryModal.addIcons.api, categoryName, subCategory);
+    //     const categoryDataJson = await categoryData.json();
+    //     await expect(
+    //       await apiMethods.createArticle(
+    //         apiKey,
+    //         categoryDataJson.id,
+    //         articleText,
+    //         appData.statuses.published,
+    //         subCategory,
+    //         articleTitle,
+    //       ),
+    //     ).toBe(201);
+    //   }
+    // });
 
     await test.step('Sign out', async () => {
       await navPagePage.clickUserMenuButton(appData.userMenuButtons.signOut);

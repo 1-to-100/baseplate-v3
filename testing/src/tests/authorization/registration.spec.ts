@@ -93,6 +93,12 @@ test.describe('Registration', () => {
       await expect(commonPage.pageName).toHaveText(appData.pages.userManagement);
     });
 
+    await test.step('Select customer', async () => {
+      const customer = emailHelper.email.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
+    });
+
     await test.step('Search new user', async () => {
       await navPagePage.searchValue(emailHelper.email);
       await commonPage.waitForLoader();

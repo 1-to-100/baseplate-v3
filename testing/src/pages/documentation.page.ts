@@ -222,6 +222,7 @@ export class DocumentationPage {
       appData.documentationPageData.deleteCategoryModal.categoryDeletedAlert,
     );
     await this.page.reload(); // TODO - bug
+    await this.page.waitForLoadState('networkidle');
     await this.moreButtonForCategoryByName(categoryName).waitFor({ state: 'hidden', timeout: 15000 });
   }
 }

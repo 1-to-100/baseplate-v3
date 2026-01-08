@@ -73,13 +73,18 @@ test.describe('Create single user', () => {
       await commonPage.fillFieldWithPlaceholder(editUserData.lastName, newUser.lastName);
       await commonPage.fillFieldWithPlaceholder(editUserData.email, emailHelper.email);
       customer = emailHelper.email.split('@').pop()!;
-      await commonPage.selectValueInDropdown(editUserData.customer, customer);
       await commonPage.selectValueInDropdown(editUserData.role, role.manager);
     });
 
     await test.step('Save user', async () => {
       await commonPage.clickButtonInModal(userManagementData.saveButton);
       await expect(commonPage.popUp).toHaveText(userManagementData.usersCreatedAlert);
+    });
+
+    await test.step('Select customer', async () => {
+      const customer = emailHelper.email.split('@').pop()!;
+      await navPagePage.selectCustomer(customer);
+      await commonPage.waitForLoader();
     });
 
     await test.step('Verify user was added', async () => {
