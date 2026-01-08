@@ -13,7 +13,7 @@ import ModalClose from "@mui/joy/ModalClose";
 import ModalDialog from "@mui/joy/ModalDialog";
 import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
-import { Download, FileImage, Trash, Upload } from "@phosphor-icons/react";
+import { Download, FileImage, Plus, Trash, Upload } from '@phosphor-icons/react';
 import * as React from "react";
 import {
   useCreateLogoAsset,
@@ -25,6 +25,122 @@ import {
 import type { LogoAsset, LogoTypeOption } from "@/app/(scalekit)/style-guide/lib/types";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+
+// Logo preset options enum
+enum LogoPresetStyle {
+  SHIELD = "shield",
+  STAR = "star",
+  CIRCLE = "circle",
+}
+
+// @TODO: need to add the actual logo image instead of the svg
+const LOGO_PRESETS = [
+  {
+    id: "logo-preset-1",
+    style: LogoPresetStyle.SHIELD,
+    name: "Logoipsum",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L4 6V12C4 16.42 7.4 20.74 12 22C16.6 20.74 20 16.42 20 12V6L12 2ZM12 11.99H18C17.47 15.11 15.17 17.84 12 18.92V12H6V7.07L12 4.18V11.99Z" fill="#4361EE"/>
+      </svg>
+    ),
+  },
+  {
+    id: "logo-preset-2",
+    style: LogoPresetStyle.STAR,
+    name: "LOGOIPSUM",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="#4361EE"/>
+      </svg>
+    ),
+  },
+  {
+    id: "logo-preset-3",
+    style: LogoPresetStyle.CIRCLE,
+    name: "Logoipsum",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="#4361EE"/>
+        <circle cx="12" cy="12" r="4" fill="white"/>
+        <circle cx="8" cy="8" r="2" fill="white"/>
+        <circle cx="16" cy="8" r="2" fill="white"/>
+      </svg>
+    ),
+  },
+] as const;
+
+type LogoPresetSelectorProps = {
+  onSelectPreset: (style: LogoPresetStyle) => void;
+  onGenerateWithAI: () => void;
+};
+
+function LogoPresetSelector({
+  onSelectPreset,
+  onGenerateWithAI,
+}: LogoPresetSelectorProps) {
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography level="body-sm" color="neutral">
+          Select from recommendation or generate your one
+        </Typography>
+        <Button
+          variant="plain"
+          color="primary"
+          startDecorator={<Plus />}
+          onClick={onGenerateWithAI}
+        >
+          Generate Logo with AI
+        </Button>
+      </Stack>
+
+      <Grid container spacing={2} >
+        {LOGO_PRESETS.map((preset) => (
+          <Grid key={preset.id} xs={12} sm={4}>
+            <Card
+              variant="soft"
+              onClick={() => onSelectPreset(preset.style)}
+              sx={{
+                cursor: "pointer",
+                textAlign: "center",
+                py: 3,
+                px: 2,
+                border: "2px solid transparent",
+                borderColor: "neutral.outlinedBorder",
+                transition: "border-color 0.15s ease",
+                "&:hover": {
+                  borderColor: "primary.outlinedColor",
+                },
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
+                {preset.icon}
+                <Typography
+                  level="title-md"
+                  sx={{
+                    color: "#4361EE",
+                    fontWeight: preset.style === LogoPresetStyle.STAR ? 700 : 600,
+                    letterSpacing: preset.style === LogoPresetStyle.STAR ? "0.05em" : "normal",
+                    textTransform: preset.style === LogoPresetStyle.STAR ? "uppercase" : "none",
+                  }}
+                >
+                  {preset.name}
+                </Typography>
+              </Stack>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+}
 
 type VisualStyleGuideLogosProps = {
   guideId: string;
@@ -714,6 +830,18 @@ export default function VisualStyleGuideLogos({
     };
   }, [logos, supabase, addCacheBust, getSignedUrl]);
 
+  // @TODO: need to implement the logo preset selection
+  const handleSelectLogoPreset = React.useCallback((style: LogoPresetStyle) => {
+    // For now, just show a toast - actual implementation would generate/apply the logo preset
+    toast.success(`Selected ${style} logo preset`);
+  }, []);
+
+  // @TODO: need to implement the logo generation with AI
+  const handleGenerateWithAI = React.useCallback(() => {
+    // For now, just show a toast - actual implementation would open AI generation modal
+    toast.info("AI logo generation feature coming soon");
+  }, []);
+
   return (
     <>
       <input
@@ -738,16 +866,25 @@ export default function VisualStyleGuideLogos({
         {(() => {
           if (logosLoading) return <CircularProgress />;
 
-          if (!logos?.length)
+          if (!logos?.length) {
+            if (isEditableView) {
+              return (
+                <LogoPresetSelector
+                  onSelectPreset={handleSelectLogoPreset}
+                  onGenerateWithAI={handleGenerateWithAI}
+                />
+              );
+            }
             return (
               <Typography
                 level="body-sm"
                 color="neutral"
                 sx={{ textAlign: "center", py: 2 }}
               >
-                No logos added yet.{" "}
+                No logos added yet.
               </Typography>
             );
+          }
 
           // edit mode
           if (isEditableView)
