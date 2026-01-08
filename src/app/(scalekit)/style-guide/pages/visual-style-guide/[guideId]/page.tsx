@@ -251,7 +251,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
                 pr: { md: 2.5 },
               }}
             >
-              {showEmptyState ? (
+              {showEmptyState && !isEditableView ? (
                 <EmptyVisualStyleGuideState onEditMood={handleGoToEditMood} />
               ) : (
                 <Stack spacing={4.5}>
