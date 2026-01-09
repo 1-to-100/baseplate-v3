@@ -162,6 +162,18 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
   );
 }
 
+function hasActiveChildOrGrandchild(items: NavItemConfig[] | undefined, pathname: string): boolean {
+  if (!items?.length) return false;
+
+  return items.some((item) => {
+    if (item.href && pathname.startsWith(item.href)) {
+      return true;
+    }
+
+    return Boolean(item.items?.some((subItem) => subItem.href && pathname.startsWith(subItem.href)));
+  });
+}
+
 function renderNavGroups({
   items,
   pathname,
@@ -169,34 +181,56 @@ function renderNavGroups({
   items: NavItemConfig[];
   pathname: string;
 }): React.JSX.Element {
-  const children = items.reduce(
-    (acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-      acc.push(
-        <ListItem
-          key={curr.key}
-          sx={{
-            '--ListItem-paddingRight': 0,
-            '--ListItem-paddingLeft': 0,
-            '--ListItem-paddingY': 0,
-          }}
-        >
-          <ListItemContent>
-            {curr.title ? (
-              <Box sx={{ py: '12px' }}>
-                <Typography fontSize='xs' fontWeight='lg' textColor='neutral.500'>
-                  {/* {curr.title} */}
-                </Typography>
-              </Box>
-            ) : null}
-            {renderNavItems({ depth: 0, pathname, items: curr.items })}
-          </ListItemContent>
-        </ListItem>
-      );
+  const children = items.flatMap((curr): React.ReactNode[] => {
+    // If the group has an icon, render it as an expandable menu item instead of a header
+    if (curr.icon && curr.items) {
+      const forceOpen = hasActiveChildOrGrandchild(curr.items, pathname);
+      const { key, ...navItemProps } = curr;
 
-      return acc;
-    },
-    []
-  );
+      return [
+        <NavItem depth={0} forceOpen={forceOpen} pathname={pathname} {...navItemProps} key={key}>
+          {renderNavItems({
+            depth: 1,
+            pathname,
+            items: curr.items,
+          })}
+        </NavItem>,
+      ];
+    }
+
+    // Support top-level single-link items (not groups)
+    if (curr.href && !curr.items) {
+      const { items: _items, key, ...navItemProps } = curr;
+      return [<NavItem depth={0} pathname={pathname} {...navItemProps} key={key} />];
+    }
+
+    // Render as a group header
+    return [
+      <ListItem
+        key={curr.key}
+        sx={{
+          '--ListItem-paddingRight': 0,
+          '--ListItem-paddingLeft': 0,
+          '--ListItem-paddingY': 0,
+        }}
+      >
+        <ListItemContent>
+          {curr.title ? (
+            <Box sx={{ py: '12px' }}>
+              <Typography fontSize='16px' fontWeight='lg' textColor='common.black'>
+                {curr.title}
+              </Typography>
+            </Box>
+          ) : null}
+          {renderNavItems({
+            depth: 0,
+            pathname,
+            items: curr.items,
+          })}
+        </ListItemContent>
+      </ListItem>,
+    ];
+  });
 
   return <List sx={{ '--List-padding': 0 }}>{children}</List>;
 }

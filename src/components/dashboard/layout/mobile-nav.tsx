@@ -171,34 +171,36 @@ function renderNavGroups({
   onClose?: () => void;
   pathname: string;
 }): React.JSX.Element {
-  const children = items.reduce(
-    (acc: React.ReactNode[], curr: NavItemConfig): React.ReactNode[] => {
-      acc.push(
-        <ListItem
-          key={curr.key}
-          sx={{
-            '--ListItem-paddingRight': 0,
-            '--ListItem-paddingLeft': 0,
-            '--ListItem-paddingY': 0,
-          }}
-        >
-          <ListItemContent>
-            {curr.title ? (
-              <Box sx={{ py: '12px' }}>
-                <Typography fontWeight='lg' textColor='neutral.500'>
-                  {curr.title}
-                </Typography>
-              </Box>
-            ) : null}
-            {renderNavItems({ depth: 0, items: curr.items, pathname, onClose })}
-          </ListItemContent>
-        </ListItem>
-      );
+  const children = items.flatMap((curr): React.ReactNode[] => {
+    // Support top-level single-link items (not groups)
+    if (curr.href && !curr.items) {
+      const { items: _items, key, ...navItemProps } = curr;
+      return [<NavItem depth={0} key={key} onClose={onClose} pathname={pathname} {...navItemProps} />];
+    }
 
-      return acc;
-    },
-    []
-  );
+    // Render as a group header
+    return [
+      <ListItem
+        key={curr.key}
+        sx={{
+          '--ListItem-paddingRight': 0,
+          '--ListItem-paddingLeft': 0,
+          '--ListItem-paddingY': 0,
+        }}
+      >
+        <ListItemContent>
+          {curr.title ? (
+            <Box sx={{ py: '12px' }}>
+              <Typography fontWeight='lg' textColor='neutral.500'>
+                {curr.title}
+              </Typography>
+            </Box>
+          ) : null}
+          {renderNavItems({ depth: 0, items: curr.items, pathname, onClose })}
+        </ListItemContent>
+      </ListItem>,
+    ];
+  });
 
   return <List sx={{ '--List-padding': 0 }}>{children}</List>;
 }
