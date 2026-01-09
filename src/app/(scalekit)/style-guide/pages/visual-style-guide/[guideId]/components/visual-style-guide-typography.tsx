@@ -12,6 +12,7 @@ import { Plus } from '@phosphor-icons/react';
 import * as React from 'react';
 
 import {
+  useCreateTypographyStyle,
   useFontOptions,
   usePaletteColors,
   useTypographyStyleOptions,
@@ -23,7 +24,12 @@ import {
   COLOR_USAGE_OPTION,
   USAGE_OPTIONS,
 } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
-import { FONT_SIZE_OPTIONS } from '@/app/(scalekit)/style-guide/lib/constants/typography';
+import {
+  FONT_SIZE_OPTIONS,
+  getDefaultFontSize,
+  getDefaultFontWeight,
+  getDefaultLineHeight,
+} from '@/app/(scalekit)/style-guide/lib/constants/typography';
 import type {
   FontOption,
   PaletteColor,
@@ -145,6 +151,12 @@ function TypographyEditItem({
   fontOptions,
   onUpdateTypography,
 }: TypographyEditItemProps): React.JSX.Element {
+  // Check if current font_family exists in fontOptions
+  const currentFontFamily = String(style.font_family || '');
+  const fontExistsInOptions = fontOptions?.some(
+    (f) => String(f.programmatic_name || '') === currentFontFamily
+  );
+
   return (
     <ListItem
       sx={{
@@ -157,24 +169,31 @@ function TypographyEditItem({
           {String(option?.display_name || option?.programmatic_name || 'Unknown')}
         </Typography>
         <Select
-          value={String(style.font_family || '')}
+          value={currentFontFamily}
           onChange={(_, newValue) => {
             if (newValue) {
-              const selectedFont = fontOptions?.find(
-                (f) => String(f.programmatic_name || '') === String(newValue)
+              onUpdateTypography(
+                String(style.typography_style_id),
+                'font_family',
+                String(newValue)
               );
-              if (selectedFont) {
-                onUpdateTypography(
-                  String(style.typography_style_id),
-                  'font_family',
-                  String(selectedFont.programmatic_name || '')
-                );
-              }
             }
           }}
           size='sm'
           aria-label={`Select font for ${String(option?.display_name || 'Unknown')}`}
         >
+          {/* Show current font as option if it's not in the fontOptions list */}
+          {currentFontFamily && !fontExistsInOptions && (
+            <Option
+              key={`current-${currentFontFamily}`}
+              value={currentFontFamily}
+              sx={(theme) => ({
+                fontFamily: `${currentFontFamily}, ${theme.fontFamily.body}`,
+              })}
+            >
+              {currentFontFamily}
+            </Option>
+          )}
           {fontOptions?.map((font) => (
             <Option
               key={String(font.font_option_id)}
@@ -301,10 +320,9 @@ export default function VisualStyleGuideTypography({
     return [...colorItems, ...typographyItems];
   }, [foregroundAndBackgroundColors, typographyStyles, typographyOptions]);
 
+  const createTypographyStyle = useCreateTypographyStyle();
   const updateTypography = useUpdateTypographyStyle();
   const updateColor = useUpdatePaletteColor();
-  const [cssSnippet, setCssSnippet] = React.useState('');
-  const [showCss, setShowCss] = React.useState(false);
 
   const handleUpdateTypography = React.useCallback(
     async (styleId: string, field: string, value: unknown) => {
@@ -336,40 +354,46 @@ export default function VisualStyleGuideTypography({
     [updateColor]
   );
 
-  const handleGenerateCss = React.useCallback(() => {
-    const generated =
-      typographyStyles
-        ?.map((style) => {
-          const option = typographyOptions?.find(
-            (opt) =>
-              String(opt.typography_style_option_id) === String(style.typography_style_option_id)
+  
+  const handleSelectTypographyPreset = React.useCallback(
+    async (fontFamily: string) => {
+      try {
+        // Update all typography styles with the selected font family
+        if (typographyStyles && typographyStyles.length > 0) {
+          await Promise.all(
+            typographyStyles.map((style) =>
+              handleUpdateTypography(String(style.typography_style_id), 'font_family', fontFamily)
+            )
           );
-          return `.${String(option?.programmatic_name || 'style')} {
-  font-family: ${String(style.font_family || '')}${
-    style.font_fallbacks ? `, ${String(style.font_fallbacks)}` : ''
-  };
-  font-size: ${String(style.font_size_px || 0)}px;
-  ${style.line_height ? `line-height: ${String(style.line_height)};` : ''}
-  ${style.font_weight ? `font-weight: ${String(style.font_weight)};` : ''}
-  ${style.color ? `color: ${String(style.color)};` : ''}
-}`;
-        })
-        .join('\n\n') || '';
-
-    setCssSnippet(generated);
-    setShowCss(true);
-    toast.success('CSS snippet generated');
-  }, [typographyStyles, typographyOptions]);
-
-  const handleCopyCss = React.useCallback(() => {
-    navigator.clipboard.writeText(cssSnippet);
-    toast.success('CSS copied to clipboard');
-  }, [cssSnippet]);
-
-  const handleSelectTypographyPreset = React.useCallback((fontFamily: string) => {
-    // For now, just show a toast - actual implementation would depend on how typography styles are created
-    toast.success(`Selected ${fontFamily} typography preset`);
-  }, []);
+          toast.success(`Typography updated to ${fontFamily}`);
+        } else if (typographyOptions && typographyOptions.length > 0) {
+          // Create typography styles for each typography option with the selected font
+          for (const typographyOption of typographyOptions) {
+            await createTypographyStyle.mutateAsync({
+              visual_style_guide_id: guideId,
+              typography_style_option_id: typographyOption.typography_style_option_id,
+              font_option_id: null,
+              font_family: fontFamily,
+              font_fallbacks: null,
+              font_size_px: getDefaultFontSize(String(typographyOption.programmatic_name || '')),
+              line_height: getDefaultLineHeight(String(typographyOption.programmatic_name || '')),
+              font_weight: getDefaultFontWeight(String(typographyOption.programmatic_name || '')),
+              color: null,
+              css_snippet: null,
+              licensing_notes: null,
+              created_by_user_id: null,
+            });
+          }
+          toast.success(`Typography styles created with ${fontFamily}`);
+        } else {
+          toast.error('No typography options available');
+        }
+      } catch (error) {
+        toast.error('Failed to update typography');
+      }
+    },
+    [typographyStyles, typographyOptions, guideId, handleUpdateTypography, createTypographyStyle]
+  );
 
   const handleAddCustomTypography = React.useCallback(() => {
     // For now, just show a toast - actual implementation would open a modal or navigate

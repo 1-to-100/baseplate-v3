@@ -25,6 +25,11 @@ import {
   useCreateTypographyStyle,
 } from '@/app/(scalekit)/style-guide/lib/hooks';
 import { COLOR_USAGE_OPTION } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
+import {
+  getDefaultFontSize,
+  getDefaultFontWeight,
+  getDefaultLineHeight,
+} from '@/app/(scalekit)/style-guide/lib/constants/typography';
 import { paths } from '@/paths';
 import { toast } from '@/components/core/toaster';
 import { useUserInfo } from '@/hooks/use-user-info';
@@ -319,48 +324,6 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
       setIsCreating(false);
     }
   }, [name, method, createGuide, logoTypeOptions, typographyOptions, router, createLogoAsset, createPaletteColor, createTypographyStyle]);
-
-  const getDefaultFontSize = (programmaticName: string): number => {
-    const sizes: Record<string, number> = {
-      h1: 48,
-      h2: 36,
-      h3: 24,
-      h4: 20,
-      h5: 18,
-      h6: 16,
-      body: 16,
-      list: 16,
-    };
-    return sizes[programmaticName.toLowerCase()] || 16;
-  };
-
-  const getDefaultLineHeight = (programmaticName: string): number | null => {
-    const heights: Record<string, number> = {
-      h1: 1.2,
-      h2: 1.3,
-      h3: 1.4,
-      h4: 1.4,
-      h5: 1.5,
-      h6: 1.5,
-      body: 1.5,
-      list: 1.5,
-    };
-    return heights[programmaticName.toLowerCase()] || null;
-  };
-
-  const getDefaultFontWeight = (programmaticName: string): string | null => {
-    const weights: Record<string, string> = {
-      h1: '700',
-      h2: '700',
-      h3: '600',
-      h4: '600',
-      h5: '500',
-      h6: '500',
-      body: '400',
-      list: '400',
-    };
-    return weights[programmaticName.toLowerCase()] || null;
-  };
 
   if (step === 'crawling' || step === 'creating') {
     return (
