@@ -438,7 +438,6 @@ export default function VisualStyleGuideColors({
     }
   }, [colorToDelete, deleteColor]);
 
-
   const handleSelectPreset = React.useCallback(
     async (presetColors: readonly string[]) => {
       try {
@@ -477,27 +476,15 @@ export default function VisualStyleGuideColors({
       {(() => {
         if (colorsLoading) return <CircularProgress />;
 
-        if (!sortedColors?.length) {
-          if (isEditable) {
-            return (
-              <ColorPalettePresetSelector
-                onSelectPreset={handleSelectPreset}
-                onAddCustom={() => setAddColorDialogOpen(true)}
-              />
-            );
-          }
-          return (
-            <Typography level='body-sm' color='neutral' sx={{ textAlign: 'center', py: 2 }}>
-              No colors added yet. Colors will appear here.
-            </Typography>
-          );
-        }
-
         // edit mode
         if (isEditable)
           return (
             <>
-              <List sx={{ p: 0, gap: 2 }}>
+              <ColorPalettePresetSelector
+                onSelectPreset={handleSelectPreset}
+                onAddCustom={() => setAddColorDialogOpen(true)}
+              />
+              <List sx={{ p: 0, gap: 2, mt: 2 }}>
                 {sortedColors.map((color) => {
                   const colorLabel =
                     (color.name as string) ||

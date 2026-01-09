@@ -354,7 +354,6 @@ export default function VisualStyleGuideTypography({
     [updateColor]
   );
 
-  
   const handleSelectTypographyPreset = React.useCallback(
     async (fontFamily: string) => {
       try {
@@ -409,61 +408,51 @@ export default function VisualStyleGuideTypography({
       {(() => {
         if (typographyLoading || colorsLoading) return <CircularProgress />;
 
-        if (!mergedItems.length) {
-          if (isEditableView) {
-            return (
+        // Edit mode
+        if (isEditableView)
+          return (
+            <>
               <TypographyPresetSelector
                 onSelectPreset={handleSelectTypographyPreset}
                 onAddCustom={handleAddCustomTypography}
               />
-            );
-          }
-          return (
-            <Typography level='body-sm' color='neutral'>
-              No typography styles configured yet.
-            </Typography>
-          );
-        }
+              <List sx={{ p: 0, gap: 2, mt: 2 }}>
+                {mergedItems.map((item) => {
+                  if (item.type === 'color') {
+                    const color = item.data as PaletteColor;
+                    const colorLabel =
+                      (color.name as string) ||
+                      USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
+                      'Color';
 
-        // Edit mode
-        if (isEditableView)
-          return (
-            <List sx={{ p: 0, gap: 2 }}>
-              {mergedItems.map((item) => {
-                if (item.type === 'color') {
-                  const color = item.data as PaletteColor;
-                  const colorLabel =
-                    (color.name as string) ||
-                    USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
-                    'Color';
-
-                  return (
-                    <ColorEditItem
-                      key={String(color.palette_color_id)}
-                      color={color}
-                      colorLabel={colorLabel}
-                      onUpdateColor={handleUpdateColor}
-                    />
-                  );
-                } else {
-                  const style = item.data as TypographyStyle;
-                  const option = typographyOptions?.find(
-                    (opt) =>
-                      String(opt.typography_style_option_id) ===
-                      String(style.typography_style_option_id)
-                  );
-                  return (
-                    <TypographyEditItem
-                      key={String(style.typography_style_id)}
-                      style={style}
-                      option={option}
-                      fontOptions={fontOptions}
-                      onUpdateTypography={handleUpdateTypography}
-                    />
-                  );
-                }
-              })}
-            </List>
+                    return (
+                      <ColorEditItem
+                        key={String(color.palette_color_id)}
+                        color={color}
+                        colorLabel={colorLabel}
+                        onUpdateColor={handleUpdateColor}
+                      />
+                    );
+                  } else {
+                    const style = item.data as TypographyStyle;
+                    const option = typographyOptions?.find(
+                      (opt) =>
+                        String(opt.typography_style_option_id) ===
+                        String(style.typography_style_option_id)
+                    );
+                    return (
+                      <TypographyEditItem
+                        key={String(style.typography_style_id)}
+                        style={style}
+                        option={option}
+                        fontOptions={fontOptions}
+                        onUpdateTypography={handleUpdateTypography}
+                      />
+                    );
+                  }
+                })}
+              </List>
+            </>
           );
 
         // Preview
