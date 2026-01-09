@@ -239,7 +239,7 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
       const guideId = guideData.visual_style_guide_id;
 
       // For blank or default guides, create initial assets
-      if (method === 'blank' || method === 'default') {
+      if (method === 'default') {
         // Create logo asset entries for each logo type
         if (logoTypeOptions && logoTypeOptions.length > 0) {
           for (const logoType of logoTypeOptions) {
