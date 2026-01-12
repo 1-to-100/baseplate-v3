@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 interface RequestBody {
@@ -78,22 +78,22 @@ function sanitizeUuid(value: string | undefined): string | null {
 
 function buildCompanyUrl(emailDomain: string | null): string {
   if (!emailDomain) {
-    throw new Error("Customer does not have an email domain configured.");
+    throw new Error('Customer does not have an email domain configured.');
   }
 
   const trimmed = emailDomain.trim();
   if (!trimmed) {
-    throw new Error("Customer email domain is empty.");
+    throw new Error('Customer email domain is empty.');
   }
 
-  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
-  const sanitized = withoutProtocol.replace(/\/+$/, "");
+  const withoutProtocol = trimmed.replace(/^https?:\/\//i, '');
+  const sanitized = withoutProtocol.replace(/\/+$/, '');
 
   if (!sanitized) {
-    throw new Error("Unable to derive company URL from email domain.");
+    throw new Error('Unable to derive company URL from email domain.');
   }
 
-  const normalized = sanitized.toLowerCase().startsWith("www.")
+  const normalized = sanitized.toLowerCase().startsWith('www.')
     ? sanitized.toLowerCase()
     : `www.${sanitized.toLowerCase()}`;
 
@@ -109,17 +109,18 @@ function createStrategyPrompt(args: {
 }): string {
   const { companyUrl, customerName, customerInfo } = args;
 
-  const contextLines: string[] = [
-    `- Company Name: ${customerName}`,
-    `- Website: ${companyUrl}`,
-  ];
+  const contextLines: string[] = [`- Company Name: ${customerName}`, `- Website: ${companyUrl}`];
 
   if (customerInfo) {
     if (customerInfo.tagline) contextLines.push(`- Tagline: ${customerInfo.tagline}`);
-    if (customerInfo.one_sentence_summary) contextLines.push(`- One Sentence Summary: ${customerInfo.one_sentence_summary}`);
-    if (customerInfo.problem_overview) contextLines.push(`- Problem Overview: ${customerInfo.problem_overview}`);
-    if (customerInfo.solution_overview) contextLines.push(`- Solution Overview: ${customerInfo.solution_overview}`);
-    if (customerInfo.content_authoring_prompt) contextLines.push(`- Content Prompt: ${customerInfo.content_authoring_prompt}`);
+    if (customerInfo.one_sentence_summary)
+      contextLines.push(`- One Sentence Summary: ${customerInfo.one_sentence_summary}`);
+    if (customerInfo.problem_overview)
+      contextLines.push(`- Problem Overview: ${customerInfo.problem_overview}`);
+    if (customerInfo.solution_overview)
+      contextLines.push(`- Solution Overview: ${customerInfo.solution_overview}`);
+    if (customerInfo.content_authoring_prompt)
+      contextLines.push(`- Content Prompt: ${customerInfo.content_authoring_prompt}`);
   }
 
   return `# ROLE
@@ -129,7 +130,7 @@ You are generating the initial strategic foundation for a real company. You must
 ${companyUrl}
 
 # COMPANY CONTEXT
-${contextLines.join("\n")}
+${contextLines.join('\n')}
 
 # REQUIRED OUTPUT
 Return ONLY valid JSON (no markdown, commentary, or code fences) with the following structure:
@@ -209,89 +210,108 @@ Vision is about capturing a long-term, ambitious goal that the organization is s
 }
 
 function normalizeMultiline(value: string): string {
-  return value.replace(/\r\n/g, "\n").trim().replace(/\n{3,}/g, "\n\n");
+  return value
+    .replace(/\r\n/g, '\n')
+    .trim()
+    .replace(/\n{3,}/g, '\n\n');
 }
 
 function stripMarkdownLinks(value: string): string {
-  return value.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+  return value.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
 }
 
 function coerceText(value: unknown): string {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return stripMarkdownLinks(value).trim();
   }
 
   if (Array.isArray(value)) {
     return value
       .flatMap((entry) =>
-        typeof entry === "string"
+        typeof entry === 'string'
           ? stripMarkdownLinks(entry).trim()
-          : typeof entry === "object" && entry !== null && "text" in entry
+          : typeof entry === 'object' && entry !== null && 'text' in entry
             ? coerceText((entry as Record<string, unknown>).text)
-            : [],
+            : []
       )
       .filter((segment) => segment.length > 0)
-      .join("\n\n")
+      .join('\n\n')
       .trim();
   }
 
-  return "";
+  return '';
 }
 
-function validateStrategyResponse(payload: unknown, defaultCompanyName: string): StrategyGenerationResult {
+function validateStrategyResponse(
+  payload: unknown,
+  defaultCompanyName: string
+): StrategyGenerationResult {
   // Default stock values
-  const defaultMission = "To deliver exceptional value and innovation that empowers our customers and transforms our industry.";
+  const defaultMission =
+    'To deliver exceptional value and innovation that empowers our customers and transforms our industry.';
   const defaultMissionDescription = `Our mission drives everything we do. It guides our product development, shapes our customer relationships, and defines our commitment to excellence.\n\nWe see our mission reflected in every interaction with our customers, where we strive to understand their needs and exceed their expectations. Our team embodies this mission through dedication, creativity, and a relentless focus on delivering results.\n\nThis mission is not just words—it's the foundation of our culture and the compass that directs our strategic decisions. It ensures that as we grow, we remain true to our core purpose and continue to make a meaningful impact.`;
-  
-  const defaultVision = "To become the leading force in our industry, recognized for innovation, customer success, and transformative impact on how businesses operate and grow.";
+
+  const defaultVision =
+    'To become the leading force in our industry, recognized for innovation, customer success, and transformative impact on how businesses operate and grow.';
   const defaultVisionDescription = `When we achieve our vision, our customers will experience unprecedented growth and efficiency. They'll see measurable improvements in their operations, stronger competitive positioning, and new opportunities for expansion.\n\nThe market will recognize us as the standard-bearer for innovation and excellence. Our approach will reshape industry expectations, setting new benchmarks for quality, service, and customer outcomes.\n\nOur organization will be a magnet for top talent, known for empowering employees to do their best work. We'll have built a sustainable, scalable business that continues to evolve and lead the industry forward.`;
-  
-  const defaultTagline = "Innovation. Excellence. Results.";
-  const defaultOneSentenceSummary = "We help businesses achieve their goals through innovative solutions and exceptional service.";
-  const defaultProblemOverview = "Businesses today face increasing complexity, rapid change, and intense competition. They need solutions that are both powerful and easy to use, that can scale with their growth, and that deliver measurable results.";
-  const defaultSolutionOverview = "We provide comprehensive solutions that address these challenges head-on. Our approach combines cutting-edge technology with deep industry expertise, delivering tools and services that help businesses operate more efficiently, make better decisions, and achieve sustainable growth.";
-  
+
+  const defaultTagline = 'Innovation. Excellence. Results.';
+  const defaultOneSentenceSummary =
+    'We help businesses achieve their goals through innovative solutions and exceptional service.';
+  const defaultProblemOverview =
+    'Businesses today face increasing complexity, rapid change, and intense competition. They need solutions that are both powerful and easy to use, that can scale with their growth, and that deliver measurable results.';
+  const defaultSolutionOverview =
+    'We provide comprehensive solutions that address these challenges head-on. Our approach combines cutting-edge technology with deep industry expertise, delivering tools and services that help businesses operate more efficiently, make better decisions, and achieve sustainable growth.';
+
   const defaultValues: StrategyItem[] = [
     {
-      name: "Integrity",
-      description: "We conduct business with honesty, transparency, and ethical behavior in all our interactions. This value guides our decision-making and builds trust with customers, partners, and team members."
+      name: 'Integrity',
+      description:
+        'We conduct business with honesty, transparency, and ethical behavior in all our interactions. This value guides our decision-making and builds trust with customers, partners, and team members.',
     },
     {
-      name: "Innovation",
-      description: "We continuously seek new ways to solve problems and improve our offerings. Innovation drives our product development and helps us stay ahead of industry trends."
+      name: 'Innovation',
+      description:
+        'We continuously seek new ways to solve problems and improve our offerings. Innovation drives our product development and helps us stay ahead of industry trends.',
     },
     {
-      name: "Customer Focus",
-      description: "Our customers' success is our success. We listen carefully, respond quickly, and go above and beyond to ensure they achieve their goals."
+      name: 'Customer Focus',
+      description:
+        "Our customers' success is our success. We listen carefully, respond quickly, and go above and beyond to ensure they achieve their goals.",
     },
     {
-      name: "Excellence",
-      description: "We strive for excellence in everything we do, from product quality to customer service. We set high standards and work diligently to meet and exceed them."
-    }
+      name: 'Excellence',
+      description:
+        'We strive for excellence in everything we do, from product quality to customer service. We set high standards and work diligently to meet and exceed them.',
+    },
   ];
-  
+
   const defaultPrinciples: StrategyItem[] = [
     {
-      name: "Customer-Centric Decision Making",
-      description: "Every decision we make starts with understanding how it impacts our customers. We prioritize customer needs and outcomes above all else."
+      name: 'Customer-Centric Decision Making',
+      description:
+        'Every decision we make starts with understanding how it impacts our customers. We prioritize customer needs and outcomes above all else.',
     },
     {
-      name: "Data-Driven Approach",
-      description: "We use data and analytics to inform our decisions, measure our progress, and continuously improve our products and services."
+      name: 'Data-Driven Approach',
+      description:
+        'We use data and analytics to inform our decisions, measure our progress, and continuously improve our products and services.',
     },
     {
-      name: "Continuous Improvement",
-      description: "We believe in constantly evolving and improving. We learn from our experiences, adapt to change, and never settle for the status quo."
+      name: 'Continuous Improvement',
+      description:
+        'We believe in constantly evolving and improving. We learn from our experiences, adapt to change, and never settle for the status quo.',
     },
     {
-      name: "Collaboration and Transparency",
-      description: "We work together openly and honestly, sharing information and insights to achieve common goals. Collaboration makes us stronger."
-    }
+      name: 'Collaboration and Transparency',
+      description:
+        'We work together openly and honestly, sharing information and insights to achieve common goals. Collaboration makes us stronger.',
+    },
   ];
 
   // Handle invalid payload
-  if (!payload || typeof payload !== "object") {
-    console.warn("OpenAI response was not an object. Using default values.");
+  if (!payload || typeof payload !== 'object') {
+    console.warn('OpenAI response was not an object. Using default values.');
     return {
       mission: defaultMission,
       mission_description: defaultMissionDescription,
@@ -310,31 +330,37 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
 
   const data = payload as Record<string, unknown>;
 
-  const companyName = coerceText(
-    data.company_name ?? data.companyName ?? data.brand_name ?? data.organization_name,
-  ) || defaultCompanyName;
+  const companyName =
+    coerceText(
+      data.company_name ?? data.companyName ?? data.brand_name ?? data.organization_name
+    ) || defaultCompanyName;
 
-  const tagline = coerceText(data.tagline ?? data.company_tagline ?? data.brand_tagline) || defaultTagline;
-  
-  const oneSentenceSummary = coerceText(
-    data.one_sentence_summary ?? data.summary ?? data.company_summary,
-  ) || defaultOneSentenceSummary;
+  const tagline =
+    coerceText(data.tagline ?? data.company_tagline ?? data.brand_tagline) || defaultTagline;
+
+  const oneSentenceSummary =
+    coerceText(data.one_sentence_summary ?? data.summary ?? data.company_summary) ||
+    defaultOneSentenceSummary;
 
   const problemOverviewText = coerceText(
-    data.problem_overview ?? data.problemOverview ?? data.problem_description,
+    data.problem_overview ?? data.problemOverview ?? data.problem_description
   );
-  const problemOverview = problemOverviewText ? normalizeMultiline(problemOverviewText) : defaultProblemOverview;
+  const problemOverview = problemOverviewText
+    ? normalizeMultiline(problemOverviewText)
+    : defaultProblemOverview;
 
   const solutionOverviewText = coerceText(
-    data.solution_overview ?? data.solutionOverview ?? data.solution_description,
+    data.solution_overview ?? data.solutionOverview ?? data.solution_description
   );
-  const solutionOverview = solutionOverviewText ? normalizeMultiline(solutionOverviewText) : defaultSolutionOverview;
+  const solutionOverview = solutionOverviewText
+    ? normalizeMultiline(solutionOverviewText)
+    : defaultSolutionOverview;
 
   const contentAuthoringPrompt = coerceText(data.content_authoring_prompt);
 
   let mission = coerceText(data.mission ?? data.mission_statement);
   if (!mission || mission.length > 400) {
-    console.warn("Mission statement missing or too long. Using default.");
+    console.warn('Mission statement missing or too long. Using default.');
     mission = defaultMission;
   }
 
@@ -342,13 +368,13 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
     data.mission_description ?? data.mission_explanation ?? data.mission_statement_details;
   let missionDescription = normalizeMultiline(coerceText(missionDescriptionRaw));
   if (!missionDescription) {
-    console.warn("Mission description missing. Using default.");
+    console.warn('Mission description missing. Using default.');
     missionDescription = defaultMissionDescription;
   }
 
   let vision = coerceText(data.vision ?? data.vision_statement);
   if (!vision || vision.length > 800) {
-    console.warn("Vision statement missing or too long. Using default.");
+    console.warn('Vision statement missing or too long. Using default.');
     vision = defaultVision;
   }
 
@@ -356,7 +382,7 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
     data.vision_description ?? data.vision_explanation ?? data.vision_statement_details;
   let visionDescription = normalizeMultiline(coerceText(visionDescriptionRaw));
   if (!visionDescription) {
-    console.warn("Vision description missing. Using default.");
+    console.warn('Vision description missing. Using default.');
     visionDescription = defaultVisionDescription;
   }
 
@@ -379,17 +405,18 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
 
   const parsedValues: StrategyItem[] = values
     .map((item, index) => {
-      if (!item || typeof item !== "object") {
+      if (!item || typeof item !== 'object') {
         console.warn(`Value #${index + 1} is not an object. Skipping.`);
         return null;
       }
 
       const { name, description } = item as Record<string, unknown>;
 
-      const itemName = typeof name === "string" && name.trim() ? name.trim() : `Value ${index + 1}`;
-      const itemDescription = typeof description === "string" && description.trim() 
-        ? normalizeMultiline(description) 
-        : "This value guides our organization's behavior and decision-making.";
+      const itemName = typeof name === 'string' && name.trim() ? name.trim() : `Value ${index + 1}`;
+      const itemDescription =
+        typeof description === 'string' && description.trim()
+          ? normalizeMultiline(description)
+          : "This value guides our organization's behavior and decision-making.";
 
       return { name: itemName, description: itemDescription };
     })
@@ -400,17 +427,19 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
 
   const parsedPrinciples: StrategyItem[] = principles
     .map((item, index) => {
-      if (!item || typeof item !== "object") {
+      if (!item || typeof item !== 'object') {
         console.warn(`Principle #${index + 1} is not an object. Skipping.`);
         return null;
       }
 
       const { name, description } = item as Record<string, unknown>;
 
-      const itemName = typeof name === "string" && name.trim() ? name.trim() : `Principle ${index + 1}`;
-      const itemDescription = typeof description === "string" && description.trim()
-        ? normalizeMultiline(description)
-        : "This principle guides how we make decisions and operate as an organization.";
+      const itemName =
+        typeof name === 'string' && name.trim() ? name.trim() : `Principle ${index + 1}`;
+      const itemDescription =
+        typeof description === 'string' && description.trim()
+          ? normalizeMultiline(description)
+          : 'This principle guides how we make decisions and operate as an organization.';
 
       return { name: itemName, description: itemDescription };
     })
@@ -437,7 +466,7 @@ function validateStrategyResponse(payload: unknown, defaultCompanyName: string):
 
 async function generateSupplementalStrategyItems(args: {
   openaiKey: string;
-  kind: "values" | "principles";
+  kind: 'values' | 'principles';
   companyName: string;
   companyUrl: string;
   mission: string;
@@ -445,9 +474,18 @@ async function generateSupplementalStrategyItems(args: {
   vision: string;
   visionDescription: string;
 }): Promise<StrategyItem[]> {
-  const { openaiKey, kind, companyName, companyUrl, mission, missionDescription, vision, visionDescription } = args;
+  const {
+    openaiKey,
+    kind,
+    companyName,
+    companyUrl,
+    mission,
+    missionDescription,
+    vision,
+    visionDescription,
+  } = args;
 
-  const label = kind === "values" ? "corporate values" : "strategic principles";
+  const label = kind === 'values' ? 'corporate values' : 'strategic principles';
 
   const prompt = `You are a chief strategy advisor. The organization below needs ${label} that align tightly with its mission and vision.
 
@@ -458,13 +496,13 @@ Mission:
 ${mission}
 
 Mission Explanation:
-${missionDescription || "Not provided"}
+${missionDescription || 'Not provided'}
 
 Vision:
 ${vision}
 
 Vision Explanation:
-${visionDescription || "Not provided"}
+${visionDescription || 'Not provided'}
 
 If the source material does not explicitly define ${label}, infer realistic and actionable entries that fit the company's positioning and tone.
 
@@ -480,17 +518,17 @@ Return ONLY a JSON array where each element has the following shape:
 Provide between 3 and 6 items. Do not include markdown, code fences, or any surrounding commentary.`;
 
   const responsePayload = {
-    model: "gpt-5",
+    model: 'gpt-5',
     input: prompt,
-    reasoning: { effort: "low" },
+    reasoning: { effort: 'low' },
   };
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${openaiKey}`,
-      "OpenAI-Beta": "responses=v1",
+      'OpenAI-Beta': 'responses=v1',
     },
     body: JSON.stringify(responsePayload),
   });
@@ -502,13 +540,13 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
     } catch {
       errorBody = await response.text();
     }
-    console.error("OpenAI supplemental generation error:", errorBody);
+    console.error('OpenAI supplemental generation error:', errorBody);
     throw new Error(`Failed to generate supplemental ${label}: ${JSON.stringify(errorBody)}`);
   }
 
   const responseData = await response.json();
   const output = (responseData as { output?: Array<Record<string, unknown>> }).output ?? [];
-  const messageItem = output.find((item) => item?.type === "message") as
+  const messageItem = output.find((item) => item?.type === 'message') as
     | { content?: Array<Record<string, unknown>> }
     | undefined;
 
@@ -516,7 +554,7 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
     throw new Error(`OpenAI supplemental response missing message content for ${label}.`);
   }
 
-  const textItem = messageItem.content.find((entry) => entry.type === "output_text") as
+  const textItem = messageItem.content.find((entry) => entry.type === 'output_text') as
     | { text?: string }
     | undefined;
 
@@ -538,19 +576,19 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
 
   return parsed
     .map((item, index) => {
-      if (!item || typeof item !== "object") {
+      if (!item || typeof item !== 'object') {
         console.warn(`Supplemental ${label} item #${index + 1} is not an object.`);
         return null;
       }
 
       const { name, description } = item as Record<string, unknown>;
 
-      if (typeof name !== "string" || !name.trim()) {
+      if (typeof name !== 'string' || !name.trim()) {
         console.warn(`Supplemental ${label} item #${index + 1} missing name.`);
         return null;
       }
 
-      if (typeof description !== "string" || !description.trim()) {
+      if (typeof description !== 'string' || !description.trim()) {
         console.warn(`Supplemental ${label} item "${name}" missing description.`);
         return null;
       }
@@ -566,8 +604,8 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
 Deno.serve(async (req) => {
   const startedAt = Date.now();
   const processId = `${Deno.pid}-${startedAt}`;
-  
-  console.log('=== CREATE INITIAL CUSTOMER STRATEGY FOR CUSTOMER ID STARTED ===', { 
+
+  console.log('=== CREATE INITIAL CUSTOMER STRATEGY FOR CUSTOMER ID STARTED ===', {
     processId,
     method: req.method,
     url: req.url,
@@ -581,24 +619,31 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[DEBUG] Parsing request body', { processId });
-    
+
     // Parse request body
     let requestBody: RequestBody;
     try {
       const bodyText = await req.text();
-      console.log('[DEBUG] Raw request body:', { processId, bodyText, bodyLength: bodyText.length });
+      console.log('[DEBUG] Raw request body:', {
+        processId,
+        bodyText,
+        bodyLength: bodyText.length,
+      });
       requestBody = JSON.parse(bodyText) as RequestBody;
       console.log('[DEBUG] Parsed request body:', { processId, requestBody });
     } catch (parseError) {
       console.error('[DEBUG] Failed to parse request body:', { processId, error: parseError });
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body.', details: parseError instanceof Error ? parseError.message : String(parseError) }),
+        JSON.stringify({
+          error: 'Invalid JSON in request body.',
+          details: parseError instanceof Error ? parseError.message : String(parseError),
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const customerIdInput = sanitizeUuid(requestBody?.customer_id);
-    console.log('[DEBUG] Customer ID validation:', { 
+    console.log('[DEBUG] Customer ID validation:', {
       processId,
       rawCustomerId: requestBody?.customer_id,
       sanitizedCustomerId: customerIdInput,
@@ -608,7 +653,10 @@ Deno.serve(async (req) => {
     if (!customerIdInput) {
       console.error('[DEBUG] Missing or invalid customer_id', { processId, requestBody });
       return new Response(
-        JSON.stringify({ error: 'customer_id (UUID) is required in the request body.', received: requestBody?.customer_id }),
+        JSON.stringify({
+          error: 'customer_id (UUID) is required in the request body.',
+          received: requestBody?.customer_id,
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -618,7 +666,7 @@ Deno.serve(async (req) => {
     // Authentication
     console.log('[DEBUG] Checking authentication', { processId });
     const authHeader = req.headers.get('Authorization');
-    console.log('[DEBUG] Authorization header:', { 
+    console.log('[DEBUG] Authorization header:', {
       processId,
       hasAuthHeader: !!authHeader,
       authHeaderLength: authHeader?.length,
@@ -627,10 +675,10 @@ Deno.serve(async (req) => {
 
     if (!authHeader) {
       console.error('[DEBUG] Missing authorization header', { processId });
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: 'Missing authorization header.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -663,12 +711,12 @@ Deno.serve(async (req) => {
     // Extract token from Authorization header and pass to getUser()
     // This is the recommended approach per Supabase docs: https://supabase.com/docs/guides/functions/auth
     const token = authHeader.replace('Bearer ', '');
-    console.log('[DEBUG] Extracted session token:', { 
+    console.log('[DEBUG] Extracted session token:', {
       processId,
       tokenLength: token.length,
       tokenPrefix: token.substring(0, 20),
     });
-    
+
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     console.log('[DEBUG] User authentication result:', {
       processId,
@@ -680,7 +728,7 @@ Deno.serve(async (req) => {
     });
 
     if (userError || !userData?.user) {
-      console.error('[DEBUG] Unable to authenticate user:', { 
+      console.error('[DEBUG] Unable to authenticate user:', {
         processId,
         error: userError,
         errorMessage: userError?.message,
@@ -694,7 +742,10 @@ Deno.serve(async (req) => {
 
     console.log('[DEBUG] Authenticated auth_user_id:', userData.user.id, { processId });
 
-    console.log('[DEBUG] Fetching user record from users table', { processId, authUserId: userData.user.id });
+    console.log('[DEBUG] Fetching user record from users table', {
+      processId,
+      authUserId: userData.user.id,
+    });
     const { data: userRecord, error: userRecordError } = await supabase
       .from('users')
       .select('customer_id, user_id')
@@ -737,13 +788,16 @@ Deno.serve(async (req) => {
     if (actingCustomerId !== customerIdInput) {
       console.warn('customer_id mismatch', { actingCustomerId, customerIdInput });
       return new Response(
-        JSON.stringify({ error: 'You are not authorized to initialize this customer\'s strategy.' }),
+        JSON.stringify({ error: "You are not authorized to initialize this customer's strategy." }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Fetch customer data, customer_info, existing strategy, and publication status
-    console.log('[DEBUG] Fetching customer data, customer_info, existing strategy, and publication status', { processId });
+    console.log(
+      '[DEBUG] Fetching customer data, customer_info, existing strategy, and publication status',
+      { processId }
+    );
     const [
       { data: customer, error: customerError },
       { data: customerInfo, error: customerInfoError },
@@ -757,7 +811,9 @@ Deno.serve(async (req) => {
         .maybeSingle<Customer>(),
       supabase
         .from('customer_info')
-        .select('customer_info_id, customer_id, company_name, tagline, one_sentence_summary, problem_overview, solution_overview, content_authoring_prompt')
+        .select(
+          'customer_info_id, customer_id, company_name, tagline, one_sentence_summary, problem_overview, solution_overview, content_authoring_prompt'
+        )
         .eq('customer_id', customerIdInput)
         .maybeSingle<CustomerInfoRow>(),
       supabase
@@ -902,7 +958,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         'OpenAI-Beta': 'responses=v1',
       },
       body: JSON.stringify(responsePayload),
@@ -933,7 +989,7 @@ Deno.serve(async (req) => {
       | undefined;
 
     let parsedResult: unknown = {};
-    
+
     if (messageItem?.content) {
       const textItem = messageItem.content.find((entry) => entry.type === 'output_text') as
         | { text?: string }
@@ -942,7 +998,7 @@ Deno.serve(async (req) => {
       if (textItem?.text) {
         const responseText = textItem.text;
         console.log('OpenAI output received (first 400 chars):', responseText.slice(0, 400));
-        
+
         try {
           parsedResult = JSON.parse(responseText);
         } catch (parseError) {
@@ -1044,12 +1100,16 @@ Deno.serve(async (req) => {
           one_sentence_summary: derivedOneSentenceSummary,
           problem_overview: safeProblemOverview,
           solution_overview: safeSolutionOverview,
-          content_authoring_prompt: strategy.content_authoring_prompt || customerInfo.content_authoring_prompt || null,
+          content_authoring_prompt:
+            strategy.content_authoring_prompt || customerInfo.content_authoring_prompt || null,
         })
         .eq('customer_info_id', customerInfo.customer_info_id);
 
       if (updateCustomerInfoError) {
-        console.error('Failed to update customer_info branding fields:', updateCustomerInfoError.message);
+        console.error(
+          'Failed to update customer_info branding fields:',
+          updateCustomerInfoError.message
+        );
         throw new Error(`Failed to update customer_info: ${updateCustomerInfoError.message}`);
       }
 
@@ -1066,7 +1126,10 @@ Deno.serve(async (req) => {
       });
 
       if (insertCustomerInfoError) {
-        console.error('Failed to insert customer_info branding fields:', insertCustomerInfoError.message);
+        console.error(
+          'Failed to insert customer_info branding fields:',
+          insertCustomerInfoError.message
+        );
         throw new Error(`Failed to create customer_info: ${insertCustomerInfoError.message}`);
       }
 
@@ -1151,7 +1214,10 @@ Deno.serve(async (req) => {
     }
 
     if (deletePrinciplesError) {
-      console.error('Failed to delete existing strategy_principles:', deletePrinciplesError.message);
+      console.error(
+        'Failed to delete existing strategy_principles:',
+        deletePrinciplesError.message
+      );
       throw new Error(`Failed to reset strategy principles: ${deletePrinciplesError.message}`);
     }
 
@@ -1209,8 +1275,10 @@ Deno.serve(async (req) => {
         company_strategy_id: strategyId,
         created: isNewStrategy,
         customer_id: customerIdInput,
-        mission_paragraphs: strategy.mission_description.split(/\n{2,}/g).filter(p => p.trim()).length,
-        vision_paragraphs: strategy.vision_description.split(/\n{2,}/g).filter(p => p.trim()).length,
+        mission_paragraphs: strategy.mission_description.split(/\n{2,}/g).filter((p) => p.trim())
+          .length,
+        vision_paragraphs: strategy.vision_description.split(/\n{2,}/g).filter((p) => p.trim())
+          .length,
         values_inserted: valueRecords.length,
         principles_inserted: principleRecords.length,
       }),
@@ -1225,10 +1293,13 @@ Deno.serve(async (req) => {
       errorString: String(error),
       durationMs: Date.now() - startedAt,
     };
-    
-    console.error('[DEBUG] Error in create-initial-customer-strategy-for-customer-id:', errorDetails);
+
+    console.error(
+      '[DEBUG] Error in create-initial-customer-strategy-for-customer-id:',
+      errorDetails
+    );
     console.error('[DEBUG] Full error object:', error);
-    
+
     return new Response(
       JSON.stringify({
         success: false,

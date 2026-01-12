@@ -24,8 +24,8 @@ import { config } from '@/config';
 import { createSegment } from '../../lib/api';
 import type { CreateSegmentPayload } from '../../lib/types';
 
-// export const metadata: Metadata = { 
-//   title: `Create Segment | Content Strategy | Dashboard | ${config.site.name}` 
+// export const metadata: Metadata = {
+//   title: `Create Segment | Content Strategy | Dashboard | ${config.site.name}`
 // };
 
 interface CreateSegmentFormData {
@@ -66,7 +66,7 @@ export default function Page(): React.JSX.Element {
 
   const onSubmit = async (data: CreateSegmentFormData) => {
     setSubmitError(null);
-    
+
     // Clean up empty strings to undefined for optional fields
     const cleanedData: CreateSegmentPayload = {
       name: data.name,
@@ -90,14 +90,10 @@ export default function Page(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack
-          direction="row"
-          spacing={2}
-          sx={{ alignItems: 'center' }}
-        >
+        <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
           <Button
-            variant="outlined"
-            color="neutral"
+            variant='outlined'
+            color='neutral'
             startDecorator={<ArrowLeftIcon size={16} />}
             onClick={handleCancel}
             sx={{ minWidth: 'auto', px: 1 }}
@@ -105,22 +101,20 @@ export default function Page(): React.JSX.Element {
             Back
           </Button>
           <SegmentIcon size={24} />
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Create Segment
           </Typography>
         </Stack>
 
         {/* Error Alert */}
         {submitError && (
-          <Alert color="danger">
-            <Typography level="body-md">
-              Failed to create segment: {submitError}
-            </Typography>
+          <Alert color='danger'>
+            <Typography level='body-md'>Failed to create segment: {submitError}</Typography>
           </Alert>
         )}
 
         {/* Form */}
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={3}>
@@ -129,12 +123,10 @@ export default function Page(): React.JSX.Element {
                   <FormLabel>Name *</FormLabel>
                   <Input
                     {...register('name', { required: 'Name is required' })}
-                    placeholder="Enter segment name"
+                    placeholder='Enter segment name'
                     error={!!errors.name}
                   />
-                  {errors.name && (
-                    <FormHelperText>{errors.name.message}</FormHelperText>
-                  )}
+                  {errors.name && <FormHelperText>{errors.name.message}</FormHelperText>}
                 </FormControl>
 
                 {/* Description */}
@@ -142,7 +134,7 @@ export default function Page(): React.JSX.Element {
                   <FormLabel>Description *</FormLabel>
                   <Textarea
                     {...register('description', { required: 'Description is required' })}
-                    placeholder="Enter segment description"
+                    placeholder='Enter segment description'
                     minRows={3}
                     error={!!errors.description}
                   />
@@ -156,12 +148,10 @@ export default function Page(): React.JSX.Element {
                   <FormLabel>Code</FormLabel>
                   <Input
                     {...register('code')}
-                    placeholder="Enter segment code (optional)"
+                    placeholder='Enter segment code (optional)'
                     error={!!errors.code}
                   />
-                  {errors.code && (
-                    <FormHelperText>{errors.code.message}</FormHelperText>
-                  )}
+                  {errors.code && <FormHelperText>{errors.code.message}</FormHelperText>}
                 </FormControl>
 
                 {/* External ID */}
@@ -169,7 +159,7 @@ export default function Page(): React.JSX.Element {
                   <FormLabel>External ID</FormLabel>
                   <Input
                     {...register('external_id')}
-                    placeholder="Enter external ID (optional)"
+                    placeholder='Enter external ID (optional)'
                     error={!!errors.external_id}
                   />
                   {errors.external_id && (
@@ -178,25 +168,25 @@ export default function Page(): React.JSX.Element {
                 </FormControl>
 
                 {/* Actions */}
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  sx={{ justifyContent: 'flex-end', pt: 2 }}
-                >
+                <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end', pt: 2 }}>
                   <Button
-                    variant="outlined"
-                    color="neutral"
+                    variant='outlined'
+                    color='neutral'
                     onClick={handleCancel}
                     disabled={isSubmitting || createMutation.isPending}
                   >
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
-                    variant="solid"
-                    color="primary"
+                    type='submit'
+                    variant='solid'
+                    color='primary'
                     loading={isSubmitting || createMutation.isPending}
-                    startDecorator={!isSubmitting && !createMutation.isPending ? <SegmentIcon size={16} /> : undefined}
+                    startDecorator={
+                      !isSubmitting && !createMutation.isPending ? (
+                        <SegmentIcon size={16} />
+                      ) : undefined
+                    }
                   >
                     {isSubmitting || createMutation.isPending ? 'Creating...' : 'Create Segment'}
                   </Button>
@@ -209,4 +199,3 @@ export default function Page(): React.JSX.Element {
     </Box>
   );
 }
-

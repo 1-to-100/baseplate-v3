@@ -128,7 +128,7 @@ export class PersonasAPI {
       return override;
     }
     const { data, error } = await supabase.rpc('customer_id');
-    
+
     if (error) {
       throw new Error(`Failed to get customer ID: ${error.message}`);
     }
@@ -150,7 +150,6 @@ export class PersonasAPI {
     return data.user_id;
   }
 
-
   /**
    * Test method to verify customer isolation - should not be able to access other customers' data
    */
@@ -162,7 +161,7 @@ export class PersonasAPI {
     try {
       // Try to get all personas (should only return current customer's data)
       const ownPersonas = await this.getAll();
-      
+
       // Try to access data with a different customer_id (should fail or return empty)
       const { data: otherData, error: otherError } = await supabase
         .from('personas')
@@ -184,4 +183,3 @@ export class PersonasAPI {
     }
   }
 }
-

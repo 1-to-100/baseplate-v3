@@ -14,18 +14,18 @@ export async function getCustomerJourneyStagesList(
   params: GetCustomerJourneyStagesParams = {}
 ): Promise<GetCustomerJourneyStagesResponse> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
   const customerId = customerIdResult;
-  
+
   // Debug: Log the customer ID to see what type it is
   console.log('🔍 [List] Customer ID from SQL function:', customerId, 'Type:', typeof customerId);
   console.log('🔍 [List] Customer ID is integer?', Number.isInteger(customerId));
@@ -77,21 +77,23 @@ export async function createCustomerJourneyStage(
   payload: CreateCustomerJourneyStagePayload
 ): Promise<CustomerJourneyStage> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }
 
   // Get current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) {
     throw new Error('User not authenticated');
   }
 
   // Get customer_id using the SQL function
-  const { data: customerIdData, error: customerIdError } = await supabase
-    .rpc('customer_id');
-  
+  const { data: customerIdData, error: customerIdError } = await supabase.rpc('customer_id');
+
   if (customerIdError || !customerIdData) {
     throw new Error('Unable to get customer ID');
   }
@@ -107,7 +109,7 @@ export async function createCustomerJourneyStage(
     .select('user_id')
     .eq('auth_user_id', user.id)
     .maybeSingle();
-  
+
   if (userDataError || !userData?.user_id) {
     throw new Error('Unable to get user data');
   }
@@ -133,17 +135,15 @@ export async function createCustomerJourneyStage(
 /**
  * Get a customer journey stage by ID
  */
-export async function getCustomerJourneyStageById(
-  id: string
-): Promise<CustomerJourneyStage> {
+export async function getCustomerJourneyStageById(id: string): Promise<CustomerJourneyStage> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -171,21 +171,23 @@ export async function updateCustomerJourneyStage(
   payload: UpdateCustomerJourneyStagePayload
 ): Promise<CustomerJourneyStage> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }
 
   // Get current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) {
     throw new Error('User not authenticated');
   }
 
   // Get customer_id using the SQL function
-  const { data: customerIdData, error: customerIdError } = await supabase
-    .rpc('customer_id');
-  
+  const { data: customerIdData, error: customerIdError } = await supabase.rpc('customer_id');
+
   if (customerIdError || !customerIdData) {
     throw new Error('Unable to get customer ID');
   }
@@ -196,7 +198,7 @@ export async function updateCustomerJourneyStage(
     .select('user_id')
     .eq('auth_user_id', user.id)
     .maybeSingle();
-  
+
   if (userDataError || !userData?.user_id) {
     throw new Error('Unable to get user data');
   }
@@ -224,13 +226,13 @@ export async function updateCustomerJourneyStage(
  */
 export async function deleteCustomerJourneyStage(id: string): Promise<void> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -252,7 +254,7 @@ export async function deleteCustomerJourneyStage(id: string): Promise<void> {
  */
 export async function testCrossTenantAccess(): Promise<boolean> {
   const supabase = createClient();
-  
+
   if (!supabase) {
     throw new Error('Supabase client not available');
   }

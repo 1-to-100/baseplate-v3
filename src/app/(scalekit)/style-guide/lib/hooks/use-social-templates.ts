@@ -31,13 +31,17 @@ export function useCreateSocialTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewSocialTemplate, 'social_template_id' | 'customer_id' | 'created_at'>) => {
+    mutationFn: async (
+      input: Omit<NewSocialTemplate, 'social_template_id' | 'customer_id' | 'created_at'>
+    ) => {
       const result = await createSocialTemplate(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: socialTemplateKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: socialTemplateKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: socialTemplateKeys.lists() });
       toast.success('Social template created successfully');
     },
@@ -57,8 +61,12 @@ export function useUpdateSocialTemplate() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: socialTemplateKeys.list(String(data.visual_style_guide_id || '')) });
-      queryClient.invalidateQueries({ queryKey: socialTemplateKeys.detail(String(data.social_template_id)) });
+      queryClient.invalidateQueries({
+        queryKey: socialTemplateKeys.list(String(data.visual_style_guide_id || '')),
+      });
+      queryClient.invalidateQueries({
+        queryKey: socialTemplateKeys.detail(String(data.social_template_id)),
+      });
       toast.success('Social template updated successfully');
     },
     onError: (error: Error) => {
@@ -85,4 +93,3 @@ export function useDeleteSocialTemplate() {
     },
   });
 }
-

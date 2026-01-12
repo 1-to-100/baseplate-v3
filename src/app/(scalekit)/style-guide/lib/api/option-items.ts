@@ -245,4 +245,3 @@ export async function getComplianceRuleTypeOptionItems(): Promise<ComplianceRule
 
   return (data || []) as ComplianceRuleTypeOptionItem[];
 }
-

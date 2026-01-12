@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/client';
-import type { 
-  PersonasFeatureMapping, 
+import type {
+  PersonasFeatureMapping,
   PersonasFeatureMappingWithPersona,
   CreatePersonasFeatureMappingPayload,
-  UpdatePersonasFeatureMappingPayload
+  UpdatePersonasFeatureMappingPayload,
 } from '@/types/personas-feature-mappings';
 
 const supabase = createClient();
@@ -16,10 +16,12 @@ export class PersonasFeatureMappingsAPI {
     // First, get the customer_id from the feature's product to verify access
     const { data: featureWithCustomer, error: featureError } = await supabase
       .from('features')
-      .select(`
+      .select(
+        `
         feature_id,
         products!inner(customer_id)
-      `)
+      `
+      )
       .eq('feature_id', featureId)
       .single();
 
@@ -34,7 +36,7 @@ export class PersonasFeatureMappingsAPI {
     }
 
     // Check if user can access this customer
-    const { data: canAccess, error: accessError } = await supabase.rpc("can_access_customer", {
+    const { data: canAccess, error: accessError } = await supabase.rpc('can_access_customer', {
       target_customer_id: customerId,
     });
 
@@ -43,7 +45,7 @@ export class PersonasFeatureMappingsAPI {
     }
 
     if (!canAccess) {
-      throw new Error("You do not have permission to access persona mappings for this feature");
+      throw new Error('You do not have permission to access persona mappings for this feature');
     }
 
     // Fetch the mappings first (without join to avoid RLS filtering on personas)
@@ -63,7 +65,7 @@ export class PersonasFeatureMappingsAPI {
 
     // Fetch personas separately using the feature's product's customer_id
     // This avoids RLS filtering issues when joining
-    const personaIds = mappings.map(m => m.persona_id);
+    const personaIds = mappings.map((m) => m.persona_id);
     const { data: personas, error: personasError } = await supabase
       .from('personas')
       .select('*')
@@ -75,8 +77,8 @@ export class PersonasFeatureMappingsAPI {
     }
 
     // Combine mappings with personas
-    const personaMap = new Map((personas || []).map(p => [p.persona_id, p]));
-    return (mappings || []).map(mapping => ({
+    const personaMap = new Map((personas || []).map((p) => [p.persona_id, p]));
+    return (mappings || []).map((mapping) => ({
       ...mapping,
       personas: personaMap.get(mapping.persona_id) || null,
     })) as PersonasFeatureMappingWithPersona[];
@@ -88,10 +90,12 @@ export class PersonasFeatureMappingsAPI {
   static async getById(mappingId: string): Promise<PersonasFeatureMappingWithPersona | null> {
     const { data, error } = await supabase
       .from('personas_feature_mappings')
-      .select(`
+      .select(
+        `
         *,
         personas:persona_id (*)
-      `)
+      `
+      )
       .eq('personas_feature_mapping_id', mappingId)
       .single();
 
@@ -108,7 +112,9 @@ export class PersonasFeatureMappingsAPI {
   /**
    * Create a new persona-feature mapping
    */
-  static async create(mappingData: CreatePersonasFeatureMappingPayload): Promise<PersonasFeatureMapping> {
+  static async create(
+    mappingData: CreatePersonasFeatureMappingPayload
+  ): Promise<PersonasFeatureMapping> {
     const { data, error } = await supabase
       .from('personas_feature_mappings')
       .insert(mappingData)
@@ -126,7 +132,7 @@ export class PersonasFeatureMappingsAPI {
    * Update an existing persona-feature mapping
    */
   static async update(
-    mappingId: string, 
+    mappingId: string,
     updateData: UpdatePersonasFeatureMappingPayload
   ): Promise<PersonasFeatureMapping> {
     const { data, error } = await supabase
@@ -166,10 +172,12 @@ export class PersonasFeatureMappingsAPI {
   static async getByPersonaId(personaId: string): Promise<PersonasFeatureMappingWithPersona[]> {
     const { data, error } = await supabase
       .from('personas_feature_mappings')
-      .select(`
+      .select(
+        `
         *,
         personas:persona_id (*)
-      `)
+      `
+      )
       .eq('persona_id', personaId)
       .order('created_at', { ascending: false });
 
@@ -188,4 +196,3 @@ export const createPersonasFeatureMapping = PersonasFeatureMappingsAPI.create;
 export const updatePersonasFeatureMapping = PersonasFeatureMappingsAPI.update;
 export const deletePersonasFeatureMapping = PersonasFeatureMappingsAPI.delete;
 export const getPersonasFeatureMappingsByPersonaId = PersonasFeatureMappingsAPI.getByPersonaId;
-

@@ -6,13 +6,18 @@ import {
   deleteComplianceReview,
   listComplianceReviews,
 } from '../api/compliance-reviews';
-import type { CreateComplianceReviewPayload, UpdateComplianceReviewPayload, ListComplianceReviewsParams } from '../api/compliance-reviews';
+import type {
+  CreateComplianceReviewPayload,
+  UpdateComplianceReviewPayload,
+  ListComplianceReviewsParams,
+} from '../api/compliance-reviews';
 import { toast } from '@/components/core/toaster';
 
 export const complianceReviewKeys = {
   all: ['compliance-reviews'] as const,
   lists: () => [...complianceReviewKeys.all, 'list'] as const,
-  list: (filters?: ListComplianceReviewsParams) => [...complianceReviewKeys.lists(), filters] as const,
+  list: (filters?: ListComplianceReviewsParams) =>
+    [...complianceReviewKeys.lists(), filters] as const,
   details: () => [...complianceReviewKeys.all, 'detail'] as const,
   detail: (id: string) => [...complianceReviewKeys.details(), id] as const,
 };
@@ -53,7 +58,9 @@ export function useUpdateComplianceReview() {
   return useMutation({
     mutationFn: (payload: UpdateComplianceReviewPayload) => updateComplianceReview(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: complianceReviewKeys.detail(data.compliance_review_id) });
+      queryClient.invalidateQueries({
+        queryKey: complianceReviewKeys.detail(data.compliance_review_id),
+      });
       queryClient.invalidateQueries({ queryKey: complianceReviewKeys.lists() });
       toast.success('Compliance review updated successfully');
     },
@@ -77,4 +84,3 @@ export function useDeleteComplianceReview() {
     },
   });
 }
-

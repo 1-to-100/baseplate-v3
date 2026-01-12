@@ -21,11 +21,11 @@ import ModalClose from '@mui/joy/ModalClose';
 import Typography from '@mui/joy/Typography';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { MagicWand, FloppyDisk } from '@phosphor-icons/react/dist/ssr';
-import { 
-  useCreateStyleGuide, 
-  useUpdateStyleGuide, 
+import {
+  useCreateStyleGuide,
+  useUpdateStyleGuide,
   useStyleGuide,
-  useDeleteStyleGuide 
+  useDeleteStyleGuide,
 } from '../../hooks/use-style-guides';
 import { createClient } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -53,10 +53,10 @@ interface StyleGuideEditorProps {
   customerId: string;
 }
 
-export function StyleGuideEditor({ 
-  styleGuideId, 
+export function StyleGuideEditor({
+  styleGuideId,
   initialData,
-  customerId 
+  customerId,
 }: StyleGuideEditorProps): React.JSX.Element {
   const router = useRouter();
   const [showDiscardModal, setShowDiscardModal] = React.useState(false);
@@ -139,7 +139,6 @@ export function StyleGuideEditor({
     active: guide?.active ?? true,
   };
 
-
   const {
     register,
     handleSubmit,
@@ -209,7 +208,7 @@ export function StyleGuideEditor({
 
   const handleConfirmReanalyze = async () => {
     const actualStyleGuideId = styleGuideId || guide?.style_guide_id;
-    
+
     if (!actualStyleGuideId || !websiteUrl) {
       toast.error('Style guide ID or website URL not available');
       return;
@@ -222,17 +221,20 @@ export function StyleGuideEditor({
       // Delete the current style guide
       console.log('Deleting current style guide:', actualStyleGuideId);
       await deleteMutation.mutateAsync(actualStyleGuideId);
-      
+
       // Call the edge function to regenerate
       console.log('Regenerating style guide for URL:', websiteUrl);
       const supabase = createClient();
-      
-      const { data, error } = await supabase.functions.invoke('create-initial-written-style-guide-for-customer-id', {
-        body: { 
-          customer_id: customerId,
-          url: websiteUrl 
-        },
-      });
+
+      const { data, error } = await supabase.functions.invoke(
+        'create-initial-written-style-guide-for-customer-id',
+        {
+          body: {
+            customer_id: customerId,
+            url: websiteUrl,
+          },
+        }
+      );
 
       if (error) {
         console.error('Error regenerating style guide:', error);
@@ -243,7 +245,7 @@ export function StyleGuideEditor({
 
       console.log('Style guide regenerated successfully:', data);
       toast.success('Style guide regenerated successfully! Reloading page...');
-      
+
       // Reload the page to show the new style guide
       setTimeout(() => {
         window.location.reload();
@@ -261,7 +263,7 @@ export function StyleGuideEditor({
       console.log('Customer ID:', customerId);
       console.log('Style Guide ID (prop):', styleGuideId);
       console.log('Guide to edit ID:', guide?.style_guide_id);
-      
+
       if (!customerId || !data.customer_id) {
         toast.error('Customer ID is required');
         return;
@@ -300,7 +302,7 @@ export function StyleGuideEditor({
 
   const onError = (errors: Record<string, unknown>) => {
     console.log('Form validation errors:', errors);
-    
+
     // Display specific validation errors
     const errorMessages: string[] = [];
     if (errors.guide_name) {
@@ -318,7 +320,7 @@ export function StyleGuideEditor({
         errorMessages.push(`${key}: ${error?.message || 'Invalid value'}`);
       }
     });
-    
+
     if (errorMessages.length > 0) {
       toast.error(`Validation errors: ${errorMessages.join(', ')}`);
     } else {
@@ -328,7 +330,7 @@ export function StyleGuideEditor({
 
   const handleDiscard = async () => {
     const actualStyleGuideId = styleGuideId || guide?.style_guide_id;
-    
+
     if (!actualStyleGuideId) {
       // If no style guide exists, just reset the form
       reset(defaultValues);
@@ -340,10 +342,11 @@ export function StyleGuideEditor({
       // Reload the style guide from the database
       console.log('Reloading style guide from database:', actualStyleGuideId);
       const supabase = createClient();
-      
+
       const { data: freshGuide, error } = await supabase
         .from('style_guides')
-        .select(`
+        .select(
+          `
           *,
           formality_option_item:formality_option_items(*),
           sentence_length_option_item:sentence_option_items_singleton(*),
@@ -352,7 +355,8 @@ export function StyleGuideEditor({
           storytelling_style_option_item:storytelling_option_items(*),
           use_of_jargon_option_item:use_of_jargon_option_items(*),
           language_level_option_item:language_level_option_items(*)
-        `)
+        `
+        )
         .eq('style_guide_id', actualStyleGuideId)
         .single();
 
@@ -396,18 +400,18 @@ export function StyleGuideEditor({
       <form onSubmit={handleSubmit(onSubmit, onError)}>
         <Stack spacing={4}>
           {/* Form Header with Actions */}
-          <Stack 
-            direction="row" 
-            justifyContent="space-between" 
-            alignItems="center"
-            flexWrap="wrap"
+          <Stack
+            direction='row'
+            justifyContent='space-between'
+            alignItems='center'
+            flexWrap='wrap'
             gap={2}
           >
-            <Stack direction="row" spacing={2}>
+            <Stack direction='row' spacing={2}>
               {(styleGuideId || guide?.style_guide_id) && (
                 <Button
-                  type="button"
-                  variant="outlined"
+                  type='button'
+                  variant='outlined'
                   startDecorator={<MagicWand />}
                   onClick={handleReanalyzeSite}
                   disabled={isLoading || isReanalyzing}
@@ -417,18 +421,18 @@ export function StyleGuideEditor({
                 </Button>
               )}
             </Stack>
-            <Stack direction="row" spacing={2}>
+            <Stack direction='row' spacing={2}>
               <Button
-                type="button"
-                variant="outlined"
-                color="neutral"
+                type='button'
+                variant='outlined'
+                color='neutral'
                 onClick={() => setShowDiscardModal(true)}
                 disabled={!isDirty || isLoading || isReanalyzing}
               >
                 Discard Changes
               </Button>
               <Button
-                type="submit"
+                type='submit'
                 loading={isLoading}
                 disabled={isReanalyzing}
                 startDecorator={<FloppyDisk />}
@@ -446,37 +450,37 @@ export function StyleGuideEditor({
                 <FormLabel>Guide Name *</FormLabel>
                 <Input
                   {...register('guide_name')}
-                  placeholder="Enter guide name"
+                  placeholder='Enter guide name'
                   slotProps={{
                     input: {
                       maxLength: 120,
                     },
                   }}
-                  aria-label="Guide name"
-                  aria-describedby="guide-name-error"
-                  aria-required="true"
+                  aria-label='Guide name'
+                  aria-describedby='guide-name-error'
+                  aria-required='true'
                 />
-                <FormHelperText id="guide-name-error">
+                <FormHelperText id='guide-name-error'>
                   {(errors.guide_name as { message?: string })?.message}
                 </FormHelperText>
                 <FormHelperText>{watch('guide_name')?.length || 0}/120 characters</FormHelperText>
               </FormControl>
             )}
-            
+
             {/* Hidden input to maintain form registration for validation */}
-            <Box component="input" type="hidden" {...register('guide_name')} />
+            <Box component='input' type='hidden' {...register('guide_name')} />
 
             {/* Brand Personality */}
             <FormControl error={!!errors.brand_personality}>
               <FormLabel>Brand Personality</FormLabel>
               <Textarea
                 {...register('brand_personality')}
-                placeholder="3-6 sentence summary of brand personality attributes"
+                placeholder='3-6 sentence summary of brand personality attributes'
                 minRows={4}
-                aria-label="Brand personality"
-                aria-describedby="brand-personality-helper"
+                aria-label='Brand personality'
+                aria-describedby='brand-personality-helper'
               />
-              <FormHelperText id="brand-personality-helper">
+              <FormHelperText id='brand-personality-helper'>
                 Provide a concise summary of your brand&apos;s personality traits
               </FormHelperText>
             </FormControl>
@@ -486,16 +490,16 @@ export function StyleGuideEditor({
               <FormLabel>Brand Voice Attributes</FormLabel>
               <Input
                 {...register('brand_voice')}
-                placeholder="Enter brand voice attributes (e.g., Trustworthy, Conversational, Confident)"
-                aria-label="Brand voice attributes"
+                placeholder='Enter brand voice attributes (e.g., Trustworthy, Conversational, Confident)'
+                aria-label='Brand voice attributes'
                 aria-describedby={errors.brand_voice ? 'brand-voice-error' : 'brand-voice-helper'}
               />
               {errors.brand_voice && (
-                <FormHelperText id="brand-voice-error">
+                <FormHelperText id='brand-voice-error'>
                   {(errors.brand_voice as { message?: string })?.message}
                 </FormHelperText>
               )}
-              <FormHelperText id="brand-voice-helper">
+              <FormHelperText id='brand-voice-helper'>
                 Common examples: Trustworthy, Conversational, Confident, Professional, Friendly
               </FormHelperText>
             </FormControl>
@@ -506,18 +510,23 @@ export function StyleGuideEditor({
               <Select
                 value={watch('formality_option_item_id') || ''}
                 onChange={(_event, value) => setValue('formality_option_item_id', value || null)}
-                placeholder="Select formality level"
-                aria-label="Formality level"
+                placeholder='Select formality level'
+                aria-label='Formality level'
               >
                 {formalityOptions.map((option) => (
-                  <Option key={option.formality_option_item_id} value={option.formality_option_item_id}>
+                  <Option
+                    key={option.formality_option_item_id}
+                    value={option.formality_option_item_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('formality_option_item_id') && (
                 <FormHelperText>
-                  {formalityOptions.find(o => o.formality_option_item_id === watch('formality_option_item_id'))?.description || 'No description available'}
+                  {formalityOptions.find(
+                    (o) => o.formality_option_item_id === watch('formality_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -528,22 +537,29 @@ export function StyleGuideEditor({
               <Select
                 value={watch('sentence_length_option_item_id') || ''}
                 onChange={(event, value) => {
-                  const newValue = value === null ? null : (typeof value === 'string' ? value : null);
+                  const newValue = value === null ? null : typeof value === 'string' ? value : null;
                   setValue('sentence_length_option_item_id', newValue, { shouldValidate: true });
                 }}
-                placeholder={isLoadingSentenceOptions ? "Loading options..." : "Select sentence length"}
-                aria-label="Sentence length preference"
+                placeholder={
+                  isLoadingSentenceOptions ? 'Loading options...' : 'Select sentence length'
+                }
+                aria-label='Sentence length preference'
                 disabled={isLoadingSentenceOptions}
               >
                 {sentenceOptions.map((option) => (
-                  <Option key={option.sentence_option_items_id} value={option.sentence_option_items_id}>
+                  <Option
+                    key={option.sentence_option_items_id}
+                    value={option.sentence_option_items_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('sentence_length_option_item_id') && (
                 <FormHelperText>
-                  {sentenceOptions.find(o => o.sentence_option_items_id === watch('sentence_length_option_item_id'))?.description || 'No description available'}
+                  {sentenceOptions.find(
+                    (o) => o.sentence_option_items_id === watch('sentence_length_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -554,8 +570,8 @@ export function StyleGuideEditor({
               <Select
                 value={watch('pacing_option_item_id') || ''}
                 onChange={(_event, value) => setValue('pacing_option_item_id', value || null)}
-                placeholder="Select pacing"
-                aria-label="Pacing preference"
+                placeholder='Select pacing'
+                aria-label='Pacing preference'
               >
                 {pacingOptions.map((option) => (
                   <Option key={option.pacing_option_item_id} value={option.pacing_option_item_id}>
@@ -565,7 +581,9 @@ export function StyleGuideEditor({
               </Select>
               {watch('pacing_option_item_id') && (
                 <FormHelperText>
-                  {pacingOptions.find(o => o.pacing_option_item_id === watch('pacing_option_item_id'))?.description || 'No description available'}
+                  {pacingOptions.find(
+                    (o) => o.pacing_option_item_id === watch('pacing_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -576,18 +594,23 @@ export function StyleGuideEditor({
               <Select
                 value={watch('humor_usage_option_item_id') || ''}
                 onChange={(_event, value) => setValue('humor_usage_option_item_id', value || null)}
-                placeholder="Select humor usage"
-                aria-label="Humor usage"
+                placeholder='Select humor usage'
+                aria-label='Humor usage'
               >
                 {humorOptions.map((option) => (
-                  <Option key={option.humor_usage_option_item_id} value={option.humor_usage_option_item_id}>
+                  <Option
+                    key={option.humor_usage_option_item_id}
+                    value={option.humor_usage_option_item_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('humor_usage_option_item_id') && (
                 <FormHelperText>
-                  {humorOptions.find(o => o.humor_usage_option_item_id === watch('humor_usage_option_item_id'))?.description || 'No description available'}
+                  {humorOptions.find(
+                    (o) => o.humor_usage_option_item_id === watch('humor_usage_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -597,19 +620,27 @@ export function StyleGuideEditor({
               <FormLabel>Storytelling Style</FormLabel>
               <Select
                 value={watch('storytelling_style_option_item_id') || ''}
-                onChange={(_event, value) => setValue('storytelling_style_option_item_id', value || null)}
-                placeholder="Select storytelling style"
-                aria-label="Storytelling style"
+                onChange={(_event, value) =>
+                  setValue('storytelling_style_option_item_id', value || null)
+                }
+                placeholder='Select storytelling style'
+                aria-label='Storytelling style'
               >
                 {storytellingOptions.map((option) => (
-                  <Option key={option.storytelling_option_item_id} value={option.storytelling_option_item_id}>
+                  <Option
+                    key={option.storytelling_option_item_id}
+                    value={option.storytelling_option_item_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('storytelling_style_option_item_id') && (
                 <FormHelperText>
-                  {storytellingOptions.find(o => o.storytelling_option_item_id === watch('storytelling_style_option_item_id'))?.description || 'No description available'}
+                  {storytellingOptions.find(
+                    (o) =>
+                      o.storytelling_option_item_id === watch('storytelling_style_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -619,19 +650,26 @@ export function StyleGuideEditor({
               <FormLabel>Use of Jargon</FormLabel>
               <Select
                 value={watch('use_of_jargon_option_item_id') || ''}
-                onChange={(_event, value) => setValue('use_of_jargon_option_item_id', value || null)}
-                placeholder="Select jargon usage"
-                aria-label="Use of jargon"
+                onChange={(_event, value) =>
+                  setValue('use_of_jargon_option_item_id', value || null)
+                }
+                placeholder='Select jargon usage'
+                aria-label='Use of jargon'
               >
                 {jargonOptions.map((option) => (
-                  <Option key={option.use_of_jargon_option_item_id} value={option.use_of_jargon_option_item_id}>
+                  <Option
+                    key={option.use_of_jargon_option_item_id}
+                    value={option.use_of_jargon_option_item_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('use_of_jargon_option_item_id') && (
                 <FormHelperText>
-                  {jargonOptions.find(o => o.use_of_jargon_option_item_id === watch('use_of_jargon_option_item_id'))?.description || 'No description available'}
+                  {jargonOptions.find(
+                    (o) => o.use_of_jargon_option_item_id === watch('use_of_jargon_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -641,19 +679,27 @@ export function StyleGuideEditor({
               <FormLabel>Language Level</FormLabel>
               <Select
                 value={watch('language_level_option_item_id') || ''}
-                onChange={(_event, value) => setValue('language_level_option_item_id', value || null)}
-                placeholder="Select language level"
-                aria-label="Language level"
+                onChange={(_event, value) =>
+                  setValue('language_level_option_item_id', value || null)
+                }
+                placeholder='Select language level'
+                aria-label='Language level'
               >
                 {languageOptions.map((option) => (
-                  <Option key={option.language_level_option_item_id} value={option.language_level_option_item_id}>
+                  <Option
+                    key={option.language_level_option_item_id}
+                    value={option.language_level_option_item_id}
+                  >
                     {option.display_name}
                   </Option>
                 ))}
               </Select>
               {watch('language_level_option_item_id') && (
                 <FormHelperText>
-                  {languageOptions.find(o => o.language_level_option_item_id === watch('language_level_option_item_id'))?.description || 'No description available'}
+                  {languageOptions.find(
+                    (o) =>
+                      o.language_level_option_item_id === watch('language_level_option_item_id')
+                  )?.description || 'No description available'}
                 </FormHelperText>
               )}
             </FormControl>
@@ -663,12 +709,12 @@ export function StyleGuideEditor({
               <FormLabel>Inclusivity Guidelines</FormLabel>
               <Textarea
                 {...register('inclusivity_guidelines')}
-                placeholder="Machine-readable summary of inclusivity constraints and principal rules"
+                placeholder='Machine-readable summary of inclusivity constraints and principal rules'
                 minRows={6}
-                aria-label="Inclusivity guidelines"
-                aria-describedby="inclusivity-helper"
+                aria-label='Inclusivity guidelines'
+                aria-describedby='inclusivity-helper'
               />
-              <FormHelperText id="inclusivity-helper">
+              <FormHelperText id='inclusivity-helper'>
                 Define inclusivity rules and constraints for content generation
               </FormHelperText>
             </FormControl>
@@ -678,21 +724,17 @@ export function StyleGuideEditor({
 
       {/* Discard Changes Modal */}
       <Modal open={showDiscardModal} onClose={() => setShowDiscardModal(false)}>
-        <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="discard-modal-title"
-        >
+        <ModalDialog role='dialog' aria-modal='true' aria-labelledby='discard-modal-title'>
           <ModalClose />
-          <Typography id="discard-modal-title" level="h2">
+          <Typography id='discard-modal-title' level='h2'>
             Discard Changes?
           </Typography>
           <Typography sx={{ mt: 2 }}>
             Are you sure you want to discard all unsaved changes?
           </Typography>
-          <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+          <Stack direction='row' spacing={2} sx={{ mt: 3 }}>
             <Button
-              variant="outlined"
+              variant='outlined'
               onClick={() => setShowDiscardModal(false)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
@@ -702,10 +744,7 @@ export function StyleGuideEditor({
             >
               Cancel
             </Button>
-            <Button
-              color="danger"
-              onClick={handleDiscard}
-            >
+            <Button color='danger' onClick={handleDiscard}>
               Discard Changes
             </Button>
           </Stack>
@@ -713,28 +752,27 @@ export function StyleGuideEditor({
       </Modal>
 
       {/* Reanalyze Site Modal */}
-      <Modal open={showReanalyzeModal} onClose={() => !isReanalyzing && setShowReanalyzeModal(false)}>
-        <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reanalyze-modal-title"
-        >
+      <Modal
+        open={showReanalyzeModal}
+        onClose={() => !isReanalyzing && setShowReanalyzeModal(false)}
+      >
+        <ModalDialog role='dialog' aria-modal='true' aria-labelledby='reanalyze-modal-title'>
           <ModalClose disabled={isReanalyzing} />
-          <Typography id="reanalyze-modal-title" level="h2">
+          <Typography id='reanalyze-modal-title' level='h2'>
             Reanalyze Website?
           </Typography>
           <Typography sx={{ mt: 2 }}>
             This will delete the current style guide and regenerate it by analyzing your website.
             Any manual edits will be lost. This process may take 30-60 seconds.
           </Typography>
-          
+
           <FormControl sx={{ mt: 2 }}>
             <FormLabel>Website URL</FormLabel>
             <Input
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://www.example.com"
-              type="url"
+              placeholder='https://www.example.com'
+              type='url'
               disabled={isReanalyzing}
             />
             <FormHelperText>
@@ -742,16 +780,16 @@ export function StyleGuideEditor({
             </FormHelperText>
           </FormControl>
 
-          <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+          <Stack direction='row' spacing={2} sx={{ mt: 3 }}>
             <Button
-              variant="outlined"
+              variant='outlined'
               onClick={() => setShowReanalyzeModal(false)}
               disabled={isReanalyzing}
             >
               Cancel
             </Button>
             <Button
-              color="danger"
+              color='danger'
               onClick={handleConfirmReanalyze}
               loading={isReanalyzing}
               disabled={!websiteUrl || isReanalyzing}
@@ -765,4 +803,3 @@ export function StyleGuideEditor({
     </Box>
   );
 }
-

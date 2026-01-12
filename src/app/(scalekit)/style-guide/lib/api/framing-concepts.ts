@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createFramingConceptPayloadSchema, updateFramingConceptPayloadSchema } from '../types/validation';
+import {
+  createFramingConceptPayloadSchema,
+  updateFramingConceptPayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define FramingConcept type directly from the database structure
@@ -44,9 +47,7 @@ type PaginatedResponse<T> = {
 /**
  * Get a single framing concept by ID
  */
-export async function getFramingConceptById(
-  framingConceptId: string
-): Promise<FramingConcept> {
+export async function getFramingConceptById(framingConceptId: string): Promise<FramingConcept> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -69,16 +70,9 @@ export async function listFramingConcepts(
   params: ListFramingConceptsParams = {}
 ): Promise<PaginatedResponse<FramingConcept>> {
   const supabase = createClient();
-  const {
-    style_guide_id,
-    search,
-    page = 1,
-    per_page = 20,
-  } = params;
+  const { style_guide_id, search, page = 1, per_page = 20 } = params;
 
-  let query = supabase
-    .from('framing_concepts')
-    .select('*', { count: 'exact' });
+  let query = supabase.from('framing_concepts').select('*', { count: 'exact' });
 
   if (style_guide_id) {
     query = query.eq('style_guide_id', style_guide_id);
@@ -179,9 +173,7 @@ export async function updateFramingConcept(
 /**
  * Delete a framing concept
  */
-export async function deleteFramingConcept(
-  framingConceptId: string
-): Promise<FramingConcept> {
+export async function deleteFramingConcept(framingConceptId: string): Promise<FramingConcept> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -218,4 +210,3 @@ export async function getFramingConceptsByStyleGuideId(
 
   return (data || []) as FramingConcept[];
 }
-

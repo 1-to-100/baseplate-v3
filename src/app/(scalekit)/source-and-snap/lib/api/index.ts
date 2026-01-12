@@ -47,4 +47,3 @@ export type {
   GetCapturesParams,
   GetCapturesResponse,
 } from './captures';
-

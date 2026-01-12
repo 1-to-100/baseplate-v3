@@ -1,4 +1,10 @@
-import { useQuery, useMutation, useQueryClient, type UseMutationOptions, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseMutationOptions,
+  type UseQueryOptions,
+} from '@tanstack/react-query';
 import type {
   CompanyStrategy,
   StrategyPrinciple,
@@ -12,7 +18,7 @@ import type {
   OptionDataSource,
   OptionStrategyChangeType,
   StrategyWorkspaceData,
-} from "../types";
+} from '../types';
 import {
   getCompanyStrategy,
   getCompanyStrategyById,
@@ -60,7 +66,7 @@ import {
   createStrategyChangeTypeOption,
   updateStrategyChangeTypeOption,
   deleteStrategyChangeTypeOption,
-} from "./strategy-foundation";
+} from './strategy-foundation';
 import type {
   CreateCompanyStrategyInput,
   UpdateCompanyStrategyInput,
@@ -75,28 +81,29 @@ import type {
   CreateStrategyChangeLogInput,
   CreateOptionInput,
   UpdateOptionInput,
-} from "../schemas/strategy-foundation";
-import type { CompetitorListParams, StrategyChangeLogListParams } from "./strategy-foundation";
+} from '../schemas/strategy-foundation';
+import type { CompetitorListParams, StrategyChangeLogListParams } from './strategy-foundation';
 
 export const strategyForgeKeys = {
-  all: ["strategy-forge"] as const,
-  company: ["strategy-forge", "company"] as const,
-  companyById: (strategyId: string) => ["strategy-forge", "company", strategyId] as const,
-  principles: (strategyId: string) => ["strategy-forge", "principles", strategyId] as const,
-  values: (strategyId: string) => ["strategy-forge", "values", strategyId] as const,
+  all: ['strategy-forge'] as const,
+  company: ['strategy-forge', 'company'] as const,
+  companyById: (strategyId: string) => ['strategy-forge', 'company', strategyId] as const,
+  principles: (strategyId: string) => ['strategy-forge', 'principles', strategyId] as const,
+  values: (strategyId: string) => ['strategy-forge', 'values', strategyId] as const,
   competitors: (params?: CompetitorListParams) =>
-    ["strategy-forge", "competitors", params ?? {}] as const,
-  competitorById: (competitorId: string) => ["strategy-forge", "competitors", competitorId] as const,
+    ['strategy-forge', 'competitors', params ?? {}] as const,
+  competitorById: (competitorId: string) =>
+    ['strategy-forge', 'competitors', competitorId] as const,
   competitorSignals: (competitorId: string) =>
-    ["strategy-forge", "competitor-signals", competitorId] as const,
+    ['strategy-forge', 'competitor-signals', competitorId] as const,
   changeLogs: (strategyId: string, params?: StrategyChangeLogListParams) =>
-    ["strategy-forge", "change-logs", strategyId, params ?? {}] as const,
-  publicationStatuses: ["strategy-forge", "options", "publication-statuses"] as const,
-  competitorStatuses: ["strategy-forge", "options", "competitor-statuses"] as const,
-  competitorSignalTypes: ["strategy-forge", "options", "competitor-signal-types"] as const,
-  dataSources: ["strategy-forge", "options", "data-sources"] as const,
-  changeTypes: ["strategy-forge", "options", "change-types"] as const,
-  workspace: ["strategy-forge", "workspace"] as const,
+    ['strategy-forge', 'change-logs', strategyId, params ?? {}] as const,
+  publicationStatuses: ['strategy-forge', 'options', 'publication-statuses'] as const,
+  competitorStatuses: ['strategy-forge', 'options', 'competitor-statuses'] as const,
+  competitorSignalTypes: ['strategy-forge', 'options', 'competitor-signal-types'] as const,
+  dataSources: ['strategy-forge', 'options', 'data-sources'] as const,
+  changeTypes: ['strategy-forge', 'options', 'change-types'] as const,
+  workspace: ['strategy-forge', 'workspace'] as const,
 } as const;
 
 export function useCompanyStrategyQuery(options?: UseQueryOptions<CompanyStrategy | null>) {
@@ -137,7 +144,11 @@ export function useCreateCompanyStrategyMutation(
 }
 
 export function useUpdateCompanyStrategyMutation(
-  options?: UseMutationOptions<CompanyStrategy, Error, { strategyId: string; input: UpdateCompanyStrategyInput }>
+  options?: UseMutationOptions<
+    CompanyStrategy,
+    Error,
+    { strategyId: string; input: UpdateCompanyStrategyInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -181,7 +192,7 @@ export function useStrategyPrinciplesQuery(
   options?: UseQueryOptions<StrategyPrinciple[]>
 ) {
   return useQuery({
-    queryKey: strategyForgeKeys.principles(strategyId ?? "none"),
+    queryKey: strategyForgeKeys.principles(strategyId ?? 'none'),
     queryFn: () => {
       if (!strategyId) return Promise.resolve<StrategyPrinciple[]>([]);
       return listStrategyPrinciples(strategyId);
@@ -199,7 +210,9 @@ export function useCreateStrategyPrincipleMutation(
     mutationFn: createStrategyPrinciple,
     onSuccess: async (data, variables, context) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: strategyForgeKeys.principles(variables.strategy_id) }),
+        queryClient.invalidateQueries({
+          queryKey: strategyForgeKeys.principles(variables.strategy_id),
+        }),
         queryClient.invalidateQueries({ queryKey: strategyForgeKeys.workspace }),
       ]);
       options?.onSuccess?.(data, variables, context);
@@ -209,14 +222,20 @@ export function useCreateStrategyPrincipleMutation(
 }
 
 export function useUpdateStrategyPrincipleMutation(
-  options?: UseMutationOptions<StrategyPrinciple, Error, { principleId: string; input: UpdateStrategyPrincipleInput; strategyId: string }>
+  options?: UseMutationOptions<
+    StrategyPrinciple,
+    Error,
+    { principleId: string; input: UpdateStrategyPrincipleInput; strategyId: string }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ principleId, input }) => updateStrategyPrinciple(principleId, input),
     onSuccess: async (data, variables, context) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: strategyForgeKeys.principles(variables.strategyId) }),
+        queryClient.invalidateQueries({
+          queryKey: strategyForgeKeys.principles(variables.strategyId),
+        }),
         queryClient.invalidateQueries({ queryKey: strategyForgeKeys.workspace }),
       ]);
       options?.onSuccess?.(data, variables, context);
@@ -233,7 +252,9 @@ export function useDeleteStrategyPrincipleMutation(
     mutationFn: ({ principleId }) => deleteStrategyPrinciple(principleId),
     onSuccess: async (_data, variables, context) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: strategyForgeKeys.principles(variables.strategyId) }),
+        queryClient.invalidateQueries({
+          queryKey: strategyForgeKeys.principles(variables.strategyId),
+        }),
         queryClient.invalidateQueries({ queryKey: strategyForgeKeys.workspace }),
       ]);
       options?.onSuccess?.(_data, variables, context);
@@ -247,7 +268,7 @@ export function useStrategyValuesQuery(
   options?: UseQueryOptions<StrategyValue[]>
 ) {
   return useQuery({
-    queryKey: strategyForgeKeys.values(strategyId ?? "none"),
+    queryKey: strategyForgeKeys.values(strategyId ?? 'none'),
     queryFn: () => {
       if (!strategyId) return Promise.resolve<StrategyValue[]>([]);
       return listStrategyValues(strategyId);
@@ -265,7 +286,9 @@ export function useCreateStrategyValueMutation(
     mutationFn: createStrategyValue,
     onSuccess: async (data, variables, context) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: strategyForgeKeys.values(variables.strategy_id) }),
+        queryClient.invalidateQueries({
+          queryKey: strategyForgeKeys.values(variables.strategy_id),
+        }),
         queryClient.invalidateQueries({ queryKey: strategyForgeKeys.workspace }),
       ]);
       options?.onSuccess?.(data, variables, context);
@@ -275,7 +298,11 @@ export function useCreateStrategyValueMutation(
 }
 
 export function useUpdateStrategyValueMutation(
-  options?: UseMutationOptions<StrategyValue, Error, { valueId: string; input: UpdateStrategyValueInput; strategyId: string }>
+  options?: UseMutationOptions<
+    StrategyValue,
+    Error,
+    { valueId: string; input: UpdateStrategyValueInput; strategyId: string }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -349,7 +376,11 @@ export function useCreateCompetitorMutation(
 }
 
 export function useUpdateCompetitorMutation(
-  options?: UseMutationOptions<Competitor, Error, { competitorId: string; input: UpdateCompetitorInput }>
+  options?: UseMutationOptions<
+    Competitor,
+    Error,
+    { competitorId: string; input: UpdateCompetitorInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -471,7 +502,7 @@ export function useStrategyChangeLogsQuery(
   options?: UseQueryOptions<StrategyChangeLog[]>
 ) {
   return useQuery({
-    queryKey: strategyForgeKeys.changeLogs(strategyId ?? "none", params),
+    queryKey: strategyForgeKeys.changeLogs(strategyId ?? 'none', params),
     queryFn: () => {
       if (!strategyId) return Promise.resolve<StrategyChangeLog[]>([]);
       return listStrategyChangeLogs(strategyId, params);
@@ -519,9 +550,7 @@ export function useDeleteStrategyChangeLogMutation(
   });
 }
 
-export function usePublicationStatusesQuery(
-  options?: UseQueryOptions<OptionPublicationStatus[]>
-) {
+export function usePublicationStatusesQuery(options?: UseQueryOptions<OptionPublicationStatus[]>) {
   return useQuery({
     queryKey: strategyForgeKeys.publicationStatuses,
     queryFn: () => listPublicationStatuses(true),
@@ -529,9 +558,7 @@ export function usePublicationStatusesQuery(
   });
 }
 
-export function useCompetitorStatusesQuery(
-  options?: UseQueryOptions<OptionCompetitorStatus[]>
-) {
+export function useCompetitorStatusesQuery(options?: UseQueryOptions<OptionCompetitorStatus[]>) {
   return useQuery({
     queryKey: strategyForgeKeys.competitorStatuses,
     queryFn: () => listCompetitorStatuses(true),
@@ -557,9 +584,7 @@ export function useDataSourcesQuery(options?: UseQueryOptions<OptionDataSource[]
   });
 }
 
-export function useStrategyChangeTypesQuery(
-  options?: UseQueryOptions<OptionStrategyChangeType[]>
-) {
+export function useStrategyChangeTypesQuery(options?: UseQueryOptions<OptionStrategyChangeType[]>) {
   return useQuery({
     queryKey: strategyForgeKeys.changeTypes,
     queryFn: () => listStrategyChangeTypes(true),
@@ -582,7 +607,11 @@ export function useCreatePublicationStatusOptionMutation(
 }
 
 export function useUpdatePublicationStatusOptionMutation(
-  options?: UseMutationOptions<OptionPublicationStatus, Error, { optionId: string; input: UpdateOptionInput }>
+  options?: UseMutationOptions<
+    OptionPublicationStatus,
+    Error,
+    { optionId: string; input: UpdateOptionInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -624,7 +653,11 @@ export function useCreateCompetitorStatusOptionMutation(
 }
 
 export function useUpdateCompetitorStatusOptionMutation(
-  options?: UseMutationOptions<OptionCompetitorStatus, Error, { optionId: string; input: UpdateOptionInput }>
+  options?: UseMutationOptions<
+    OptionCompetitorStatus,
+    Error,
+    { optionId: string; input: UpdateOptionInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -668,7 +701,11 @@ export function useCreateCompetitorSignalTypeOptionMutation(
 }
 
 export function useUpdateCompetitorSignalTypeOptionMutation(
-  options?: UseMutationOptions<OptionCompetitorSignalType, Error, { optionId: string; input: UpdateOptionInput }>
+  options?: UseMutationOptions<
+    OptionCompetitorSignalType,
+    Error,
+    { optionId: string; input: UpdateOptionInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -714,7 +751,11 @@ export function useCreateDataSourceOptionMutation(
 }
 
 export function useUpdateDataSourceOptionMutation(
-  options?: UseMutationOptions<OptionDataSource, Error, { optionId: string; input: UpdateOptionInput }>
+  options?: UseMutationOptions<
+    OptionDataSource,
+    Error,
+    { optionId: string; input: UpdateOptionInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -756,7 +797,11 @@ export function useCreateStrategyChangeTypeOptionMutation(
 }
 
 export function useUpdateStrategyChangeTypeOptionMutation(
-  options?: UseMutationOptions<OptionStrategyChangeType, Error, { optionId: string; input: UpdateOptionInput }>
+  options?: UseMutationOptions<
+    OptionStrategyChangeType,
+    Error,
+    { optionId: string; input: UpdateOptionInput }
+  >
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -783,14 +828,10 @@ export function useDeleteStrategyChangeTypeOptionMutation(
   });
 }
 
-export function useStrategyWorkspaceQuery(
-  options?: UseQueryOptions<StrategyWorkspaceData>
-) {
+export function useStrategyWorkspaceQuery(options?: UseQueryOptions<StrategyWorkspaceData>) {
   return useQuery({
     queryKey: strategyForgeKeys.workspace,
     queryFn: getStrategyWorkspaceData,
     ...options,
   });
 }
-
-

@@ -43,12 +43,14 @@ Runtime validation is provided via Zod in `lib/schemas/strategy-foundation.ts`. 
 Located in `lib/api/strategy-foundation.ts`. All helpers enforce customer isolation with `current_customer_id()` and populate `created_by_user_id` / `updated_by_user_id` automatically.
 
 ### Company Strategy
+
 - `getCompanyStrategy()` / `getCompanyStrategyById(strategyId)`
 - `createCompanyStrategy(input)`
 - `updateCompanyStrategy(strategyId, input)`
 - `deleteCompanyStrategy(strategyId)`
 
 ### Principles & Values
+
 - `listStrategyPrinciples(strategyId)`
 - `createStrategyPrinciple(input)`
 - `updateStrategyPrinciple(principleId, input)`
@@ -56,6 +58,7 @@ Located in `lib/api/strategy-foundation.ts`. All helpers enforce customer isolat
 - Equivalent helpers for `strategy_values`
 
 ### Competitors & Signals
+
 - `listCompetitors(params?)`
 - `getCompetitorById(competitorId)`
 - `createCompetitor(input)`
@@ -67,11 +70,13 @@ Located in `lib/api/strategy-foundation.ts`. All helpers enforce customer isolat
 - `deleteCompetitorSignal(signalId)`
 
 ### Change Log
+
 - `listStrategyChangeLogs(strategyId, params?)`
 - `createStrategyChangeLog(input)`
 - `deleteStrategyChangeLog(changeLogId)`
 
 ### Option Tables
+
 Read helpers return active rows by default; pass `true` to include inactive values.
 
 - `listPublicationStatuses(includeInactive?)`
@@ -88,6 +93,7 @@ System-admin only mutations (will throw if the current user lacks privileges):
 - Equivalent helpers exist for competitor status, signal type, data source, and change type tables.
 
 ### Workspace Aggregation
+
 - `getStrategyWorkspaceData()` — returns the canonical strategy (if any) plus related collections and option sets.
 
 ---
@@ -102,7 +108,7 @@ Examples:
 const { data: strategy, isLoading } = useCompanyStrategyQuery();
 const createStrategy = useCreateCompanyStrategyMutation();
 const principles = useStrategyPrinciplesQuery(strategy?.strategy_id ?? null);
-const competitorList = useCompetitorsQuery({ search: "AI" });
+const competitorList = useCompetitorsQuery({ search: 'AI' });
 const workspace = useStrategyWorkspaceQuery();
 ```
 
@@ -117,6 +123,7 @@ Route: `/strategy-forge/diagnostics/strategy-foundation`
 File: `diagnostics/strategy-foundation/page.tsx`
 
 **What it does**
+
 - Fetches option sets for reference data.
 - Backs up any existing `company_strategies` row (with principles/values/change logs), deletes it, and later restores it.
 - Executes full CRUD flows for strategies, principles, values, competitors, competitor signals, change logs, and system option tables.
@@ -124,6 +131,7 @@ File: `diagnostics/strategy-foundation/page.tsx`
 - Presents a detailed result table, per-test timings, and execution logs.
 
 **Notes**
+
 - Temporary records are deleted after the run.
 - The original canonical strategy (if present) is reinserted along with associated principles, values, and change logs. Restoration failures are logged.
 - Option mutations require system-admin privileges; failures are surfaced in the report when the current user lacks access.
@@ -141,7 +149,7 @@ import {
   createStrategyPrinciple,
   useCreateCompetitorMutation,
   strategyForgeKeys,
-} from "../lib/api";
+} from '../lib/api';
 ```
 
 Models and schema types are exported via `lib/types` and `lib/schemas`, respectively.
@@ -149,4 +157,3 @@ Models and schema types are exported via `lib/types` and `lib/schemas`, respecti
 ---
 
 For additional implementation guidance see the Baseplate feature registry: <https://1to100.com/baseplate/features/feature-registry/>
-

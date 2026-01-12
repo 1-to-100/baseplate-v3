@@ -51,7 +51,9 @@ export function useCreateCapture() {
     mutationFn: createCapture,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: captureKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: captureKeys.detail(data.web_screenshot_capture_id) });
+      queryClient.invalidateQueries({
+        queryKey: captureKeys.detail(data.web_screenshot_capture_id),
+      });
     },
   });
 }
@@ -66,7 +68,9 @@ export function useUpdateCapture() {
     mutationFn: ({ id, payload }) => updateCapture(id, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: captureKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: captureKeys.detail(data.web_screenshot_capture_id) });
+      queryClient.invalidateQueries({
+        queryKey: captureKeys.detail(data.web_screenshot_capture_id),
+      });
     },
   });
 }
@@ -84,4 +88,3 @@ export function useDeleteCapture() {
     },
   });
 }
-

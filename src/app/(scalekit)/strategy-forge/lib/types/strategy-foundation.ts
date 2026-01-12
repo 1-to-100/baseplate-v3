@@ -148,4 +148,3 @@ export interface StrategyWorkspaceData {
   dataSources: OptionDataSource[];
   changeTypes: OptionStrategyChangeType[];
 }
-

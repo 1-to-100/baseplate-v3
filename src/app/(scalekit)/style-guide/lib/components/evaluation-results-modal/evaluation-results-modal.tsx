@@ -41,67 +41,58 @@ export function EvaluationResultsModal({
   onOpenFullReview,
 }: EvaluationResultsModalProps): React.JSX.Element {
   const ruleHits = evaluation?.rule_hits || [];
-  const minorFixes = ruleHits.filter((hit) => (typeof hit.severity_level === 'number' ? hit.severity_level : 0) === 1);
+  const minorFixes = ruleHits.filter(
+    (hit) => (typeof hit.severity_level === 'number' ? hit.severity_level : 0) === 1
+  );
 
   const severityCounts = {
-    info: ruleHits.filter((h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 1).length,
-    warning: ruleHits.filter((h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 2).length,
-    blocker: ruleHits.filter((h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 3).length,
+    info: ruleHits.filter(
+      (h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 1
+    ).length,
+    warning: ruleHits.filter(
+      (h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 2
+    ).length,
+    blocker: ruleHits.filter(
+      (h) => (typeof h.severity_level === 'number' ? h.severity_level : 0) === 3
+    ).length,
   };
 
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="evaluation-results-title"
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='evaluation-results-title'
         sx={{ minWidth: 700, maxWidth: 900 }}
       >
         <ModalClose />
-        <Typography id="evaluation-results-title" level="h2">
+        <Typography id='evaluation-results-title' level='h2'>
           Evaluation Results
         </Typography>
-        <Typography level="body-md" color="neutral" sx={{ mt: 1 }}>
+        <Typography level='body-md' color='neutral' sx={{ mt: 1 }}>
           Summary of rule and vocabulary hits for this draft
         </Typography>
 
         {evaluation && (
           <Stack spacing={3} sx={{ mt: 3 }}>
             {/* Summary Chips */}
-            <Stack direction="row" spacing={2} flexWrap="wrap">
-              <Chip
-                color="primary"
-                variant="soft"
-                role="button"
-                aria-pressed="false"
-              >
+            <Stack direction='row' spacing={2} flexWrap='wrap'>
+              <Chip color='primary' variant='soft' role='button' aria-pressed='false'>
                 Info: {severityCounts.info}
               </Chip>
-              <Chip
-                color="warning"
-                variant="soft"
-                role="button"
-                aria-pressed="false"
-              >
+              <Chip color='warning' variant='soft' role='button' aria-pressed='false'>
                 Warning: {severityCounts.warning}
               </Chip>
-              <Chip
-                color="danger"
-                variant="soft"
-                role="button"
-                aria-pressed="false"
-              >
+              <Chip color='danger' variant='soft' role='button' aria-pressed='false'>
                 Blocker: {severityCounts.blocker}
               </Chip>
-              <Chip variant="soft">
-                Total: {ruleHits.length}
-              </Chip>
+              <Chip variant='soft'>Total: {ruleHits.length}</Chip>
             </Stack>
 
             {/* Hits Table */}
             {ruleHits.length > 0 ? (
               <Box sx={{ overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
-                <Table aria-label="Evaluation hits table" stickyHeader>
+                <Table aria-label='Evaluation hits table' stickyHeader>
                   <thead>
                     <tr>
                       <th>Severity</th>
@@ -116,32 +107,46 @@ export function EvaluationResultsModal({
                       <tr key={hit.rule_hit_id}>
                         <td>
                           <Chip
-                            color={severityColors[(typeof hit.severity_level === 'number' ? hit.severity_level : 1) as keyof typeof severityColors]}
-                            size="sm"
-                            variant="soft"
+                            color={
+                              severityColors[
+                                (typeof hit.severity_level === 'number'
+                                  ? hit.severity_level
+                                  : 1) as keyof typeof severityColors
+                              ]
+                            }
+                            size='sm'
+                            variant='soft'
                           >
-                            {severityLabels[(typeof hit.severity_level === 'number' ? hit.severity_level : 1) as keyof typeof severityLabels]}
+                            {
+                              severityLabels[
+                                (typeof hit.severity_level === 'number'
+                                  ? hit.severity_level
+                                  : 1) as keyof typeof severityLabels
+                              ]
+                            }
                           </Chip>
                         </td>
                         <td>
-                          <Typography level="body-sm" sx={{ maxWidth: 200 }}>
+                          <Typography level='body-sm' sx={{ maxWidth: 200 }}>
                             {typeof hit.matched_text === 'string' ? hit.matched_text : '—'}
                           </Typography>
                         </td>
                         <td>
-                          <Typography level="body-sm">
+                          <Typography level='body-sm'>
                             {hit.vocabulary_entry_id ? 'Vocabulary' : 'Rule'}
                           </Typography>
                         </td>
                         <td>
-                          <Typography level="body-sm" sx={{ maxWidth: 200 }}>
-                            {typeof hit.suggested_replacement === 'string' ? hit.suggested_replacement : '—'}
+                          <Typography level='body-sm' sx={{ maxWidth: 200 }}>
+                            {typeof hit.suggested_replacement === 'string'
+                              ? hit.suggested_replacement
+                              : '—'}
                           </Typography>
                         </td>
                         <td>
                           <Button
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             aria-label={`Apply fix for ${typeof hit.matched_text === 'string' ? hit.matched_text : 'rule violation'}`}
                           >
                             Apply
@@ -154,35 +159,35 @@ export function EvaluationResultsModal({
               </Box>
             ) : (
               <Box sx={{ textAlign: 'center', p: 4 }}>
-                <Typography level="body-md" color="success">
+                <Typography level='body-md' color='success'>
                   No issues found. Content is compliant!
                 </Typography>
               </Box>
             )}
 
             {/* Actions */}
-            <Stack direction="row" spacing={2} justifyContent="space-between">
-              <Stack direction="row" spacing={2}>
+            <Stack direction='row' spacing={2} justifyContent='space-between'>
+              <Stack direction='row' spacing={2}>
                 {minorFixes.length > 0 && onApplyAllMinorFixes && (
                   <Button
-                    variant="outlined"
+                    variant='outlined'
                     onClick={onApplyAllMinorFixes}
-                    aria-label="Apply all minor fixes"
+                    aria-label='Apply all minor fixes'
                   >
                     Apply All Minor Fixes ({minorFixes.length})
                   </Button>
                 )}
                 {onOpenFullReview && (
                   <Button
-                    variant="outlined"
+                    variant='outlined'
                     onClick={onOpenFullReview}
-                    aria-label="Open full review"
+                    aria-label='Open full review'
                   >
                     Open Full Review
                   </Button>
                 )}
               </Stack>
-              <Button onClick={onClose} aria-label="Close evaluation results">
+              <Button onClick={onClose} aria-label='Close evaluation results'>
                 Close
               </Button>
             </Stack>
@@ -192,4 +197,3 @@ export function EvaluationResultsModal({
     </Modal>
   );
 }
-

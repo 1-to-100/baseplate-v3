@@ -10,4 +10,3 @@ export default function CaptureDetailPage(): React.JSX.Element {
 
   return <CaptureViewer captureId={captureId} />;
 }
-

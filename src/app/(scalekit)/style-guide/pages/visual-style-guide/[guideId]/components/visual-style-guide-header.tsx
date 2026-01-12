@@ -1,10 +1,10 @@
-import * as React from "react";
-import Button from "@mui/joy/Button";
-import Stack from "@mui/joy/Stack";
-import Typography from "@mui/joy/Typography";
-import { Export as ExportIcon } from "@phosphor-icons/react/dist/ssr";
-import { PencilLine, ArrowClockwise } from "@phosphor-icons/react";
-import { formLabelClasses } from "@mui/joy";
+import * as React from 'react';
+import Button from '@mui/joy/Button';
+import Stack from '@mui/joy/Stack';
+import Typography from '@mui/joy/Typography';
+import { Export as ExportIcon } from '@phosphor-icons/react/dist/ssr';
+import { PencilLine, ArrowClockwise } from '@phosphor-icons/react';
+import { formLabelClasses } from '@mui/joy';
 
 type VisualStyleGuideHeaderProps = {
   name: string;
@@ -29,25 +29,25 @@ export default function VisualStyleGuideHeader({
 }: VisualStyleGuideHeaderProps): React.JSX.Element {
   return (
     <Stack
-      direction={{ xs: "column", sm: "row" }}
+      direction={{ xs: 'column', sm: 'row' }}
       spacing={3}
-      justifyContent="space-between"
-      alignItems="center"
-      width="100%"
+      justifyContent='space-between'
+      alignItems='center'
+      width='100%'
     >
       {/* <Stack spacing={1} sx={{ flex: "1 1 auto" }}> */}
-      <Typography level="h1">Visual Style</Typography>
+      <Typography level='h1'>Visual Style</Typography>
       {/* {description ? (
           <Typography level="body-md" color="neutral">
             {description}
           </Typography>
         ) : null}
       </Stack> */}
-      <Stack direction="row" spacing={1}>
+      <Stack direction='row' spacing={1}>
         {showRefresh && onRefresh && (
           <Button
-            variant="outlined"
-            color="neutral"
+            variant='outlined'
+            color='neutral'
             startDecorator={<ArrowClockwise />}
             onClick={onRefresh}
             disabled={isRefreshing}
@@ -57,17 +57,13 @@ export default function VisualStyleGuideHeader({
           </Button>
         )}
         {isEditableView ? (
-          <Button
-            variant="soft"
-            color="neutral"
-            onClick={() => handleVisualStyleGuideEdit(false)}
-          >
+          <Button variant='soft' color='neutral' onClick={() => handleVisualStyleGuideEdit(false)}>
             Exit Edit Mode
           </Button>
         ) : (
           <Button
-            variant="solid"
-            color="primary"
+            variant='solid'
+            color='primary'
             startDecorator={<PencilLine />}
             onClick={() => handleVisualStyleGuideEdit(true)}
           >
@@ -75,7 +71,7 @@ export default function VisualStyleGuideHeader({
           </Button>
         )}
 
-        <Button variant="solid" color="primary" onClick={onPublish}>
+        <Button variant='solid' color='primary' onClick={onPublish}>
           Mark as Final
         </Button>
       </Stack>

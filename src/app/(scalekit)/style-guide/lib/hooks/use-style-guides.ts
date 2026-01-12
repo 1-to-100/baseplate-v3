@@ -27,7 +27,11 @@ export function useStyleGuide(id: string | null) {
   });
 }
 
-export function useStyleGuides(filters?: { customer_id?: string; page?: number; per_page?: number }) {
+export function useStyleGuides(filters?: {
+  customer_id?: string;
+  page?: number;
+  per_page?: number;
+}) {
   return useQuery({
     queryKey: styleGuideKeys.list(filters),
     queryFn: () => listStyleGuides(filters || {}),
@@ -90,4 +94,3 @@ export function useDeleteStyleGuide() {
     },
   });
 }
-

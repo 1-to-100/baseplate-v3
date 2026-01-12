@@ -63,24 +63,27 @@ This function should be called when a capture request is created. You can:
 ## Monitoring
 
 Check function logs in Supabase dashboard:
+
 - Go to Edge Functions > capture-web-screenshot > Logs
 - Monitor for errors and performance issues
 
 ## Troubleshooting
 
 ### "Screenshot failed" errors
+
 - Check Browserless token is valid
 - Verify Browserless URL is correct
 - Check target URL is accessible
 - Review Browserless logs
 
 ### Storage upload errors
+
 - Verify `screenshots` bucket exists
 - Check RLS policies allow uploads
 - Ensure service role key has storage access
 
 ### Timeout errors
+
 - Increase timeout in Puppeteer script (currently 60s)
 - Check if target URL loads slowly
 - Consider using `waitUntil: 'load'` instead of `networkidle0`
-

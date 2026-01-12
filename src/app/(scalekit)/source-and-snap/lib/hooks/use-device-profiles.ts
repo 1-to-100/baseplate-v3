@@ -19,7 +19,8 @@ export const deviceProfileKeys = {
   list: (params?: GetDeviceProfileOptionsParams) => [...deviceProfileKeys.lists(), params] as const,
   details: () => [...deviceProfileKeys.all, 'detail'] as const,
   detail: (id: string) => [...deviceProfileKeys.details(), id] as const,
-  byProgrammaticName: (name: string) => [...deviceProfileKeys.all, 'programmatic-name', name] as const,
+  byProgrammaticName: (name: string) =>
+    [...deviceProfileKeys.all, 'programmatic-name', name] as const,
 };
 
 /**
@@ -79,11 +80,17 @@ export function useCreateDeviceProfileOption() {
 export function useUpdateDeviceProfileOption() {
   const queryClient = useQueryClient();
 
-  return useMutation<DeviceProfileOption, Error, { id: string; payload: UpdateDeviceProfileOptionPayload }>({
+  return useMutation<
+    DeviceProfileOption,
+    Error,
+    { id: string; payload: UpdateDeviceProfileOptionPayload }
+  >({
     mutationFn: ({ id, payload }) => updateDeviceProfileOption(id, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: deviceProfileKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: deviceProfileKeys.detail(data.options_device_profile_id) });
+      queryClient.invalidateQueries({
+        queryKey: deviceProfileKeys.detail(data.options_device_profile_id),
+      });
     },
   });
 }
@@ -101,4 +108,3 @@ export function useDeleteDeviceProfileOption() {
     },
   });
 }
-

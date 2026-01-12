@@ -13,9 +13,8 @@ export default function VisualStyleGuideBreadcrumbs({
 }: VisualStyleGuideBreadcrumbsProps): React.JSX.Element {
   return (
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-      <BreadcrumbsItem href="/style-guide/">Style Guide</BreadcrumbsItem>
-      <BreadcrumbsItem type="end">{guideName}</BreadcrumbsItem>
+      <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
+      <BreadcrumbsItem type='end'>{guideName}</BreadcrumbsItem>
     </Breadcrumbs>
   );
 }
-

@@ -20,7 +20,12 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { Breadcrumbs } from '@mui/joy';
 import { Plus, PencilSimple, Trash, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr';
-import { useFramingConcepts, useCreateFramingConcept, useUpdateFramingConcept, useDeleteFramingConcept } from '@/app/(scalekit)/style-guide/lib/hooks';
+import {
+  useFramingConcepts,
+  useCreateFramingConcept,
+  useUpdateFramingConcept,
+  useDeleteFramingConcept,
+} from '@/app/(scalekit)/style-guide/lib/hooks';
 import { useActiveStyleGuide } from '@/app/(scalekit)/style-guide/lib/hooks';
 import { useUserInfo } from '@/hooks/use-user-info';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -128,16 +133,20 @@ export default function FramingConceptsPage(): React.JSX.Element {
     }
   };
 
-  const filteredConcepts = conceptsData?.data.filter((concept) =>
-    concept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    concept.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredConcepts =
+    conceptsData?.data.filter(
+      (concept) =>
+        concept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        concept.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   if (!isLoading && (!customerId || !styleGuideId)) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="warning">
-          <Typography>Please create a style guide first before managing framing concepts.</Typography>
+        <Alert color='warning'>
+          <Typography>
+            Please create a style guide first before managing framing concepts.
+          </Typography>
         </Alert>
       </Box>
     );
@@ -148,27 +157,27 @@ export default function FramingConceptsPage(): React.JSX.Element {
       <Stack spacing={3}>
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/style-guide/">Style Guide</BreadcrumbsItem>
+          <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
           <Typography>Framing Concepts</Typography>
         </Breadcrumbs>
 
         {/* Page Header */}
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          spacing={2} 
-          justifyContent="space-between" 
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          justifyContent='space-between'
           alignItems={{ xs: 'flex-start', sm: 'center' }}
         >
           <Stack spacing={1}>
-            <Typography level="h1">Framing Concepts</Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='h1'>Framing Concepts</Typography>
+            <Typography level='body-md' color='neutral'>
               Define metaphors and long-form framing to guide AI-generated content
             </Typography>
           </Stack>
           <Button
             startDecorator={<Plus />}
             onClick={handleOpenCreate}
-            aria-label="Create framing concept"
+            aria-label='Create framing concept'
           >
             New Framing Concept
           </Button>
@@ -177,10 +186,10 @@ export default function FramingConceptsPage(): React.JSX.Element {
         {/* Search */}
         <Input
           startDecorator={<MagnifyingGlass />}
-          placeholder="Search framing concepts..."
+          placeholder='Search framing concepts...'
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Search framing concepts"
+          aria-label='Search framing concepts'
         />
 
         {/* Table */}
@@ -190,7 +199,7 @@ export default function FramingConceptsPage(): React.JSX.Element {
           </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table aria-label="Framing concepts table">
+            <Table aria-label='Framing concepts table'>
               <thead>
                 <tr>
                   <th>Name</th>
@@ -203,7 +212,7 @@ export default function FramingConceptsPage(): React.JSX.Element {
                 {filteredConcepts.length === 0 ? (
                   <tr>
                     <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography level="body-md" color="neutral">
+                      <Typography level='body-md' color='neutral'>
                         {searchQuery ? 'No concepts match your search' : 'No framing concepts yet'}
                       </Typography>
                     </td>
@@ -216,11 +225,11 @@ export default function FramingConceptsPage(): React.JSX.Element {
                       onClick={() => handleOpenEdit(concept.framing_concept_id)}
                     >
                       <td>
-                        <Typography fontWeight="md">{concept.name}</Typography>
+                        <Typography fontWeight='md'>{concept.name}</Typography>
                       </td>
                       <td>
                         <Typography
-                          level="body-sm"
+                          level='body-sm'
                           sx={{
                             maxWidth: 400,
                             overflow: 'hidden',
@@ -232,25 +241,25 @@ export default function FramingConceptsPage(): React.JSX.Element {
                         </Typography>
                       </td>
                       <td>
-                        <Typography level="body-sm">
+                        <Typography level='body-sm'>
                           {new Date(concept.created_at).toLocaleDateString()}
                         </Typography>
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
-                        <Stack direction="row" spacing={1}>
+                        <Stack direction='row' spacing={1}>
                           <IconButton
-                            size="sm"
-                            variant="plain"
-                            color="neutral"
+                            size='sm'
+                            variant='plain'
+                            color='neutral'
                             onClick={() => handleOpenEdit(concept.framing_concept_id)}
                             aria-label={`Edit ${concept.name}`}
                           >
                             <PencilSimple />
                           </IconButton>
                           <IconButton
-                            size="sm"
-                            variant="plain"
-                            color="danger"
+                            size='sm'
+                            variant='plain'
+                            color='danger'
                             onClick={() => handleDelete(concept.framing_concept_id)}
                             aria-label={`Delete ${concept.name}`}
                           >
@@ -270,13 +279,13 @@ export default function FramingConceptsPage(): React.JSX.Element {
       {/* Create/Edit Modal */}
       <Modal open={openModal} onClose={handleCloseModal}>
         <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="framing-concept-modal-title"
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='framing-concept-modal-title'
           sx={{ minWidth: 500 }}
         >
           <ModalClose />
-          <Typography id="framing-concept-modal-title" level="h2">
+          <Typography id='framing-concept-modal-title' level='h2'>
             {editingConcept ? 'Edit Framing Concept' : 'Create Framing Concept'}
           </Typography>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -285,13 +294,13 @@ export default function FramingConceptsPage(): React.JSX.Element {
                 <FormLabel>Name *</FormLabel>
                 <Input
                   {...register('name')}
-                  placeholder="Enter concept name"
-                  aria-label="Concept name"
+                  placeholder='Enter concept name'
+                  aria-label='Concept name'
                   aria-describedby={errors.name ? 'name-error' : undefined}
-                  aria-required="true"
+                  aria-required='true'
                 />
                 {errors.name && (
-                  <FormHelperText id="name-error">{errors.name.message}</FormHelperText>
+                  <FormHelperText id='name-error'>{errors.name.message}</FormHelperText>
                 )}
               </FormControl>
 
@@ -299,21 +308,18 @@ export default function FramingConceptsPage(): React.JSX.Element {
                 <FormLabel>Description</FormLabel>
                 <Textarea
                   {...register('description')}
-                  placeholder="Enter concept description"
+                  placeholder='Enter concept description'
                   minRows={4}
-                  aria-label="Concept description"
+                  aria-label='Concept description'
                 />
               </FormControl>
 
-              <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleCloseModal}
-                >
+              <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end' }}>
+                <Button variant='outlined' onClick={handleCloseModal}>
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
                 >
                   {editingConcept ? 'Update' : 'Create'}
@@ -326,4 +332,3 @@ export default function FramingConceptsPage(): React.JSX.Element {
     </Box>
   );
 }
-

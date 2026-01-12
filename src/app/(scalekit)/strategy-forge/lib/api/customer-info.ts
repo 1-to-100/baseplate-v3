@@ -1,17 +1,21 @@
 import { createClient } from '@/lib/supabase/client';
 import type { CustomerInfo, CreateCustomerInfoPayload, UpdateCustomerInfoPayload } from '../types';
 
-export async function createCustomerInfo(payload: CreateCustomerInfoPayload): Promise<CustomerInfo> {
+export async function createCustomerInfo(
+  payload: CreateCustomerInfoPayload
+): Promise<CustomerInfo> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -19,10 +23,12 @@ export async function createCustomerInfo(payload: CreateCustomerInfoPayload): Pr
 
   const { data, error } = await supabase
     .from('customer_info')
-    .insert([{
-      ...payload,
-      customer_id: customerId
-    }])
+    .insert([
+      {
+        ...payload,
+        customer_id: customerId,
+      },
+    ])
     .select()
     .single();
 
@@ -35,15 +41,17 @@ export async function createCustomerInfo(payload: CreateCustomerInfoPayload): Pr
 
 export async function getCustomerInfo(): Promise<CustomerInfo[]> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -64,15 +72,17 @@ export async function getCustomerInfo(): Promise<CustomerInfo[]> {
 
 export async function getCustomerInfoById(customer_info_id: string): Promise<CustomerInfo> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -92,17 +102,21 @@ export async function getCustomerInfoById(customer_info_id: string): Promise<Cus
   return data;
 }
 
-export async function getCustomerInfoByCustomerId(customer_id: number): Promise<CustomerInfo | null> {
+export async function getCustomerInfoByCustomerId(
+  customer_id: number
+): Promise<CustomerInfo | null> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -126,24 +140,28 @@ export async function getCustomerInfoByCustomerId(customer_id: number): Promise<
   return data;
 }
 
-export async function updateCustomerInfo(payload: UpdateCustomerInfoPayload): Promise<CustomerInfo> {
+export async function updateCustomerInfo(
+  payload: UpdateCustomerInfoPayload
+): Promise<CustomerInfo> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
   const customerId = customerIdResult;
 
   const { customer_info_id, ...updateData } = payload;
-  
+
   const { data, error } = await supabase
     .from('customer_info')
     .update(updateData)
@@ -161,15 +179,17 @@ export async function updateCustomerInfo(payload: UpdateCustomerInfoPayload): Pr
 
 export async function deleteCustomerInfo(customer_info_id: string): Promise<void> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -188,15 +208,17 @@ export async function deleteCustomerInfo(customer_info_id: string): Promise<void
 
 export async function getCurrentCustomerId(): Promise<number> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   const { data, error } = await supabase.rpc('customer_id');
-  
+
   if (error) {
     throw new Error(`Failed to get current customer ID: ${error.message}`);
   }
@@ -206,15 +228,17 @@ export async function getCurrentCustomerId(): Promise<number> {
 
 export async function getOrCreateCustomerInfo(): Promise<CustomerInfo> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }

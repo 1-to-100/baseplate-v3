@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createContentEvaluationPayloadSchema, updateContentEvaluationPayloadSchema } from '../types/validation';
+import {
+  createContentEvaluationPayloadSchema,
+  updateContentEvaluationPayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define ContentEvaluation type directly from the database structure
@@ -110,18 +113,9 @@ export async function listContentEvaluations(
   params: ListContentEvaluationsParams = {}
 ): Promise<PaginatedResponse<ContentEvaluation>> {
   const supabase = createClient();
-  const {
-    style_guide_id,
-    content_id,
-    blocked,
-    overall_severity,
-    page = 1,
-    per_page = 20,
-  } = params;
+  const { style_guide_id, content_id, blocked, overall_severity, page = 1, per_page = 20 } = params;
 
-  let query = supabase
-    .from('content_evaluations')
-    .select('*', { count: 'exact' });
+  let query = supabase.from('content_evaluations').select('*', { count: 'exact' });
 
   if (style_guide_id) {
     query = query.eq('style_guide_id', style_guide_id);
@@ -231,9 +225,7 @@ export async function updateContentEvaluation(
 /**
  * Delete a content evaluation
  */
-export async function deleteContentEvaluation(
-  evaluationId: string
-): Promise<ContentEvaluation> {
+export async function deleteContentEvaluation(evaluationId: string): Promise<ContentEvaluation> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -292,4 +284,3 @@ export async function getBlockedContentEvaluationsByStyleGuideId(
 
   return (data || []) as ContentEvaluation[];
 }
-

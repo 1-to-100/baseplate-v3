@@ -39,7 +39,11 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Fetch persona data
-  const { data: persona, isLoading, error } = useQuery({
+  const {
+    data: persona,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['persona', resolvedParams.id],
     queryFn: () => PersonasAPI.getById(resolvedParams.id),
     enabled: !!resolvedParams.id && !!auth.user,
@@ -105,10 +109,7 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
       if (!auth.user?.id) {
         throw new Error('User not authenticated');
       }
-      return PersonasAPI.update(
-        { persona_id: resolvedParams.id, ...data },
-        auth.user.id
-      );
+      return PersonasAPI.update({ persona_id: resolvedParams.id, ...data }, auth.user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['persona', resolvedParams.id] });
@@ -116,7 +117,9 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
       toast.success('Persona updated successfully');
     },
     onError: (error) => {
-      toast.error(`Failed to update persona: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to update persona: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
@@ -128,7 +131,9 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
       router.push('/strategy-forge/personas');
     },
     onError: (error) => {
-      toast.error(`Failed to delete persona: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to delete persona: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
@@ -142,7 +147,11 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${persona?.name}"? This action cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${persona?.name}"? This action cannot be undone.`
+      )
+    ) {
       deleteMutation.mutate();
     }
   };
@@ -158,11 +167,13 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
   if (error || !persona) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Typography color="danger">
-          {error ? `Error loading persona: ${error instanceof Error ? error.message : 'Unknown error'}` : 'Persona not found'}
+        <Typography color='danger'>
+          {error
+            ? `Error loading persona: ${error instanceof Error ? error.message : 'Unknown error'}`
+            : 'Persona not found'}
         </Typography>
         <Button
-          variant="outlined"
+          variant='outlined'
           startDecorator={<ArrowLeftIcon />}
           onClick={() => router.push('/strategy-forge/personas')}
           sx={{ mt: 2 }}
@@ -179,17 +190,17 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
         {/* Header */}
         <div>
           <Button
-            variant="outlined"
+            variant='outlined'
             startDecorator={<ArrowLeftIcon />}
             onClick={() => router.back()}
             sx={{ mb: 2 }}
           >
             Back
           </Button>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Edit Persona
           </Typography>
-          <Typography level="body-md" sx={{ mt: 1 }}>
+          <Typography level='body-md' sx={{ mt: 1 }}>
             Update the persona information for {persona.name}
           </Typography>
         </div>
@@ -201,25 +212,25 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
               <Stack spacing={3}>
                 {/* Basic Information */}
                 <div>
-                  <Typography level="title-md" sx={{ mb: 2 }}>
+                  <Typography level='title-md' sx={{ mb: 2 }}>
                     Basic Information
                   </Typography>
                   <Stack spacing={2}>
                     <FormControl error={!!errors.name}>
                       <FormLabel>Name *</FormLabel>
                       <Controller
-                        name="name"
+                        name='name'
                         control={control}
                         render={({ field }) => (
                           <Input
                             {...field}
-                            placeholder="Enter persona name"
+                            placeholder='Enter persona name'
                             error={!!errors.name}
                           />
                         )}
                       />
                       {errors.name && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.name.message}
                         </Typography>
                       )}
@@ -228,17 +239,14 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.titles}>
                       <FormLabel>Titles</FormLabel>
                       <Controller
-                        name="titles"
+                        name='titles'
                         control={control}
                         render={({ field }) => (
-                          <Input
-                            {...field}
-                            placeholder="e.g., Senior Developer, Product Manager"
-                          />
+                          <Input {...field} placeholder='e.g., Senior Developer, Product Manager' />
                         )}
                       />
                       {errors.titles && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.titles.message}
                         </Typography>
                       )}
@@ -247,17 +255,14 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.department}>
                       <FormLabel>Department</FormLabel>
                       <Controller
-                        name="department"
+                        name='department'
                         control={control}
                         render={({ field }) => (
-                          <Input
-                            {...field}
-                            placeholder="e.g., Engineering, Marketing, Sales"
-                          />
+                          <Input {...field} placeholder='e.g., Engineering, Marketing, Sales' />
                         )}
                       />
                       {errors.department && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.department.message}
                         </Typography>
                       )}
@@ -266,27 +271,31 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.job_responsibilities}>
                       <FormLabel>Job Responsibilities</FormLabel>
                       <Controller
-                        name="job_responsibilities"
+                        name='job_responsibilities'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="Describe their main job responsibilities"
+                            placeholder='Describe their main job responsibilities'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.job_responsibilities && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.job_responsibilities.message}
                         </Typography>
                       )}
                     </FormControl>
 
-                    <Stack direction="row" spacing={6} sx={{ alignItems: 'flex-start', maxWidth: '100%' }}>
+                    <Stack
+                      direction='row'
+                      spacing={6}
+                      sx={{ alignItems: 'flex-start', maxWidth: '100%' }}
+                    >
                       <FormControl sx={{ minWidth: '200px', flex: '0 0 auto' }}>
                         <Controller
-                          name="is_manager"
+                          name='is_manager'
                           control={control}
                           render={({ field }) => (
                             <Checkbox
@@ -294,11 +303,11 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                               onChange={field.onChange}
                               onBlur={field.onBlur}
                               name={field.name}
-                              label="Is Manager"
+                              label='Is Manager'
                               sx={{
                                 '& .MuiCheckbox-label': {
                                   whiteSpace: 'nowrap',
-                                }
+                                },
                               }}
                             />
                           )}
@@ -307,7 +316,7 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
 
                       <FormControl sx={{ minWidth: '200px', flex: '0 0 auto' }}>
                         <Controller
-                          name="is_decider"
+                          name='is_decider'
                           control={control}
                           render={({ field }) => (
                             <Checkbox
@@ -315,11 +324,11 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                               onChange={field.onChange}
                               onBlur={field.onBlur}
                               name={field.name}
-                              label="Is Decision Maker"
+                              label='Is Decision Maker'
                               sx={{
                                 '& .MuiCheckbox-label': {
                                   whiteSpace: 'nowrap',
-                                }
+                                },
                               }}
                             />
                           )}
@@ -330,17 +339,14 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.experience_years}>
                       <FormLabel>Experience Years</FormLabel>
                       <Controller
-                        name="experience_years"
+                        name='experience_years'
                         control={control}
                         render={({ field }) => (
-                          <Input
-                            {...field}
-                            placeholder="e.g., 5-10 years, 10+ years"
-                          />
+                          <Input {...field} placeholder='e.g., 5-10 years, 10+ years' />
                         )}
                       />
                       {errors.experience_years && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.experience_years.message}
                         </Typography>
                       )}
@@ -349,7 +355,7 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.education_levels}>
                       <FormLabel>Education Levels</FormLabel>
                       <Controller
-                        name="education_levels"
+                        name='education_levels'
                         control={control}
                         render={({ field }) => (
                           <Input
@@ -359,7 +365,7 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                         )}
                       />
                       {errors.education_levels && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.education_levels.message}
                         </Typography>
                       )}
@@ -369,25 +375,25 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
 
                 {/* Pain Points & Goals */}
                 <div>
-                  <Typography level="title-md" sx={{ mb: 2 }}>
+                  <Typography level='title-md' sx={{ mb: 2 }}>
                     Pain Points & Goals
                   </Typography>
                   <Stack spacing={2}>
                     <FormControl error={!!errors.pain_points_html}>
                       <FormLabel>Pain Points</FormLabel>
                       <Controller
-                        name="pain_points_html"
+                        name='pain_points_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What challenges do they face?"
+                            placeholder='What challenges do they face?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.pain_points_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.pain_points_html.message}
                         </Typography>
                       )}
@@ -396,18 +402,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.goals_html}>
                       <FormLabel>Goals</FormLabel>
                       <Controller
-                        name="goals_html"
+                        name='goals_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What are their main goals?"
+                            placeholder='What are their main goals?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.goals_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.goals_html.message}
                         </Typography>
                       )}
@@ -416,18 +422,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.solution_relevant_pain_points_html}>
                       <FormLabel>Solution-Relevant Pain Points</FormLabel>
                       <Controller
-                        name="solution_relevant_pain_points_html"
+                        name='solution_relevant_pain_points_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="Pain points relevant to your solution"
+                            placeholder='Pain points relevant to your solution'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.solution_relevant_pain_points_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.solution_relevant_pain_points_html.message}
                         </Typography>
                       )}
@@ -436,18 +442,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.solution_relevant_goals_html}>
                       <FormLabel>Solution-Relevant Goals</FormLabel>
                       <Controller
-                        name="solution_relevant_goals_html"
+                        name='solution_relevant_goals_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="Goals relevant to your solution"
+                            placeholder='Goals relevant to your solution'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.solution_relevant_goals_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.solution_relevant_goals_html.message}
                         </Typography>
                       )}
@@ -457,25 +463,25 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
 
                 {/* Current Solutions & Switching */}
                 <div>
-                  <Typography level="title-md" sx={{ mb: 2 }}>
+                  <Typography level='title-md' sx={{ mb: 2 }}>
                     Current Solutions & Switching
                   </Typography>
                   <Stack spacing={2}>
                     <FormControl error={!!errors.current_solutions_html}>
                       <FormLabel>Current Solutions</FormLabel>
                       <Controller
-                        name="current_solutions_html"
+                        name='current_solutions_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What solutions are they currently using?"
+                            placeholder='What solutions are they currently using?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.current_solutions_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.current_solutions_html.message}
                         </Typography>
                       )}
@@ -484,18 +490,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.switching_costs_html}>
                       <FormLabel>Switching Costs</FormLabel>
                       <Controller
-                        name="switching_costs_html"
+                        name='switching_costs_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What are the costs of switching solutions?"
+                            placeholder='What are the costs of switching solutions?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.switching_costs_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.switching_costs_html.message}
                         </Typography>
                       )}
@@ -504,18 +510,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.unsatisfied_with_html}>
                       <FormLabel>Unsatisfied With</FormLabel>
                       <Controller
-                        name="unsatisfied_with_html"
+                        name='unsatisfied_with_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What are they unsatisfied with in current solutions?"
+                            placeholder='What are they unsatisfied with in current solutions?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.unsatisfied_with_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.unsatisfied_with_html.message}
                         </Typography>
                       )}
@@ -524,18 +530,18 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.ideal_outcome_html}>
                       <FormLabel>Ideal Outcome</FormLabel>
                       <Controller
-                        name="ideal_outcome_html"
+                        name='ideal_outcome_html'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="What would be their ideal outcome?"
+                            placeholder='What would be their ideal outcome?'
                             minRows={3}
                           />
                         )}
                       />
                       {errors.ideal_outcome_html && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.ideal_outcome_html.message}
                         </Typography>
                       )}
@@ -545,25 +551,25 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
 
                 {/* Behavior & Characteristics */}
                 <div>
-                  <Typography level="title-md" sx={{ mb: 2 }}>
+                  <Typography level='title-md' sx={{ mb: 2 }}>
                     Behavior & Characteristics
                   </Typography>
                   <Stack spacing={2}>
                     <FormControl error={!!errors.buying_behavior}>
                       <FormLabel>Buying Behavior</FormLabel>
                       <Controller
-                        name="buying_behavior"
+                        name='buying_behavior'
                         control={control}
                         render={({ field }) => (
                           <Textarea
                             {...field}
-                            placeholder="How do they typically make purchasing decisions?"
+                            placeholder='How do they typically make purchasing decisions?'
                             minRows={2}
                           />
                         )}
                       />
                       {errors.buying_behavior && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.buying_behavior.message}
                         </Typography>
                       )}
@@ -572,17 +578,14 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                     <FormControl error={!!errors.digital_savviness}>
                       <FormLabel>Digital Savviness</FormLabel>
                       <Controller
-                        name="digital_savviness"
+                        name='digital_savviness'
                         control={control}
                         render={({ field }) => (
-                          <Input
-                            {...field}
-                            placeholder="e.g., High, Medium, Low"
-                          />
+                          <Input {...field} placeholder='e.g., High, Medium, Low' />
                         )}
                       />
                       {errors.digital_savviness && (
-                        <Typography level="body-xs" color="danger">
+                        <Typography level='body-xs' color='danger'>
                           {errors.digital_savviness.message}
                         </Typography>
                       )}
@@ -591,10 +594,10 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                 </div>
 
                 {/* Actions */}
-                <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between', pt: 2 }}>
+                <Stack direction='row' spacing={2} sx={{ justifyContent: 'space-between', pt: 2 }}>
                   <Button
-                    color="danger"
-                    variant="solid"
+                    color='danger'
+                    variant='solid'
                     onClick={handleDelete}
                     disabled={isSubmitting || deleteMutation.isPending}
                     loading={deleteMutation.isPending}
@@ -602,19 +605,15 @@ export default function EditPersonaPage({ params }: EditPersonaPageProps): React
                   >
                     Delete Persona
                   </Button>
-                  <Stack direction="row" spacing={2}>
+                  <Stack direction='row' spacing={2}>
                     <Button
-                      variant="outlined"
+                      variant='outlined'
                       onClick={() => router.back()}
                       disabled={isSubmitting}
                     >
                       Cancel
                     </Button>
-                    <Button
-                      type="submit"
-                      loading={isSubmitting}
-                      disabled={isSubmitting}
-                    >
+                    <Button type='submit' loading={isSubmitting} disabled={isSubmitting}>
                       Update Persona
                     </Button>
                   </Stack>

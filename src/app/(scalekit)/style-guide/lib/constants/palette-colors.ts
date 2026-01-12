@@ -9,7 +9,7 @@ export const COLOR_USAGE_OPTION = {
   ACCENT: 'accent',
 } as const;
 
-export type ColorUsageOption = typeof COLOR_USAGE_OPTION[keyof typeof COLOR_USAGE_OPTION];
+export type ColorUsageOption = (typeof COLOR_USAGE_OPTION)[keyof typeof COLOR_USAGE_OPTION];
 
 /**
  * Usage options array for UI dropdowns/selects
@@ -21,4 +21,3 @@ export const USAGE_OPTIONS = [
   { value: COLOR_USAGE_OPTION.BACKGROUND, label: 'Background' },
   { value: COLOR_USAGE_OPTION.ACCENT, label: 'Accent' },
 ] as const;
-

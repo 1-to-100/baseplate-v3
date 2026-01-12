@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import OpenAI from 'https://esm.sh/openai@4';
 
@@ -53,10 +53,7 @@ When website content is provided, carefully analyze:
 /**
  * Generates the user prompt for persona analysis
  */
-function generatePersonaUserPrompt(
-  companyUrl: string,
-  customerInfo: CustomerInfo
-): string {
+function generatePersonaUserPrompt(companyUrl: string, customerInfo: CustomerInfo): string {
   return `You are analyzing the website ${companyUrl} to identify and propose buying and user personas.
 
 ANALYSIS APPROACH:
@@ -111,7 +108,7 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
  */
 function validatePersonasResponse(response: unknown): PersonasResponse {
   let data: Record<string, unknown>;
-  
+
   // Handle array response
   if (Array.isArray(response)) {
     if (response.length === 0) {
@@ -133,12 +130,13 @@ function validatePersonasResponse(response: unknown): PersonasResponse {
 
   // Validate and filter personas
   const personas: Persona[] = data.personas
-    .filter((item: any) => 
-      item && 
-      typeof item.name === 'string' && 
-      typeof item.description === 'string' &&
-      item.name.trim() !== '' &&
-      item.description.trim() !== ''
+    .filter(
+      (item: any) =>
+        item &&
+        typeof item.name === 'string' &&
+        typeof item.description === 'string' &&
+        item.name.trim() !== '' &&
+        item.description.trim() !== ''
     )
     .map((item: any) => ({
       name: item.name.trim(),
@@ -167,9 +165,9 @@ Deno.serve(async (req) => {
       const text = await req.text();
       if (!text) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Request body is required',
-            usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }'
+            usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }',
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -177,9 +175,9 @@ Deno.serve(async (req) => {
       requestBody = JSON.parse(text);
     } catch (parseError) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Invalid JSON in request body',
-          usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }'
+          usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -188,9 +186,9 @@ Deno.serve(async (req) => {
     const customerId = requestBody.customer_id;
     if (!customerId) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'customer_id is required',
-          usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }'
+          usage: 'Please provide customer_id in the request body: { "customer_id": "uuid" }',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -219,7 +217,10 @@ Deno.serve(async (req) => {
     // Extract token from Authorization header and pass to getUser()
     // This is the recommended approach per Supabase docs
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
@@ -254,14 +255,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (customerInfoError || !customerInfo) {
-      throw new Error('Failed to fetch customer info: ' + (customerInfoError?.message || 'No customer info found'));
+      throw new Error(
+        'Failed to fetch customer info: ' + (customerInfoError?.message || 'No customer info found')
+      );
     }
 
     console.log('Customer info retrieved:', customerInfo.company_name);
 
     // Determine website URL
     let websiteUrl = customerInfo.company_website_url;
-    
+
     if (!websiteUrl || websiteUrl.trim() === '') {
       // Try to construct URL from company name
       const companyNameSlug = customerInfo.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -272,10 +275,7 @@ Deno.serve(async (req) => {
     console.log('Using website URL:', websiteUrl);
 
     // Build the prompt with customer info
-    const userPrompt = generatePersonaUserPrompt(
-      websiteUrl,
-      customerInfo as CustomerInfo
-    );
+    const userPrompt = generatePersonaUserPrompt(websiteUrl, customerInfo as CustomerInfo);
 
     console.log('System prompt length:', SYSTEM_PROMPT.length);
     console.log('User prompt length:', userPrompt.length);
@@ -288,12 +288,12 @@ Deno.serve(async (req) => {
 
     // Call GPT-5 with Responses API and web_search tool
     console.log('Calling GPT-5 with web_search via Responses API...');
-    
+
     // Extract domain from URL for filtering (remove http/https prefix)
     const urlObj = new URL(websiteUrl);
     const domain = urlObj.hostname.replace(/^www\./, ''); // Remove www. prefix if present
     console.log('Filtering web search to domain:', domain);
-    
+
     // Combine system and user prompts into a single input string for GPT-5
     const combinedPrompt = `${SYSTEM_PROMPT}
 
@@ -310,9 +310,9 @@ ${userPrompt}`;
           type: 'web_search',
           // Domain filtering - limit results to customer's domain only
           filters: {
-            allowed_domains: [domain] // Allow-list of domains (max 20)
-          }
-        }
+            allowed_domains: [domain], // Allow-list of domains (max 20)
+          },
+        },
       ],
     };
 
@@ -324,7 +324,7 @@ ${userPrompt}`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         'OpenAI-Beta': 'responses=v1', // Required beta header for Responses API
       },
       body: JSON.stringify(responsePayload),
@@ -339,15 +339,15 @@ ${userPrompt}`;
     const responseData = await apiResponse.json();
     console.log('Responses API response received');
     console.log('Response status:', responseData.status);
-    
+
     // Extract content from Responses API format
     // The output is an array containing reasoning, web_search_call, and message items
     // We need to find the message item and extract its text content
     const output = responseData.output || [];
-    
+
     // Find the message item in the output array
     const messageItem = output.find((item: any) => item.type === 'message');
-    
+
     if (!messageItem) {
       console.error('No message item found in output:', responseData);
       throw new Error('No message content in OpenAI response');
@@ -356,7 +356,7 @@ ${userPrompt}`;
     // Extract text from the message content
     const content = messageItem.content || [];
     const textItem = content.find((item: any) => item.type === 'output_text');
-    
+
     if (!textItem || !textItem.text) {
       console.error('No text content found in message:', messageItem);
       throw new Error('No text in message content');
@@ -364,7 +364,7 @@ ${userPrompt}`;
 
     const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
-    
+
     // Log web search calls
     const webSearchCalls = output.filter((item: any) => item.type === 'web_search_call');
     console.log(`✓ Web search performed: ${webSearchCalls.length} searches`);
@@ -402,17 +402,16 @@ ${userPrompt}`;
         status: 200,
       }
     );
-
   } catch (error) {
     console.error('Error in suggest-personas:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unexpected error',
         success: false,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
@@ -498,4 +497,3 @@ ${userPrompt}`;
      The URL is used for web search domain filtering.
 
 */
-

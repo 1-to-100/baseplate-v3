@@ -31,13 +31,17 @@ export function useCreateLogoAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewLogoAsset, 'logo_asset_id' | 'customer_id' | 'created_at'>) => {
+    mutationFn: async (
+      input: Omit<NewLogoAsset, 'logo_asset_id' | 'customer_id' | 'created_at'>
+    ) => {
       const result = await createLogoAsset(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
       toast.success('Logo asset uploaded successfully');
     },
@@ -57,7 +61,9 @@ export function useUpdateLogoAsset() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.detail(String(data.logo_asset_id)) });
       toast.success('Logo asset updated successfully');
     },
@@ -85,4 +91,3 @@ export function useDeleteLogoAsset() {
     },
   });
 }
-

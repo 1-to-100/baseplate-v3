@@ -44,17 +44,17 @@ export default function VisualStyleGuideTemplates({
         toast.error('Failed to update template');
       }
     },
-    [updateTemplate],
+    [updateTemplate]
   );
 
   return (
     <Stack spacing={3} sx={{ mt: 2 }}>
-      <Typography level="title-md">Social Templates</Typography>
+      <Typography level='title-md'>Social Templates</Typography>
 
       {templatesLoading ? (
         <CircularProgress />
       ) : (
-        <Table aria-label="social templates table">
+        <Table aria-label='social templates table'>
           <thead>
             <tr>
               <th>Network</th>
@@ -68,13 +68,14 @@ export default function VisualStyleGuideTemplates({
             {templates && templates.length > 0 ? (
               templates.map((template) => {
                 const templateType = templateTypes?.find(
-                  (tt) => String(tt.social_template_type_id) === String(template.social_template_type_id),
+                  (tt) =>
+                    String(tt.social_template_type_id) === String(template.social_template_type_id)
                 );
 
                 return (
                   <tr key={String(template.social_template_id)}>
                     <td>
-                      <Chip variant="soft" size="sm">
+                      <Chip variant='soft' size='sm'>
                         {String(templateType?.display_name || templateType?.network || 'Unknown')}
                       </Chip>
                     </td>
@@ -96,25 +97,30 @@ export default function VisualStyleGuideTemplates({
                       </Box>
                     </td>
                     <td>
-                      <Typography level="body-sm">
+                      <Typography level='body-sm'>
                         {String(template.default_copy || 'No default copy set')}
                       </Typography>
                     </td>
                     <td>
                       <Chip
                         color={Boolean(template.is_locked) ? 'success' : 'neutral'}
-                        variant="soft"
-                        size="sm"
+                        variant='soft'
+                        size='sm'
                       >
                         {Boolean(template.is_locked) ? 'Locked' : 'Unlocked'}
                       </Chip>
                     </td>
                     <td>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction='row' spacing={1}>
                         <Button
-                          size="sm"
-                          variant="plain"
-                          onClick={() => handleToggleLock(String(template.social_template_id), Boolean(template.is_locked))}
+                          size='sm'
+                          variant='plain'
+                          onClick={() =>
+                            handleToggleLock(
+                              String(template.social_template_id),
+                              Boolean(template.is_locked)
+                            )
+                          }
                         >
                           {Boolean(template.is_locked) ? <LockIcon /> : <LockOpenIcon />}
                         </Button>
@@ -125,9 +131,10 @@ export default function VisualStyleGuideTemplates({
               })
             ) : (
               <tr>
-                <td colSpan={5} align="center">
-                  <Typography level="body-sm" color="neutral">
-                    No templates generated yet. Templates will be created when you publish the style guide.
+                <td colSpan={5} align='center'>
+                  <Typography level='body-sm' color='neutral'>
+                    No templates generated yet. Templates will be created when you publish the style
+                    guide.
                   </Typography>
                 </td>
               </tr>
@@ -138,5 +145,3 @@ export default function VisualStyleGuideTemplates({
     </Stack>
   );
 }
-
-

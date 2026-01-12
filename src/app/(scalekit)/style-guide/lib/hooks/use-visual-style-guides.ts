@@ -44,7 +44,12 @@ export function useCreateVisualStyleGuide() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewVisualStyleGuide, 'visual_style_guide_id' | 'customer_id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (
+      input: Omit<
+        NewVisualStyleGuide,
+        'visual_style_guide_id' | 'customer_id' | 'created_at' | 'updated_at'
+      >
+    ) => {
       const result = await createVisualStyleGuide(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
@@ -69,7 +74,9 @@ export function useUpdateVisualStyleGuide() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: visualStyleGuideKeys.detail(String(data.visual_style_guide_id)) });
+      queryClient.invalidateQueries({
+        queryKey: visualStyleGuideKeys.detail(String(data.visual_style_guide_id)),
+      });
       queryClient.invalidateQueries({ queryKey: visualStyleGuideKeys.lists() });
       toast.success('Visual style guide updated successfully');
     },
@@ -98,4 +105,3 @@ export function useDeleteVisualStyleGuide() {
     },
   });
 }
-

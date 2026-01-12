@@ -18,11 +18,12 @@ import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { Building as BuildingIcon } from '@phosphor-icons/react/dist/ssr/Building';
 
 import { config } from '@/config';
-import {
-  getOrCreateCustomerInfo,
-  updateCustomerInfo,
-} from '../lib/api';
-import type { CustomerInfo, CreateCustomerInfoPayload, UpdateCustomerInfoPayload } from '../lib/types';
+import { getOrCreateCustomerInfo, updateCustomerInfo } from '../lib/api';
+import type {
+  CustomerInfo,
+  CreateCustomerInfoPayload,
+  UpdateCustomerInfoPayload,
+} from '../lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/core/toaster';
 
@@ -39,7 +40,14 @@ interface EditableFieldProps {
   maxLength?: number;
 }
 
-function EditableField({ label, value, multiline = false, onSave, placeholder, maxLength }: EditableFieldProps) {
+function EditableField({
+  label,
+  value,
+  multiline = false,
+  onSave,
+  placeholder,
+  maxLength,
+}: EditableFieldProps) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editValue, setEditValue] = React.useState(value || '');
   const [isSaving, setIsSaving] = React.useState(false);
@@ -90,7 +98,7 @@ function EditableField({ label, value, multiline = false, onSave, placeholder, m
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Typography level="title-sm" sx={{ mb: 1, color: 'text.secondary' }}>
+      <Typography level='title-sm' sx={{ mb: 1, color: 'text.secondary' }}>
         {label}
       </Typography>
       {isEditing ? (
@@ -115,22 +123,22 @@ function EditableField({ label, value, multiline = false, onSave, placeholder, m
             />
           )}
           {error && (
-            <Alert color="danger" size="sm">
+            <Alert color='danger' size='sm'>
               {error}
             </Alert>
           )}
-          <Stack direction="row" spacing={1}>
+          <Stack direction='row' spacing={1}>
             <Button
-              size="sm"
-              startDecorator={isSaving ? <CircularProgress size="sm" /> : <CheckIcon />}
+              size='sm'
+              startDecorator={isSaving ? <CircularProgress size='sm' /> : <CheckIcon />}
               onClick={handleSave}
               disabled={isSaving || !hasChanges}
             >
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
             <Button
-              size="sm"
-              variant="outlined"
+              size='sm'
+              variant='outlined'
               startDecorator={<XIcon />}
               onClick={handleCancel}
               disabled={isSaving}
@@ -158,19 +166,26 @@ function EditableField({ label, value, multiline = false, onSave, placeholder, m
           }}
           onClick={() => setIsEditing(true)}
         >
-            <Typography
-              level="body-md"
-              sx={{
-                flex: 1,
-                whiteSpace: multiline ? 'pre-wrap' : 'normal',
-                overflow: 'hidden',
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
-              }}
-            >
-              {safeValue || <em style={{ color: 'var(--joy-palette-text-tertiary)' }}>Click to add {label.toLowerCase()}</em>}
-            </Typography>
-          <PencilSimpleIcon size={16} style={{ color: 'var(--joy-palette-text-tertiary)', marginLeft: '8px', flexShrink: 0 }} />
+          <Typography
+            level='body-md'
+            sx={{
+              flex: 1,
+              whiteSpace: multiline ? 'pre-wrap' : 'normal',
+              overflow: 'hidden',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+            }}
+          >
+            {safeValue || (
+              <em style={{ color: 'var(--joy-palette-text-tertiary)' }}>
+                Click to add {label.toLowerCase()}
+              </em>
+            )}
+          </Typography>
+          <PencilSimpleIcon
+            size={16}
+            style={{ color: 'var(--joy-palette-text-tertiary)', marginLeft: '8px', flexShrink: 0 }}
+          />
         </Box>
       )}
     </Box>
@@ -201,29 +216,38 @@ export default function CustomerInfoPage(): React.JSX.Element {
     loadCustomerInfo();
   }, [loadCustomerInfo]);
 
-  const handleFieldUpdate = React.useCallback(async (field: keyof Omit<CustomerInfo, 'customer_info_id' | 'customer_id' | 'created_at' | 'updated_at'>, value: string) => {
-    if (!customerInfo) return;
+  const handleFieldUpdate = React.useCallback(
+    async (
+      field: keyof Omit<
+        CustomerInfo,
+        'customer_info_id' | 'customer_id' | 'created_at' | 'updated_at'
+      >,
+      value: string
+    ) => {
+      if (!customerInfo) return;
 
-    const updatePayload: UpdateCustomerInfoPayload = {
-      customer_info_id: customerInfo.customer_info_id,
-      [field]: value,
-    };
+      const updatePayload: UpdateCustomerInfoPayload = {
+        customer_info_id: customerInfo.customer_info_id,
+        [field]: value,
+      };
 
-    const updatedInfo = await updateCustomerInfo(updatePayload);
-    setCustomerInfo(updatedInfo);
-  }, [customerInfo]);
+      const updatedInfo = await updateCustomerInfo(updatePayload);
+      setCustomerInfo(updatedInfo);
+    },
+    [customerInfo]
+  );
 
   // Check if company info is empty (needs AI generation)
   const isCompanyInfoEmpty = React.useMemo(() => {
     if (!customerInfo) return true;
-    
+
     const emptyFields = [
       !customerInfo.tagline || customerInfo.tagline.trim() === '',
       !customerInfo.one_sentence_summary || customerInfo.one_sentence_summary.trim() === '',
       !customerInfo.problem_overview || customerInfo.problem_overview.trim() === '',
       !customerInfo.solution_overview || customerInfo.solution_overview.trim() === '',
     ];
-    
+
     // Consider empty if 3 or more core fields are empty
     return emptyFields.filter(Boolean).length >= 3;
   }, [customerInfo]);
@@ -232,11 +256,14 @@ export default function CustomerInfoPage(): React.JSX.Element {
     setIsGenerating(true);
     try {
       console.log('[CompanyInfo] Calling create-company-information edge function...');
-      
+
       const supabase = createClient();
-      const { data, error: functionError } = await supabase.functions.invoke('create-company-information', {
-        body: {},
-      });
+      const { data, error: functionError } = await supabase.functions.invoke(
+        'create-company-information',
+        {
+          body: {},
+        }
+      );
 
       console.log('[CompanyInfo] Edge function response:', { data, error: functionError });
 
@@ -250,28 +277,27 @@ export default function CustomerInfoPage(): React.JSX.Element {
       }
 
       toast.success('Company overview information generated successfully!');
-      
+
       // Reload company info
       await loadCustomerInfo();
-
     } catch (error) {
       console.error('[CompanyInfo] ❌ Failed to generate company info:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Failed to generate company overview information. Please try again.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to generate company overview information. Please try again.';
       toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
   }, [loadCustomerInfo]);
 
-
   if (isLoading) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Stack spacing={3} alignItems="center" sx={{ py: 4 }}>
+        <Stack spacing={3} alignItems='center' sx={{ py: 4 }}>
           <CircularProgress />
-          <Typography level="body-md">Loading company overview information...</Typography>
+          <Typography level='body-md'>Loading company overview information...</Typography>
         </Stack>
       </Box>
     );
@@ -281,8 +307,8 @@ export default function CustomerInfoPage(): React.JSX.Element {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
-          <Alert color="danger">
-            <Typography level="body-md">{error}</Typography>
+          <Alert color='danger'>
+            <Typography level='body-md'>{error}</Typography>
           </Alert>
           <Button onClick={loadCustomerInfo} startDecorator={<BuildingIcon />}>
             Retry
@@ -296,8 +322,10 @@ export default function CustomerInfoPage(): React.JSX.Element {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
-          <Alert color="warning">
-            <Typography level="body-md">Unable to load or create company overview information.</Typography>
+          <Alert color='warning'>
+            <Typography level='body-md'>
+              Unable to load or create company overview information.
+            </Typography>
           </Alert>
           <Button onClick={loadCustomerInfo} startDecorator={<BuildingIcon />}>
             Retry
@@ -313,26 +341,31 @@ export default function CustomerInfoPage(): React.JSX.Element {
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1" startDecorator={<BuildingIcon />}>
+            <Typography
+              fontSize={{ xs: 'xl3', lg: 'xl4' }}
+              level='h1'
+              startDecorator={<BuildingIcon />}
+            >
               {SCREEN_TITLE}
             </Typography>
-            <Typography level="body-md" sx={{ mt: 1 }}>
+            <Typography level='body-md' sx={{ mt: 1 }}>
               Setting up your company profile
             </Typography>
           </div>
 
-          <Card variant="outlined" sx={{ p: 4 }}>
-            <Stack spacing={3} alignItems="center" sx={{ textAlign: 'center' }}>
-              <CircularProgress size="lg" />
-              <Typography level="h3">
-                Generating Your Company Overview Information
+          <Card variant='outlined' sx={{ p: 4 }}>
+            <Stack spacing={3} alignItems='center' sx={{ textAlign: 'center' }}>
+              <CircularProgress size='lg' />
+              <Typography level='h3'>Generating Your Company Overview Information</Typography>
+              <Typography level='body-md' color='neutral' sx={{ maxWidth: '600px' }}>
+                We&apos;re analyzing your company and creating a comprehensive profile. This
+                includes your tagline, problem/solution overview, and content guidelines. This
+                typically takes 30-60 seconds.
               </Typography>
-              <Typography level="body-md" color="neutral" sx={{ maxWidth: '600px' }}>
-                We&apos;re analyzing your company and creating a comprehensive profile. This includes your tagline, problem/solution overview, and content guidelines. This typically takes 30-60 seconds.
-              </Typography>
-              <Alert color="primary" variant="soft" sx={{ maxWidth: '600px' }}>
-                <Typography level="body-sm">
-                  💡 The AI will analyze your company details to create compelling messaging that you can refine and customize.
+              <Alert color='primary' variant='soft' sx={{ maxWidth: '600px' }}>
+                <Typography level='body-sm'>
+                  💡 The AI will analyze your company details to create compelling messaging that
+                  you can refine and customize.
                 </Typography>
               </Alert>
             </Stack>
@@ -341,38 +374,37 @@ export default function CustomerInfoPage(): React.JSX.Element {
       </Box>
     );
   }
-  
+
   if (isCompanyInfoEmpty) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1" startDecorator={<BuildingIcon />}>
+            <Typography
+              fontSize={{ xs: 'xl3', lg: 'xl4' }}
+              level='h1'
+              startDecorator={<BuildingIcon />}
+            >
               {SCREEN_TITLE}
             </Typography>
-            <Typography level="body-md" sx={{ mt: 1 }}>
+            <Typography level='body-md' sx={{ mt: 1 }}>
               Set up your company profile
             </Typography>
           </div>
 
-          <Card variant="outlined" sx={{ p: 4 }}>
-            <Stack spacing={3} alignItems="center" sx={{ textAlign: 'center' }}>
+          <Card variant='outlined' sx={{ p: 4 }}>
+            <Stack spacing={3} alignItems='center' sx={{ textAlign: 'center' }}>
               <BuildingIcon size={64} style={{ color: 'var(--joy-palette-text-tertiary)' }} />
-              <Typography level="h3">
-                Generate Your Company Overview Information
+              <Typography level='h3'>Generate Your Company Overview Information</Typography>
+              <Typography level='body-md' color='neutral' sx={{ maxWidth: '600px' }}>
+                Let AI analyze your company and create a comprehensive profile including your
+                tagline, problem/solution overview, and content guidelines.
               </Typography>
-              <Typography level="body-md" color="neutral" sx={{ maxWidth: '600px' }}>
-                Let AI analyze your company and create a comprehensive profile including your tagline, problem/solution overview, and content guidelines.
-              </Typography>
-              <Button 
-                size="lg"
-                onClick={handleGenerateCompanyInfo}
-                disabled={isGenerating}
-              >
+              <Button size='lg' onClick={handleGenerateCompanyInfo} disabled={isGenerating}>
                 Generate Company Overview Information
               </Button>
-              <Alert color="primary" variant="soft" sx={{ maxWidth: '600px' }}>
-                <Typography level="body-sm">
+              <Alert color='primary' variant='soft' sx={{ maxWidth: '600px' }}>
+                <Typography level='body-sm'>
                   💡 You can refine and customize all generated content after creation.
                 </Typography>
               </Alert>
@@ -387,10 +419,14 @@ export default function CustomerInfoPage(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <div>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1" startDecorator={<BuildingIcon />}>
+          <Typography
+            fontSize={{ xs: 'xl3', lg: 'xl4' }}
+            level='h1'
+            startDecorator={<BuildingIcon />}
+          >
             {SCREEN_TITLE}
           </Typography>
-          <Typography level="body-md" sx={{ mt: 1 }}>
+          <Typography level='body-md' sx={{ mt: 1 }}>
             Manage your company&apos;s information and messaging. Click on any field to edit it.
           </Typography>
         </div>
@@ -399,33 +435,33 @@ export default function CustomerInfoPage(): React.JSX.Element {
           <CardContent sx={{ p: 3 }}>
             <Stack spacing={3}>
               <EditableField
-                label="Tagline"
+                label='Tagline'
                 value={customerInfo.tagline}
-                placeholder="Enter your company tagline (3-7 words)"
+                placeholder='Enter your company tagline (3-7 words)'
                 maxLength={256}
                 onSave={(value) => handleFieldUpdate('tagline', value)}
               />
 
               <EditableField
-                label="One Sentence Summary"
+                label='One Sentence Summary'
                 value={customerInfo.one_sentence_summary}
-                placeholder="Enter a concise one-sentence summary of your company"
+                placeholder='Enter a concise one-sentence summary of your company'
                 onSave={(value) => handleFieldUpdate('one_sentence_summary', value)}
               />
 
               <EditableField
-                label="Problem Overview"
+                label='Problem Overview'
                 value={customerInfo.problem_overview}
                 multiline
-                placeholder="Describe the problem your company solves (1 paragraph)"
+                placeholder='Describe the problem your company solves (1 paragraph)'
                 onSave={(value) => handleFieldUpdate('problem_overview', value)}
               />
 
               <EditableField
-                label="Solution Overview"
+                label='Solution Overview'
                 value={customerInfo.solution_overview}
                 multiline
-                placeholder="Describe your solution in audience-appropriate terms (1 paragraph)"
+                placeholder='Describe your solution in audience-appropriate terms (1 paragraph)'
                 onSave={(value) => handleFieldUpdate('solution_overview', value)}
               />
             </Stack>

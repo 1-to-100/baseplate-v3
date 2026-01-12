@@ -6,7 +6,11 @@ import {
   deleteFramingConcept,
   listFramingConcepts,
 } from '../api/framing-concepts';
-import type { CreateFramingConceptPayload, UpdateFramingConceptPayload, ListFramingConceptsParams } from '../api/framing-concepts';
+import type {
+  CreateFramingConceptPayload,
+  UpdateFramingConceptPayload,
+  ListFramingConceptsParams,
+} from '../api/framing-concepts';
 import { toast } from '@/components/core/toaster';
 
 export const framingConceptKeys = {
@@ -25,7 +29,11 @@ export function useFramingConcept(id: string | null) {
   });
 }
 
-export function useFramingConcepts(filters?: { style_guide_id?: string; page?: number; per_page?: number }) {
+export function useFramingConcepts(filters?: {
+  style_guide_id?: string;
+  page?: number;
+  per_page?: number;
+}) {
   return useQuery({
     queryKey: framingConceptKeys.list(filters),
     queryFn: () => listFramingConcepts(filters || {}),
@@ -38,7 +46,9 @@ export function useCreateFramingConcept() {
   return useMutation({
     mutationFn: (payload: CreateFramingConceptPayload) => createFramingConcept(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: framingConceptKeys.list({ written_style_guide_id: data.written_style_guide_id }) });
+      queryClient.invalidateQueries({
+        queryKey: framingConceptKeys.list({ written_style_guide_id: data.written_style_guide_id }),
+      });
       toast.success('Framing concept created successfully');
     },
     onError: (error: Error) => {
@@ -53,7 +63,9 @@ export function useUpdateFramingConcept() {
   return useMutation({
     mutationFn: (payload: UpdateFramingConceptPayload) => updateFramingConcept(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: framingConceptKeys.detail(data.framing_concept_id) });
+      queryClient.invalidateQueries({
+        queryKey: framingConceptKeys.detail(data.framing_concept_id),
+      });
       queryClient.invalidateQueries({ queryKey: framingConceptKeys.lists() });
       toast.success('Framing concept updated successfully');
     },
@@ -77,4 +89,3 @@ export function useDeleteFramingConcept() {
     },
   });
 }
-

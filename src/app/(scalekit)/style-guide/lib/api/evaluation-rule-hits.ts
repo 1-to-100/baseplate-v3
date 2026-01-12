@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createEvaluationRuleHitPayloadSchema, updateEvaluationRuleHitPayloadSchema } from '../types/validation';
+import {
+  createEvaluationRuleHitPayloadSchema,
+  updateEvaluationRuleHitPayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define EvaluationRuleHit type directly from the database structure
@@ -27,9 +30,7 @@ type UpdateEvaluationRuleHitPayload = z.infer<typeof updateEvaluationRuleHitPayl
 /**
  * Get a single evaluation rule hit by ID
  */
-export async function getEvaluationRuleHitById(
-  ruleHitId: string
-): Promise<EvaluationRuleHit> {
+export async function getEvaluationRuleHitById(ruleHitId: string): Promise<EvaluationRuleHit> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -122,7 +123,7 @@ export async function createEvaluationRuleHits(
 ): Promise<EvaluationRuleHit[]> {
   const supabase = createClient();
 
-  const insertPayloads = payloads.map(payload => ({
+  const insertPayloads = payloads.map((payload) => ({
     ...payload,
     suggestion: payload.suggestion ?? payload.suggested_replacement,
   }));
@@ -166,9 +167,7 @@ export async function updateEvaluationRuleHit(
 /**
  * Delete an evaluation rule hit
  */
-export async function deleteEvaluationRuleHit(
-  ruleHitId: string
-): Promise<EvaluationRuleHit> {
+export async function deleteEvaluationRuleHit(ruleHitId: string): Promise<EvaluationRuleHit> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -188,9 +187,7 @@ export async function deleteEvaluationRuleHit(
 /**
  * Delete all rule hits for an evaluation
  */
-export async function deleteEvaluationRuleHitsByEvaluationId(
-  evaluationId: string
-): Promise<void> {
+export async function deleteEvaluationRuleHitsByEvaluationId(evaluationId: string): Promise<void> {
   const supabase = createClient();
 
   const { error } = await supabase
@@ -202,4 +199,3 @@ export async function deleteEvaluationRuleHitsByEvaluationId(
     throw new Error(`Failed to delete evaluation rule hits: ${error.message}`);
   }
 }
-

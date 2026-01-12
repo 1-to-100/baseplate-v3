@@ -44,8 +44,8 @@ interface UpdateSegmentFormData {
   external_id: string;
 }
 
-// export const metadata: Metadata = { 
-//   title: `Edit Segment | Content Strategy | Dashboard | ${config.site.name}` 
+// export const metadata: Metadata = {
+//   title: `Edit Segment | Content Strategy | Dashboard | ${config.site.name}`
 // };
 
 export default function Page({ params }: PageProps): React.JSX.Element {
@@ -63,7 +63,11 @@ export default function Page({ params }: PageProps): React.JSX.Element {
   }, [params]);
 
   // Fetch segment data
-  const { data: segment, isLoading, error } = useQuery({
+  const {
+    data: segment,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['segment', segmentId],
     queryFn: () => getSegmentById(segmentId!),
     enabled: !!segmentId,
@@ -121,7 +125,7 @@ export default function Page({ params }: PageProps): React.JSX.Element {
 
   const onSubmit = async (data: UpdateSegmentFormData) => {
     setSubmitError(null);
-    
+
     // Clean up empty strings to undefined for optional fields
     const cleanedData: UpdateSegmentPayload = {
       name: data.name,
@@ -139,7 +143,7 @@ export default function Page({ params }: PageProps): React.JSX.Element {
 
   const handleDelete = async () => {
     if (!segment) return;
-    
+
     setSubmitError(null);
     try {
       await deleteMutation.mutateAsync(segmentId!);
@@ -155,9 +159,9 @@ export default function Page({ params }: PageProps): React.JSX.Element {
   if (isLoading) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Stack spacing={3} alignItems="center" sx={{ py: 4 }}>
+        <Stack spacing={3} alignItems='center' sx={{ py: 4 }}>
           <CircularProgress />
-          <Typography level="body-md" color="neutral">
+          <Typography level='body-md' color='neutral'>
             Loading segment...
           </Typography>
         </Stack>
@@ -169,14 +173,14 @@ export default function Page({ params }: PageProps): React.JSX.Element {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
-          <Alert color="danger">
-            <Typography level="body-md">
+          <Alert color='danger'>
+            <Typography level='body-md'>
               Failed to load segment: {error instanceof Error ? error.message : 'Unknown error'}
             </Typography>
           </Alert>
           <Button
-            variant="outlined"
-            color="neutral"
+            variant='outlined'
+            color='neutral'
             startDecorator={<ArrowLeftIcon size={16} />}
             onClick={handleCancel}
           >
@@ -191,14 +195,12 @@ export default function Page({ params }: PageProps): React.JSX.Element {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
-          <Alert color="warning">
-            <Typography level="body-md">
-              Segment not found
-            </Typography>
+          <Alert color='warning'>
+            <Typography level='body-md'>Segment not found</Typography>
           </Alert>
           <Button
-            variant="outlined"
-            color="neutral"
+            variant='outlined'
+            color='neutral'
             startDecorator={<ArrowLeftIcon size={16} />}
             onClick={handleCancel}
           >
@@ -214,14 +216,14 @@ export default function Page({ params }: PageProps): React.JSX.Element {
       <Stack spacing={3}>
         {/* Header */}
         <Stack
-          direction="row"
+          direction='row'
           spacing={2}
           sx={{ alignItems: 'center', justifyContent: 'space-between' }}
         >
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Button
-              variant="outlined"
-              color="neutral"
+              variant='outlined'
+              color='neutral'
               startDecorator={<ArrowLeftIcon size={16} />}
               onClick={handleCancel}
               sx={{ minWidth: 'auto', px: 1 }}
@@ -229,13 +231,13 @@ export default function Page({ params }: PageProps): React.JSX.Element {
               Back
             </Button>
             <SegmentIcon size={24} />
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Edit Segment
             </Typography>
           </Stack>
           <Button
-            variant="outlined"
-            color="danger"
+            variant='outlined'
+            color='danger'
             startDecorator={<DeleteIcon size={16} />}
             onClick={() => setShowDeleteModal(true)}
             disabled={isSubmitting || updateMutation.isPending || deleteMutation.isPending}
@@ -246,15 +248,13 @@ export default function Page({ params }: PageProps): React.JSX.Element {
 
         {/* Error Alert */}
         {submitError && (
-          <Alert color="danger">
-            <Typography level="body-md">
-              {submitError}
-            </Typography>
+          <Alert color='danger'>
+            <Typography level='body-md'>{submitError}</Typography>
           </Alert>
         )}
 
         {/* Form */}
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={3}>
@@ -263,12 +263,10 @@ export default function Page({ params }: PageProps): React.JSX.Element {
                   <FormLabel>Name *</FormLabel>
                   <Input
                     {...register('name', { required: 'Name is required' })}
-                    placeholder="Enter segment name"
+                    placeholder='Enter segment name'
                     error={!!errors.name}
                   />
-                  {errors.name && (
-                    <FormHelperText>{errors.name.message}</FormHelperText>
-                  )}
+                  {errors.name && <FormHelperText>{errors.name.message}</FormHelperText>}
                 </FormControl>
 
                 {/* Description */}
@@ -276,7 +274,7 @@ export default function Page({ params }: PageProps): React.JSX.Element {
                   <FormLabel>Description *</FormLabel>
                   <Textarea
                     {...register('description', { required: 'Description is required' })}
-                    placeholder="Enter segment description"
+                    placeholder='Enter segment description'
                     minRows={3}
                     error={!!errors.description}
                   />
@@ -290,12 +288,10 @@ export default function Page({ params }: PageProps): React.JSX.Element {
                   <FormLabel>Code</FormLabel>
                   <Input
                     {...register('code')}
-                    placeholder="Enter segment code (optional)"
+                    placeholder='Enter segment code (optional)'
                     error={!!errors.code}
                   />
-                  {errors.code && (
-                    <FormHelperText>{errors.code.message}</FormHelperText>
-                  )}
+                  {errors.code && <FormHelperText>{errors.code.message}</FormHelperText>}
                 </FormControl>
 
                 {/* External ID */}
@@ -303,7 +299,7 @@ export default function Page({ params }: PageProps): React.JSX.Element {
                   <FormLabel>External ID</FormLabel>
                   <Input
                     {...register('external_id')}
-                    placeholder="Enter external ID (optional)"
+                    placeholder='Enter external ID (optional)'
                     error={!!errors.external_id}
                   />
                   {errors.external_id && (
@@ -312,25 +308,25 @@ export default function Page({ params }: PageProps): React.JSX.Element {
                 </FormControl>
 
                 {/* Actions */}
-                <Stack
-                  direction="row"
-                  spacing={2}
-                  sx={{ justifyContent: 'flex-end', pt: 2 }}
-                >
+                <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end', pt: 2 }}>
                   <Button
-                    variant="outlined"
-                    color="neutral"
+                    variant='outlined'
+                    color='neutral'
                     onClick={handleCancel}
                     disabled={isSubmitting || updateMutation.isPending || deleteMutation.isPending}
                   >
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
-                    variant="solid"
-                    color="primary"
+                    type='submit'
+                    variant='solid'
+                    color='primary'
                     loading={isSubmitting || updateMutation.isPending}
-                    startDecorator={!isSubmitting && !updateMutation.isPending ? <SegmentIcon size={16} /> : undefined}
+                    startDecorator={
+                      !isSubmitting && !updateMutation.isPending ? (
+                        <SegmentIcon size={16} />
+                      ) : undefined
+                    }
                   >
                     {isSubmitting || updateMutation.isPending ? 'Updating...' : 'Update Segment'}
                   </Button>
@@ -342,28 +338,29 @@ export default function Page({ params }: PageProps): React.JSX.Element {
 
         {/* Delete Confirmation Modal */}
         <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-          <ModalDialog variant="outlined" role="alertdialog">
+          <ModalDialog variant='outlined' role='alertdialog'>
             <DialogTitle>
               <DeleteIcon size={20} />
               Delete Segment
             </DialogTitle>
             <DialogContent>
-              <Typography level="body-md">
-                Are you sure you want to delete &ldquo;{segment.name}&rdquo;? This action cannot be undone.
+              <Typography level='body-md'>
+                Are you sure you want to delete &ldquo;{segment.name}&rdquo;? This action cannot be
+                undone.
               </Typography>
             </DialogContent>
             <DialogActions>
               <Button
-                variant="outlined"
-                color="neutral"
+                variant='outlined'
+                color='neutral'
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleteMutation.isPending}
               >
                 Cancel
               </Button>
               <Button
-                variant="solid"
-                color="danger"
+                variant='solid'
+                color='danger'
                 onClick={handleDelete}
                 loading={deleteMutation.isPending}
                 startDecorator={!deleteMutation.isPending ? <DeleteIcon size={16} /> : undefined}
@@ -377,4 +374,3 @@ export default function Page({ params }: PageProps): React.JSX.Element {
     </Box>
   );
 }
-

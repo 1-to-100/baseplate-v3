@@ -49,4 +49,3 @@ export interface CreatePersonaData {
 export interface UpdatePersonaData extends Partial<CreatePersonaData> {
   persona_id: string;
 }
-

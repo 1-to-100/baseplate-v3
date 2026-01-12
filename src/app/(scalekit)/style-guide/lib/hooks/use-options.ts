@@ -5,7 +5,12 @@ import {
   listFontOptions,
   listSocialTemplateTypes,
 } from '../api/options';
-import type { TypographyStyleOption, LogoTypeOption, FontOption, SocialTemplateType } from '../types';
+import type {
+  TypographyStyleOption,
+  LogoTypeOption,
+  FontOption,
+  SocialTemplateType,
+} from '../types';
 
 export const optionKeys = {
   typographyStyleOptions: ['options', 'typography-style-options'] as const,
@@ -61,4 +66,3 @@ export function useSocialTemplateTypes() {
     staleTime: Infinity, // Options rarely change
   });
 }
-

@@ -23,4 +23,3 @@ export interface CreateCustomerInfoPayload {
 export interface UpdateCustomerInfoPayload extends Partial<CreateCustomerInfoPayload> {
   customer_info_id: string;
 }
-

@@ -2,7 +2,15 @@ import { createClient } from '@/lib/supabase/client';
 
 export async function getContext() {
   const supabase = createClient();
-  const [{ data: userIdData, error: userErr }, { data: customerIdData, error: custErr }, { data: roleIdData, error: roleErr }, { data: isSysData, error: sysErr }, { data: isSysAdminData, error: sysAdminErr }, { data: isCsData, error: csErr }, { data: isCustAdminData, error: custAdminErr }] = await Promise.all([
+  const [
+    { data: userIdData, error: userErr },
+    { data: customerIdData, error: custErr },
+    { data: roleIdData, error: roleErr },
+    { data: isSysData, error: sysErr },
+    { data: isSysAdminData, error: sysAdminErr },
+    { data: isCsData, error: csErr },
+    { data: isCustAdminData, error: custAdminErr },
+  ] = await Promise.all([
     supabase.rpc('current_user_id'),
     supabase.rpc('customer_id'),
     supabase.rpc('role_id'),
@@ -23,5 +31,3 @@ export async function getContext() {
     errors: { userErr, custErr, roleErr, sysErr, sysAdminErr, csErr, custAdminErr },
   };
 }
-
-

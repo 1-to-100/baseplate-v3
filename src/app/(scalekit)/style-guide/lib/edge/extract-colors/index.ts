@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import OpenAI from 'https://esm.sh/openai@4';
 
@@ -34,9 +34,13 @@ const SYSTEM_PROMPT = `You are an expert color analyst and brand designer. Your 
 /**
  * Generates the user prompt for color extraction
  */
-function generateColorExtractionPrompt(screenshotUrl: string, htmlContent?: string, cssContent?: string): string {
+function generateColorExtractionPrompt(
+  screenshotUrl: string,
+  htmlContent?: string,
+  cssContent?: string
+): string {
   let contentAnalysis = '';
-  
+
   if (htmlContent || cssContent) {
     contentAnalysis = `\n\nSOURCE CODE PROVIDED:\n`;
     contentAnalysis += `The HTML and CSS content from the captured webpage has been provided below. Use this to identify color values defined in stylesheets and inline styles.\n\n`;
@@ -47,7 +51,7 @@ function generateColorExtractionPrompt(screenshotUrl: string, htmlContent?: stri
       contentAnalysis += `CSS Content (first 5000 chars):\n${cssContent.substring(0, 5000)}${cssContent.length > 5000 ? '...' : ''}\n\n`;
     }
   }
-  
+
   return `IMPORTANT: You are being provided with a screenshot image directly in this request (attached as an image_url). You are also being provided with the raw HTML and CSS content from the captured webpage below.
 
 DO NOT attempt to access any external URLs or websites. Analyze ONLY the screenshot image provided in this request and the HTML/CSS content provided below.
@@ -132,9 +136,9 @@ Return your response as a JSON object with this EXACT structure:
  */
 function validateColorsResponse(response: unknown): ExtractedColors {
   console.log('Validating colors response...');
-  
+
   let data: Record<string, unknown>;
-  
+
   if (Array.isArray(response)) {
     if (response.length === 0) throw new Error('Empty response array');
     data = response[0] as Record<string, unknown>;
@@ -149,14 +153,17 @@ function validateColorsResponse(response: unknown): ExtractedColors {
   }
 
   const paletteColors = (data.palette_colors as Array<Record<string, unknown>>)
-    .filter((item) => 
-      item && 
-      typeof item.hex === 'string' &&
-      item.hex.startsWith('#') &&
-      typeof item.name === 'string' &&
-      typeof item.usage_option === 'string' &&
-      ['primary', 'secondary', 'foreground', 'background', 'accent'].includes(item.usage_option) &&
-      typeof item.sort_order === 'number'
+    .filter(
+      (item) =>
+        item &&
+        typeof item.hex === 'string' &&
+        item.hex.startsWith('#') &&
+        typeof item.name === 'string' &&
+        typeof item.usage_option === 'string' &&
+        ['primary', 'secondary', 'foreground', 'background', 'accent'].includes(
+          item.usage_option
+        ) &&
+        typeof item.sort_order === 'number'
     )
     .map((item) => ({
       hex: item.hex,
@@ -204,20 +211,21 @@ Deno.serve(async (req) => {
       requestBody = JSON.parse(text);
     } catch (parseError) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Invalid request body',
-          usage: 'Please provide: { "web_screenshot_capture_id": "uuid", "visual_style_guide_id": "uuid" (optional) }'
+          usage:
+            'Please provide: { "web_screenshot_capture_id": "uuid", "visual_style_guide_id": "uuid" (optional) }',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { web_screenshot_capture_id, visual_style_guide_id } = requestBody;
-    
+
     if (!web_screenshot_capture_id) {
       return new Response(
-        JSON.stringify({ 
-          error: 'web_screenshot_capture_id is required'
+        JSON.stringify({
+          error: 'web_screenshot_capture_id is required',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -244,7 +252,10 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
@@ -259,7 +270,8 @@ Deno.serve(async (req) => {
     console.log('Fetching capture record...');
     const { data: capture, error: captureError } = await supabase
       .from('web_screenshot_captures')
-      .select(`
+      .select(
+        `
         web_screenshot_capture_id, 
         customer_id, 
         screenshot_storage_path, 
@@ -268,7 +280,8 @@ Deno.serve(async (req) => {
         capture_request:web_screenshot_capture_request_id (
           requested_url
         )
-      `)
+      `
+      )
       .eq('web_screenshot_capture_id', web_screenshot_capture_id)
       .maybeSingle();
 
@@ -286,7 +299,9 @@ Deno.serve(async (req) => {
       .createSignedUrl(capture.screenshot_storage_path, 3600); // 1 hour expiry
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      throw new Error(`Failed to generate signed URL: ${signedUrlError?.message || 'Unknown error'}`);
+      throw new Error(
+        `Failed to generate signed URL: ${signedUrlError?.message || 'Unknown error'}`
+      );
     }
 
     const screenshotUrl = signedUrlData.signedUrl;
@@ -295,8 +310,8 @@ Deno.serve(async (req) => {
     // Get HTML and CSS content
     const htmlContent = capture.raw_html || undefined;
     const cssContent = capture.raw_css || undefined;
-    const captureRequest = Array.isArray(capture.capture_request) 
-      ? capture.capture_request[0] 
+    const captureRequest = Array.isArray(capture.capture_request)
+      ? capture.capture_request[0]
       : capture.capture_request;
     const requestedUrl = (captureRequest as { requested_url?: string })?.requested_url || '';
 
@@ -318,7 +333,7 @@ Deno.serve(async (req) => {
       }
 
       visualGuideCustomerId = visualGuide.customer_id;
-      
+
       // Verify customer matches
       if (visualGuideCustomerId !== customerId) {
         throw new Error('Visual style guide customer does not match capture customer');
@@ -339,7 +354,7 @@ Deno.serve(async (req) => {
 
     // Call GPT-5 with image analysis
     console.log('Calling GPT-5 with image analysis...');
-    
+
     const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}\n\nCRITICAL: Return ONLY valid JSON, no markdown or code blocks.`;
 
     // Use GPT-4 Vision or GPT-5 with image input
@@ -372,7 +387,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
       },
       body: JSON.stringify(responsePayload),
     });
@@ -385,18 +400,18 @@ Deno.serve(async (req) => {
 
     const responseData = await apiResponse.json();
     console.log('Response received from GPT-4o');
-    
+
     const responseContent = responseData.choices?.[0]?.message?.content;
-    
+
     if (!responseContent) {
       throw new Error('No content in OpenAI response');
     }
 
     console.log('Response content length:', responseContent.length);
-    
+
     // Clean the response content - remove markdown code blocks if present
     let cleanedContent = responseContent.trim();
-    
+
     // Remove markdown code block markers (```json ... ``` or ``` ... ```)
     // Handle cases like: ```json\n...\n``` or ```\n...\n```
     if (cleanedContent.startsWith('```')) {
@@ -416,18 +431,18 @@ Deno.serve(async (req) => {
           cleanedContent = cleanedContent.substring(3);
         }
       }
-      
+
       // Remove closing ``` if it exists (handle cases where it's on same line or separate line)
       const lastBackticks = cleanedContent.lastIndexOf('```');
       if (lastBackticks !== -1 && lastBackticks > 0) {
         cleanedContent = cleanedContent.substring(0, lastBackticks);
       }
-      
+
       cleanedContent = cleanedContent.trim();
     }
-    
+
     console.log('Cleaned content preview:', cleanedContent.substring(0, 200));
-    
+
     // Parse and validate
     let parsedResponse: unknown;
     try {
@@ -443,7 +458,7 @@ Deno.serve(async (req) => {
     // Insert palette colors if visual_style_guide_id is provided
     if (visual_style_guide_id && visualGuideCustomerId) {
       console.log(`Inserting ${extractedData.palette_colors.length} palette colors...`);
-      
+
       const paletteRecords = extractedData.palette_colors.map((color) => ({
         customer_id: visualGuideCustomerId,
         style_guide_id: visual_style_guide_id,
@@ -474,7 +489,7 @@ Deno.serve(async (req) => {
 
     // Return the extracted colors
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         palette_colors: extractedData.palette_colors,
       }),
@@ -483,18 +498,16 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-
   } catch (error) {
     console.error('Error in extract-colors:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unexpected error',
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
 });
-

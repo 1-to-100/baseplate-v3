@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
   Alert,
   Button,
@@ -17,15 +17,15 @@ import {
   Stack,
   Textarea,
   Typography,
-} from "@mui/joy";
-import Option from "@mui/joy/Option";
-import { useRouter } from "next/navigation";
+} from '@mui/joy';
+import Option from '@mui/joy/Option';
+import { useRouter } from 'next/navigation';
 import {
   Sparkle as SparkleIcon,
   ShieldCheck as ShieldCheckIcon,
   ClockCountdown as ClockCountdownIcon,
-} from "@phosphor-icons/react/dist/ssr";
-import dayjs from "dayjs";
+} from '@phosphor-icons/react/dist/ssr';
+import dayjs from 'dayjs';
 import {
   useCompanyStrategyQuery,
   useStrategyChangeLogsQuery,
@@ -33,12 +33,12 @@ import {
   useStrategyChangeTypesQuery,
   useUpdateCompanyStrategyMutation,
   useCreateStrategyChangeLogMutation,
-} from "../../strategy-forge/lib/api";
+} from '../../strategy-forge/lib/api';
 
 const SUMMARY_MAX = 120;
 const JUSTIFICATION_MIN = 20;
 
-type PublishMode = "immediate" | "scheduled";
+type PublishMode = 'immediate' | 'scheduled';
 
 export default function PublishStrategyPage(): React.ReactElement {
   const router = useRouter();
@@ -51,19 +51,21 @@ export default function PublishStrategyPage(): React.ReactElement {
   const updateStrategy = useUpdateCompanyStrategyMutation();
   const createChangeLog = useCreateStrategyChangeLogMutation();
 
-  const [summary, setSummary] = React.useState("");
-  const [justification, setJustification] = React.useState("");
-  const [publishMode, setPublishMode] = React.useState<PublishMode>("immediate");
-  const [scheduledAt, setScheduledAt] = React.useState("");
+  const [summary, setSummary] = React.useState('');
+  const [justification, setJustification] = React.useState('');
+  const [publishMode, setPublishMode] = React.useState<PublishMode>('immediate');
+  const [scheduledAt, setScheduledAt] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<"idle" | "publishing">("idle");
+  const [status, setStatus] = React.useState<'idle' | 'publishing'>('idle');
 
-  const publishStatus = publicationStatuses?.find((status) => status.programmatic_name === "published");
-  const draftedStatus = publicationStatuses?.find((status) => status.programmatic_name === "draft");
+  const publishStatus = publicationStatuses?.find(
+    (status) => status.programmatic_name === 'published'
+  );
+  const draftedStatus = publicationStatuses?.find((status) => status.programmatic_name === 'draft');
 
   const summaryError = React.useMemo(() => {
     if (!summary.trim()) {
-      return "Summary is required.";
+      return 'Summary is required.';
     }
     if (summary.length > SUMMARY_MAX) {
       return `Summary must be ${SUMMARY_MAX} characters or less.`;
@@ -79,12 +81,12 @@ export default function PublishStrategyPage(): React.ReactElement {
   }, [justification]);
 
   const scheduleError = React.useMemo(() => {
-    if (publishMode === "scheduled") {
+    if (publishMode === 'scheduled') {
       if (!scheduledAt) {
-        return "Select a go-live date.";
+        return 'Select a go-live date.';
       }
       if (dayjs(scheduledAt).isBefore(dayjs())) {
-        return "Schedule must be in the future.";
+        return 'Schedule must be in the future.';
       }
     }
     return null;
@@ -98,11 +100,11 @@ export default function PublishStrategyPage(): React.ReactElement {
 
   const handlePublish = async () => {
     if (!strategy || !strategyId) {
-      setError("Strategy not found.");
+      setError('Strategy not found.');
       return;
     }
     if (!publishStatus) {
-      setError("Published status unavailable. Contact an administrator.");
+      setError('Published status unavailable. Contact an administrator.');
       return;
     }
     if (summaryError || justificationError || scheduleError) {
@@ -111,7 +113,7 @@ export default function PublishStrategyPage(): React.ReactElement {
     }
 
     try {
-      setStatus("publishing");
+      setStatus('publishing');
       setError(null);
 
       await updateStrategy.mutateAsync({
@@ -120,12 +122,12 @@ export default function PublishStrategyPage(): React.ReactElement {
           is_published: true,
           publication_status_id: publishStatus.option_id,
           effective_at:
-            publishMode === "scheduled" && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+            publishMode === 'scheduled' && scheduledAt ? new Date(scheduledAt).toISOString() : null,
         },
       });
 
       const publishChangeType =
-        changeTypes?.find((type) => type.programmatic_name === "publish") ?? changeTypes?.[0];
+        changeTypes?.find((type) => type.programmatic_name === 'publish') ?? changeTypes?.[0];
 
       if (publishChangeType) {
         await createChangeLog.mutateAsync({
@@ -134,65 +136,75 @@ export default function PublishStrategyPage(): React.ReactElement {
           summary: summary.trim(),
           justification: justification.trim(),
           meta: {
-            affected_sections: uniqueSections.length > 0 ? uniqueSections : ["mission", "vision", "principles", "values", "competitors"],
+            affected_sections:
+              uniqueSections.length > 0
+                ? uniqueSections
+                : ['mission', 'vision', 'principles', 'values', 'competitors'],
             publication_mode: publishMode,
           },
         });
       }
 
-      router.push("/strategy-forge/overview");
+      router.push('/strategy-forge/overview');
     } catch (publishError) {
       console.error(publishError);
-      setError("Failed to publish strategy. Please try again.");
-      setStatus("idle");
+      setError('Failed to publish strategy. Please try again.');
+      setStatus('idle');
     }
   };
 
   return (
     <Stack spacing={3}>
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={1}>
-            <Typography level="h1" sx={{ fontSize: "1.5rem" }}>
+            <Typography level='h1' sx={{ fontSize: '1.5rem' }}>
               Publish Strategy
             </Typography>
-            <Typography level="body-sm" color="neutral">
-              Confirm and justify the publication. Once published, downstream modules will read this version and change log entries will be created.
+            <Typography level='body-sm' color='neutral'>
+              Confirm and justify the publication. Once published, downstream modules will read this
+              version and change log entries will be created.
             </Typography>
           </Stack>
         </CardContent>
       </Card>
 
       {error ? (
-        <Alert color="danger" variant="soft">
+        <Alert color='danger' variant='soft'>
           {error}
         </Alert>
       ) : null}
 
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={2}>
-            <Typography level="title-lg">Changed sections</Typography>
+            <Typography level='title-lg'>Changed sections</Typography>
             <Divider />
             {isLoading ? (
               <Stack spacing={1}>
-                <Typography level="body-sm" color="neutral">
+                <Typography level='body-sm' color='neutral'>
                   Gathering change summary…
                 </Typography>
-                <LinearProgress variant="soft" />
+                <LinearProgress variant='soft' />
               </Stack>
             ) : uniqueSections.length === 0 ? (
-              <Typography level="body-sm" color="neutral">
-                Recent changes were not tagged with specific sections. Review the latest change log entries before publishing.
+              <Typography level='body-sm' color='neutral'>
+                Recent changes were not tagged with specific sections. Review the latest change log
+                entries before publishing.
               </Typography>
             ) : (
               <Stack spacing={1}>
                 {uniqueSections.map((section, index) => (
-                  <Stack key={typeof section === 'string' ? section : `section-${index}`} direction="row" spacing={1} alignItems="center">
-                    <Chip variant="soft" color="primary" size="sm">
+                  <Stack
+                    key={typeof section === 'string' ? section : `section-${index}`}
+                    direction='row'
+                    spacing={1}
+                    alignItems='center'
+                  >
+                    <Chip variant='soft' color='primary' size='sm'>
                       {section}
                     </Chip>
-                    <Typography level="body-sm" color="neutral">
+                    <Typography level='body-sm' color='neutral'>
                       Updated in recent drafts
                     </Typography>
                   </Stack>
@@ -200,18 +212,19 @@ export default function PublishStrategyPage(): React.ReactElement {
               </Stack>
             )}
 
-            <Typography level="title-sm">Recent activity</Typography>
+            <Typography level='title-sm'>Recent activity</Typography>
             <Stack spacing={1}>
               {(changeLogs ?? []).map((log) => (
                 <Stack key={log.change_log_id} spacing={0.25}>
-                  <Typography level="body-sm" fontWeight="lg">
+                  <Typography level='body-sm' fontWeight='lg'>
                     {log.summary}
                   </Typography>
-                  <Typography level="body-xs" color="neutral">
-                    {new Date(log.changed_at).toLocaleString()} · {log.changed_by_user_id ?? "Unknown"}
+                  <Typography level='body-xs' color='neutral'>
+                    {new Date(log.changed_at).toLocaleString()} ·{' '}
+                    {log.changed_by_user_id ?? 'Unknown'}
                   </Typography>
                   {log.justification ? (
-                    <Typography level="body-xs" color="neutral" sx={{ opacity: 0.7 }}>
+                    <Typography level='body-xs' color='neutral' sx={{ opacity: 0.7 }}>
                       {log.justification}
                     </Typography>
                   ) : null}
@@ -222,10 +235,10 @@ export default function PublishStrategyPage(): React.ReactElement {
         </CardContent>
       </Card>
 
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={2}>
-            <Typography level="title-lg">Publication details</Typography>
+            <Typography level='title-lg'>Publication details</Typography>
             <Divider />
 
             <FormControl required>
@@ -233,7 +246,7 @@ export default function PublishStrategyPage(): React.ReactElement {
               <Input
                 value={summary}
                 onChange={(event) => setSummary(event.target.value.slice(0, SUMMARY_MAX))}
-                placeholder="Short summary for board and audit log"
+                placeholder='Short summary for board and audit log'
               />
               <FormHelperText>{SUMMARY_MAX - summary.length} characters remaining</FormHelperText>
             </FormControl>
@@ -244,29 +257,32 @@ export default function PublishStrategyPage(): React.ReactElement {
                 minRows={4}
                 value={justification}
                 onChange={(event) => setJustification(event.target.value)}
-                placeholder="Explain why this version should be published and how it will be used."
+                placeholder='Explain why this version should be published and how it will be used.'
               />
               <FormHelperText>Minimum {JUSTIFICATION_MIN} characters.</FormHelperText>
             </FormControl>
 
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <FormControl sx={{ flex: 1 }}>
                 <FormLabel>Mode</FormLabel>
-                <Select value={publishMode} onChange={(_, value) => setPublishMode((value as PublishMode) ?? "immediate")}>
-                  <Option value="immediate">Publish immediately</Option>
-                  <Option value="scheduled">Schedule publication</Option>
+                <Select
+                  value={publishMode}
+                  onChange={(_, value) => setPublishMode((value as PublishMode) ?? 'immediate')}
+                >
+                  <Option value='immediate'>Publish immediately</Option>
+                  <Option value='scheduled'>Schedule publication</Option>
                 </Select>
               </FormControl>
-              {publishMode === "scheduled" ? (
+              {publishMode === 'scheduled' ? (
                 <FormControl sx={{ flex: 1 }} required>
                   <FormLabel>Go-live</FormLabel>
                   <Input
-                    type="datetime-local"
+                    type='datetime-local'
                     value={scheduledAt}
                     onChange={(event) => setScheduledAt(event.target.value)}
                   />
                   {scheduleError ? (
-                    <FormHelperText color="danger">{scheduleError}</FormHelperText>
+                    <FormHelperText color='danger'>{scheduleError}</FormHelperText>
                   ) : (
                     <FormHelperText>Strategy remains in draft until this time.</FormHelperText>
                   )}
@@ -277,23 +293,28 @@ export default function PublishStrategyPage(): React.ReactElement {
         </CardContent>
       </Card>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent='flex-end'>
         <Button
-          variant="outlined"
-          color="neutral"
-          onClick={() => router.push("/strategy-forge/overview")}
-          startDecorator={<ClockCountdownIcon size={16} weight="bold" />}
-          disabled={status === "publishing"}
+          variant='outlined'
+          color='neutral'
+          onClick={() => router.push('/strategy-forge/overview')}
+          startDecorator={<ClockCountdownIcon size={16} weight='bold' />}
+          disabled={status === 'publishing'}
         >
           Cancel
         </Button>
         <Button
-          variant="solid"
-          color="primary"
+          variant='solid'
+          color='primary'
           onClick={handlePublish}
-          disabled={status === "publishing" || Boolean(summaryError) || Boolean(justificationError) || Boolean(scheduleError)}
-          loading={status === "publishing"}
-          startDecorator={<ShieldCheckIcon size={16} weight="bold" />}
+          disabled={
+            status === 'publishing' ||
+            Boolean(summaryError) ||
+            Boolean(justificationError) ||
+            Boolean(scheduleError)
+          }
+          loading={status === 'publishing'}
+          startDecorator={<ShieldCheckIcon size={16} weight='bold' />}
         >
           Confirm publish
         </Button>

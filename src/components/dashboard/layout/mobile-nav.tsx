@@ -175,7 +175,9 @@ function renderNavGroups({
     // Support top-level single-link items (not groups)
     if (curr.href && !curr.items) {
       const { items: _items, key, ...navItemProps } = curr;
-      return [<NavItem depth={0} key={key} onClose={onClose} pathname={pathname} {...navItemProps} />];
+      return [
+        <NavItem depth={0} key={key} onClose={onClose} pathname={pathname} {...navItemProps} />,
+      ];
     }
 
     // Render as a group header

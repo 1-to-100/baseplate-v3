@@ -1,5 +1,5 @@
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import OpenAI from 'https://esm.sh/openai@4';
 
@@ -221,7 +221,7 @@ Return your response as a JSON object with the following structure:
  */
 function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
   let data: Record<string, unknown>;
-  
+
   // Handle array response
   if (Array.isArray(response)) {
     if (response.length === 0) {
@@ -237,8 +237,10 @@ function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
   }
 
   // Validate required fields exist (all are optional but we want at least some data)
-  const hasAnyData = Object.values(data).some(value => value !== null && value !== undefined && value !== '');
-  
+  const hasAnyData = Object.values(data).some(
+    (value) => value !== null && value !== undefined && value !== ''
+  );
+
   if (!hasAnyData) {
     throw new Error('No style guide data was generated');
   }
@@ -247,7 +249,9 @@ function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
   let framingConcepts: FramingConcept[] = [];
   if (Array.isArray(data.framing_concepts)) {
     framingConcepts = (data.framing_concepts as Array<Record<string, unknown>>)
-      .filter((item) => item && typeof item.name === 'string' && typeof item.description === 'string')
+      .filter(
+        (item) => item && typeof item.name === 'string' && typeof item.description === 'string'
+      )
       .map((item) => ({
         name: item.name,
         description: item.description,
@@ -258,30 +262,49 @@ function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
   let vocabularyEntries: VocabularyEntry[] = [];
   if (Array.isArray(data.vocabulary_entries)) {
     vocabularyEntries = (data.vocabulary_entries as Array<Record<string, unknown>>)
-      .filter((item) => 
-        item && 
-        typeof item.name === 'string' && 
-        (item.vocabulary_type === 'preferred' || item.vocabulary_type === 'prohibited')
+      .filter(
+        (item) =>
+          item &&
+          typeof item.name === 'string' &&
+          (item.vocabulary_type === 'preferred' || item.vocabulary_type === 'prohibited')
       )
       .map((item) => ({
         name: item.name,
         vocabulary_type: item.vocabulary_type,
-        suggested_replacement: typeof item.suggested_replacement === 'string' ? item.suggested_replacement : undefined,
+        suggested_replacement:
+          typeof item.suggested_replacement === 'string' ? item.suggested_replacement : undefined,
         example_usage: typeof item.example_usage === 'string' ? item.example_usage : undefined,
       }));
   }
 
   return {
-    brand_personality: typeof data.brand_personality === 'string' ? data.brand_personality : undefined,
+    brand_personality:
+      typeof data.brand_personality === 'string' ? data.brand_personality : undefined,
     brand_voice: typeof data.brand_voice === 'string' ? data.brand_voice : undefined,
-    formality_option_item_id: typeof data.formality_option_item_id === 'string' ? data.formality_option_item_id : null,
-    sentence_length_option_item_id: typeof data.sentence_length_option_item_id === 'string' ? data.sentence_length_option_item_id : null,
-    pacing_option_item_id: typeof data.pacing_option_item_id === 'string' ? data.pacing_option_item_id : null,
-    humor_usage_option_item_id: typeof data.humor_usage_option_item_id === 'string' ? data.humor_usage_option_item_id : null,
-    storytelling_style_option_item_id: typeof data.storytelling_style_option_item_id === 'string' ? data.storytelling_style_option_item_id : null,
-    use_of_jargon_option_item_id: typeof data.use_of_jargon_option_item_id === 'string' ? data.use_of_jargon_option_item_id : null,
-    language_level_option_item_id: typeof data.language_level_option_item_id === 'string' ? data.language_level_option_item_id : null,
-    inclusivity_guidelines: typeof data.inclusivity_guidelines === 'string' ? data.inclusivity_guidelines : undefined,
+    formality_option_item_id:
+      typeof data.formality_option_item_id === 'string' ? data.formality_option_item_id : null,
+    sentence_length_option_item_id:
+      typeof data.sentence_length_option_item_id === 'string'
+        ? data.sentence_length_option_item_id
+        : null,
+    pacing_option_item_id:
+      typeof data.pacing_option_item_id === 'string' ? data.pacing_option_item_id : null,
+    humor_usage_option_item_id:
+      typeof data.humor_usage_option_item_id === 'string' ? data.humor_usage_option_item_id : null,
+    storytelling_style_option_item_id:
+      typeof data.storytelling_style_option_item_id === 'string'
+        ? data.storytelling_style_option_item_id
+        : null,
+    use_of_jargon_option_item_id:
+      typeof data.use_of_jargon_option_item_id === 'string'
+        ? data.use_of_jargon_option_item_id
+        : null,
+    language_level_option_item_id:
+      typeof data.language_level_option_item_id === 'string'
+        ? data.language_level_option_item_id
+        : null,
+    inclusivity_guidelines:
+      typeof data.inclusivity_guidelines === 'string' ? data.inclusivity_guidelines : undefined,
     framing_concepts: framingConcepts,
     vocabulary_entries: vocabularyEntries,
   };
@@ -290,9 +313,9 @@ function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
+    return new Response('ok', {
       status: 200,
-      headers: corsHeaders 
+      headers: corsHeaders,
     });
   }
 
@@ -325,9 +348,10 @@ Deno.serve(async (req) => {
 
     if (!websiteUrl) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'URL is required',
-          usage: 'Please provide a URL in the request body: { "customer_id": "uuid", "url": "https://example.com" }'
+          usage:
+            'Please provide a URL in the request body: { "customer_id": "uuid", "url": "https://example.com" }',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -351,7 +375,10 @@ Deno.serve(async (req) => {
 
     // Get the authenticated user
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
@@ -402,7 +429,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (customerInfoError || !customerInfo) {
-      throw new Error('Failed to fetch customer info: ' + (customerInfoError?.message || 'No customer info found'));
+      throw new Error(
+        'Failed to fetch customer info: ' + (customerInfoError?.message || 'No customer info found')
+      );
     }
 
     if (!websiteUrl) {
@@ -410,7 +439,9 @@ Deno.serve(async (req) => {
     }
 
     if (!websiteUrl && customerInfo.email_domain) {
-      const normalizedDomain = customerInfo.email_domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const normalizedDomain = customerInfo.email_domain
+        .replace(/^https?:\/\//, '')
+        .replace(/\/$/, '');
       websiteUrl = `https://${normalizedDomain}`;
     }
 
@@ -438,19 +469,56 @@ Deno.serve(async (req) => {
       { data: jargonOptions, error: jargonError },
       { data: languageLevelOptions, error: languageLevelError },
     ] = await Promise.all([
-      supabase.from('formality_option_items').select('id:formality_option_item_id, display_name, description, name').eq('is_active', true),
-      supabase.from('sentence_option_items_singleton').select('id:sentence_option_items_id, display_name, description, name').eq('is_active', true),
-      supabase.from('pacing_option_items').select('id:pacing_option_item_id, display_name, description, name').eq('is_active', true),
-      supabase.from('humor_usage_option_items').select('id:humor_usage_option_item_id, display_name, description, name').eq('is_active', true),
-      supabase.from('storytelling_option_items').select('id:storytelling_option_item_id, display_name, description, name').eq('is_active', true),
-      supabase.from('use_of_jargon_option_items').select('id:use_of_jargon_option_item_id, display_name, description, name').eq('is_active', true),
-      supabase.from('language_level_option_items').select('id:language_level_option_item_id, display_name, description, name').eq('is_active', true),
+      supabase
+        .from('formality_option_items')
+        .select('id:formality_option_item_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('sentence_option_items_singleton')
+        .select('id:sentence_option_items_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('pacing_option_items')
+        .select('id:pacing_option_item_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('humor_usage_option_items')
+        .select('id:humor_usage_option_item_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('storytelling_option_items')
+        .select('id:storytelling_option_item_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('use_of_jargon_option_items')
+        .select('id:use_of_jargon_option_item_id, display_name, description, name')
+        .eq('is_active', true),
+      supabase
+        .from('language_level_option_items')
+        .select('id:language_level_option_item_id, display_name, description, name')
+        .eq('is_active', true),
     ]);
 
-    if (formalityError || sentenceLengthError || pacingError || humorError || storytellingError || jargonError || languageLevelError) {
-      const errors = [formalityError, sentenceLengthError, pacingError, humorError, storytellingError, jargonError, languageLevelError]
+    if (
+      formalityError ||
+      sentenceLengthError ||
+      pacingError ||
+      humorError ||
+      storytellingError ||
+      jargonError ||
+      languageLevelError
+    ) {
+      const errors = [
+        formalityError,
+        sentenceLengthError,
+        pacingError,
+        humorError,
+        storytellingError,
+        jargonError,
+        languageLevelError,
+      ]
         .filter(Boolean)
-        .map(e => e!.message);
+        .map((e) => e!.message);
       throw new Error(`Failed to fetch option tables: ${errors.join(', ')}`);
     }
 
@@ -478,14 +546,14 @@ Deno.serve(async (req) => {
 
     // Call GPT-5 with Responses API and web_search tool
     console.log('Calling GPT-5 with web_search via Responses API...');
-    
+
     const openai = new OpenAI({ apiKey: openaiKey });
-    
+
     // Extract domain from URL for filtering (remove http/https prefix)
     const urlObj = new URL(websiteUrl);
     const domain = urlObj.hostname.replace(/^www\./, ''); // Remove www. prefix if present
     console.log('Filtering web search to domain:', domain);
-    
+
     // Combine system and user prompts into a single input string for GPT-5
     const combinedPrompt = `${SYSTEM_PROMPT}
 
@@ -504,9 +572,9 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
           type: 'web_search',
           // Domain filtering - limit results to customer's domain only
           filters: {
-            allowed_domains: [domain] // Allow-list of domains (max 20)
-          }
-        }
+            allowed_domains: [domain], // Allow-list of domains (max 20)
+          },
+        },
       ],
     };
 
@@ -518,7 +586,7 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         'OpenAI-Beta': 'responses=v1', // Required beta header for Responses API
       },
       body: JSON.stringify(responsePayload),
@@ -533,15 +601,17 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
     const responseData = await apiResponse.json();
     console.log('Responses API response received');
     console.log('Response status:', responseData.status);
-    
+
     // Extract content from Responses API format
     // The output is an array containing reasoning, web_search_call, and message items
     // We need to find the message item and extract its text content
     const output = (responseData.output || []) as Array<Record<string, unknown>>;
-    
+
     // Find the message item in the output array
-    const messageItem = output.find((item) => item.type === 'message') as { content?: Array<Record<string, unknown>> } | undefined;
-    
+    const messageItem = output.find((item) => item.type === 'message') as
+      | { content?: Array<Record<string, unknown>> }
+      | undefined;
+
     if (!messageItem) {
       console.error('No message item found in output:', responseData);
       throw new Error('No message content in OpenAI response');
@@ -549,8 +619,10 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
 
     // Extract text from the message content
     const content = (messageItem.content || []) as Array<Record<string, unknown>>;
-    const textItem = content.find((item) => item.type === 'output_text') as { text?: string } | undefined;
-    
+    const textItem = content.find((item) => item.type === 'output_text') as
+      | { text?: string }
+      | undefined;
+
     if (!textItem || !textItem.text) {
       console.error('No text content found in message:', messageItem);
       throw new Error('No text in message content');
@@ -558,7 +630,7 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
 
     const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
-    
+
     // Log web search calls
     const webSearchCalls = output.filter((item) => item.type === 'web_search_call');
     console.log(`✓ Web search performed: ${webSearchCalls.length} searches`);
@@ -588,10 +660,10 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
 
     if (existingStyleGuide) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Style guide already exists for this customer',
           existing_style_guide_id: existingStyleGuide.style_guide_id,
-          suggestion: 'Use update endpoint to modify existing style guide'
+          suggestion: 'Use update endpoint to modify existing style guide',
         }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -635,7 +707,7 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
     let insertedFramingConcepts = 0;
     if (styleGuideData.framing_concepts && styleGuideData.framing_concepts.length > 0) {
       console.log(`Inserting ${styleGuideData.framing_concepts.length} framing concepts...`);
-      
+
       const framingConceptRecords = styleGuideData.framing_concepts.map((concept) => ({
         style_guide_id: createdStyleGuide.style_guide_id,
         name: concept.name,
@@ -663,7 +735,7 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
     let insertedVocabulary = 0;
     if (styleGuideData.vocabulary_entries && styleGuideData.vocabulary_entries.length > 0) {
       console.log(`Inserting ${styleGuideData.vocabulary_entries.length} vocabulary entries...`);
-      
+
       const vocabularyRecords = styleGuideData.vocabulary_entries.map((entry) => ({
         style_guide_id: createdStyleGuide.style_guide_id,
         name: entry.name,
@@ -683,9 +755,15 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
         console.warn('Continuing despite vocabulary entries insertion error');
       } else {
         insertedVocabulary = insertedEntries?.length || 0;
-        const preferredCount = styleGuideData.vocabulary_entries.filter(e => e.vocabulary_type === 'preferred').length;
-        const prohibitedCount = styleGuideData.vocabulary_entries.filter(e => e.vocabulary_type === 'prohibited').length;
-        console.log(`✓ Inserted ${insertedVocabulary} vocabulary entries (${preferredCount} preferred, ${prohibitedCount} prohibited)`);
+        const preferredCount = styleGuideData.vocabulary_entries.filter(
+          (e) => e.vocabulary_type === 'preferred'
+        ).length;
+        const prohibitedCount = styleGuideData.vocabulary_entries.filter(
+          (e) => e.vocabulary_type === 'prohibited'
+        ).length;
+        console.log(
+          `✓ Inserted ${insertedVocabulary} vocabulary entries (${preferredCount} preferred, ${prohibitedCount} prohibited)`
+        );
       }
     } else {
       console.log('No vocabulary entries extracted from content');
@@ -709,17 +787,16 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
         status: 200,
       }
     );
-
   } catch (error) {
     console.error('Error in create-initial-written-style-guide:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unexpected error',
         success: false,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
@@ -854,4 +931,3 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
      - solution_overview
 
 */
-

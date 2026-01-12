@@ -52,7 +52,7 @@ export function DeviceProfileSelector({
       <Select
         value={value || null}
         onChange={(_, newValue) => onChange(newValue)}
-        placeholder="Select device profile or use default"
+        placeholder='Select device profile or use default'
         disabled={isLoading}
         slotProps={{
           listbox: {
@@ -76,7 +76,7 @@ export function DeviceProfileSelector({
       </Select>
       {helperText && <FormHelperText>{helperText}</FormHelperText>}
       {showPresets && profiles.length > 0 && (
-        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+        <Stack direction='row' spacing={1} sx={{ mt: 1 }}>
           <FormHelperText sx={{ m: 0, alignSelf: 'center' }}>Quick presets:</FormHelperText>
           {PRESET_PROFILES.map((preset) => {
             const profile = profiles.find((p) => p.programmatic_name === preset.programmaticName);
@@ -85,13 +85,16 @@ export function DeviceProfileSelector({
             const isSelected = value === profile.options_device_profile_id;
 
             return (
-              <Tooltip key={preset.programmaticName} title={`${profile.viewport_width}x${profile.viewport_height}, DPR: ${profile.device_pixel_ratio}`}>
+              <Tooltip
+                key={preset.programmaticName}
+                title={`${profile.viewport_width}x${profile.viewport_height}, DPR: ${profile.device_pixel_ratio}`}
+              >
                 <Chip
                   variant={isSelected ? 'solid' : 'outlined'}
                   color={isSelected ? 'primary' : 'neutral'}
                   onClick={() => handlePresetClick(preset.programmaticName)}
                   sx={{ cursor: 'pointer' }}
-                  role="button"
+                  role='button'
                   tabIndex={0}
                   aria-pressed={isSelected}
                   onKeyDown={(e) => {
@@ -111,4 +114,3 @@ export function DeviceProfileSelector({
     </FormControl>
   );
 }
-
