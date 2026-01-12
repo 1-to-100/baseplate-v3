@@ -184,8 +184,7 @@ export async function createComplianceRule(
 
   const insertPayload = {
     ...payload,
-    name: payload.name ?? payload.rule_name ?? '',
-    rule_name: payload.rule_name ?? payload.name ?? '',
+    name: payload.name ?? '',
     created_by: userId || null,
   };
 

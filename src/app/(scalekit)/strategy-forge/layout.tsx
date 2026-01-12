@@ -10,10 +10,9 @@ import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner
 
 interface LayoutProps {
   children: React.ReactNode;
-  modal?: React.ReactNode;
 }
 
-export default function Layout({ children, modal }: LayoutProps): React.JSX.Element {
+export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
     <AuthGuard>
       <GlobalStyles
@@ -71,7 +70,6 @@ export default function Layout({ children, modal }: LayoutProps): React.JSX.Elem
           </Box>
         </Box>
       </Box>
-      {modal ?? null}
     </AuthGuard>
   );
 }

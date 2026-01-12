@@ -71,7 +71,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
       // Format: https://[project].supabase.co/storage/v1/object/public/screenshots/{path}
       // or: https://[project].supabase.co/storage/v1/object/authenticated/screenshots/{path}
       const urlMatch = storagePath.match(/\/screenshots\/(.+)$/);
-      if (urlMatch) {
+      if (urlMatch && urlMatch[1]) {
         storagePath = urlMatch[1];
       }
 
@@ -139,6 +139,11 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
   const handleDownloadScreenshot = async () => {
     if (!signedUrl) {
       toast.error('Screenshot URL not available');
+      return;
+    }
+
+    if (!capture) {
+      toast.error('Capture data not available');
       return;
     }
 

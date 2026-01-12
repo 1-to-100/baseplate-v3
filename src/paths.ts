@@ -117,6 +117,10 @@ export const paths = {
         editor: '/style-guide/pages/written-style-guide',
       },
     },
+    visualOs: {
+      overview: (guideId: string) => `/style-guide/pages/visual-style-guide/${guideId}`,
+      create: '/style-guide/pages/visual-style-guide/create',
+    },
   },
   sourceAndSnap: {
     capture: '/source-and-snap/capture',

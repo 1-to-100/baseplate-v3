@@ -9,7 +9,7 @@ import Option from '@mui/joy/Option';
 import Chip from '@mui/joy/Chip';
 import Stack from '@mui/joy/Stack';
 import Tooltip from '@mui/joy/Tooltip';
-import type { OptionsDeviceProfile } from '../../lib/types';
+import type { DeviceProfileOption } from '../../lib/types';
 import { useDeviceProfileOptions } from '../../lib/hooks';
 
 interface DeviceProfileSelectorProps {

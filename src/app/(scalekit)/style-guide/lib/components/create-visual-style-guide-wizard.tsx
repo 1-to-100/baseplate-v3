@@ -358,7 +358,7 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
         }
 
         toast.success('Visual style guide created successfully');
-        router.push(paths.dashboard.visualOs.overview(String(guideId || '')));
+        router.push(paths.dashboard.visualOs.overview(guideId || ''));
       } catch (error) {
         console.error('Error creating guide:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to create visual style guide');
