@@ -62,8 +62,8 @@ export default function StyleGuidePage(): React.ReactElement {
       <Stack spacing={1}>
         <Typography level='h1'>Style Guide</Typography>
         <Typography level='body-lg' color='neutral'>
-          Manage your brand's written and visual style guides, vocabulary, compliance rules, and
-          content evaluation
+          Manage your brand&apos;s written and visual style guides, vocabulary, compliance rules,
+          and content evaluation
         </Typography>
       </Stack>
 

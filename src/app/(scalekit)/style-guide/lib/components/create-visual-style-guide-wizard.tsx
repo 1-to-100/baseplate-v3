@@ -411,7 +411,7 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
         <Stack spacing={2}>
           <Typography level='title-lg'>Choose a creation method</Typography>
           <Typography level='body-sm' color='neutral'>
-            Select how you'd like to create your visual style guide
+            Select how you&apos;d like to create your visual style guide
           </Typography>
         </Stack>
 
@@ -422,7 +422,7 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
           <FormControl>
             <Radio value='scan' label='Scan your site' />
             <FormHelperText>
-              We'll crawl the website and use AI to extract logos, colors, and typography
+              We&apos;ll crawl the website and use AI to extract logos, colors, and typography
             </FormHelperText>
           </FormControl>
           <FormControl>

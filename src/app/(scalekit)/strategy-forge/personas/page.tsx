@@ -473,8 +473,8 @@ export default function PersonasListPage(): React.JSX.Element {
             <CardContent>
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography color='neutral'>
-                  No personas found. Create your first persona or use "Suggest Personas" to get
-                  started.
+                  No personas found. Create your first persona or use &quot;Suggest Personas&quot;
+                  to get started.
                 </Typography>
               </Box>
             </CardContent>
@@ -695,7 +695,8 @@ export default function PersonasListPage(): React.JSX.Element {
             <Alert color='warning'>
               <Typography level='body-sm'>
                 No personas were suggested. This might happen if your company website is not
-                accessible or doesn't have enough content. Try creating personas manually instead.
+                accessible or doesn&apos;t have enough content. Try creating personas manually
+                instead.
               </Typography>
             </Alert>
           ) : (

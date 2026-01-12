@@ -131,14 +131,17 @@ function validatePersonasResponse(response: unknown): PersonasResponse {
   // Validate and filter personas
   const personas: Persona[] = data.personas
     .filter(
-      (item: any) =>
-        item &&
-        typeof item.name === 'string' &&
-        typeof item.description === 'string' &&
-        item.name.trim() !== '' &&
-        item.description.trim() !== ''
+      (item: unknown): item is { name: string; description: string } =>
+        typeof item === 'object' &&
+        item !== null &&
+        'name' in item &&
+        'description' in item &&
+        typeof (item as { name: unknown }).name === 'string' &&
+        typeof (item as { description: unknown }).description === 'string' &&
+        (item as { name: string }).name.trim() !== '' &&
+        (item as { description: string }).description.trim() !== ''
     )
-    .map((item: any) => ({
+    .map((item) => ({
       name: item.name.trim(),
       description: item.description.trim(),
     }));
@@ -346,7 +349,9 @@ ${userPrompt}`;
     const output = responseData.output || [];
 
     // Find the message item in the output array
-    const messageItem = output.find((item: any) => item.type === 'message');
+    const messageItem = output.find((item: { type: string }) => item.type === 'message') as
+      | { type: string; content?: Array<{ type: string; text?: string }> }
+      | undefined;
 
     if (!messageItem) {
       console.error('No message item found in output:', responseData);
@@ -355,7 +360,9 @@ ${userPrompt}`;
 
     // Extract text from the message content
     const content = messageItem.content || [];
-    const textItem = content.find((item: any) => item.type === 'output_text');
+    const textItem = content.find(
+      (item: { type: string; text?: string }) => item.type === 'output_text'
+    ) as { type: string; text?: string } | undefined;
 
     if (!textItem || !textItem.text) {
       console.error('No text content found in message:', messageItem);
@@ -366,9 +373,14 @@ ${userPrompt}`;
     console.log('Response content length:', responseContent.length);
 
     // Log web search calls
-    const webSearchCalls = output.filter((item: any) => item.type === 'web_search_call');
+    const webSearchCalls = output.filter(
+      (item: { type: string }) => item.type === 'web_search_call'
+    ) as Array<{
+      type: string;
+      action?: { query?: string; type?: string };
+    }>;
     console.log(`✓ Web search performed: ${webSearchCalls.length} searches`);
-    webSearchCalls.forEach((call: any, idx: number) => {
+    webSearchCalls.forEach((call, idx: number) => {
       console.log(`  Search ${idx + 1}: ${call.action?.query || call.action?.type || 'unknown'}`);
     });
 

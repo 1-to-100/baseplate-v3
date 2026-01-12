@@ -457,12 +457,14 @@ export default function CompetitorsPage(): React.ReactElement {
       }
 
       const suggestions: GeneratedCompetitorDraft[] =
-        data?.competitors?.map((item: any, index: number) => ({
-          id: crypto.randomUUID?.() ?? `generated-${Date.now()}-${index}`,
-          name: item?.name ?? '',
-          websiteUrl: item?.website_url ?? '',
-          description: item?.description ?? '',
-        })) ?? [];
+        data?.competitors?.map(
+          (item: { name: string; website_url: string; description: string }, index: number) => ({
+            id: crypto.randomUUID?.() ?? `generated-${Date.now()}-${index}`,
+            name: item?.name ?? '',
+            websiteUrl: item?.website_url ?? '',
+            description: item?.description ?? '',
+          })
+        ) ?? [];
 
       if (!suggestions.length) {
         throw new Error('No competitor suggestions were returned.');

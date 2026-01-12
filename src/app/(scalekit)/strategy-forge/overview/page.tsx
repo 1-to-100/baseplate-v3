@@ -158,7 +158,9 @@ function GenerateStrategyButton({
       });
 
       // Verify session exists and refresh if needed
-      let { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const sessionResult = await supabase.auth.getSession();
+      let { data: sessionData } = sessionResult;
+      const { error: sessionError } = sessionResult;
       console.log('[DEBUG] Session check before function invoke:', {
         hasSession: !!sessionData?.session,
         hasAccessToken: !!sessionData?.session?.access_token,

@@ -71,7 +71,13 @@ Deno.serve(async (req) => {
       });
 
       // Decode the JWT to see what we received
-      let tokenInfo: any = null;
+      let tokenInfo: {
+        role?: string;
+        iss?: string;
+        sub?: string;
+        hasSub?: boolean;
+        isAnonKey?: boolean;
+      } | null = null;
       try {
         const parts = token.split('.');
         if (parts.length === 3) {

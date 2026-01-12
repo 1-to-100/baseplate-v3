@@ -30,7 +30,11 @@ export class PersonasFeatureMappingsAPI {
     }
 
     // Extract customer_id from the product
-    const customerId = (featureWithCustomer.products as any).customer_id;
+    // With .single(), products should be a single object, but TypeScript infers it as array
+    const products = featureWithCustomer.products as unknown as
+      | { customer_id: string }
+      | Array<{ customer_id: string }>;
+    const customerId = Array.isArray(products) ? products[0]?.customer_id : products?.customer_id;
     if (!customerId) {
       throw new Error("Feature's product does not have a customer_id");
     }
