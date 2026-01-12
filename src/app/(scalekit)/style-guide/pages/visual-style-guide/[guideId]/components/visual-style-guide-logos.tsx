@@ -18,13 +18,16 @@ import * as React from "react";
 import {
   useCreateLogoAsset,
   useDeleteLogoAsset,
+  useGenerateLogo,
   useLogoAssets,
   useLogoTypeOptions,
   useUpdateLogoAsset,
+  type GeneratedLogo,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
 import type { LogoAsset, LogoTypeOption } from "@/app/(scalekit)/style-guide/lib/types";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { GenerateLogoModal } from "./generate-logo-modal";
 
 // Logo preset options enum
 enum LogoPresetStyle {
@@ -435,6 +438,7 @@ export default function VisualStyleGuideLogos({
   const createLogo = useCreateLogoAsset();
   const updateLogo = useUpdateLogoAsset();
   const deleteLogo = useDeleteLogoAsset();
+  const generateLogoMutation = useGenerateLogo();
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logoToDelete, setLogoToDelete] = React.useState<LogoAsset | null>(
@@ -442,6 +446,8 @@ export default function VisualStyleGuideLogos({
   );
   const [deleteLogoDialogOpen, setDeleteLogoDialogOpen] = React.useState(false);
   const [uploadingLogoId, setUploadingLogoId] = React.useState<string | null>(null);
+  const [generateLogoModalOpen, setGenerateLogoModalOpen] = React.useState(false);
+  const [isSavingGeneratedLogo, setIsSavingGeneratedLogo] = React.useState(false);
   const supabase = React.useMemo(() => createClient(), []);
 
   const handleUploadClick = (logoTypeId?: string) => {
@@ -836,11 +842,129 @@ export default function VisualStyleGuideLogos({
     toast.success(`Selected ${style} logo preset`);
   }, []);
 
-  // @TODO: need to implement the logo generation with AI
+  // Open the generate logo modal
   const handleGenerateWithAI = React.useCallback(() => {
-    // For now, just show a toast - actual implementation would open AI generation modal
-    toast.info("AI logo generation feature coming soon");
+    setGenerateLogoModalOpen(true);
   }, []);
+
+  // Generate logos using AI
+  const handleGenerateLogos = React.useCallback(
+    async (prompt: string): Promise<GeneratedLogo[]> => {
+      const result = await generateLogoMutation.mutateAsync({
+        visualStyleGuideId: guideId,
+        prompt,
+      });
+      return result;
+    },
+    [generateLogoMutation, guideId]
+  );
+
+  // Save a generated logo to the visual style guide
+  const handleSaveGeneratedLogo = React.useCallback(
+    async (selectedLogo: GeneratedLogo) => {
+      setIsSavingGeneratedLogo(true);
+      
+      try {
+        // Download the image from the DALL-E URL
+        const response = await fetch(selectedLogo.url);
+        if (!response.ok) {
+          throw new Error("Failed to download generated logo");
+        }
+        
+        const blob = await response.blob();
+        const file = new File([blob], `generated-logo-${Date.now()}.png`, {
+          type: "image/png",
+        });
+
+        // Find the "Primary Logo" type (or first available type)
+        const primaryLogoType = logoTypes?.find(
+          (t) => t.programmatic_name?.toLowerCase().includes("primary")
+        ) || logoTypes?.[0];
+
+        if (!primaryLogoType) {
+          throw new Error("No logo types available");
+        }
+
+        const logoTypeOptionId = primaryLogoType.logo_type_option_id;
+
+        // Generate storage path
+        const timestamp = Date.now();
+        const storagePath = `${guideId}/${logoTypeOptionId}/${timestamp}-generated-logo.png`;
+
+        // Upload to Supabase Storage
+        await ensureBucketExists();
+        await uploadFileToStorage(file, storagePath);
+
+        // Get signed URL for display
+        const signedUrl = await getSignedUrl(storagePath);
+
+        // Check if a logo already exists for this type
+        const existingLogo = logos?.find(
+          (l) => l.logo_type_option_id === logoTypeOptionId
+        );
+
+        if (existingLogo) {
+          // Delete old file from storage if it exists
+          if (existingLogo.storage_path && existingLogo.storage_path !== storagePath) {
+            const cleanOldPath = existingLogo.storage_path.trim().startsWith("/")
+              ? existingLogo.storage_path.trim().slice(1)
+              : existingLogo.storage_path.trim();
+
+            if (cleanOldPath) {
+              await supabase.storage.from("logos").remove([cleanOldPath]);
+            }
+          }
+
+          // Update existing logo
+          await updateLogo.mutateAsync({
+            id: String(existingLogo.logo_asset_id),
+            input: {
+              is_vector: false,
+              svg_text: null,
+              file_blob: null,
+              storage_path: storagePath,
+              file_url: signedUrl,
+            },
+          });
+        } else {
+          // Create new logo
+          await createLogo.mutateAsync({
+            visual_style_guide_id: guideId,
+            logo_type_option_id: logoTypeOptionId,
+            is_default: false,
+            is_vector: false,
+            is_circular_crop: false,
+            circular_safe_area: null,
+            width: null,
+            height: null,
+            svg_text: null,
+            file_blob: null,
+            storage_path: storagePath,
+            file_url: signedUrl,
+            created_by_user_id: null,
+          });
+        }
+
+        toast.success("Generated logo saved successfully");
+      } catch (error) {
+        console.error("Save generated logo error:", error);
+        throw error;
+      } finally {
+        setIsSavingGeneratedLogo(false);
+      }
+    },
+    [
+      guideId,
+      logoTypes,
+      logos,
+      createLogo,
+      updateLogo,
+      supabase,
+      ensureBucketExists,
+      uploadFileToStorage,
+      getSignedUrl,
+    ]
+  );
 
   return (
     <>
@@ -982,6 +1106,16 @@ export default function VisualStyleGuideLogos({
         open={deleteLogoDialogOpen}
         onClose={() => setDeleteLogoDialogOpen(false)}
         onConfirm={handleDeleteLogo}
+      />
+
+      {/* Generate Logo Modal */}
+      <GenerateLogoModal
+        open={generateLogoModalOpen}
+        onClose={() => setGenerateLogoModalOpen(false)}
+        onGenerate={handleGenerateLogos}
+        onSave={handleSaveGeneratedLogo}
+        isGenerating={generateLogoMutation.isPending}
+        isSaving={isSavingGeneratedLogo}
       />
     </>
   );

@@ -6,7 +6,19 @@ import {
   deleteLogoAsset,
 } from '../api/logo_assets';
 import { toast } from '@/components/core/toaster';
+import { createClient } from '@/lib/supabase/client';
 import type { LogoAsset, NewLogoAsset, UpdateLogoAsset } from '../types';
+
+// Types for logo generation
+export interface GeneratedLogo {
+  id: string;
+  url: string;
+  revised_prompt?: string;
+}
+
+interface GenerateLogoResponse {
+  logos: GeneratedLogo[];
+}
 
 export const logoAssetKeys = {
   all: ['logo-assets'] as const,
@@ -86,3 +98,40 @@ export function useDeleteLogoAsset() {
   });
 }
 
+/**
+ * Hook to generate logos using AI (DALL-E 3)
+ * Calls the generate-logo edge function with user prompt and visual style guide context
+ */
+export function useGenerateLogo() {
+  return useMutation({
+    mutationFn: async (params: {
+      visualStyleGuideId: string;
+      prompt: string;
+    }): Promise<GeneratedLogo[]> => {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.functions.invoke<GenerateLogoResponse>(
+        'generate-logo',
+        {
+          body: {
+            visual_style_guide_id: params.visualStyleGuideId,
+            prompt: params.prompt,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate logos');
+      }
+
+      if (!data?.logos || data.logos.length === 0) {
+        throw new Error('No logos were generated');
+      }
+
+      return data.logos;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to generate logos');
+    },
+  });
+}
