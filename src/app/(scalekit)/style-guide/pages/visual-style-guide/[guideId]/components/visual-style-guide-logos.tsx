@@ -21,6 +21,7 @@ import {
   useGenerateLogo,
   useLogoAssets,
   useLogoTypeOptions,
+  useSaveGeneratedLogo,
   useUpdateLogoAsset,
   type GeneratedLogo,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
@@ -73,15 +74,53 @@ const LOGO_PRESETS = [
   },
 ] as const;
 
+type LogoOptionCardProps = {
+  onClick: () => void;
+  children: React.ReactNode;
+  py?: number;
+};
+
+function LogoOptionCard({ onClick, children, py = 3 }: LogoOptionCardProps) {
+  return (
+    <Grid xs={12} sm={4}>
+      <Card
+        variant="soft"
+        onClick={onClick}
+        sx={{
+          cursor: "pointer",
+          textAlign: "center",
+          py,
+          px: 2,
+          border: "2px solid transparent",
+          borderColor: "neutral.outlinedBorder",
+          transition: "border-color 0.15s ease",
+          "&:hover": {
+            borderColor: "primary.outlinedColor",
+          },
+        }}
+      >
+        {children}
+      </Card>
+    </Grid>
+  );
+}
+
 type LogoPresetSelectorProps = {
   onSelectPreset: (style: LogoPresetStyle) => void;
   onGenerateWithAI: () => void;
+  generatedLogoPresets?: GeneratedLogo[];
+  onSelectGeneratedLogo?: (logo: GeneratedLogo) => void;
 };
 
 function LogoPresetSelector({
   onSelectPreset,
   onGenerateWithAI,
+  generatedLogoPresets,
+  onSelectGeneratedLogo,
 }: LogoPresetSelectorProps) {
+  // If we have generated logo presets, show those instead of hardcoded presets
+  const hasGeneratedPresets = generatedLogoPresets && generatedLogoPresets.length > 0;
+
   return (
     <Box>
       <Stack
@@ -92,7 +131,9 @@ function LogoPresetSelector({
         }}
       >
         <Typography level="body-sm" color="neutral">
-          Select from recommendation or generate your one
+          {hasGeneratedPresets
+            ? "Select a generated logo to use"
+            : "Select from recommendation or generate your own"}
         </Typography>
         <Button
           variant="plain"
@@ -100,28 +141,49 @@ function LogoPresetSelector({
           startDecorator={<Plus />}
           onClick={onGenerateWithAI}
         >
-          Generate Logo with AI
+          {hasGeneratedPresets ? "Regenerate Logos" : "Generate Logo with AI"}
         </Button>
       </Stack>
 
-      <Grid container spacing={2} >
-        {LOGO_PRESETS.map((preset) => (
-          <Grid key={preset.id} xs={12} sm={4}>
-            <Card
-              variant="soft"
+      <Grid container spacing={2}>
+        {hasGeneratedPresets ? (
+          // Show generated logo presets
+          generatedLogoPresets.map((logo, index) => (
+            <LogoOptionCard
+              key={logo.id}
+              onClick={() => onSelectGeneratedLogo?.(logo)}
+              py={2}
+            >
+              <Stack alignItems="center" justifyContent="center" gap={1}>
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "var(--joy-radius-sm)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Image
+                    src={logo.url}
+                    alt={`Generated logo option ${index + 1}`}
+                    fill
+                    style={{ objectFit: "contain" }}
+                    unoptimized
+                  />
+                </Box>
+                <Typography level="body-sm" color="neutral">
+                  Option {index + 1}
+                </Typography>
+              </Stack>
+            </LogoOptionCard>
+          ))
+        ) : (
+          // Show default hardcoded presets
+          LOGO_PRESETS.map((preset) => (
+            <LogoOptionCard
+              key={preset.id}
               onClick={() => onSelectPreset(preset.style)}
-              sx={{
-                cursor: "pointer",
-                textAlign: "center",
-                py: 3,
-                px: 2,
-                border: "2px solid transparent",
-                borderColor: "neutral.outlinedBorder",
-                transition: "border-color 0.15s ease",
-                "&:hover": {
-                  borderColor: "primary.outlinedColor",
-                },
-              }}
             >
               <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
                 {preset.icon}
@@ -137,9 +199,9 @@ function LogoPresetSelector({
                   {preset.name}
                 </Typography>
               </Stack>
-            </Card>
-          </Grid>
-        ))}
+            </LogoOptionCard>
+          ))
+        )}
       </Grid>
     </Box>
   );
@@ -439,6 +501,7 @@ export default function VisualStyleGuideLogos({
   const updateLogo = useUpdateLogoAsset();
   const deleteLogo = useDeleteLogoAsset();
   const generateLogoMutation = useGenerateLogo();
+  const saveGeneratedLogoMutation = useSaveGeneratedLogo();
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logoToDelete, setLogoToDelete] = React.useState<LogoAsset | null>(
@@ -448,6 +511,7 @@ export default function VisualStyleGuideLogos({
   const [uploadingLogoId, setUploadingLogoId] = React.useState<string | null>(null);
   const [generateLogoModalOpen, setGenerateLogoModalOpen] = React.useState(false);
   const [isSavingGeneratedLogo, setIsSavingGeneratedLogo] = React.useState(false);
+  const [generatedLogoPresets, setGeneratedLogoPresets] = React.useState<GeneratedLogo[]>([]);
   const supabase = React.useMemo(() => createClient(), []);
 
   const handleUploadClick = (logoTypeId?: string) => {
@@ -859,91 +923,26 @@ export default function VisualStyleGuideLogos({
     [generateLogoMutation, guideId]
   );
 
-  // Save a generated logo to the visual style guide
+  // Save a generated logo to the visual style guide and store all generated logos as presets
   const handleSaveGeneratedLogo = React.useCallback(
-    async (selectedLogo: GeneratedLogo) => {
+    async (selectedLogo: GeneratedLogo, allLogos: GeneratedLogo[]) => {
       setIsSavingGeneratedLogo(true);
       
       try {
-        // Download the image from the DALL-E URL
-        const response = await fetch(selectedLogo.url);
-        if (!response.ok) {
-          throw new Error("Failed to download generated logo");
-        }
-        
-        const blob = await response.blob();
-        const file = new File([blob], `generated-logo-${Date.now()}.png`, {
-          type: "image/png",
-        });
+        // Store all generated logos as presets for display in LogoPresetSelector
+        setGeneratedLogoPresets(allLogos);
 
         // Find the "Primary Logo" type (or first available type)
         const primaryLogoType = logoTypes?.find(
           (t) => t.programmatic_name?.toLowerCase().includes("primary")
         ) || logoTypes?.[0];
 
-        if (!primaryLogoType) {
-          throw new Error("No logo types available");
-        }
-
-        const logoTypeOptionId = primaryLogoType.logo_type_option_id;
-
-        // Generate storage path
-        const timestamp = Date.now();
-        const storagePath = `${guideId}/${logoTypeOptionId}/${timestamp}-generated-logo.png`;
-
-        // Upload to Supabase Storage
-        await ensureBucketExists();
-        await uploadFileToStorage(file, storagePath);
-
-        // Get signed URL for display
-        const signedUrl = await getSignedUrl(storagePath);
-
-        // Check if a logo already exists for this type
-        const existingLogo = logos?.find(
-          (l) => l.logo_type_option_id === logoTypeOptionId
-        );
-
-        if (existingLogo) {
-          // Delete old file from storage if it exists
-          if (existingLogo.storage_path && existingLogo.storage_path !== storagePath) {
-            const cleanOldPath = existingLogo.storage_path.trim().startsWith("/")
-              ? existingLogo.storage_path.trim().slice(1)
-              : existingLogo.storage_path.trim();
-
-            if (cleanOldPath) {
-              await supabase.storage.from("logos").remove([cleanOldPath]);
-            }
-          }
-
-          // Update existing logo
-          await updateLogo.mutateAsync({
-            id: String(existingLogo.logo_asset_id),
-            input: {
-              is_vector: false,
-              svg_text: null,
-              file_blob: null,
-              storage_path: storagePath,
-              file_url: signedUrl,
-            },
-          });
-        } else {
-          // Create new logo
-          await createLogo.mutateAsync({
-            visual_style_guide_id: guideId,
-            logo_type_option_id: logoTypeOptionId,
-            is_default: false,
-            is_vector: false,
-            is_circular_crop: false,
-            circular_safe_area: null,
-            width: null,
-            height: null,
-            svg_text: null,
-            file_blob: null,
-            storage_path: storagePath,
-            file_url: signedUrl,
-            created_by_user_id: null,
-          });
-        }
+        // Use edge function to save logo (downloads server-side to avoid CORS)
+        await saveGeneratedLogoMutation.mutateAsync({
+          visualStyleGuideId: guideId,
+          logoUrl: selectedLogo.url,
+          logoTypeOptionId: primaryLogoType?.logo_type_option_id,
+        });
 
         toast.success("Generated logo saved successfully");
       } catch (error) {
@@ -953,17 +952,36 @@ export default function VisualStyleGuideLogos({
         setIsSavingGeneratedLogo(false);
       }
     },
-    [
-      guideId,
-      logoTypes,
-      logos,
-      createLogo,
-      updateLogo,
-      supabase,
-      ensureBucketExists,
-      uploadFileToStorage,
-      getSignedUrl,
-    ]
+    [guideId, logoTypes, saveGeneratedLogoMutation]
+  );
+
+  // Handle selecting a generated logo preset from the LogoPresetSelector
+  const handleSelectGeneratedLogo = React.useCallback(
+    async (logo: GeneratedLogo) => {
+      setIsSavingGeneratedLogo(true);
+      
+      try {
+        // Find the "Primary Logo" type (or first available type)
+        const primaryLogoType = logoTypes?.find(
+          (t) => t.programmatic_name?.toLowerCase().includes("primary")
+        ) || logoTypes?.[0];
+
+        // Use edge function to save logo (downloads server-side to avoid CORS)
+        await saveGeneratedLogoMutation.mutateAsync({
+          visualStyleGuideId: guideId,
+          logoUrl: logo.url,
+          logoTypeOptionId: primaryLogoType?.logo_type_option_id,
+        });
+
+        toast.success("Logo saved successfully");
+      } catch (error) {
+        console.error("Save logo error:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to save logo");
+      } finally {
+        setIsSavingGeneratedLogo(false);
+      }
+    },
+    [guideId, logoTypes, saveGeneratedLogoMutation]
   );
 
   return (
@@ -996,6 +1014,8 @@ export default function VisualStyleGuideLogos({
                 <LogoPresetSelector
                   onSelectPreset={handleSelectLogoPreset}
                   onGenerateWithAI={handleGenerateWithAI}
+                  generatedLogoPresets={generatedLogoPresets}
+                  onSelectGeneratedLogo={handleSelectGeneratedLogo}
                 />
               );
             }

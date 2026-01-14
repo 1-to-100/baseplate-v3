@@ -27,7 +27,7 @@ export type GeneratedLogo = {
 type GenerateLogoModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (selectedLogo: GeneratedLogo) => Promise<void>;
+  onSave: (selectedLogo: GeneratedLogo, allLogos: GeneratedLogo[]) => Promise<void>;
   onGenerate: (prompt: string) => Promise<GeneratedLogo[]>;
   isGenerating?: boolean;
   isSaving?: boolean;
@@ -76,7 +76,7 @@ export function GenerateLogoModal({
     }
 
     try {
-      await onSave(selectedLogo);
+      await onSave(selectedLogo, generatedLogos);
       handleClose();
     } catch (error) {
       console.error("Save error:", error);

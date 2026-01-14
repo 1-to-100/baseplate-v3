@@ -135,3 +135,56 @@ export function useGenerateLogo() {
     },
   });
 }
+
+// Response type for save-generated-logo edge function
+interface SaveGeneratedLogoResponse {
+  storage_path: string;
+  signed_url: string;
+  logo_asset_id: string;
+}
+
+/**
+ * Hook to save a generated logo to Supabase storage
+ * Downloads the image server-side to avoid CORS issues with DALL-E URLs
+ */
+export function useSaveGeneratedLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      visualStyleGuideId: string;
+      logoUrl: string;
+      logoTypeOptionId?: string;
+    }): Promise<SaveGeneratedLogoResponse> => {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.functions.invoke<SaveGeneratedLogoResponse>(
+        'save-generated-logo',
+        {
+          body: {
+            visual_style_guide_id: params.visualStyleGuideId,
+            logo_url: params.logoUrl,
+            logo_type_option_id: params.logoTypeOptionId,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message || 'Failed to save generated logo');
+      }
+
+      if (!data) {
+        throw new Error('No response from save-generated-logo');
+      }
+
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(variables.visualStyleGuideId) });
+      queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to save generated logo');
+    },
+  });
+}
