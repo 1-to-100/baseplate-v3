@@ -195,26 +195,27 @@ export function GenerateLogoModal({
           )}
 
           {/* Action Buttons */}
-          <Stack direction="row" spacing={2} sx={{ justifyContent: "space-between", alignItems: "center" }}>
-            <Button
-              variant="plain"
-              color="primary"
-              startDecorator={<MagicWand />}
-              onClick={handleGenerate}
-              loading={isGenerating}
-              disabled={isSaving}
-            >
-              {hasGenerated ? "Regenerate" : "Generate"}
-            </Button>
-
-            <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end", alignItems: "center" }}>
+            {hasGenerated && (
               <Button
-                variant="outlined"
-                onClick={handleClose}
-                disabled={isGenerating || isSaving}
+                variant="plain"
+                color="primary"
+                startDecorator={<MagicWand />}
+                onClick={handleGenerate}
+                loading={isGenerating}
+                disabled={isSaving}
               >
-                Cancel
+                Regenerate
               </Button>
+            )}
+            <Button
+              variant="outlined"
+              onClick={handleClose}
+              disabled={isGenerating || isSaving}
+            >
+              Cancel
+            </Button>
+            {hasGenerated ? (
               <Button
                 variant="solid"
                 color="primary"
@@ -224,7 +225,18 @@ export function GenerateLogoModal({
               >
                 Save
               </Button>
-            </Stack>
+            ) : (
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<MagicWand />}
+                onClick={handleGenerate}
+                loading={isGenerating}
+                disabled={!prompt.trim()}
+              >
+                Generate
+              </Button>
+            )}
           </Stack>
         </Stack>
       </ModalDialog>

@@ -136,16 +136,24 @@ export function useGenerateLogo() {
   });
 }
 
-// Response type for save-generated-logo edge function
+// Types for save-generated-logo edge function
+export interface PresetLogo {
+  id: string;
+  url: string;
+  storage_path: string;
+}
+
 interface SaveGeneratedLogoResponse {
   storage_path: string;
   signed_url: string;
   logo_asset_id: string;
+  preset_logos?: PresetLogo[];
 }
 
 /**
  * Hook to save a generated logo to Supabase storage
  * Downloads the image server-side to avoid CORS issues with DALL-E URLs
+ * Also stores all generated logos as presets for future selection
  */
 export function useSaveGeneratedLogo() {
   const queryClient = useQueryClient();
@@ -155,6 +163,7 @@ export function useSaveGeneratedLogo() {
       visualStyleGuideId: string;
       logoUrl: string;
       logoTypeOptionId?: string;
+      allLogoUrls?: string[];  // All generated logos to store as presets
     }): Promise<SaveGeneratedLogoResponse> => {
       const supabase = createClient();
 
@@ -165,6 +174,7 @@ export function useSaveGeneratedLogo() {
             visual_style_guide_id: params.visualStyleGuideId,
             logo_url: params.logoUrl,
             logo_type_option_id: params.logoTypeOptionId,
+            all_logo_urls: params.allLogoUrls,
           },
         }
       );
