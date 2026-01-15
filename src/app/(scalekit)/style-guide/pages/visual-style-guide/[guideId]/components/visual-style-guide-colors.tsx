@@ -441,30 +441,48 @@ export default function VisualStyleGuideColors({
   const handleSelectPreset = React.useCallback(
     async (presetColors: readonly string[]) => {
       try {
-        const maxSortOrder =
-          sortedColors.length > 0
-            ? Math.max(...sortedColors.map((c: PaletteColor) => c.sort_order as number))
-            : 0;
+        const usageOptions = Object.values(COLOR_USAGE_OPTION);
 
         await Promise.all(
-          presetColors.map((hex, index) =>
-            createColor.mutateAsync({
-              hex,
-              name: null,
-              usage_option: Object.values(COLOR_USAGE_OPTION)[index] as ColorUsageOption,
-              sort_order: maxSortOrder + index + 1,
-              contrast_ratio_against_background: null,
-              style_guide_id: guideId,
-            })
-          )
+          presetColors.map(async (hex, index) => {
+            const usageOption = usageOptions[index] as ColorUsageOption;
+
+            // Check if a color with this usage_option already exists
+            const existingColor = sortedColors.find(
+              (c: PaletteColor) => c.usage_option === usageOption
+            );
+
+            if (existingColor) {
+              // Update existing color
+              await updateColor.mutateAsync({
+                id: String(existingColor.palette_color_id),
+                input: { hex },
+              });
+            } else {
+              // Create new color
+              const maxSortOrder =
+                sortedColors.length > 0
+                  ? Math.max(...sortedColors.map((c: PaletteColor) => c.sort_order as number))
+                  : 0;
+
+              await createColor.mutateAsync({
+                hex,
+                name: null,
+                usage_option: usageOption,
+                sort_order: maxSortOrder + index + 1,
+                contrast_ratio_against_background: null,
+                style_guide_id: guideId,
+              });
+            }
+          })
         );
 
-        toast.success('Color palette added successfully');
+        toast.success('Color palette updated successfully');
       } catch (error) {
-        toast.error('Failed to add color palette');
+        toast.error('Failed to update color palette');
       }
     },
-    [createColor, guideId, sortedColors]
+    [createColor, updateColor, guideId, sortedColors]
   );
 
   return (

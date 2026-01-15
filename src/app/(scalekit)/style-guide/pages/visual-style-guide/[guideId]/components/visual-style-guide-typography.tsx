@@ -10,7 +10,6 @@ import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import { Plus } from '@phosphor-icons/react';
 import * as React from 'react';
-
 import {
   useCreateTypographyStyle,
   useFontOptions,
@@ -291,13 +290,14 @@ export default function VisualStyleGuideTypography({
     return (colors || [])
       .filter(
         (c: PaletteColor) =>
-          String(c.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
-          String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND
+          String(c.style_guide_id || '') === String(guideId) &&
+          (String(c.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
+            String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND)
       )
       .sort(
         (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
       );
-  }, [colors]);
+  }, [colors, guideId]);
 
   // Merged list of colors and typography styles
   const mergedItems = React.useMemo(() => {
