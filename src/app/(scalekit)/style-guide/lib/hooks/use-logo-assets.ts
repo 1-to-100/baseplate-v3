@@ -5,6 +5,7 @@ import {
   updateLogoAsset,
   deleteLogoAsset,
 } from '../api/logo_assets';
+import { getLogoPresetSignedUrls } from '../api/logo_storage';
 import { toast } from '@/components/core/toaster';
 import { createClient } from '@/lib/supabase/client';
 import type { LogoAsset, NewLogoAsset, UpdateLogoAsset } from '../types';
@@ -26,6 +27,7 @@ export const logoAssetKeys = {
   list: (guideId?: string) => [...logoAssetKeys.lists(), guideId] as const,
   details: () => [...logoAssetKeys.all, 'detail'] as const,
   detail: (id: string) => [...logoAssetKeys.details(), id] as const,
+  presets: (guideId: string) => [...logoAssetKeys.all, 'presets', guideId] as const,
 };
 
 export function useLogoAssets(visualStyleGuideId?: string) {
@@ -36,6 +38,25 @@ export function useLogoAssets(visualStyleGuideId?: string) {
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
+  });
+}
+
+/**
+ * Hook to fetch stored logo presets from Supabase storage
+ * Returns AI-generated logos that have been saved as presets for a visual style guide
+ */
+export function useLogoPresets(visualStyleGuideId: string) {
+  return useQuery({
+    queryKey: logoAssetKeys.presets(visualStyleGuideId),
+    queryFn: async (): Promise<GeneratedLogo[]> => {
+      const result = await getLogoPresetSignedUrls(visualStyleGuideId);
+      if (!result.ok) throw new Error(result.error);
+      return result.data.map((preset) => ({
+        id: preset.id,
+        url: preset.url,
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - presets don't change often
   });
 }
 
@@ -192,6 +213,7 @@ export function useSaveGeneratedLogo() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(variables.visualStyleGuideId) });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: logoAssetKeys.presets(variables.visualStyleGuideId) });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to save generated logo');

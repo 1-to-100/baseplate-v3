@@ -9,6 +9,7 @@ export * from './use-vocabulary-entries';
 // Visual Style Guide (VisualOS) hooks
 export * from './use-visual-style-guides';
 export * from './use-logo-assets';
+export * from './use-logo-signed-urls';
 export * from './use-palette-colors';
 export * from './use-typography-styles';
 export * from './use-social-templates';

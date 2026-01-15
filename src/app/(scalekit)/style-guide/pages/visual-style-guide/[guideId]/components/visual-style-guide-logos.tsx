@@ -20,15 +20,20 @@ import {
   useDeleteLogoAsset,
   useGenerateLogo,
   useLogoAssets,
+  useLogoPresets,
+  useLogoSignedUrls,
   useLogoTypeOptions,
   useSaveGeneratedLogo,
   useUpdateLogoAsset,
   type GeneratedLogo,
-  type PresetLogo,
 } from "@/app/(scalekit)/style-guide/lib/hooks";
 import type { LogoAsset, LogoTypeOption } from '@/app/(scalekit)/style-guide/lib/types';
+import {
+  uploadLogoFile,
+  deleteLogoFile,
+  ensureLogoBucketExists,
+} from "@/app/(scalekit)/style-guide/lib/api/logo_storage";
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
 import { GenerateLogoModal } from './generate-logo-modal';
 
 type LogoOptionCardProps = {
@@ -395,68 +400,16 @@ export default function VisualStyleGuideLogos({
   const generateLogoMutation = useGenerateLogo();
   const saveGeneratedLogoMutation = useSaveGeneratedLogo();
 
+  // Hooks for logo presets and signed URLs
+  const { data: generatedLogoPresets = [], isLoading: isLoadingPresets } = useLogoPresets(guideId);
+  const { logoImageUrls, refreshLogoUrl, getSignedUrl } = useLogoSignedUrls(logos);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logoToDelete, setLogoToDelete] = React.useState<LogoAsset | null>(null);
   const [deleteLogoDialogOpen, setDeleteLogoDialogOpen] = React.useState(false);
   const [uploadingLogoId, setUploadingLogoId] = React.useState<string | null>(null);
   const [generateLogoModalOpen, setGenerateLogoModalOpen] = React.useState(false);
   const [isSavingGeneratedLogo, setIsSavingGeneratedLogo] = React.useState(false);
-  const [generatedLogoPresets, setGeneratedLogoPresets] = React.useState<GeneratedLogo[]>([]);
-  const [isLoadingPresets, setIsLoadingPresets] = React.useState(false);
-  const supabase = React.useMemo(() => createClient(), []);
-
-  // Load stored preset logos from Supabase storage on mount
-  React.useEffect(() => {
-    const loadStoredPresets = async () => {
-      setIsLoadingPresets(true);
-      try {
-        // List files in the presets folder
-        const { data: presetFiles, error: listError } = await supabase.storage
-          .from("logos")
-          .list(`${guideId}/presets`);
-
-        if (listError) {
-          console.warn("Failed to list preset files:", listError.message);
-          return;
-        }
-
-        if (!presetFiles || presetFiles.length === 0) {
-          return;
-        }
-
-        // Generate signed URLs for each preset file
-        const presetPromises = presetFiles
-          .filter((file) => file.name.endsWith(".png"))
-          .map(async (file, index) => {
-            const storagePath = `${guideId}/presets/${file.name}`;
-            const { data: signedData } = await supabase.storage
-              .from("logos")
-              .createSignedUrl(storagePath, 6 * 60 * 60); // 6 hours
-
-            if (signedData?.signedUrl) {
-              return {
-                id: `preset-${index}`,
-                url: signedData.signedUrl,
-              };
-            }
-            return null;
-          });
-
-        const presets = await Promise.all(presetPromises);
-        const validPresets = presets.filter((p): p is GeneratedLogo => p !== null);
-
-        if (validPresets.length > 0) {
-          setGeneratedLogoPresets(validPresets);
-        }
-      } catch (error) {
-        console.error("Error loading stored presets:", error);
-      } finally {
-        setIsLoadingPresets(false);
-      }
-    };
-
-    loadStoredPresets();
-  }, [guideId, supabase]);
 
   const handleUploadClick = (logoTypeId?: string) => {
     if (logoTypeId && fileInputRef.current) {
@@ -465,72 +418,20 @@ export default function VisualStyleGuideLogos({
     fileInputRef.current?.click();
   };
 
-  const ensureBucketExists = async (): Promise<void> => {
-    // Check if bucket exists by trying to list it
-    const { error: listError } = await supabase.storage.from('logos').list('', { limit: 1 });
-
-    if (
-      listError &&
-      (listError.message.includes('not found') || listError.message.includes('Bucket not found'))
-    ) {
-      // Try to create the bucket (requires admin/service role, may fail)
-      const { error: createError } = await supabase.storage.createBucket('logos', {
-        public: false,
-        allowedMimeTypes: ['image/svg+xml', 'image/png', 'image/jpeg', 'image/jpg'],
-      });
-
-      if (createError) {
-        throw new Error('Failed to access storage bucket');
-      }
-    } else if (listError) {
-      throw new Error(`Failed to access storage bucket: ${listError.message}`);
-    }
-  };
-
   const uploadFileToStorage = async (file: File, storagePath: string): Promise<string> => {
     // Ensure bucket exists before uploading
-    await ensureBucketExists();
+    const bucketResult = await ensureLogoBucketExists();
+    if (!bucketResult.ok) {
+      throw new Error(bucketResult.error);
+    }
 
-    const { data, error } = await supabase.storage.from('logos').upload(storagePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-
-    if (error) {
-      if (error.message.includes('not found') || error.message.includes('Bucket not found')) {
-        throw new Error('Failed to access storage bucket');
-      }
-      throw new Error(`Failed to upload file: ${error.message}`);
+    const uploadResult = await uploadLogoFile(storagePath, file);
+    if (!uploadResult.ok) {
+      throw new Error(uploadResult.error);
     }
 
     return storagePath;
   };
-
-  const SIGNED_URL_TTL_SECONDS = 6 * 60 * 60; // 6 hours to reduce churn
-
-  const getSignedUrl = React.useCallback(
-    async (storagePath: string): Promise<string> => {
-      // Validate and clean the storage path
-      const cleanPath = storagePath.trim().startsWith('/')
-        ? storagePath.trim().slice(1)
-        : storagePath.trim();
-
-      if (!cleanPath) {
-        throw new Error('Storage path is empty');
-      }
-
-      const { data, error } = await supabase.storage
-        .from('logos')
-        .createSignedUrl(cleanPath, SIGNED_URL_TTL_SECONDS); // 6 hour expiry
-
-      if (error || !data?.signedUrl) {
-        throw new Error(`Failed to create signed URL: ${error?.message || 'Unknown error'}`);
-      }
-
-      return data.signedUrl;
-    },
-    [supabase]
-  );
 
   const handleFileSelect = React.useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -580,19 +481,10 @@ export default function VisualStyleGuideLogos({
         if (existingLogo) {
           // Delete old file from storage if it exists
           if (existingLogo.storage_path && existingLogo.storage_path !== storagePath) {
-            const cleanOldPath = existingLogo.storage_path.trim().startsWith('/')
-              ? existingLogo.storage_path.trim().slice(1)
-              : existingLogo.storage_path.trim();
-
-            if (cleanOldPath) {
-              const { error: storageError } = await supabase.storage
-                .from('logos')
-                .remove([cleanOldPath]);
-
-              if (storageError) {
-                console.error('Failed to delete old file from storage:', storageError);
-                // Continue with update even if old file deletion fails
-              }
+            const deleteResult = await deleteLogoFile(existingLogo.storage_path);
+            if (!deleteResult.ok) {
+              console.error('Failed to delete old file from storage:', deleteResult.error);
+              // Continue with update even if old file deletion fails
             }
           }
 
@@ -638,7 +530,7 @@ export default function VisualStyleGuideLogos({
         }
       }
     },
-    [guideId, logoTypes, logos, createLogo, updateLogo, supabase]
+    [guideId, logoTypes, logos, createLogo, updateLogo]
   );
 
   const handleDownloadLogo = React.useCallback(
@@ -679,7 +571,7 @@ export default function VisualStyleGuideLogos({
         toast.error(error instanceof Error ? error.message : 'Failed to download logo');
       }
     },
-    [supabase]
+    [getSignedUrl]
   );
 
   const handleDownloadAll = React.useCallback(async () => {
@@ -707,17 +599,10 @@ export default function VisualStyleGuideLogos({
     try {
       // Delete file from storage if it exists
       if (logoToDelete.storage_path) {
-        const cleanPath = logoToDelete.storage_path.trim().startsWith('/')
-          ? logoToDelete.storage_path.trim().slice(1)
-          : logoToDelete.storage_path.trim();
-
-        if (cleanPath) {
-          const { error: storageError } = await supabase.storage.from('logos').remove([cleanPath]);
-
-          if (storageError) {
-            console.error('Failed to delete file from storage:', storageError);
-            // Continue with database deletion even if storage deletion fails
-          }
+        const deleteResult = await deleteLogoFile(logoToDelete.storage_path);
+        if (!deleteResult.ok) {
+          console.error('Failed to delete file from storage:', deleteResult.error);
+          // Continue with database deletion even if storage deletion fails
         }
       }
 
@@ -729,104 +614,7 @@ export default function VisualStyleGuideLogos({
     } catch (error) {
       toast.error('Failed to delete logo');
     }
-  }, [logoToDelete, deleteLogo, supabase]);
-
-  const refreshLogoUrl = React.useCallback(
-    async (logo: LogoAsset) => {
-      if (!logo.storage_path) return;
-
-      try {
-        const signedUrl = await getSignedUrl(logo.storage_path);
-        const cacheBusted = `${signedUrl}${signedUrl.includes('?') ? '&' : '?'}ts=${Date.now()}`;
-        setLogoImageUrls((prev) => ({
-          ...prev,
-          [String(logo.logo_asset_id)]: cacheBusted,
-        }));
-      } catch (error) {
-        console.error('Failed to refresh logo URL:', error);
-      }
-    },
-    [getSignedUrl]
-  );
-
-  const addCacheBust = React.useCallback((url: string): string => {
-    return `${url}${url.includes('?') ? '&' : '?'}ts=${Date.now()}`;
-  }, []);
-
-  // Generate signed URLs for logos with storage_path
-  const [logoImageUrls, setLogoImageUrls] = React.useState<Record<string, string>>({});
-  const [isGeneratingUrls, setIsGeneratingUrls] = React.useState(false);
-  const SIGNED_URL_REFRESH_MS = 30 * 60 * 1000; // refresh every 30 minutes to stay well ahead of 6h expiry
-
-  React.useEffect(() => {
-    let isCancelled = false;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const buildUrlForLogo = async (
-      logo: LogoAsset
-    ): Promise<{ logoId: string; url: string | null }> => {
-      const logoId = String(logo.logo_asset_id);
-
-      // Priority: file_url > storage_path (signed URL) > file_blob
-      if (logo.file_url) {
-        return { logoId, url: logo.file_url };
-      }
-
-      if (logo.storage_path) {
-        try {
-          const signedUrl = await getSignedUrl(logo.storage_path);
-          return { logoId, url: signedUrl };
-        } catch (error) {
-          console.warn(`Failed to generate signed URL for logo ${logoId}:`, {
-            error: error instanceof Error ? error.message : String(error),
-            storagePath: logo.storage_path,
-          });
-        }
-        return { logoId, url: null };
-      }
-
-      if (logo.file_blob) {
-        return { logoId, url: logo.file_blob };
-      }
-
-      return { logoId, url: null };
-    };
-
-    const generateImageUrls = async () => {
-      if (!logos || logos.length === 0) {
-        setLogoImageUrls({});
-        return;
-      }
-
-      setIsGeneratingUrls(true);
-
-      // Process logos in parallel for better performance
-      const urlPromises = logos.map(buildUrlForLogo);
-
-      const results = await Promise.all(urlPromises);
-      const urlMap: Record<string, string> = {};
-
-      for (const { logoId, url } of results) {
-        if (url) {
-          urlMap[logoId] = addCacheBust(url);
-        }
-      }
-
-      if (!isCancelled) {
-        setLogoImageUrls(urlMap);
-        setIsGeneratingUrls(false);
-      }
-    };
-
-    generateImageUrls();
-    // Refresh signed URLs periodically so they don't expire in the UI
-    intervalId = setInterval(generateImageUrls, SIGNED_URL_REFRESH_MS);
-
-    return () => {
-      isCancelled = true;
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [logos, supabase, addCacheBust, getSignedUrl]);
+  }, [logoToDelete, deleteLogo]);
 
   // Open the generate logo modal
   const handleGenerateWithAI = React.useCallback(() => {
@@ -855,21 +643,12 @@ export default function VisualStyleGuideLogos({
         const allLogoUrls = allLogos.map((logo) => logo.url);
 
         // Use edge function to save logo to ALL logo types (Primary, Favicon, Horizontal, etc.)
-        const result = await saveGeneratedLogoMutation.mutateAsync({
+        // React Query will auto-invalidate logo assets and presets queries
+        await saveGeneratedLogoMutation.mutateAsync({
           visualStyleGuideId: guideId,
           logoUrl: selectedLogo.url,
           allLogoUrls,
         });
-
-        // Store the returned preset logos with persistent Supabase URLs
-        if (result.preset_logos && result.preset_logos.length > 0) {
-          setGeneratedLogoPresets(
-            result.preset_logos.map((preset: PresetLogo) => ({
-              id: preset.id,
-              url: preset.url,
-            }))
-          );
-        }
 
         toast.success("Generated logo saved to all logo types");
       } catch (error) {
