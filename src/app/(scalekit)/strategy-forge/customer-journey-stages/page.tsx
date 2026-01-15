@@ -20,12 +20,20 @@ import { DotsSix as DragHandleIcon } from '@phosphor-icons/react/dist/ssr/DotsSi
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/core/toaster';
 
-import { getCustomerJourneyStagesList, deleteCustomerJourneyStage, updateCustomerJourneyStage } from '../lib/api';
+import {
+  getCustomerJourneyStagesList,
+  deleteCustomerJourneyStage,
+  updateCustomerJourneyStage,
+} from '../lib/api';
 import type { CustomerJourneyStage, JourneyPhaseType } from '../lib/types';
 import { CreateEditStageModal } from '../lib/components';
 import { createClient } from '@/lib/supabase/client';
 
-const JOURNEY_PHASES: { key: JourneyPhaseType; label: string; color: 'primary' | 'success' | 'warning' | 'danger' }[] = [
+const JOURNEY_PHASES: {
+  key: JourneyPhaseType;
+  label: string;
+  color: 'primary' | 'success' | 'warning' | 'danger';
+}[] = [
   { key: 'Marketing', label: 'Marketing', color: 'primary' },
   { key: 'Sales', label: 'Sales', color: 'success' },
   { key: 'Onboarding', label: 'Onboarding', color: 'warning' },
@@ -42,9 +50,14 @@ const truncateText = (text: string, maxLength: number): string => {
 const truncateToTwoLines = (text: string, maxCharsPerLine: number = 50): string => {
   const lines = text.split('\n');
   if (lines.length <= 2) {
-    return lines.map(line => truncateText(line, maxCharsPerLine)).join('\n');
+    return lines.map((line) => truncateText(line, maxCharsPerLine)).join('\n');
   }
-  return lines.slice(0, 2).map(line => truncateText(line, maxCharsPerLine)).join('\n') + '...';
+  return (
+    lines
+      .slice(0, 2)
+      .map((line) => truncateText(line, maxCharsPerLine))
+      .join('\n') + '...'
+  );
 };
 
 export default function CustomerJourneyStagesPage(): React.JSX.Element {
@@ -55,13 +68,17 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
   const [isCreating, setIsCreating] = React.useState(false);
   const [isCreatingDefaults, setIsCreatingDefaults] = React.useState(false);
   const supabase = createClient();
-  
+
   // Drag and drop state
   const [draggedStage, setDraggedStage] = React.useState<CustomerJourneyStage | null>(null);
   const [dragOverStage, setDragOverStage] = React.useState<CustomerJourneyStage | null>(null);
 
   // Fetch all customer journey stages
-  const { data: stagesData, isLoading, error } = useQuery({
+  const {
+    data: stagesData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['customer-journey-stages'],
     queryFn: () => getCustomerJourneyStagesList(),
   });
@@ -74,18 +91,23 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
       toast.success('Stage deleted successfully');
     },
     onError: (error) => {
-      toast.error(`Failed to delete stage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to delete stage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
   // Update mutation for reordering
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => updateCustomerJourneyStage(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      updateCustomerJourneyStage(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-journey-stages'] });
     },
     onError: (error) => {
-      toast.error(`Failed to update stage order: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to update stage order: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
@@ -126,8 +148,11 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
 
   const handleDrop = async (e: React.DragEvent, targetStage: CustomerJourneyStage) => {
     e.preventDefault();
-    
-    if (!draggedStage || draggedStage.customer_journey_stage_id === targetStage.customer_journey_stage_id) {
+
+    if (
+      !draggedStage ||
+      draggedStage.customer_journey_stage_id === targetStage.customer_journey_stage_id
+    ) {
       setDraggedStage(null);
       setDragOverStage(null);
       return;
@@ -141,8 +166,12 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
     }
 
     const stages = stagesByPhase[draggedStage.journey_phase] || [];
-    const draggedIndex = stages.findIndex(s => s.customer_journey_stage_id === draggedStage.customer_journey_stage_id);
-    const targetIndex = stages.findIndex(s => s.customer_journey_stage_id === targetStage.customer_journey_stage_id);
+    const draggedIndex = stages.findIndex(
+      (s) => s.customer_journey_stage_id === draggedStage.customer_journey_stage_id
+    );
+    const targetIndex = stages.findIndex(
+      (s) => s.customer_journey_stage_id === targetStage.customer_journey_stage_id
+    );
 
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedStage(null);
@@ -166,7 +195,7 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
       if (stage.order_index !== newOrderIndex) {
         return updateMutation.mutateAsync({
           id: stage.customer_journey_stage_id,
-          data: { order_index: newOrderIndex }
+          data: { order_index: newOrderIndex },
         });
       }
       return Promise.resolve();
@@ -199,7 +228,9 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
 
     try {
       // Get current user's customer_id
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('Not authenticated');
       }
@@ -253,10 +284,9 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
       }
 
       toast.success(`Successfully created ${insertedStages?.length || 0} default journey stages!`);
-      
+
       // Reload stages
       queryClient.invalidateQueries({ queryKey: ['customer-journey-stages'] });
-      
     } catch (err) {
       console.error('Failed to create default stages:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to create default stages');
@@ -268,14 +298,17 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
   // Group stages by journey phase
   const stagesByPhase = React.useMemo(() => {
     if (!stagesData?.data) return {} as Record<JourneyPhaseType, CustomerJourneyStage[]>;
-    
-    return stagesData.data.reduce((acc, stage) => {
-      if (!acc[stage.journey_phase]) {
-        acc[stage.journey_phase] = [];
-      }
-      acc[stage.journey_phase].push(stage);
-      return acc;
-    }, {} as Record<JourneyPhaseType, CustomerJourneyStage[]>);
+
+    return stagesData.data.reduce(
+      (acc, stage) => {
+        if (!acc[stage.journey_phase]) {
+          acc[stage.journey_phase] = [];
+        }
+        acc[stage.journey_phase].push(stage);
+        return acc;
+      },
+      {} as Record<JourneyPhaseType, CustomerJourneyStage[]>
+    );
   }, [stagesData?.data]);
 
   // Sort stages by order_index
@@ -297,15 +330,15 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Customer Journey Stages
             </Typography>
           </div>
-          <Card variant="outlined" color="danger" sx={{ p: 2 }}>
-            <Typography level="title-md" color="danger">
+          <Card variant='outlined' color='danger' sx={{ p: 2 }}>
+            <Typography level='title-md' color='danger'>
               Error Loading Stages
             </Typography>
-            <Typography level="body-sm" color="danger">
+            <Typography level='body-sm' color='danger'>
               {error instanceof Error ? error.message : 'Unknown error occurred'}
             </Typography>
           </Card>
@@ -318,18 +351,18 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <div>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Customer Journey Stages
           </Typography>
-          <Typography level="body-lg" color="neutral">
+          <Typography level='body-lg' color='neutral'>
             Manage customer journey stages across different phases
           </Typography>
         </div>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
-            variant="solid"
-            color="primary"
+            variant='solid'
+            color='primary'
             startDecorator={<PlusIcon size={16} />}
             onClick={handleCreate}
             disabled={isLoading}
@@ -339,61 +372,68 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
         </Box>
 
         {isLoading ? (
-          <Card variant="outlined" sx={{ p: 2 }}>
-            <Typography level="body-md">Loading stages...</Typography>
+          <Card variant='outlined' sx={{ p: 2 }}>
+            <Typography level='body-md'>Loading stages...</Typography>
           </Card>
         ) : isCreatingDefaults ? (
-          <Card variant="outlined" sx={{ p: 4 }}>
-            <Stack spacing={2} alignItems="center" textAlign="center">
-              <CircularProgress size="lg" />
-              <Typography level="title-md">
-                Creating Default Journey Stages
-              </Typography>
-              <Typography level="body-md" color="neutral">
+          <Card variant='outlined' sx={{ p: 4 }}>
+            <Stack spacing={2} alignItems='center' textAlign='center'>
+              <CircularProgress size='lg' />
+              <Typography level='title-md'>Creating Default Journey Stages</Typography>
+              <Typography level='body-md' color='neutral'>
                 Setting up your customer journey framework with industry-standard stages...
               </Typography>
             </Stack>
           </Card>
         ) : isEmpty ? (
-          <Card variant="outlined" sx={{ p: 4 }}>
-            <Stack spacing={3} alignItems="center" textAlign="center">
-              <Typography level="h3">
-                No Journey Stages Found
+          <Card variant='outlined' sx={{ p: 4 }}>
+            <Stack spacing={3} alignItems='center' textAlign='center'>
+              <Typography level='h3'>No Journey Stages Found</Typography>
+              <Typography level='body-lg' color='neutral' sx={{ maxWidth: '600px' }}>
+                Get started quickly by creating a complete set of default journey stages. This will
+                create a standard customer journey framework across Marketing, Sales, Onboarding,
+                and Customer Success phases.
               </Typography>
-              <Typography level="body-lg" color="neutral" sx={{ maxWidth: '600px' }}>
-                Get started quickly by creating a complete set of default journey stages. This will create a standard customer journey framework across Marketing, Sales, Onboarding, and Customer Success phases.
-              </Typography>
-              <Alert color="primary" variant="soft" sx={{ maxWidth: '600px' }}>
+              <Alert color='primary' variant='soft' sx={{ maxWidth: '600px' }}>
                 <Stack spacing={1}>
-                  <Typography level="title-sm">What are default stages?</Typography>
-                  <Typography level="body-sm">
+                  <Typography level='title-sm'>What are default stages?</Typography>
+                  <Typography level='body-sm'>
                     We&apos;ll create industry-standard journey stages for each phase:
                   </Typography>
-                  <Box component="ul" sx={{ textAlign: 'left', pl: 2, my: 1 }}>
-                    <li><strong>Marketing:</strong> Awareness, Consideration, Decision</li>
-                    <li><strong>Sales:</strong> Qualification, Proposal, Closed Won</li>
-                    <li><strong>Onboarding:</strong> Welcome, Training, Go Live</li>
-                    <li><strong>Customer Success:</strong> Adoption, Value Realization, Renewal/Expansion</li>
+                  <Box component='ul' sx={{ textAlign: 'left', pl: 2, my: 1 }}>
+                    <li>
+                      <strong>Marketing:</strong> Awareness, Consideration, Decision
+                    </li>
+                    <li>
+                      <strong>Sales:</strong> Qualification, Proposal, Closed Won
+                    </li>
+                    <li>
+                      <strong>Onboarding:</strong> Welcome, Training, Go Live
+                    </li>
+                    <li>
+                      <strong>Customer Success:</strong> Adoption, Value Realization,
+                      Renewal/Expansion
+                    </li>
                   </Box>
-                  <Typography level="body-sm">
+                  <Typography level='body-sm'>
                     You can customize these stages after creation or create your own from scratch.
                   </Typography>
                 </Stack>
               </Alert>
-              <Stack direction="row" spacing={2}>
+              <Stack direction='row' spacing={2}>
                 <Button
-                  variant="solid"
-                  color="primary"
-                  size="lg"
+                  variant='solid'
+                  color='primary'
+                  size='lg'
                   startDecorator={<CopyIcon size={20} />}
                   onClick={handleCreateDefaultStages}
                 >
                   Create Default Stages
                 </Button>
                 <Button
-                  variant="outlined"
-                  color="neutral"
-                  size="lg"
+                  variant='outlined'
+                  color='neutral'
+                  size='lg'
                   startDecorator={<PlusIcon size={20} />}
                   onClick={handleCreate}
                 >
@@ -406,22 +446,36 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
           <Stack spacing={4}>
             {JOURNEY_PHASES.map((phase) => {
               const stages = sortStagesByOrder(stagesByPhase[phase.key] || []);
-              
+
               return (
-                <Card key={phase.key} variant="outlined" sx={{ p: 2 }}>
+                <Card key={phase.key} variant='outlined' sx={{ p: 2 }}>
                   <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography level="title-lg" component="div" startDecorator={<Chip color={phase.color} size="sm">{phase.label}</Chip>}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <Typography
+                        level='title-lg'
+                        component='div'
+                        startDecorator={
+                          <Chip color={phase.color} size='sm'>
+                            {phase.label}
+                          </Chip>
+                        }
+                      >
                         {phase.label} Stages
                       </Typography>
-                      <Typography level="body-sm" color="neutral">
+                      <Typography level='body-sm' color='neutral'>
                         {stages.length} stage{stages.length !== 1 ? 's' : ''}
                       </Typography>
                     </Box>
 
                     {stages.length === 0 ? (
                       <Box sx={{ p: 2, textAlign: 'center' }}>
-                        <Typography level="body-md" color="neutral">
+                        <Typography level='body-md' color='neutral'>
                           No stages defined for {phase.label} phase
                         </Typography>
                       </Box>
@@ -440,7 +494,7 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
                         </thead>
                         <tbody>
                           {stages.map((stage) => (
-                            <tr 
+                            <tr
                               key={stage.customer_journey_stage_id}
                               draggable
                               onDragStart={(e) => handleDragStart(e, stage)}
@@ -449,61 +503,77 @@ export default function CustomerJourneyStagesPage(): React.JSX.Element {
                               onDrop={(e) => handleDrop(e, stage)}
                               style={{
                                 cursor: 'grab',
-                                opacity: draggedStage?.customer_journey_stage_id === stage.customer_journey_stage_id ? 0.5 : 1,
-                                backgroundColor: dragOverStage?.customer_journey_stage_id === stage.customer_journey_stage_id ? 'var(--joy-palette-primary-50)' : 'transparent',
+                                opacity:
+                                  draggedStage?.customer_journey_stage_id ===
+                                  stage.customer_journey_stage_id
+                                    ? 0.5
+                                    : 1,
+                                backgroundColor:
+                                  dragOverStage?.customer_journey_stage_id ===
+                                  stage.customer_journey_stage_id
+                                    ? 'var(--joy-palette-primary-50)'
+                                    : 'transparent',
                               }}
                             >
                               <td>
                                 <IconButton
-                                  size="sm"
-                                  variant="plain"
-                                  color="neutral"
+                                  size='sm'
+                                  variant='plain'
+                                  color='neutral'
                                   sx={{ cursor: 'grab' }}
                                 >
                                   <DragHandleIcon size={16} />
                                 </IconButton>
                               </td>
                               <td>
-                                <Typography level="body-sm" fontWeight="lg">
+                                <Typography level='body-sm' fontWeight='lg'>
                                   {stage.order_index || '-'}
                                 </Typography>
                               </td>
                               <td>
-                                <Typography level="body-md" fontWeight="lg">
+                                <Typography level='body-md' fontWeight='lg'>
                                   {stage.name}
                                 </Typography>
                               </td>
                               <td>
-                                <Typography level="body-sm" color="neutral" sx={{ whiteSpace: 'pre-line' }}>
+                                <Typography
+                                  level='body-sm'
+                                  color='neutral'
+                                  sx={{ whiteSpace: 'pre-line' }}
+                                >
                                   {truncateToTwoLines(stage.description, 60)}
                                 </Typography>
                               </td>
                               <td>
-                                <Typography level="body-sm" color="neutral" sx={{ whiteSpace: 'pre-line' }}>
+                                <Typography
+                                  level='body-sm'
+                                  color='neutral'
+                                  sx={{ whiteSpace: 'pre-line' }}
+                                >
                                   {truncateToTwoLines(stage.graduation_criteria, 60)}
                                 </Typography>
                               </td>
                               <td>
                                 {stage.code && (
-                                  <Chip size="sm" variant="soft">
+                                  <Chip size='sm' variant='soft'>
                                     {truncateText(stage.code, 20)}
                                   </Chip>
                                 )}
                               </td>
                               <td>
-                                <Stack direction="row" spacing={1}>
+                                <Stack direction='row' spacing={1}>
                                   <IconButton
-                                    size="sm"
-                                    variant="plain"
-                                    color="primary"
+                                    size='sm'
+                                    variant='plain'
+                                    color='primary'
                                     onClick={() => handleEdit(stage)}
                                   >
                                     <EditIcon size={16} />
                                   </IconButton>
                                   <IconButton
-                                    size="sm"
-                                    variant="plain"
-                                    color="danger"
+                                    size='sm'
+                                    variant='plain'
+                                    color='danger'
                                     onClick={() => handleDelete(stage)}
                                     disabled={deleteMutation.isPending}
                                   >

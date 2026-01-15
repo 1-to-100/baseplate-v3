@@ -32,14 +32,16 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
   const searchParams = useSearchParams();
   const styleGuideId = searchParams.get('id');
   const { userInfo, isUserLoading } = useUserInfo();
-  
+
   const customerId = userInfo?.customerId || null;
 
   // Fetch active style guide if no ID provided
-  const { data: activeGuide, isLoading: isLoadingActive, refetch: refetchActiveGuide } = useActiveStyleGuide(
-    styleGuideId ? null : (customerId || null)
-  );
-  
+  const {
+    data: activeGuide,
+    isLoading: isLoadingActive,
+    refetch: refetchActiveGuide,
+  } = useActiveStyleGuide(styleGuideId ? null : customerId || null);
+
   // Fetch specific style guide if ID provided
   const { data: specificGuide, isLoading: isLoadingSpecific } = useStyleGuide(styleGuideId || null);
 
@@ -72,14 +74,14 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
 
         if (data?.email_domain) {
           setCustomerEmailDomain(data.email_domain);
-          
+
           // Check both https and http to determine which works
           const domain = data.email_domain;
           const httpsUrl = `https://www.${domain}`;
           const httpUrl = `http://www.${domain}`;
-          
+
           setIsCheckingUrl(true);
-          
+
           try {
             // Try https first
             const httpsResponse = await fetch(httpsUrl, { method: 'HEAD', mode: 'no-cors' });
@@ -97,7 +99,7 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
               console.log('Both protocols failed, defaulting to HTTPS for domain:', domain);
             }
           }
-          
+
           setIsCheckingUrl(false);
         }
       } catch (err) {
@@ -130,20 +132,23 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
     try {
       console.log('Generating style guide for URL:', websiteUrl);
       const supabase = createClient();
-      
+
       if (!customerId) {
         toast.error('Customer ID is required to generate a style guide');
         setIsGenerating(false);
         setHasTriggeredGeneration(false);
         return;
       }
-      
-      const { data, error } = await supabase.functions.invoke('create-initial-written-style-guide-for-customer-id', {
-        body: { 
-          customer_id: customerId,
-          url: websiteUrl 
-        },
-      });
+
+      const { data, error } = await supabase.functions.invoke(
+        'create-initial-written-style-guide-for-customer-id',
+        {
+          body: {
+            customer_id: customerId,
+            url: websiteUrl,
+          },
+        }
+      );
 
       if (error) {
         console.error('Error generating style guide:', error);
@@ -155,7 +160,7 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
 
       console.log('Style guide generated successfully:', data);
       toast.success('Style guide generated successfully!');
-      
+
       // Refetch the active guide
       await refetchActiveGuide();
       setIsGenerating(false);
@@ -175,9 +180,9 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
   // Show URL prompt when no style guide exists
   React.useEffect(() => {
     if (
-      !isLoading && 
-      !guideToEdit && 
-      customerId && 
+      !isLoading &&
+      !guideToEdit &&
+      customerId &&
       !hasTriggeredGeneration &&
       !isGenerating &&
       !showUrlPrompt
@@ -189,8 +194,10 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
   if (!isLoading && !customerId) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="warning">
-          <Typography>Customer ID not found. Please ensure you are associated with a customer.</Typography>
+        <Alert color='warning'>
+          <Typography>
+            Customer ID not found. Please ensure you are associated with a customer.
+          </Typography>
         </Alert>
       </Box>
     );
@@ -201,14 +208,14 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
       <Stack spacing={3}>
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/style-guide/">Style Guide</BreadcrumbsItem>
+          <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
           <Typography>Edit Style Guide</Typography>
         </Breadcrumbs>
 
         {/* Page Header */}
         <Stack spacing={1}>
-          <Typography level="h1">Edit Style Guide</Typography>
-          <Typography level="body-md" color="neutral">
+          <Typography level='h1'>Edit Style Guide</Typography>
+          <Typography level='body-md' color='neutral'>
             Define brand personality, voice, vocabulary constraints, and the LLM prompt template
           </Typography>
         </Stack>
@@ -220,8 +227,8 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
           </Box>
         ) : isGenerating ? (
           // Generating state - analyzing website
-          <Card variant="outlined" sx={{ p: 6 }}>
-            <Stack spacing={3} alignItems="center">
+          <Card variant='outlined' sx={{ p: 6 }}>
+            <Stack spacing={3} alignItems='center'>
               <Box
                 sx={{
                   width: 80,
@@ -233,21 +240,31 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
                   justifyContent: 'center',
                 }}
               >
-                <MagicWand size={40} weight="duotone" color="var(--joy-palette-primary-500)" />
+                <MagicWand size={40} weight='duotone' color='var(--joy-palette-primary-500)' />
               </Box>
-              <Stack spacing={1} alignItems="center">
-                <Typography level="h3" textAlign="center">
+              <Stack spacing={1} alignItems='center'>
+                <Typography level='h3' textAlign='center'>
                   Analyzing Your Website
                 </Typography>
-                <Typography level="body-md" textAlign="center" color="neutral" sx={{ maxWidth: 500 }}>
-                  We&apos;re currently reviewing your website and setting up your style guide.
-                  This may take 30-60 seconds as we analyze multiple pages.
+                <Typography
+                  level='body-md'
+                  textAlign='center'
+                  color='neutral'
+                  sx={{ maxWidth: 500 }}
+                >
+                  We&apos;re currently reviewing your website and setting up your style guide. This
+                  may take 30-60 seconds as we analyze multiple pages.
                 </Typography>
-                <Typography level="body-sm" textAlign="center" color="neutral" sx={{ maxWidth: 500, mt: 1 }}>
+                <Typography
+                  level='body-sm'
+                  textAlign='center'
+                  color='neutral'
+                  sx={{ maxWidth: 500, mt: 1 }}
+                >
                   Analyzing: <strong>{websiteUrl}</strong>
                 </Typography>
               </Stack>
-              <CircularProgress size="lg" />
+              <CircularProgress size='lg' />
             </Stack>
           </Card>
         ) : guideToEdit && customerId && guideToEdit.style_guide_id ? (
@@ -258,8 +275,8 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
           />
         ) : (
           // Empty state - prompt for URL
-          <Card variant="outlined" sx={{ p: 6 }}>
-            <Stack spacing={3} alignItems="center">
+          <Card variant='outlined' sx={{ p: 6 }}>
+            <Stack spacing={3} alignItems='center'>
               <Box
                 sx={{
                   width: 80,
@@ -271,29 +288,30 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
                   justifyContent: 'center',
                 }}
               >
-                <MagicWand size={40} weight="duotone" color="var(--joy-palette-primary-500)" />
+                <MagicWand size={40} weight='duotone' color='var(--joy-palette-primary-500)' />
               </Box>
-              <Stack spacing={1} alignItems="center" sx={{ maxWidth: 500 }}>
-                <Typography level="h3" textAlign="center">
+              <Stack spacing={1} alignItems='center' sx={{ maxWidth: 500 }}>
+                <Typography level='h3' textAlign='center'>
                   Create Your Style Guide
                 </Typography>
-                <Typography level="body-md" textAlign="center" color="neutral">
-                  Enter your company website URL and we&apos;ll analyze it to create a comprehensive style guide.
-                  Our AI will spider up to 10 pages to understand your writing style and tone.
+                <Typography level='body-md' textAlign='center' color='neutral'>
+                  Enter your company website URL and we&apos;ll analyze it to create a comprehensive
+                  style guide. Our AI will spider up to 10 pages to understand your writing style
+                  and tone.
                 </Typography>
               </Stack>
-              
+
               <Stack spacing={2} sx={{ width: '100%', maxWidth: 500 }}>
                 <FormControl>
                   <FormLabel>Company Website URL</FormLabel>
                   <Input
-                    placeholder="https://www.example.com"
+                    placeholder='https://www.example.com'
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                    size="lg"
-                    type="url"
+                    size='lg'
+                    type='url'
                     disabled={isCheckingUrl}
-                    endDecorator={isCheckingUrl ? <CircularProgress size="sm" /> : null}
+                    endDecorator={isCheckingUrl ? <CircularProgress size='sm' /> : null}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !isCheckingUrl) {
                         handleGenerateStyleGuide();
@@ -301,15 +319,14 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
                     }}
                   />
                   <FormHelperText>
-                    {customerEmailDomain 
+                    {customerEmailDomain
                       ? `Pre-filled from your email domain: ${customerEmailDomain}`
-                      : "We'll analyze your website content to create personalized style guide recommendations"
-                    }
+                      : "We'll analyze your website content to create personalized style guide recommendations"}
                   </FormHelperText>
                 </FormControl>
-                
+
                 <Button
-                  size="lg"
+                  size='lg'
                   startDecorator={<MagicWand />}
                   onClick={handleGenerateStyleGuide}
                   disabled={!websiteUrl || isCheckingUrl}
@@ -325,4 +342,3 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
     </Box>
   );
 }
-

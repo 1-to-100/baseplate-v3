@@ -39,7 +39,7 @@ export const paletteColorSchema = z.object({
   customer_id: z.string().uuid(),
   hex: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/),
   name: z.string().nullable().optional(),
-  usage_option: z.enum(['primary','secondary','foreground','background','accent']),
+  usage_option: z.enum(['primary', 'secondary', 'foreground', 'background', 'accent']),
   sort_order: z.number().int(),
   contrast_ratio_against_background: z.number().nullable().optional(),
   created_at: z.string(),
@@ -101,7 +101,7 @@ export const socialTemplateTypeSchema = z.object({
   social_template_type_id: z.string().uuid(),
   programmatic_name: z.string().min(1),
   display_name: z.string().min(1),
-  network: z.enum(['linkedin','x','facebook','instagram']),
+  network: z.enum(['linkedin', 'x', 'facebook', 'instagram']),
   banner_dimensions: z.unknown().nullable().optional(),
   banner_design_json: z.unknown().nullable().optional(),
   created_at: z.string(),
@@ -144,7 +144,10 @@ export const schemas = {
  * Visual Style Guides: Primary record for a customer's visual identity.
  */
 export type VisualStyleGuide = z.infer<typeof visualStyleGuideSchema>;
-export type NewVisualStyleGuide = Omit<VisualStyleGuide, 'visual_style_guide_id' | 'created_at' | 'updated_at'>;
+export type NewVisualStyleGuide = Omit<
+  VisualStyleGuide,
+  'visual_style_guide_id' | 'created_at' | 'updated_at'
+>;
 export type UpdateVisualStyleGuide = Partial<NewVisualStyleGuide>;
 
 /**

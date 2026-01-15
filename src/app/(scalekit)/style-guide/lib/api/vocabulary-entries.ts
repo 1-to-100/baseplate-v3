@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createVocabularyEntryPayloadSchema, updateVocabularyEntryPayloadSchema } from '../types/validation';
+import {
+  createVocabularyEntryPayloadSchema,
+  updateVocabularyEntryPayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define VocabularyEntry type directly from the database structure
@@ -46,9 +49,7 @@ type PaginatedResponse<T> = {
 /**
  * Get a single vocabulary entry by ID
  */
-export async function getVocabularyEntryById(
-  vocabularyEntryId: string
-): Promise<VocabularyEntry> {
+export async function getVocabularyEntryById(vocabularyEntryId: string): Promise<VocabularyEntry> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -71,17 +72,9 @@ export async function listVocabularyEntries(
   params: ListVocabularyEntriesParams = {}
 ): Promise<PaginatedResponse<VocabularyEntry>> {
   const supabase = createClient();
-  const {
-    style_guide_id,
-    vocabulary_type,
-    search,
-    page = 1,
-    per_page = 20,
-  } = params;
+  const { style_guide_id, vocabulary_type, search, page = 1, per_page = 20 } = params;
 
-  let query = supabase
-    .from('vocabulary_entries')
-    .select('*', { count: 'exact' });
+  let query = supabase.from('vocabulary_entries').select('*', { count: 'exact' });
 
   if (style_guide_id) {
     query = query.eq('style_guide_id', style_guide_id);
@@ -186,9 +179,7 @@ export async function updateVocabularyEntry(
 /**
  * Delete a vocabulary entry
  */
-export async function deleteVocabularyEntry(
-  vocabularyEntryId: string
-): Promise<VocabularyEntry> {
+export async function deleteVocabularyEntry(vocabularyEntryId: string): Promise<VocabularyEntry> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -269,4 +260,3 @@ export async function getPreferredVocabularyEntriesByStyleGuideId(
 
   return (data || []) as VocabularyEntry[];
 }
-

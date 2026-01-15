@@ -5,6 +5,7 @@ This Supabase Edge Function captures screenshots of web pages and optionally ext
 ## Overview
 
 The function processes `web_screenshot_capture_request` records by:
+
 1. Fetching the capture request from the database
 2. Taking a screenshot using Browserless/Puppeteer
 3. Extracting HTML and CSS if requested
@@ -38,6 +39,7 @@ Content-Type: application/json
 ### Response
 
 **Success (200):**
+
 ```json
 {
   "success": true,
@@ -47,6 +49,7 @@ Content-Type: application/json
 ```
 
 **Error (400/401/500):**
+
 ```json
 {
   "error": "Error description",
@@ -107,6 +110,7 @@ VALUES ('screenshots', 'screenshots', true);
 ## Error Handling
 
 The function handles errors gracefully:
+
 - Updates request status to `failed` on error
 - Stores error message in `error_message` field
 - Returns appropriate HTTP status codes
@@ -147,4 +151,3 @@ curl -X POST \
 - [Supabase Edge Functions](https://supabase.com/docs/guides/functions)
 - [Browserless Documentation](https://www.browserless.io/docs/)
 - [Supabase Storage](https://supabase.com/docs/guides/storage)
-

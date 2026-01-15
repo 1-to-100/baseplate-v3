@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/client';
 import type { ApiResult, Id, ListParams } from '../types';
-import { schemas, type NewVisualStyleGuide, type UpdateVisualStyleGuide, type VisualStyleGuide } from '../types';
+import {
+  schemas,
+  type NewVisualStyleGuide,
+  type UpdateVisualStyleGuide,
+  type VisualStyleGuide,
+} from '../types';
 import { getContext } from './context';
 
 const upsertVsgSchema = schemas.visualStyleGuide.pick({
@@ -12,15 +17,18 @@ const upsertVsgSchema = schemas.visualStyleGuide.pick({
   imagery_guidelines: true,
 });
 
-export async function listVisualStyleGuides(params: ListParams = {}): Promise<ApiResult<VisualStyleGuide[]>> {
+export async function listVisualStyleGuides(
+  params: ListParams = {}
+): Promise<ApiResult<VisualStyleGuide[]>> {
   const supabase = createClient();
   const { customerId } = await getContext();
   if (!customerId) return { ok: false, error: 'No customer context' };
 
   let query = supabase.from('visual_style_guides').select('*').eq('customer_id', customerId);
-  if (params.orderBy) query = query.order(params.orderBy.column, { ascending: params.orderBy.ascending ?? true });
+  if (params.orderBy)
+    query = query.order(params.orderBy.column, { ascending: params.orderBy.ascending ?? true });
   if (params.limit) query = query.limit(params.limit);
-  if (params.offset) query = query.range(params.offset, (params.offset + (params.limit ?? 50)) - 1);
+  if (params.offset) query = query.range(params.offset, params.offset + (params.limit ?? 50) - 1);
 
   const { data, error } = await query;
   if (error) return { ok: false, error: error.message };
@@ -43,20 +51,35 @@ export async function getVisualStyleGuideById(id: Id): Promise<ApiResult<VisualS
   return { ok: true, data: parsed.data };
 }
 
-export async function createVisualStyleGuide(input: Omit<NewVisualStyleGuide, 'customer_id' | 'visual_style_guide_id' | 'created_at' | 'updated_at'>): Promise<ApiResult<VisualStyleGuide>> {
+export async function createVisualStyleGuide(
+  input: Omit<
+    NewVisualStyleGuide,
+    'customer_id' | 'visual_style_guide_id' | 'created_at' | 'updated_at'
+  >
+): Promise<ApiResult<VisualStyleGuide>> {
   const supabase = createClient();
   const { customerId } = await getContext();
   if (!customerId) return { ok: false, error: 'No customer context' };
   const parsed = upsertVsgSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
-  const payload: NewVisualStyleGuide = { ...parsed.data, customer_id: customerId } as NewVisualStyleGuide;
-  const { data, error } = await supabase.from('visual_style_guides').insert(payload).select('*').single();
+  const payload: NewVisualStyleGuide = {
+    ...parsed.data,
+    customer_id: customerId,
+  } as NewVisualStyleGuide;
+  const { data, error } = await supabase
+    .from('visual_style_guides')
+    .insert(payload)
+    .select('*')
+    .single();
   if (error) return { ok: false, error: error.message };
   const validated = schemas.visualStyleGuide.parse(data);
   return { ok: true, data: validated };
 }
 
-export async function updateVisualStyleGuide(id: Id, input: Partial<UpdateVisualStyleGuide>): Promise<ApiResult<VisualStyleGuide>> {
+export async function updateVisualStyleGuide(
+  id: Id,
+  input: Partial<UpdateVisualStyleGuide>
+): Promise<ApiResult<VisualStyleGuide>> {
   const supabase = createClient();
   const { customerId } = await getContext();
   if (!customerId) return { ok: false, error: 'No customer context' };
@@ -86,5 +109,3 @@ export async function deleteVisualStyleGuide(id: Id): Promise<ApiResult<{ delete
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: { deleted: true } };
 }
-
-

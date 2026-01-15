@@ -6,13 +6,18 @@ import {
   deleteContentEvaluation,
   listContentEvaluations,
 } from '../api/content-evaluations';
-import type { CreateContentEvaluationPayload, UpdateContentEvaluationPayload, ListContentEvaluationsParams } from '../api/content-evaluations';
+import type {
+  CreateContentEvaluationPayload,
+  UpdateContentEvaluationPayload,
+  ListContentEvaluationsParams,
+} from '../api/content-evaluations';
 import { toast } from '@/components/core/toaster';
 
 export const contentEvaluationKeys = {
   all: ['content-evaluations'] as const,
   lists: () => [...contentEvaluationKeys.all, 'list'] as const,
-  list: (filters?: ListContentEvaluationsParams) => [...contentEvaluationKeys.lists(), filters] as const,
+  list: (filters?: ListContentEvaluationsParams) =>
+    [...contentEvaluationKeys.lists(), filters] as const,
   details: () => [...contentEvaluationKeys.all, 'detail'] as const,
   detail: (id: string) => [...contentEvaluationKeys.details(), id] as const,
 };
@@ -77,4 +82,3 @@ export function useDeleteContentEvaluation() {
     },
   });
 }
-

@@ -21,7 +21,16 @@ import Table from '@mui/joy/Table';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { Breadcrumbs } from '@mui/joy';
-import { Plus, PencilSimple, Trash, MagnifyingGlass, Upload, CaretDown, CaretUp, CaretUpDown } from '@phosphor-icons/react/dist/ssr';
+import {
+  Plus,
+  PencilSimple,
+  Trash,
+  MagnifyingGlass,
+  Upload,
+  CaretDown,
+  CaretUp,
+  CaretUpDown,
+} from '@phosphor-icons/react/dist/ssr';
 import { Popup, PopupContent } from '@/components/core/popup';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
@@ -87,7 +96,9 @@ export default function VocabularyPage(): React.JSX.Element {
     styleGuideId
       ? {
           style_guide_id: styleGuideId,
-          vocabulary_type: typeFilter ? (typeFilter as 'neutral' | 'preferred' | 'prohibited') : undefined,
+          vocabulary_type: typeFilter
+            ? (typeFilter as 'neutral' | 'preferred' | 'prohibited')
+            : undefined,
         }
       : undefined
   );
@@ -160,8 +171,8 @@ export default function VocabularyPage(): React.JSX.Element {
     // Parse comma-separated list
     const terms = listTerms
       .split(',')
-      .map(term => term.trim())
-      .filter(term => term.length > 0);
+      .map((term) => term.trim())
+      .filter((term) => term.length > 0);
 
     if (terms.length === 0) {
       toast.error('Please enter at least one term');
@@ -171,7 +182,7 @@ export default function VocabularyPage(): React.JSX.Element {
     try {
       // Create all entries
       await Promise.all(
-        terms.map(term =>
+        terms.map((term) =>
           createMutation.mutateAsync({
             style_guide_id: styleGuideId,
             name: term,
@@ -181,7 +192,9 @@ export default function VocabularyPage(): React.JSX.Element {
           })
         )
       );
-      toast.success(`Successfully added ${terms.length} ${listModalType} term${terms.length > 1 ? 's' : ''}`);
+      toast.success(
+        `Successfully added ${terms.length} ${listModalType} term${terms.length > 1 ? 's' : ''}`
+      );
       handleCloseListModal();
     } catch (error) {
       // Error handled by mutation
@@ -236,10 +249,12 @@ export default function VocabularyPage(): React.JSX.Element {
     alert('CSV import functionality coming soon');
   };
 
-  const filteredEntries = entriesData?.data.filter((entry) =>
-    entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.suggested_replacement?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredEntries =
+    entriesData?.data.filter(
+      (entry) =>
+        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.suggested_replacement?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   // Sort entries
   const sortedEntries = React.useMemo(() => {
@@ -327,19 +342,13 @@ export default function VocabularyPage(): React.JSX.Element {
       {
         name: 'Term',
         width: '200px',
-        formatter: (row): React.JSX.Element => (
-          <Typography fontWeight="md">{row.name}</Typography>
-        ),
+        formatter: (row): React.JSX.Element => <Typography fontWeight='md'>{row.name}</Typography>,
       },
       {
         name: 'Type',
         width: '120px',
         formatter: (row): React.JSX.Element => (
-          <Chip
-            color={vocabularyTypeColors[row.vocabulary_type]}
-            size="sm"
-            variant="soft"
-          >
+          <Chip color={vocabularyTypeColors[row.vocabulary_type]} size='sm' variant='soft'>
             {row.vocabulary_type}
           </Chip>
         ),
@@ -348,9 +357,7 @@ export default function VocabularyPage(): React.JSX.Element {
         name: 'Suggested Replacement',
         width: '200px',
         formatter: (row): React.JSX.Element => (
-          <Typography level="body-sm">
-            {row.suggested_replacement || '—'}
-          </Typography>
+          <Typography level='body-sm'>{row.suggested_replacement || '—'}</Typography>
         ),
       },
       {
@@ -358,7 +365,7 @@ export default function VocabularyPage(): React.JSX.Element {
         width: '300px',
         formatter: (row): React.JSX.Element => (
           <Typography
-            level="body-sm"
+            level='body-sm'
             sx={{
               maxWidth: 300,
               overflow: 'hidden',
@@ -374,9 +381,7 @@ export default function VocabularyPage(): React.JSX.Element {
         name: 'Created',
         width: '120px',
         formatter: (row): React.JSX.Element => (
-          <Typography level="body-sm">
-            {new Date(row.created_at).toLocaleDateString()}
-          </Typography>
+          <Typography level='body-sm'>{new Date(row.created_at).toLocaleDateString()}</Typography>
         ),
       },
       {
@@ -385,20 +390,20 @@ export default function VocabularyPage(): React.JSX.Element {
         hideName: true,
         align: 'right',
         formatter: (row): React.JSX.Element => (
-          <Stack direction="row" spacing={1}>
+          <Stack direction='row' spacing={1}>
             <IconButton
-              size="sm"
-              variant="plain"
-              color="neutral"
+              size='sm'
+              variant='plain'
+              color='neutral'
               onClick={() => handleOpenEdit(row.vocabulary_entry_id)}
               aria-label={`Edit ${row.name}`}
             >
               <PencilSimple />
             </IconButton>
             <IconButton
-              size="sm"
-              variant="plain"
-              color="danger"
+              size='sm'
+              variant='plain'
+              color='danger'
               onClick={() => handleDelete(row.vocabulary_entry_id)}
               aria-label={`Delete ${row.name}`}
             >
@@ -414,7 +419,7 @@ export default function VocabularyPage(): React.JSX.Element {
   if (!isLoading && (!customerId || !styleGuideId)) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="warning">
+        <Alert color='warning'>
           <Typography>Please create a style guide first before managing vocabulary.</Typography>
         </Alert>
       </Box>
@@ -426,7 +431,7 @@ export default function VocabularyPage(): React.JSX.Element {
       <Stack spacing={3}>
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/style-guide/">Style Guide</BreadcrumbsItem>
+          <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
           <Typography>Vocabulary Registry</Typography>
         </Breadcrumbs>
 
@@ -434,21 +439,21 @@ export default function VocabularyPage(): React.JSX.Element {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
-          justifyContent="space-between"
+          justifyContent='space-between'
           alignItems={{ xs: 'flex-start', sm: 'center' }}
         >
           <Stack spacing={1}>
-            <Typography level="h1">Vocabulary Registry</Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='h1'>Vocabulary Registry</Typography>
+            <Typography level='body-md' color='neutral'>
               Manage preferred/prohibited terms and suggested replacements
             </Typography>
           </Stack>
-          <Stack direction="row" spacing={2}>
+          <Stack direction='row' spacing={2}>
             <Button
-              variant="outlined"
+              variant='outlined'
               startDecorator={<Upload />}
               onClick={handleImportCSV}
-              aria-label="Import CSV"
+              aria-label='Import CSV'
             >
               Import CSV
             </Button>
@@ -457,7 +462,7 @@ export default function VocabularyPage(): React.JSX.Element {
                 startDecorator={<Plus />}
                 endDecorator={<CaretDown />}
                 onClick={(e) => setAddMenuAnchorEl(e.currentTarget)}
-                aria-label="Add vocabulary term"
+                aria-label='Add vocabulary term'
               >
                 Add Term
               </Button>
@@ -465,7 +470,7 @@ export default function VocabularyPage(): React.JSX.Element {
                 open={!!addMenuAnchorEl}
                 anchorEl={addMenuAnchorEl}
                 onClose={() => setAddMenuAnchorEl(null)}
-                placement="bottom-start"
+                placement='bottom-start'
                 sx={{ maxWidth: 'fit-content', width: 'fit-content !important' }}
               >
                 <PopupContent sx={{ p: 0.5, width: 'fit-content', minWidth: 'auto' }}>
@@ -476,12 +481,18 @@ export default function VocabularyPage(): React.JSX.Element {
                       </ListItemButton>
                     </ListItem>
                     <ListItem sx={{ width: 'fit-content' }}>
-                      <ListItemButton onClick={handleOpenPreferredList} sx={{ whiteSpace: 'nowrap' }}>
+                      <ListItemButton
+                        onClick={handleOpenPreferredList}
+                        sx={{ whiteSpace: 'nowrap' }}
+                      >
                         Add Preferred List
                       </ListItemButton>
                     </ListItem>
                     <ListItem sx={{ width: 'fit-content' }}>
-                      <ListItemButton onClick={handleOpenProhibitedList} sx={{ whiteSpace: 'nowrap' }}>
+                      <ListItemButton
+                        onClick={handleOpenProhibitedList}
+                        sx={{ whiteSpace: 'nowrap' }}
+                      >
                         Add Prohibited List
                       </ListItemButton>
                     </ListItem>
@@ -496,23 +507,23 @@ export default function VocabularyPage(): React.JSX.Element {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <Input
             startDecorator={<MagnifyingGlass />}
-            placeholder="Search vocabulary..."
+            placeholder='Search vocabulary...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{ flex: 1 }}
-            aria-label="Search vocabulary"
+            aria-label='Search vocabulary'
           />
           <Select
             value={typeFilter || ''}
             onChange={(_event, value) => setTypeFilter(value || null)}
-            placeholder="All Types"
+            placeholder='All Types'
             sx={{ minWidth: 150 }}
-            aria-label="Filter vocabulary by type"
+            aria-label='Filter vocabulary by type'
           >
-            <Option value="">All Types</Option>
-            <Option value="preferred">Preferred</Option>
-            <Option value="prohibited">Prohibited</Option>
-            <Option value="neutral">Neutral</Option>
+            <Option value=''>All Types</Option>
+            <Option value='preferred'>Preferred</Option>
+            <Option value='prohibited'>Prohibited</Option>
+            <Option value='neutral'>Neutral</Option>
           </Select>
           <Select
             value={rowsPerPage.toString()}
@@ -521,12 +532,12 @@ export default function VocabularyPage(): React.JSX.Element {
               setCurrentPage(1);
             }}
             sx={{ minWidth: 120 }}
-            aria-label="Rows per page"
+            aria-label='Rows per page'
           >
-            <Option value="10">10 per page</Option>
-            <Option value="25">25 per page</Option>
-            <Option value="50">50 per page</Option>
-            <Option value="100">100 per page</Option>
+            <Option value='10'>10 per page</Option>
+            <Option value='25'>25 per page</Option>
+            <Option value='50'>50 per page</Option>
+            <Option value='100'>100 per page</Option>
           </Select>
         </Stack>
 
@@ -537,7 +548,7 @@ export default function VocabularyPage(): React.JSX.Element {
           </Box>
         ) : sortedEntries.length === 0 ? (
           <Box sx={{ textAlign: 'center', p: 4 }}>
-            <Typography level="body-md" color="neutral">
+            <Typography level='body-md' color='neutral'>
               {searchQuery || typeFilter
                 ? 'No entries match your filters'
                 : 'No vocabulary entries yet'}
@@ -546,21 +557,21 @@ export default function VocabularyPage(): React.JSX.Element {
         ) : (
           <Stack spacing={2}>
             <Box sx={{ overflowX: 'auto' }}>
-              <Table borderAxis="header" hoverRow stripe="even">
+              <Table borderAxis='header' hoverRow stripe='even'>
                 <thead>
                   <tr>
                     {columns.map((column, colIndex) => {
                       // Map column names to actual row keys
                       const columnKeyMap: Record<string, keyof VocabularyEntryRow> = {
-                        'Term': 'name',
-                        'Type': 'vocabulary_type',
+                        Term: 'name',
+                        Type: 'vocabulary_type',
                         'Suggested Replacement': 'suggested_replacement',
-                        'Created': 'created_at',
+                        Created: 'created_at',
                       };
                       const columnKey = columnKeyMap[column.name];
                       const isSortable = columnKey !== undefined;
                       const isSorted = sortColumn === columnKey;
-                      
+
                       return (
                         <th
                           key={column.name}
@@ -581,9 +592,9 @@ export default function VocabularyPage(): React.JSX.Element {
                           }}
                         >
                           <Stack
-                            direction="row"
+                            direction='row'
                             spacing={0.5}
-                            alignItems="center"
+                            alignItems='center'
                             sx={{
                               ...(isSortable && {
                                 '&:hover': {
@@ -628,15 +639,18 @@ export default function VocabularyPage(): React.JSX.Element {
                   onChange={(_event, value) => setCurrentPage(value || 1)}
                   showFirstButton
                   showLastButton
-                  size="sm"
-                  variant="outlined"
+                  size='sm'
+                  variant='outlined'
                 />
               </Box>
             )}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
-              <Typography level="body-sm" color="neutral">
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}
+            >
+              <Typography level='body-sm' color='neutral'>
                 Showing {tableRows.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1}-
-                {Math.min(currentPage * rowsPerPage, sortedEntries.length)} of {sortedEntries.length} entries
+                {Math.min(currentPage * rowsPerPage, sortedEntries.length)} of{' '}
+                {sortedEntries.length} entries
               </Typography>
             </Box>
           </Stack>
@@ -646,34 +660,36 @@ export default function VocabularyPage(): React.JSX.Element {
       {/* Add List Modal */}
       <Modal open={openListModal} onClose={handleCloseListModal}>
         <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="vocabulary-list-modal-title"
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='vocabulary-list-modal-title'
           sx={{ minWidth: 600 }}
         >
           <ModalClose />
-          <Typography id="vocabulary-list-modal-title" level="h2">
+          <Typography id='vocabulary-list-modal-title' level='h2'>
             Add {listModalType === 'preferred' ? 'Preferred' : 'Prohibited'} List
           </Typography>
           <Stack spacing={3} sx={{ mt: 2 }}>
             <FormControl>
               <FormLabel>
-                {listModalType === 'preferred' ? 'Preferred' : 'Prohibited'} Terms (comma-separated) *
+                {listModalType === 'preferred' ? 'Preferred' : 'Prohibited'} Terms (comma-separated)
+                *
               </FormLabel>
               <Textarea
                 value={listTerms}
                 onChange={(e) => setListTerms(e.target.value)}
-                placeholder="Enter terms separated by commas, e.g., term1, term2, term3"
+                placeholder='Enter terms separated by commas, e.g., term1, term2, term3'
                 minRows={5}
                 aria-label={`${listModalType === 'preferred' ? 'Preferred' : 'Prohibited'} terms`}
               />
               <FormHelperText>
-                Enter multiple terms separated by commas. Each term will be created as a separate vocabulary entry.
+                Enter multiple terms separated by commas. Each term will be created as a separate
+                vocabulary entry.
               </FormHelperText>
             </FormControl>
 
-            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-              <Button variant="outlined" onClick={handleCloseListModal}>
+            <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end' }}>
+              <Button variant='outlined' onClick={handleCloseListModal}>
                 Cancel
               </Button>
               <Button
@@ -691,13 +707,13 @@ export default function VocabularyPage(): React.JSX.Element {
       {/* Create/Edit Modal */}
       <Modal open={openModal} onClose={handleCloseModal}>
         <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="vocabulary-entry-modal-title"
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='vocabulary-entry-modal-title'
           sx={{ minWidth: 600 }}
         >
           <ModalClose />
-          <Typography id="vocabulary-entry-modal-title" level="h2">
+          <Typography id='vocabulary-entry-modal-title' level='h2'>
             {editingEntry ? 'Edit Vocabulary Entry' : 'Add Vocabulary Entry'}
           </Typography>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -706,13 +722,13 @@ export default function VocabularyPage(): React.JSX.Element {
                 <FormLabel>Term *</FormLabel>
                 <Input
                   {...register('name')}
-                  placeholder="Enter term or phrase"
-                  aria-label="Vocabulary term"
+                  placeholder='Enter term or phrase'
+                  aria-label='Vocabulary term'
                   aria-describedby={errors.name ? 'name-error' : undefined}
-                  aria-required="true"
+                  aria-required='true'
                 />
                 {errors.name && (
-                  <FormHelperText id="name-error">{errors.name.message}</FormHelperText>
+                  <FormHelperText id='name-error'>{errors.name.message}</FormHelperText>
                 )}
               </FormControl>
 
@@ -721,14 +737,17 @@ export default function VocabularyPage(): React.JSX.Element {
                 <Select
                   value={watch('vocabulary_type')}
                   onChange={(_event, value) =>
-                    setValue('vocabulary_type', (value || 'prohibited') as 'neutral' | 'preferred' | 'prohibited')
+                    setValue(
+                      'vocabulary_type',
+                      (value || 'prohibited') as 'neutral' | 'preferred' | 'prohibited'
+                    )
                   }
-                  aria-label="Vocabulary type"
-                  aria-required="true"
+                  aria-label='Vocabulary type'
+                  aria-required='true'
                 >
-                  <Option value="preferred">Preferred</Option>
-                  <Option value="prohibited">Prohibited</Option>
-                  <Option value="neutral">Neutral</Option>
+                  <Option value='preferred'>Preferred</Option>
+                  <Option value='prohibited'>Prohibited</Option>
+                  <Option value='neutral'>Neutral</Option>
                 </Select>
                 {errors.vocabulary_type && (
                   <FormHelperText>{errors.vocabulary_type.message}</FormHelperText>
@@ -739,8 +758,8 @@ export default function VocabularyPage(): React.JSX.Element {
                 <FormLabel>Suggested Replacement</FormLabel>
                 <Input
                   {...register('suggested_replacement')}
-                  placeholder="Enter suggested replacement"
-                  aria-label="Suggested replacement"
+                  placeholder='Enter suggested replacement'
+                  aria-label='Suggested replacement'
                 />
               </FormControl>
 
@@ -748,18 +767,18 @@ export default function VocabularyPage(): React.JSX.Element {
                 <FormLabel>Example Usage</FormLabel>
                 <Textarea
                   {...register('example_usage')}
-                  placeholder="Enter example usage"
+                  placeholder='Enter example usage'
                   minRows={3}
-                  aria-label="Example usage"
+                  aria-label='Example usage'
                 />
               </FormControl>
 
-              <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-                <Button variant="outlined" onClick={handleCloseModal}>
+              <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end' }}>
+                <Button variant='outlined' onClick={handleCloseModal}>
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
                 >
                   {editingEntry ? 'Update' : 'Create'}
@@ -772,4 +791,3 @@ export default function VocabularyPage(): React.JSX.Element {
     </Box>
   );
 }
-

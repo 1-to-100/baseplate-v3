@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from '@/lib/supabase/client';
 import type {
   Segment,
   CreateSegmentPayload,
   UpdateSegmentPayload,
   GetSegmentsParams,
   GetSegmentsResponse,
-} from "../types";
+} from '../types';
 
 interface SegmentApiOptions {
   customerId?: string;
@@ -18,11 +18,9 @@ async function resolveCustomerId(
   if (override) {
     return override;
   }
-  const { data, error } = await supabase.rpc("current_customer_id");
+  const { data, error } = await supabase.rpc('current_customer_id');
   if (error || !data) {
-    throw new Error(
-      `Failed to get customer ID: ${error?.message ?? "not available"}`
-    );
+    throw new Error(`Failed to get customer ID: ${error?.message ?? 'not available'}`);
   }
   return data;
 }
@@ -32,11 +30,13 @@ export async function getSegmentsList(
   options?: SegmentApiOptions
 ): Promise<GetSegmentsResponse> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
@@ -44,9 +44,9 @@ export async function getSegmentsList(
 
   // Build the query
   let query = supabase
-    .from("segments")
-    .select("*", { count: "exact" })
-    .eq("customer_id", customerId);
+    .from('segments')
+    .select('*', { count: 'exact' })
+    .eq('customer_id', customerId);
 
   // Apply search filter
   if (params.search) {
@@ -54,9 +54,9 @@ export async function getSegmentsList(
   }
 
   // Apply ordering
-  const orderBy = params.orderBy || "created_at";
-  const orderDirection = params.orderDirection || "desc";
-  query = query.order(orderBy, { ascending: orderDirection === "asc" });
+  const orderBy = params.orderBy || 'created_at';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
 
   // Apply pagination
   const page = params.page || 1;
@@ -88,19 +88,20 @@ export async function getSegmentsList(
   };
 }
 
-export async function createSegment(
-  payload: CreateSegmentPayload
-): Promise<Segment> {
+export async function createSegment(payload: CreateSegmentPayload): Promise<Segment> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("current_customer_id");
+  const { data: customerIdResult, error: customerIdError } =
+    await supabase.rpc('current_customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -108,9 +109,9 @@ export async function createSegment(
 
   // Get the user's integer ID from the users table
   const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("auth_user_id", user.id)
+    .from('users')
+    .select('user_id')
+    .eq('auth_user_id', user.id)
     .single();
 
   if (userError || !userData) {
@@ -118,7 +119,7 @@ export async function createSegment(
   }
 
   const { data, error } = await supabase
-    .from("segments")
+    .from('segments')
     .insert({
       name: payload.name,
       description: payload.description,
@@ -140,25 +141,28 @@ export async function createSegment(
 
 export async function getSegmentById(id: string): Promise<Segment> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("current_customer_id");
+  const { data: customerIdResult, error: customerIdError } =
+    await supabase.rpc('current_customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
   const customerId = customerIdResult;
 
   const { data, error } = await supabase
-    .from("segments")
-    .select("*")
-    .eq("segment_id", id)
-    .eq("customer_id", customerId)
+    .from('segments')
+    .select('*')
+    .eq('segment_id', id)
+    .eq('customer_id', customerId)
     .single();
 
   if (error) {
@@ -174,11 +178,13 @@ export async function updateSegment(
   options?: SegmentApiOptions
 ): Promise<Segment> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
@@ -186,21 +192,21 @@ export async function updateSegment(
 
   // Get the user's integer ID from the users table
   const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("auth_user_id", user.id)
+    .from('users')
+    .select('user_id')
+    .eq('auth_user_id', user.id)
     .single();
 
   if (userError || !userData) {
     throw new Error(`Failed to get user ID: ${userError?.message || 'User not found'}`);
   }
 
-  const updateData: Partial<{ 
-    name: string; 
-    description: string; 
-    code: string; 
-    external_id: string; 
-    updated_by: string; 
+  const updateData: Partial<{
+    name: string;
+    description: string;
+    code: string;
+    external_id: string;
+    updated_by: string;
   }> = {};
   if (payload.name !== undefined) updateData.name = payload.name;
   if (payload.description !== undefined) updateData.description = payload.description;
@@ -209,10 +215,10 @@ export async function updateSegment(
   updateData.updated_by = userData.user_id;
 
   const { data, error } = await supabase
-    .from("segments")
+    .from('segments')
     .update(updateData)
-    .eq("segment_id", segmentId)
-    .eq("customer_id", customerId)
+    .eq('segment_id', segmentId)
+    .eq('customer_id', customerId)
     .select()
     .single();
 
@@ -225,25 +231,28 @@ export async function updateSegment(
 
 export async function deleteSegment(id: string): Promise<void> {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("current_customer_id");
+  const { data: customerIdResult, error: customerIdError } =
+    await supabase.rpc('current_customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
   const customerId = customerIdResult;
 
   const { data, error } = await supabase
-    .from("segments")
+    .from('segments')
     .delete()
-    .eq("segment_id", id)
-    .eq("customer_id", customerId)
+    .eq('segment_id', id)
+    .eq('customer_id', customerId)
     .select();
 
   if (error) {
@@ -255,4 +264,3 @@ export async function deleteSegment(id: string): Promise<void> {
     throw new Error(`Segment with ID ${id} not found or you don't have permission to delete it`);
   }
 }
-

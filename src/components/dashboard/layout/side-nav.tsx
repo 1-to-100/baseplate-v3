@@ -170,7 +170,9 @@ function hasActiveChildOrGrandchild(items: NavItemConfig[] | undefined, pathname
       return true;
     }
 
-    return Boolean(item.items?.some((subItem) => subItem.href && pathname.startsWith(subItem.href)));
+    return Boolean(
+      item.items?.some((subItem) => subItem.href && pathname.startsWith(subItem.href))
+    );
   });
 }
 

@@ -31,7 +31,9 @@ export function useCreatePaletteColor() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewPaletteColor, 'palette_color_id' | 'customer_id' | 'created_at'>) => {
+    mutationFn: async (
+      input: Omit<NewPaletteColor, 'palette_color_id' | 'customer_id' | 'created_at'>
+    ) => {
       const result = await createPaletteColor(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
@@ -56,7 +58,9 @@ export function useUpdatePaletteColor() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: paletteColorKeys.detail(String(data.palette_color_id)) });
+      queryClient.invalidateQueries({
+        queryKey: paletteColorKeys.detail(String(data.palette_color_id)),
+      });
       queryClient.invalidateQueries({ queryKey: paletteColorKeys.list() });
       toast.success('Color updated successfully');
     },
@@ -84,4 +88,3 @@ export function useDeletePaletteColor() {
     },
   });
 }
-

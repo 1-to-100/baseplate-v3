@@ -6,13 +6,18 @@ import {
   deleteVocabularyEntry,
   listVocabularyEntries,
 } from '../api/vocabulary-entries';
-import type { CreateVocabularyEntryPayload, UpdateVocabularyEntryPayload, ListVocabularyEntriesParams } from '../api/vocabulary-entries';
+import type {
+  CreateVocabularyEntryPayload,
+  UpdateVocabularyEntryPayload,
+  ListVocabularyEntriesParams,
+} from '../api/vocabulary-entries';
 import { toast } from '@/components/core/toaster';
 
 export const vocabularyEntryKeys = {
   all: ['vocabulary-entries'] as const,
   lists: () => [...vocabularyEntryKeys.all, 'list'] as const,
-  list: (filters?: ListVocabularyEntriesParams) => [...vocabularyEntryKeys.lists(), filters] as const,
+  list: (filters?: ListVocabularyEntriesParams) =>
+    [...vocabularyEntryKeys.lists(), filters] as const,
   details: () => [...vocabularyEntryKeys.all, 'detail'] as const,
   detail: (id: string) => [...vocabularyEntryKeys.details(), id] as const,
 };
@@ -38,7 +43,9 @@ export function useCreateVocabularyEntry() {
   return useMutation({
     mutationFn: (payload: CreateVocabularyEntryPayload) => createVocabularyEntry(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: vocabularyEntryKeys.list({ written_style_guide_id: data.written_style_guide_id }) });
+      queryClient.invalidateQueries({
+        queryKey: vocabularyEntryKeys.list({ written_style_guide_id: data.written_style_guide_id }),
+      });
       toast.success('Vocabulary entry created successfully');
     },
     onError: (error: Error) => {
@@ -53,7 +60,9 @@ export function useUpdateVocabularyEntry() {
   return useMutation({
     mutationFn: (payload: UpdateVocabularyEntryPayload) => updateVocabularyEntry(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: vocabularyEntryKeys.detail(data.vocabulary_entry_id) });
+      queryClient.invalidateQueries({
+        queryKey: vocabularyEntryKeys.detail(data.vocabulary_entry_id),
+      });
       queryClient.invalidateQueries({ queryKey: vocabularyEntryKeys.lists() });
       toast.success('Vocabulary entry updated successfully');
     },
@@ -77,4 +86,3 @@ export function useDeleteVocabularyEntry() {
     },
   });
 }
-

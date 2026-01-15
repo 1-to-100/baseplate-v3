@@ -107,21 +107,27 @@ Multiple tables with Row Level Security (RLS) organized into system-scoped optio
 ### System-Scoped Tables (Option Tables)
 
 #### **option_publication_status** - Publication status options
+
 - Draft, Scheduled, Published, Archived
 
 #### **option_competitor_status** - Competitor lifecycle status
+
 - Active Competitor, Monitored, Partner, Potential Threat, Retired
 
 #### **option_competitor_signal_type** - Competitor signal types
+
 - Pricing Change, Feature Launch, Funding Round, Hiring Signal, GTM Move, Partnership
 
 #### **option_data_source** - Data source options
+
 - Manual Entry, Site Scan, LLM Suggestion, Import, Partner Feed
 
 #### **option_strategy_change_type** - Strategy change log types
+
 - Edit Mission, Edit Vision, Add/Update/Reorder Principles, Add/Update/Reorder Values, Publish, Archive
 
 #### **customer_journey_stages_singleton** - System-wide default journey stage templates
+
 - Pre-configured journey stages for Marketing, Sales, Onboarding, Customer Success phases
 - Editable by system administrators only
 - Used as templates when creating customer-specific journey stages
@@ -129,50 +135,60 @@ Multiple tables with Row Level Security (RLS) organized into system-scoped optio
 ### Customer-Scoped Tables
 
 #### 1. **company_strategies** - Company strategy workspace
+
 - Mission and vision statements
 - Publication status and effective dates
 - One-to-one relationship with customers
 
 #### 2. **strategy_principles** - Strategic principles
+
 - Ordered collection of principles
 - Linked to company_strategies
 
 #### 3. **strategy_values** - Company values
+
 - Ordered collection of values
 - Linked to company_strategies
 
 #### 4. **competitors** - Competitor intelligence
+
 - Competitor name, website, category, summary
 - Status and source tracking
 - Linked to customers
 
 #### 5. **competitor_signals** - Competitor events and observations
+
 - Signal types (pricing, launches, funding, etc.)
 - Observed dates and source URLs
 - Linked to competitors
 
 #### 6. **strategy_change_logs** - Strategy change audit trail
+
 - Immutable log of all strategy changes
 - Change types, summaries, justifications
 - Linked to company_strategies
 
 #### 7. **personas** - Customer personas
+
 - Define buyer personas for targeting
 - Store job responsibilities, pain points, goals
 - Track decision-making authority and management status
 - Support solution-relevant analysis
 
 #### 8. **segments** - Market segments or organizational groupings
+
 - Define market segments or organizational groupings
 - Support external system integration via codes/IDs
 - Categorize content distribution regions
 
 #### 9. **customer_info** - Company information and messaging
+
 - Store company tagline, problem/solution overviews
 - Define competitive positioning
 - Set visual style guide and content authoring guidelines
 
 #### 10. **customer_journey_stages** - Customer journey mapping
+
 - Define stages across Marketing, Sales, Onboarding, Customer Success
 - Track graduation criteria and ordering
 - Support segment-specific journey customization
@@ -180,6 +196,7 @@ Multiple tables with Row Level Security (RLS) organized into system-scoped optio
 ## 🔐 Row Level Security (RLS)
 
 All tables have RLS enabled with policies that:
+
 - Enforce customer isolation using `current_customer_id()` function
 - Allow read/write access within customer boundaries
 - Prevent cross-tenant data access
@@ -251,87 +268,98 @@ All tables have RLS enabled with policies that:
 ## 🔌 API Functions
 
 All API functions are fully typed and include:
+
 - Authentication checks
 - Customer isolation
 - Error handling
 
 ### Strategy Foundation API
+
 ```typescript
-getCompanyStrategy()                      // Get company strategy
-updateMission(payload)                     // Update mission
-updateVision(payload)                     // Update vision
-getPrinciples()                            // Get principles
-createPrinciple(payload)                   // Create principle
-updatePrinciple(id, payload)              // Update principle
-deletePrinciple(id)                        // Delete principle
-reorderPrinciples(orderMap)               // Reorder principles
-getValues()                                // Get values
-createValue(payload)                       // Create value
-updateValue(id, payload)                   // Update value
-deleteValue(id)                            // Delete value
-reorderValues(orderMap)                    // Reorder values
-publishStrategy(payload)                   // Publish strategy
-getChangeLogs(params)                      // Get change logs
+getCompanyStrategy(); // Get company strategy
+updateMission(payload); // Update mission
+updateVision(payload); // Update vision
+getPrinciples(); // Get principles
+createPrinciple(payload); // Create principle
+updatePrinciple(id, payload); // Update principle
+deletePrinciple(id); // Delete principle
+reorderPrinciples(orderMap); // Reorder principles
+getValues(); // Get values
+createValue(payload); // Create value
+updateValue(id, payload); // Update value
+deleteValue(id); // Delete value
+reorderValues(orderMap); // Reorder values
+publishStrategy(payload); // Publish strategy
+getChangeLogs(params); // Get change logs
 ```
 
 ### Personas API
+
 ```typescript
-PersonasAPI.getAll()                       // Get all personas
-PersonasAPI.getById(id)                    // Get single persona
-PersonasAPI.create(data, userId)           // Create persona
-PersonasAPI.update(data, userId)           // Update persona
-PersonasAPI.delete(id)                     // Delete persona
+PersonasAPI.getAll(); // Get all personas
+PersonasAPI.getById(id); // Get single persona
+PersonasAPI.create(data, userId); // Create persona
+PersonasAPI.update(data, userId); // Update persona
+PersonasAPI.delete(id); // Delete persona
 ```
 
 ### Customer Info API
+
 ```typescript
-getOrCreateCustomerInfo()                  // Get or create info
-getCustomerInfoById(id)                    // Get by ID
-updateCustomerInfo(payload)                // Update info
-getCustomerInfo()                          // List all (legacy)
+getOrCreateCustomerInfo(); // Get or create info
+getCustomerInfoById(id); // Get by ID
+updateCustomerInfo(payload); // Update info
+getCustomerInfo(); // List all (legacy)
 ```
 
 ### Segments API
+
 ```typescript
-getSegmentsList(params)                    // List segments
-getSegmentById(id)                         // Get single segment
-createSegment(payload)                     // Create segment
-updateSegment(id, payload)                 // Update segment
-deleteSegment(id)                          // Delete segment
+getSegmentsList(params); // List segments
+getSegmentById(id); // Get single segment
+createSegment(payload); // Create segment
+updateSegment(id, payload); // Update segment
+deleteSegment(id); // Delete segment
 ```
 
 ### Customer Journey Stages API
+
 ```typescript
-getCustomerJourneyStagesList(params)       // List stages
-getCustomerJourneyStageById(id)            // Get single stage
-createCustomerJourneyStage(payload)        // Create stage
-updateCustomerJourneyStage(id, payload)    // Update stage
-deleteCustomerJourneyStage(id)             // Delete stage
+getCustomerJourneyStagesList(params); // List stages
+getCustomerJourneyStageById(id); // Get single stage
+createCustomerJourneyStage(payload); // Create stage
+updateCustomerJourneyStage(id, payload); // Update stage
+deleteCustomerJourneyStage(id); // Delete stage
 ```
 
 ### Edge Functions
 
 #### **create-initial-customer-strategy-for-customer-id**
+
 - Creates initial company strategy with GTM fields
 - Generates mission, vision, principles, values from customer info
 - Requires customer_id in request body
 
 #### **create-persona**
+
 - Creates a new persona record
 - Requires customer_id, name, and description
 - Returns created persona with full details
 
 #### **get-competitor-list-for-customer-id**
+
 - Generates AI-suggested competitors based on customer info
 - Uses OpenAI to analyze company and suggest competitors
 - Inserts suggestions into competitors table
 
 #### **suggest-personas-for-customer-id**
+
 - Generates AI-suggested personas based on customer info
 - Uses OpenAI to analyze company and suggest buyer personas
 - Returns suggestions without inserting (user must confirm)
 
 #### **suggest-segments-for-customer-id**
+
 - Generates AI-suggested market segments
 - Analyzes customer website and company information
 - Creates segment records automatically
@@ -341,6 +369,7 @@ deleteCustomerJourneyStage(id)             // Delete stage
 All database tables have corresponding TypeScript interfaces:
 
 ### Strategy Foundation
+
 - `CompanyStrategy` - Full strategy record
 - `StrategyPrinciple` - Principle record
 - `StrategyValue` - Value record
@@ -352,22 +381,26 @@ All database tables have corresponding TypeScript interfaces:
 - `PublishStrategyPayload` - Strategy publication payload
 
 ### Competitors
+
 - `Competitor` - Full competitor record
 - `CompetitorSignal` - Competitor signal record
 - `CreateCompetitorPayload` - Competitor creation payload
 - `UpdateCompetitorPayload` - Competitor update payload
 
 ### Personas
+
 - `Persona` - Full persona record
 - `CreatePersonaData` - Creation payload
 - `UpdatePersonaData` - Update payload
 
 ### Customer Info
+
 - `CustomerInfo` - Full customer info record
 - `CreateCustomerInfoPayload` - Creation payload
 - `UpdateCustomerInfoPayload` - Update payload
 
 ### Segments
+
 - `Segment` - Full segment record
 - `CreateSegmentPayload` - Creation payload
 - `UpdateSegmentPayload` - Update payload
@@ -375,6 +408,7 @@ All database tables have corresponding TypeScript interfaces:
 - `GetSegmentsResponse` - Paginated response
 
 ### Customer Journey Stages
+
 - `CustomerJourneyStage` - Full stage record
 - `JourneyPhaseType` - Phase enum
 - `CreateCustomerJourneyStagePayload` - Creation payload
@@ -385,21 +419,26 @@ All database tables have corresponding TypeScript interfaces:
 ## 🚀 Usage Examples
 
 ### Creating a Persona
+
 ```typescript
 import { PersonasAPI } from '@/app/(features)/strategy-forge/lib/api';
 
-const persona = await PersonasAPI.create({
-  name: 'Marketing Manager',
-  titles: 'Marketing Manager, Digital Marketing Lead',
-  department: 'Marketing',
-  job_responsibilities: 'Oversee digital campaigns...',
-  is_manager: true,
-  is_decider: true,
-  // ... other fields
-}, userId);
+const persona = await PersonasAPI.create(
+  {
+    name: 'Marketing Manager',
+    titles: 'Marketing Manager, Digital Marketing Lead',
+    department: 'Marketing',
+    job_responsibilities: 'Oversee digital campaigns...',
+    is_manager: true,
+    is_decider: true,
+    // ... other fields
+  },
+  userId
+);
 ```
 
 ### Fetching Segments
+
 ```typescript
 import { getSegmentsList } from '@/app/(features)/strategy-forge/lib/api';
 
@@ -411,6 +450,7 @@ const { data, meta } = await getSegmentsList({
 ```
 
 ### Updating Company Info
+
 ```typescript
 import { updateCustomerInfo } from '@/app/(features)/strategy-forge/lib/api';
 
@@ -424,6 +464,7 @@ const updated = await updateCustomerInfo({
 ## 🎯 Key Features
 
 ### Strategy Foundation
+
 - ✅ Mission and vision statement management
 - ✅ Strategic principles with ordering
 - ✅ Company values with ordering
@@ -432,6 +473,7 @@ const updated = await updateCustomerInfo({
 - ✅ AI-powered initial strategy generation
 
 ### Competitor Intelligence
+
 - ✅ Competitor tracking and management
 - ✅ AI-powered competitor suggestions
 - ✅ Competitor signals and events
@@ -439,6 +481,7 @@ const updated = await updateCustomerInfo({
 - ✅ Website and category information
 
 ### Persona Management
+
 - ✅ AI-powered persona generation
 - ✅ Rich persona profiles with pain points and goals
 - ✅ Solution-relevant analysis
@@ -446,6 +489,7 @@ const updated = await updateCustomerInfo({
 - ✅ Buying behavior insights
 
 ### Segment Organization
+
 - ✅ Market segments and organizational groupings
 - ✅ AI-powered segment suggestions
 - ✅ External system integration
@@ -453,6 +497,7 @@ const updated = await updateCustomerInfo({
 - ✅ Customer isolation
 
 ### Company Messaging
+
 - ✅ Editable company information
 - ✅ Problem/solution narratives
 - ✅ Competitive positioning
@@ -460,6 +505,7 @@ const updated = await updateCustomerInfo({
 - ✅ Inline editing UI
 
 ### Journey Mapping
+
 - ✅ Phase-based organization (Marketing, Sales, Onboarding, Customer Success)
 - ✅ System-wide default stage templates
 - ✅ Customer-specific stage customization
@@ -471,6 +517,7 @@ const updated = await updateCustomerInfo({
 ## 🔮 Future Enhancements
 
 ### Planned Features
+
 - [ ] Persona-to-content mapping
 - [ ] Segment-to-content mapping
 - [ ] Journey stage-to-content mapping
@@ -483,12 +530,14 @@ const updated = await updateCustomerInfo({
 ## 🛠️ Development
 
 ### Prerequisites
+
 - Node.js 18+
 - Supabase project with database access
 - Next.js 14+
 - Material UI Joy
 
 ### Setup
+
 1. Database tables should already exist
 2. If not, run `lib/sql/strategy-forge-create.sql` in Supabase SQL Editor
 3. Run `lib/sql/strategy-forge-rls-policies.sql` to set up RLS policies
@@ -518,12 +567,14 @@ See the [Baseplate Feature Registry documentation](https://1to100.com/baseplate/
 ### Import Patterns
 
 **Within the feature:**
+
 ```typescript
 import { PersonasAPI } from '../lib/api';
 import type { Persona } from '../lib/types';
 ```
 
 **From outside the feature:**
+
 ```typescript
 // Using root feature export (recommended for portability)
 import { PersonasAPI, type Persona } from '@/app/(scalekit)/strategy-forge';
@@ -550,6 +601,7 @@ import type { Persona } from '@/app/(scalekit)/strategy-forge/lib/types';
 ## 🤝 Contributing
 
 When adding features:
+
 1. Update types in `lib/types/`
 2. Add API functions in `lib/api/`
 3. Create reusable components in `lib/components/`
@@ -559,4 +611,3 @@ When adding features:
 ## 📄 License
 
 Internal use only - 1to100 Baseplate
-

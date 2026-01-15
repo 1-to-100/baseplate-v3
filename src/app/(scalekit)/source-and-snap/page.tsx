@@ -21,14 +21,16 @@ export default function SourceAndSnapPage(): React.JSX.Element {
   const pages = [
     {
       title: 'New Capture',
-      description: 'Create a new web screenshot capture request by entering a URL and selecting capture options.',
+      description:
+        'Create a new web screenshot capture request by entering a URL and selecting capture options.',
       href: paths.sourceAndSnap.capture,
       icon: CameraIcon,
       color: 'primary' as const,
     },
     {
       title: 'Captures',
-      description: 'View and manage all capture requests. Track job status, view completed captures, and manage your capture history.',
+      description:
+        'View and manage all capture requests. Track job status, view completed captures, and manage your capture history.',
       href: paths.sourceAndSnap.captures.list,
       icon: ImagesIcon,
       color: 'neutral' as const,
@@ -40,11 +42,12 @@ export default function SourceAndSnapPage(): React.JSX.Element {
       <Stack spacing={4}>
         {/* Header */}
         <Stack spacing={1}>
-          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+          <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
             Source & Snap
           </Typography>
-          <Typography level="body-lg" color="neutral">
-            Capture full-page screenshots and associated source assets from any public URL. Standardize your brand documentation with consistent device profiles and metadata.
+          <Typography level='body-lg' color='neutral'>
+            Capture full-page screenshots and associated source assets from any public URL.
+            Standardize your brand documentation with consistent device profiles and metadata.
           </Typography>
         </Stack>
 
@@ -55,7 +58,7 @@ export default function SourceAndSnapPage(): React.JSX.Element {
             return (
               <Card
                 key={page.href}
-                variant="outlined"
+                variant='outlined'
                 sx={{
                   flex: 1,
                   cursor: 'pointer',
@@ -83,13 +86,13 @@ export default function SourceAndSnapPage(): React.JSX.Element {
                       <Icon size={24} style={{ color: `var(--joy-palette-${page.color}-600)` }} />
                     </Box>
                     <Stack spacing={1}>
-                      <Typography level="title-lg">{page.title}</Typography>
-                      <Typography level="body-sm" color="neutral">
+                      <Typography level='title-lg'>{page.title}</Typography>
+                      <Typography level='body-sm' color='neutral'>
                         {page.description}
                       </Typography>
                     </Stack>
                     <Button
-                      variant="soft"
+                      variant='soft'
                       color={page.color}
                       endDecorator={<ArrowRightIcon size={16} />}
                       onClick={(e) => {
@@ -108,11 +111,11 @@ export default function SourceAndSnapPage(): React.JSX.Element {
         </Stack>
 
         {/* Quick Links */}
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             <Stack spacing={2}>
-              <Typography level="title-md">Quick Links</Typography>
-              <Stack direction="row" spacing={2} flexWrap="wrap">
+              <Typography level='title-md'>Quick Links</Typography>
+              <Stack direction='row' spacing={2} flexWrap='wrap'>
                 <Link
                   href={paths.sourceAndSnap.capture}
                   onClick={(e) => {
@@ -131,7 +134,6 @@ export default function SourceAndSnapPage(): React.JSX.Element {
                 >
                   View All Captures
                 </Link>
-                
               </Stack>
             </Stack>
           </CardContent>

@@ -1,11 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from '@/lib/supabase/client';
 import type {
   WebScreenshotCaptureRequest,
   CreateCaptureRequestPayload,
   UpdateCaptureRequestPayload,
   GetCaptureRequestsParams,
   GetCaptureRequestsResponse,
-} from "../types";
+} from '../types';
 
 // Re-export types for convenience
 export type {
@@ -25,13 +25,15 @@ export async function getCaptureRequestsList(
   const supabase = createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID using the SQL function
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
@@ -39,8 +41,9 @@ export async function getCaptureRequestsList(
 
   // Build the query with relationships
   let query = supabase
-    .from("web_screenshot_capture_requests")
-    .select(`
+    .from('web_screenshot_capture_requests')
+    .select(
+      `
       *,
       device_profile:device_profile_id (
         options_device_profile_id,
@@ -57,26 +60,28 @@ export async function getCaptureRequestsList(
         created_at,
         updated_at
       )
-    `, { count: "exact" })
-    .eq("customer_id", customerId);
+    `,
+      { count: 'exact' }
+    )
+    .eq('customer_id', customerId);
 
   // Apply status filter
   if (params.status) {
-    query = query.eq("status", params.status);
+    query = query.eq('status', params.status);
   }
 
   // Apply device profile filter
   if (params.device_profile_id !== undefined) {
     if (params.device_profile_id === null) {
-      query = query.is("device_profile_id", null);
+      query = query.is('device_profile_id', null);
     } else {
-      query = query.eq("device_profile_id", params.device_profile_id);
+      query = query.eq('device_profile_id', params.device_profile_id);
     }
   }
 
   // Apply requested_by_user_id filter
   if (params.requested_by_user_id) {
-    query = query.eq("requested_by_user_id", params.requested_by_user_id);
+    query = query.eq('requested_by_user_id', params.requested_by_user_id);
   }
 
   // Apply search filter
@@ -85,9 +90,9 @@ export async function getCaptureRequestsList(
   }
 
   // Apply ordering
-  const orderBy = params.orderBy || "queued_at";
-  const orderDirection = params.orderDirection || "desc";
-  query = query.order(orderBy, { ascending: orderDirection === "asc" });
+  const orderBy = params.orderBy || 'queued_at';
+  const orderDirection = params.orderDirection || 'desc';
+  query = query.order(orderBy, { ascending: orderDirection === 'asc' });
 
   // Apply pagination
   const page = params.page || 1;
@@ -122,30 +127,32 @@ export async function getCaptureRequestsList(
 /**
  * Get a single capture request by ID
  */
-export async function getCaptureRequestById(
-  id: string
-): Promise<WebScreenshotCaptureRequest> {
+export async function getCaptureRequestById(id: string): Promise<WebScreenshotCaptureRequest> {
   const supabase = createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // First, verify access to this request's customer
   const { data: requestWithCustomer, error: customerLookupError } = await supabase
-    .from("web_screenshot_capture_requests")
-    .select("customer_id")
-    .eq("web_screenshot_capture_request_id", id)
+    .from('web_screenshot_capture_requests')
+    .select('customer_id')
+    .eq('web_screenshot_capture_request_id', id)
     .single();
 
   if (customerLookupError || !requestWithCustomer) {
-    throw new Error(`Capture request not found: ${customerLookupError?.message || 'Capture request not found'}`);
+    throw new Error(
+      `Capture request not found: ${customerLookupError?.message || 'Capture request not found'}`
+    );
   }
 
   // Check if user can access this customer
-  const { data: canAccess, error: accessError } = await supabase.rpc("can_access_customer", {
+  const { data: canAccess, error: accessError } = await supabase.rpc('can_access_customer', {
     target_customer_id: requestWithCustomer.customer_id,
   });
 
@@ -154,13 +161,14 @@ export async function getCaptureRequestById(
   }
 
   if (!canAccess) {
-    throw new Error("You do not have permission to access this capture request");
+    throw new Error('You do not have permission to access this capture request');
   }
 
   // Now fetch the full request data
   const { data, error } = await supabase
-    .from("web_screenshot_capture_requests")
-    .select(`
+    .from('web_screenshot_capture_requests')
+    .select(
+      `
       *,
       device_profile:device_profile_id (
         options_device_profile_id,
@@ -177,8 +185,9 @@ export async function getCaptureRequestById(
         created_at,
         updated_at
       )
-    `)
-    .eq("web_screenshot_capture_request_id", id)
+    `
+    )
+    .eq('web_screenshot_capture_request_id', id)
     .single();
 
   if (error) {
@@ -197,26 +206,28 @@ export async function createCaptureRequest(
   const supabase = createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get current customer ID and user ID using SQL functions
-  const { data: customerIdResult, error: customerIdError } = await supabase.rpc("customer_id");
+  const { data: customerIdResult, error: customerIdError } = await supabase.rpc('customer_id');
   if (customerIdError) {
     throw new Error(`Failed to get customer ID: ${customerIdError.message}`);
   }
   const customerId = customerIdResult;
 
-  const { data: userIdResult, error: userIdError } = await supabase.rpc("user_id");
+  const { data: userIdResult, error: userIdError } = await supabase.rpc('user_id');
   if (userIdError) {
     throw new Error(`Failed to get user ID: ${userIdError.message}`);
   }
   const userId = userIdResult;
 
   const { data, error } = await supabase
-    .from("web_screenshot_capture_requests")
+    .from('web_screenshot_capture_requests')
     .insert({
       customer_id: customerId,
       requested_by_user_id: userId,
@@ -225,9 +236,10 @@ export async function createCaptureRequest(
       full_page: payload.full_page ?? false,
       include_source: payload.include_source ?? false,
       block_tracking: payload.block_tracking ?? false,
-      status: "queued",
+      status: 'queued',
     })
-    .select(`
+    .select(
+      `
       *,
       device_profile:device_profile_id (
         options_device_profile_id,
@@ -244,7 +256,8 @@ export async function createCaptureRequest(
         created_at,
         updated_at
       )
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -264,24 +277,28 @@ export async function updateCaptureRequest(
   const supabase = createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // First, verify access to this request's customer
   const { data: requestWithCustomer, error: customerLookupError } = await supabase
-    .from("web_screenshot_capture_requests")
-    .select("customer_id")
-    .eq("web_screenshot_capture_request_id", id)
+    .from('web_screenshot_capture_requests')
+    .select('customer_id')
+    .eq('web_screenshot_capture_request_id', id)
     .single();
 
   if (customerLookupError || !requestWithCustomer) {
-    throw new Error(`Capture request not found: ${customerLookupError?.message || 'Capture request not found'}`);
+    throw new Error(
+      `Capture request not found: ${customerLookupError?.message || 'Capture request not found'}`
+    );
   }
 
   // Check if user can access this customer
-  const { data: canAccess, error: accessError } = await supabase.rpc("can_access_customer", {
+  const { data: canAccess, error: accessError } = await supabase.rpc('can_access_customer', {
     target_customer_id: requestWithCustomer.customer_id,
   });
 
@@ -290,11 +307,12 @@ export async function updateCaptureRequest(
   }
 
   if (!canAccess) {
-    throw new Error("You do not have permission to update this capture request");
+    throw new Error('You do not have permission to update this capture request');
   }
 
   const updateData: Partial<WebScreenshotCaptureRequest> = {};
-  if (payload.device_profile_id !== undefined) updateData.device_profile_id = payload.device_profile_id;
+  if (payload.device_profile_id !== undefined)
+    updateData.device_profile_id = payload.device_profile_id;
   if (payload.full_page !== undefined) updateData.full_page = payload.full_page;
   if (payload.include_source !== undefined) updateData.include_source = payload.include_source;
   if (payload.block_tracking !== undefined) updateData.block_tracking = payload.block_tracking;
@@ -304,10 +322,11 @@ export async function updateCaptureRequest(
   if (payload.error_message !== undefined) updateData.error_message = payload.error_message;
 
   const { data, error } = await supabase
-    .from("web_screenshot_capture_requests")
+    .from('web_screenshot_capture_requests')
     .update(updateData)
-    .eq("web_screenshot_capture_request_id", id)
-    .select(`
+    .eq('web_screenshot_capture_request_id', id)
+    .select(
+      `
       *,
       device_profile:device_profile_id (
         options_device_profile_id,
@@ -324,7 +343,8 @@ export async function updateCaptureRequest(
         created_at,
         updated_at
       )
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -332,7 +352,7 @@ export async function updateCaptureRequest(
   }
 
   if (!data) {
-    throw new Error("Capture request not found");
+    throw new Error('Capture request not found');
   }
 
   return data;
@@ -345,24 +365,28 @@ export async function deleteCaptureRequest(id: string): Promise<void> {
   const supabase = createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // First, verify access to this request's customer and that user created it
   const { data: requestData, error: lookupError } = await supabase
-    .from("web_screenshot_capture_requests")
-    .select("customer_id, requested_by_user_id")
-    .eq("web_screenshot_capture_request_id", id)
+    .from('web_screenshot_capture_requests')
+    .select('customer_id, requested_by_user_id')
+    .eq('web_screenshot_capture_request_id', id)
     .single();
 
   if (lookupError || !requestData) {
-    throw new Error(`Capture request not found: ${lookupError?.message || 'Capture request not found'}`);
+    throw new Error(
+      `Capture request not found: ${lookupError?.message || 'Capture request not found'}`
+    );
   }
 
   // Check if user can access this customer
-  const { data: canAccess, error: accessError } = await supabase.rpc("can_access_customer", {
+  const { data: canAccess, error: accessError } = await supabase.rpc('can_access_customer', {
     target_customer_id: requestData.customer_id,
   });
 
@@ -371,11 +395,11 @@ export async function deleteCaptureRequest(id: string): Promise<void> {
   }
 
   if (!canAccess) {
-    throw new Error("You do not have permission to delete this capture request");
+    throw new Error('You do not have permission to delete this capture request');
   }
 
   // Get current user ID
-  const { data: userIdResult, error: userIdError } = await supabase.rpc("user_id");
+  const { data: userIdResult, error: userIdError } = await supabase.rpc('user_id');
   if (userIdError) {
     throw new Error(`Failed to get user ID: ${userIdError.message}`);
   }
@@ -383,16 +407,15 @@ export async function deleteCaptureRequest(id: string): Promise<void> {
 
   // Verify user created the request
   if (requestData.requested_by_user_id !== userId) {
-    throw new Error("You can only delete capture requests that you created");
+    throw new Error('You can only delete capture requests that you created');
   }
 
   const { error } = await supabase
-    .from("web_screenshot_capture_requests")
+    .from('web_screenshot_capture_requests')
     .delete()
-    .eq("web_screenshot_capture_request_id", id);
+    .eq('web_screenshot_capture_request_id', id);
 
   if (error) {
     throw new Error(`Failed to delete capture request: ${error.message}`);
   }
 }
-

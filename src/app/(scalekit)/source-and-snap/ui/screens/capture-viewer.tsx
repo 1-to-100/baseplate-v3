@@ -60,30 +60,30 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
     queryKey: ['screenshot-signed-url', capture?.screenshot_storage_path],
     queryFn: async () => {
       if (!capture?.screenshot_storage_path) return null;
-      
+
       const supabase = createClient();
-      
+
       // Extract the storage path from the URL if it's a full URL
       // The path format is: {customer_id}/{filename}
       let storagePath = capture.screenshot_storage_path;
-      
+
       // If it's a full URL, extract just the path part
       // Format: https://[project].supabase.co/storage/v1/object/public/screenshots/{path}
       // or: https://[project].supabase.co/storage/v1/object/authenticated/screenshots/{path}
       const urlMatch = storagePath.match(/\/screenshots\/(.+)$/);
-      if (urlMatch) {
+      if (urlMatch && urlMatch[1]) {
         storagePath = urlMatch[1];
       }
-      
+
       const { data, error } = await supabase.storage
         .from('screenshots')
         .createSignedUrl(storagePath, 3600); // 1 hour expiry
-      
+
       if (error) {
         console.error('Error creating signed URL:', error);
         throw error;
       }
-      
+
       return data?.signedUrl || null;
     },
     enabled: !!capture?.screenshot_storage_path && isCompleted,
@@ -142,6 +142,11 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
       return;
     }
 
+    if (!capture) {
+      toast.error('Capture data not available');
+      return;
+    }
+
     try {
       // Fetch the image
       const response = await fetch(signedUrl);
@@ -149,18 +154,18 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
         throw new Error('Failed to fetch screenshot');
       }
       const blob = await response.blob();
-      
+
       // Create download link
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       // Generate filename from page title or use capture ID
       const pageTitle = capture.page_title || 'screenshot';
       const sanitizedTitle = pageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const timestamp = dayjs(capture.captured_at).format('YYYY-MM-DD_HH-mm-ss');
       a.download = `${sanitizedTitle}_${timestamp}.png`;
-      
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -190,30 +195,29 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
   if (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to load capture';
     const isNotFound = errorMessage.toLowerCase().includes('not found');
-    
+
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
           <Stack spacing={1}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Capture Viewer
             </Typography>
-            <Typography level="body-md" color="neutral">
-              {isNotFound ? 'The requested capture could not be found' : 'An error occurred while loading the capture'}
+            <Typography level='body-md' color='neutral'>
+              {isNotFound
+                ? 'The requested capture could not be found'
+                : 'An error occurred while loading the capture'}
             </Typography>
           </Stack>
-          <Alert color="danger" variant="soft" role="alert">
-            <Typography level="title-sm" color="danger" sx={{ mb: 1 }}>
+          <Alert color='danger' variant='soft' role='alert'>
+            <Typography level='title-sm' color='danger' sx={{ mb: 1 }}>
               {isNotFound ? 'Capture Not Found' : 'Error'}
             </Typography>
-            <Typography level="body-sm" color="danger">
+            <Typography level='body-sm' color='danger'>
               {errorMessage}
             </Typography>
           </Alert>
-          <Button
-            variant="outlined"
-            onClick={() => router.push('/source-and-snap/captures')}
-          >
+          <Button variant='outlined' onClick={() => router.push('/source-and-snap/captures')}>
             Back to Captures
           </Button>
         </Stack>
@@ -226,25 +230,23 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Stack spacing={3}>
           <Stack spacing={1}>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Capture Viewer
             </Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='body-md' color='neutral'>
               The requested capture could not be found
             </Typography>
           </Stack>
-          <Alert color="danger" variant="soft" role="alert">
-            <Typography level="title-sm" color="danger" sx={{ mb: 1 }}>
+          <Alert color='danger' variant='soft' role='alert'>
+            <Typography level='title-sm' color='danger' sx={{ mb: 1 }}>
               Capture Not Found
             </Typography>
-            <Typography level="body-sm" color="danger">
-              The capture you are looking for does not exist or you do not have permission to access it.
+            <Typography level='body-sm' color='danger'>
+              The capture you are looking for does not exist or you do not have permission to access
+              it.
             </Typography>
           </Alert>
-          <Button
-            variant="outlined"
-            onClick={() => router.push('/source-and-snap/captures')}
-          >
+          <Button variant='outlined' onClick={() => router.push('/source-and-snap/captures')}>
             Back to Captures
           </Button>
         </Stack>
@@ -258,21 +260,21 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+        <Stack direction='row' spacing={2} alignItems='center' justifyContent='space-between'>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Capture Viewer
             </Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='body-md' color='neutral'>
               Inspect screenshot, view source, and export capture artifacts
             </Typography>
           </div>
-          <Stack direction="row" spacing={2}>
+          <Stack direction='row' spacing={2}>
             <Button
-              variant="outlined"
+              variant='outlined'
               startDecorator={<LinkIcon size={16} />}
               onClick={handleCopyLink}
-              aria-label="Copy capture link"
+              aria-label='Copy capture link'
             >
               Copy Link
             </Button>
@@ -281,55 +283,60 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
 
         {/* Error Alert */}
         {hasError && request?.error_message && (
-          <Alert color="danger" variant="soft" role="alert">
-            <Typography level="title-sm" color="danger" sx={{ mb: 1 }}>
+          <Alert color='danger' variant='soft' role='alert'>
+            <Typography level='title-sm' color='danger' sx={{ mb: 1 }}>
               Capture Failed
             </Typography>
-            <Typography level="body-sm">{request.error_message}</Typography>
+            <Typography level='body-sm'>{request.error_message}</Typography>
           </Alert>
         )}
 
         {/* Main Content */}
         <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
           {/* Left: Screenshot Canvas */}
-          <Card variant="outlined" sx={{ flex: 1, minWidth: 0 }}>
+          <Card variant='outlined' sx={{ flex: 1, minWidth: 0 }}>
             <CardContent>
               <Stack spacing={2}>
                 {/* Zoom Controls */}
-                <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
-                  <Typography level="title-sm">Preview</Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Zoom In (+)">
+                <Stack
+                  direction='row'
+                  spacing={1}
+                  justifyContent='space-between'
+                  alignItems='center'
+                >
+                  <Typography level='title-sm'>Preview</Typography>
+                  <Stack direction='row' spacing={1}>
+                    <Tooltip title='Zoom In (+)'>
                       <IconButton
-                        size="sm"
-                        variant="outlined"
+                        size='sm'
+                        variant='outlined'
                         onClick={() => setZoom((prev) => Math.min(prev + 0.25, 3))}
-                        aria-label="Zoom in"
+                        aria-label='Zoom in'
                       >
                         <ZoomInIcon size={16} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Zoom Out (-)">
+                    <Tooltip title='Zoom Out (-)'>
                       <IconButton
-                        size="sm"
-                        variant="outlined"
+                        size='sm'
+                        variant='outlined'
                         onClick={() => setZoom((prev) => Math.max(prev - 0.25, 0.25))}
-                        aria-label="Zoom out"
+                        aria-label='Zoom out'
                       >
                         <ZoomOutIcon size={16} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Fit to Width">
+                    <Tooltip title='Fit to Width'>
                       <IconButton
-                        size="sm"
-                        variant="outlined"
+                        size='sm'
+                        variant='outlined'
                         onClick={() => setZoom(1)}
-                        aria-label="Fit to width"
+                        aria-label='Fit to width'
                       >
                         <FitToWidthIcon size={16} />
                       </IconButton>
                     </Tooltip>
-                    <Typography level="body-sm" sx={{ alignSelf: 'center', px: 1 }}>
+                    <Typography level='body-sm' sx={{ alignSelf: 'center', px: 1 }}>
                       {Math.round(zoom * 100)}%
                     </Typography>
                   </Stack>
@@ -349,7 +356,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                       alignItems: 'center',
                       minHeight: 400,
                     }}
-                    role="img"
+                    role='img'
                     aria-label={`Screenshot of ${capture.page_title || 'captured page'}`}
                   >
                     {isLoadingSignedUrl ? (
@@ -370,7 +377,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                         }}
                       />
                     ) : (
-                      <Typography level="body-md" color="neutral">
+                      <Typography level='body-md' color='neutral'>
                         Failed to generate screenshot URL
                       </Typography>
                     )}
@@ -386,7 +393,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                       bgcolor: 'neutral.50',
                     }}
                   >
-                    <Typography level="body-md" color="neutral">
+                    <Typography level='body-md' color='neutral'>
                       {hasError ? 'Screenshot not available' : 'Screenshot processing...'}
                     </Typography>
                   </Box>
@@ -396,27 +403,30 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
           </Card>
 
           {/* Right: Metadata Panel */}
-          <Card variant="outlined" sx={{ width: { xs: '100%', lg: 400 } }}>
+          <Card variant='outlined' sx={{ width: { xs: '100%', lg: 400 } }}>
             <CardContent>
-              <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value as typeof activeTab)}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, value) => setActiveTab(value as typeof activeTab)}
+              >
                 <TabList>
-                  <Tab value="preview">Preview</Tab>
-                  {capture.raw_html && <Tab value="html">HTML</Tab>}
-                  {capture.raw_css && <Tab value="css">CSS</Tab>}
-                  <Tab value="meta">Meta</Tab>
+                  <Tab value='preview'>Preview</Tab>
+                  {capture.raw_html && <Tab value='html'>HTML</Tab>}
+                  {capture.raw_css && <Tab value='css'>CSS</Tab>}
+                  <Tab value='meta'>Meta</Tab>
                 </TabList>
 
-                <TabPanel value="preview">
+                <TabPanel value='preview'>
                   <Stack spacing={2}>
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Stack direction='row' spacing={1} justifyContent='flex-end'>
                       {signedUrl && (
-                        <Tooltip title="Download Screenshot">
+                        <Tooltip title='Download Screenshot'>
                           <IconButton
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             onClick={handleDownloadScreenshot}
                             disabled={isLoadingSignedUrl}
-                            aria-label="Download screenshot"
+                            aria-label='Download screenshot'
                           >
                             <DownloadIcon size={16} />
                           </IconButton>
@@ -425,20 +435,26 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                     </Stack>
                     <Stack spacing={1.5}>
                       <Box>
-                        <Typography level="body-xs" color="neutral">Page Title</Typography>
-                        <Typography level="body-sm">{capture.page_title || 'N/A'}</Typography>
+                        <Typography level='body-xs' color='neutral'>
+                          Page Title
+                        </Typography>
+                        <Typography level='body-sm'>{capture.page_title || 'N/A'}</Typography>
                       </Box>
                       <Divider />
                       <Box>
-                        <Typography level="body-xs" color="neutral">Device Profile</Typography>
-                        <Typography level="body-sm">
+                        <Typography level='body-xs' color='neutral'>
+                          Device Profile
+                        </Typography>
+                        <Typography level='body-sm'>
                           {capture.device_profile?.display_name || 'Default'}
                         </Typography>
                       </Box>
                       <Divider />
                       <Box>
-                        <Typography level="body-xs" color="neutral">Captured At</Typography>
-                        <Typography level="body-sm">
+                        <Typography level='body-xs' color='neutral'>
+                          Captured At
+                        </Typography>
+                        <Typography level='body-sm'>
                           {dayjs(capture.captured_at).format('YYYY-MM-DD HH:mm:ss')}
                         </Typography>
                       </Box>
@@ -446,8 +462,10 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                         <>
                           <Divider />
                           <Box>
-                            <Typography level="body-xs" color="neutral">Dimensions</Typography>
-                            <Typography level="body-sm">
+                            <Typography level='body-xs' color='neutral'>
+                              Dimensions
+                            </Typography>
+                            <Typography level='body-sm'>
                               {capture.screenshot_width} × {capture.screenshot_height}px
                             </Typography>
                           </Box>
@@ -457,8 +475,10 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                         <>
                           <Divider />
                           <Box>
-                            <Typography level="body-xs" color="neutral">Screenshot Size</Typography>
-                            <Typography level="body-sm">
+                            <Typography level='body-xs' color='neutral'>
+                              Screenshot Size
+                            </Typography>
+                            <Typography level='body-sm'>
                               {(capture.screenshot_size_bytes / 1024).toFixed(2)} KB
                             </Typography>
                           </Box>
@@ -469,23 +489,23 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                 </TabPanel>
 
                 {capture.raw_html && (
-                  <TabPanel value="html">
+                  <TabPanel value='html'>
                     <Stack spacing={2}>
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Tooltip title="Copy HTML">
+                      <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                        <Tooltip title='Copy HTML'>
                           <IconButton
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             onClick={() => handleCopy(capture.raw_html!, 'HTML')}
-                            aria-label="Copy HTML"
+                            aria-label='Copy HTML'
                           >
                             <CopyIcon size={16} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Download HTML">
+                        <Tooltip title='Download HTML'>
                           <IconButton
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             onClick={() =>
                               handleDownload(
                                 capture.raw_html!,
@@ -493,7 +513,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                                 'text/html'
                               )
                             }
-                            aria-label="Download HTML"
+                            aria-label='Download HTML'
                           >
                             <DownloadIcon size={16} />
                           </IconButton>
@@ -508,30 +528,30 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                           fontFamily: 'monospace',
                           fontSize: '0.75rem',
                         }}
-                        aria-label="Raw HTML"
+                        aria-label='Raw HTML'
                       />
                     </Stack>
                   </TabPanel>
                 )}
 
                 {capture.raw_css && (
-                  <TabPanel value="css">
+                  <TabPanel value='css'>
                     <Stack spacing={2}>
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Tooltip title="Copy CSS">
+                      <Stack direction='row' spacing={1} justifyContent='flex-end'>
+                        <Tooltip title='Copy CSS'>
                           <IconButton
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             onClick={() => handleCopy(capture.raw_css!, 'CSS')}
-                            aria-label="Copy CSS"
+                            aria-label='Copy CSS'
                           >
                             <CopyIcon size={16} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Download CSS">
+                        <Tooltip title='Download CSS'>
                           <IconButton
-                            size="sm"
-                            variant="outlined"
+                            size='sm'
+                            variant='outlined'
                             onClick={() =>
                               handleDownload(
                                 capture.raw_css!,
@@ -539,7 +559,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                                 'text/css'
                               )
                             }
-                            aria-label="Download CSS"
+                            aria-label='Download CSS'
                           >
                             <DownloadIcon size={16} />
                           </IconButton>
@@ -554,28 +574,32 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                           fontFamily: 'monospace',
                           fontSize: '0.75rem',
                         }}
-                        aria-label="Raw CSS"
+                        aria-label='Raw CSS'
                       />
                     </Stack>
                   </TabPanel>
                 )}
 
-                <TabPanel value="meta">
+                <TabPanel value='meta'>
                   <Stack spacing={2}>
-                    <Typography level="title-sm">Capture Metadata</Typography>
+                    <Typography level='title-sm'>Capture Metadata</Typography>
                     {request && (
                       <List>
                         <ListItem>
                           <ListItemContent>
-                            <Typography level="body-xs" color="neutral">Requested URL</Typography>
-                            <Typography level="body-sm">{request.requested_url}</Typography>
+                            <Typography level='body-xs' color='neutral'>
+                              Requested URL
+                            </Typography>
+                            <Typography level='body-sm'>{request.requested_url}</Typography>
                           </ListItemContent>
                         </ListItem>
                         <Divider />
                         <ListItem>
                           <ListItemContent>
-                            <Typography level="body-xs" color="neutral">Status</Typography>
-                            <Typography level="body-sm">{request.status}</Typography>
+                            <Typography level='body-xs' color='neutral'>
+                              Status
+                            </Typography>
+                            <Typography level='body-sm'>{request.status}</Typography>
                           </ListItemContent>
                         </ListItem>
                       </List>
@@ -589,7 +613,7 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
                           fontFamily: 'monospace',
                           fontSize: '0.75rem',
                         }}
-                        aria-label="Capture metadata JSON"
+                        aria-label='Capture metadata JSON'
                       />
                     )}
                   </Stack>
@@ -602,4 +626,3 @@ export function CaptureViewer({ captureId }: CaptureViewerProps): React.JSX.Elem
     </Box>
   );
 }
-

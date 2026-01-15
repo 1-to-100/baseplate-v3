@@ -28,23 +28,32 @@ export interface ScanVisualStyleGuideResult {
  */
 export async function scanVisualStyleGuide(
   options: ScanVisualStyleGuideOptions,
-  createCaptureRequestFn: (payload: CreateCaptureRequestPayload) => Promise<{ web_screenshot_capture_request_id: string }>
+  createCaptureRequestFn: (
+    payload: CreateCaptureRequestPayload
+  ) => Promise<{ web_screenshot_capture_request_id: string }>
 ): Promise<ScanVisualStyleGuideResult> {
-  const { url, name, customerId, visualStyleGuideId, onProgress, openCaptureViewer = true } = options;
+  const {
+    url,
+    name,
+    customerId,
+    visualStyleGuideId,
+    onProgress,
+    openCaptureViewer = true,
+  } = options;
   const errors: string[] = [];
-  
+
   const supabase = createClient();
   console.log('=== SCAN & CREATE STARTED ===');
   console.log('URL:', url);
   console.log('Name:', name);
   console.log('Customer ID:', customerId);
   console.log('Visual Style Guide ID:', visualStyleGuideId || 'NEW');
-  
+
   onProgress?.(0);
 
   try {
     let finalVisualStyleGuideId: string;
-    
+
     if (visualStyleGuideId) {
       // Update existing guide
       console.log('Updating existing visual style guide...');
@@ -55,7 +64,9 @@ export async function scanVisualStyleGuide(
         .single();
 
       if (fetchError || !existingGuide) {
-        throw new Error('Visual style guide not found: ' + (fetchError?.message || 'Unknown error'));
+        throw new Error(
+          'Visual style guide not found: ' + (fetchError?.message || 'Unknown error')
+        );
       }
 
       // Verify customer matches
@@ -92,13 +103,15 @@ export async function scanVisualStyleGuide(
         .single();
 
       if (guideError || !guideData) {
-        throw new Error('Failed to create visual style guide: ' + (guideError?.message || 'Unknown error'));
+        throw new Error(
+          'Failed to create visual style guide: ' + (guideError?.message || 'Unknown error')
+        );
       }
 
       finalVisualStyleGuideId = guideData.visual_style_guide_id;
       console.log('✓ Created visual style guide:', finalVisualStyleGuideId);
     }
-    
+
     onProgress?.(10);
 
     // Step 2: Create capture request in web_screenshot_capture_requests table
@@ -163,9 +176,14 @@ export async function scanVisualStyleGuide(
     ]);
 
     if (colorsResult[0].status === 'rejected' || colorsResult[0].value?.error) {
-      const error = colorsResult[0].status === 'rejected' ? colorsResult[0].reason : colorsResult[0].value.error;
+      const error =
+        colorsResult[0].status === 'rejected'
+          ? colorsResult[0].reason
+          : colorsResult[0].value.error;
       console.error('Colors extraction error:', error);
-      errors.push(`Colors extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Colors extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } else {
       console.log('✓ Colors extracted successfully');
     }
@@ -189,16 +207,22 @@ export async function scanVisualStyleGuide(
     ]);
 
     if (fontsResult.status === 'rejected' || fontsResult.value?.error) {
-      const error = fontsResult.status === 'rejected' ? fontsResult.reason : fontsResult.value.error;
-      errors.push(`Fonts extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const error =
+        fontsResult.status === 'rejected' ? fontsResult.reason : fontsResult.value.error;
+      errors.push(
+        `Fonts extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       console.error('Fonts extraction error:', error);
     } else {
       console.log('✓ Fonts extracted successfully');
     }
 
     if (logosResult.status === 'rejected' || logosResult.value?.error) {
-      const error = logosResult.status === 'rejected' ? logosResult.reason : logosResult.value.error;
-      errors.push(`Logos extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const error =
+        logosResult.status === 'rejected' ? logosResult.reason : logosResult.value.error;
+      errors.push(
+        `Logos extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       console.error('Logos extraction error:', error);
     } else {
       console.log('✓ Logos extracted successfully');
@@ -220,4 +244,3 @@ export async function scanVisualStyleGuide(
     throw error;
   }
 }
-

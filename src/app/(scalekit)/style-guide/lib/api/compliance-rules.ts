@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createComplianceRulePayloadSchema, updateComplianceRulePayloadSchema } from '../types/validation';
+import {
+  createComplianceRulePayloadSchema,
+  updateComplianceRulePayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define ComplianceRule type directly from the database structure
@@ -68,10 +71,12 @@ export async function getComplianceRuleById(
 
   const { data, error } = await supabase
     .from('compliance_rules')
-    .select(`
+    .select(
+      `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `)
+    `
+    )
     .eq('compliance_rule_id', complianceRuleId)
     .single();
 
@@ -101,12 +106,13 @@ export async function listComplianceRules(
     per_page = 20,
   } = params;
 
-  let query = supabase
-    .from('compliance_rules')
-    .select(`
+  let query = supabase.from('compliance_rules').select(
+    `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `, { count: 'exact' });
+    `,
+    { count: 'exact' }
+  );
 
   if (customer_id) {
     query = query.eq('customer_id', customer_id);
@@ -178,8 +184,7 @@ export async function createComplianceRule(
 
   const insertPayload = {
     ...payload,
-    name: payload.name ?? payload.rule_name ?? '',
-    rule_name: payload.rule_name ?? payload.name ?? '',
+    name: payload.name ?? '',
     created_by: userId || null,
   };
 
@@ -188,10 +193,12 @@ export async function createComplianceRule(
   const { data, error } = await supabase
     .from('compliance_rules')
     .insert(insertPayload)
-    .select(`
+    .select(
+      `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -217,10 +224,12 @@ export async function updateComplianceRule(
     .from('compliance_rules')
     .update(updateData)
     .eq('compliance_rule_id', compliance_rule_id)
-    .select(`
+    .select(
+      `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -233,9 +242,7 @@ export async function updateComplianceRule(
 /**
  * Delete a compliance rule
  */
-export async function deleteComplianceRule(
-  complianceRuleId: string
-): Promise<ComplianceRule> {
+export async function deleteComplianceRule(complianceRuleId: string): Promise<ComplianceRule> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -262,10 +269,12 @@ export async function getComplianceRulesByStyleGuideId(
 
   const { data, error } = await supabase
     .from('compliance_rules')
-    .select(`
+    .select(
+      `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `)
+    `
+    )
     .eq('style_guide_id', styleGuideId)
     .order('severity_level', { ascending: false });
 
@@ -286,10 +295,12 @@ export async function getBlockingComplianceRulesByStyleGuideId(
 
   const { data, error } = await supabase
     .from('compliance_rules')
-    .select(`
+    .select(
+      `
       *,
       compliance_rule_type_option_item:compliance_rule_type_option_items(*)
-    `)
+    `
+    )
     .eq('style_guide_id', styleGuideId)
     .eq('is_blocking', true)
     .order('severity_level', { ascending: false });
@@ -300,4 +311,3 @@ export async function getBlockingComplianceRulesByStyleGuideId(
 
   return (data || []) as ComplianceRuleResponse[];
 }
-

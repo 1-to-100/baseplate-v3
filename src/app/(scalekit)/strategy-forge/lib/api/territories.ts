@@ -1,11 +1,11 @@
 // Territories API - This is an alias for segments
 // Territories and segments are the same concept in this system
-import { 
-  getSegmentsList, 
-  createSegment, 
-  getSegmentById, 
-  updateSegment, 
-  deleteSegment 
+import {
+  getSegmentsList,
+  createSegment,
+  getSegmentById,
+  updateSegment,
+  deleteSegment,
 } from './segments';
 import type {
   Segment,
@@ -28,4 +28,3 @@ export type CreateTerritoryPayload = CreateSegmentPayload;
 export type UpdateTerritoryPayload = UpdateSegmentPayload;
 export type GetTerritoriesParams = GetSegmentsParams;
 export type GetTerritoriesResponse = GetSegmentsResponse;
-

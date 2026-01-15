@@ -257,13 +257,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
                 <Stack spacing={4.5}>
                   <VisualStyleGuideColors guideId={guideId} isEditable={isEditableView} />
                   <VisualStyleGuideTypography guideId={guideId} isEditableView={isEditableView} />
-                  <VisualStyleGuideLogos
-                    guideId={guideId}
-                    isEditableView={isEditableView}
-                    defaultLogoAssetId={
-                      guide.default_logo_asset_id as string | number | null | undefined
-                    }
-                  />
+                  <VisualStyleGuideLogos guideId={guideId} isEditableView={isEditableView} />
                 </Stack>
               )}
             </Grid>

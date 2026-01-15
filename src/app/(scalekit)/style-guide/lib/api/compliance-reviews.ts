@@ -4,7 +4,10 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import { createComplianceReviewPayloadSchema, updateComplianceReviewPayloadSchema } from '../types/validation';
+import {
+  createComplianceReviewPayloadSchema,
+  updateComplianceReviewPayloadSchema,
+} from '../types/validation';
 import type { z } from 'zod';
 
 // Define ComplianceReview type directly from the database structure
@@ -94,17 +97,9 @@ export async function listComplianceReviews(
   params: ListComplianceReviewsParams = {}
 ): Promise<PaginatedResponse<ComplianceReview>> {
   const supabase = createClient();
-  const {
-    evaluation_id,
-    assigned_reviewer_id,
-    status,
-    page = 1,
-    per_page = 20,
-  } = params;
+  const { evaluation_id, assigned_reviewer_id, status, page = 1, per_page = 20 } = params;
 
-  let query = supabase
-    .from('compliance_reviews')
-    .select('*', { count: 'exact' });
+  let query = supabase.from('compliance_reviews').select('*', { count: 'exact' });
 
   if (evaluation_id) {
     query = query.eq('evaluation_id', evaluation_id);
@@ -344,4 +339,3 @@ export async function blockComplianceReview(
     resolved_at: new Date().toISOString(),
   });
 }
-

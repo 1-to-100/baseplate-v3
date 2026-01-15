@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from '@/lib/supabase/client';
 import type {
   CompanyStrategy,
   StrategyPrinciple,
@@ -12,7 +12,7 @@ import type {
   OptionDataSource,
   OptionStrategyChangeType,
   StrategyWorkspaceData,
-} from "../types";
+} from '../types';
 import {
   createCompanyStrategyInputSchema,
   updateCompanyStrategyInputSchema,
@@ -40,7 +40,7 @@ import {
   type CreateStrategyChangeLogInput,
   type CreateOptionInput,
   type UpdateOptionInput,
-} from "../schemas/strategy-foundation";
+} from '../schemas/strategy-foundation';
 
 type Nullable<T> = T | null | undefined;
 
@@ -71,9 +71,7 @@ export interface StrategyChangeLogListParams {
 const normalizeNullable = <T>(value: Nullable<T>): T | null =>
   value === undefined ? null : (value ?? null);
 
-async function getSupabaseContext(
-  options?: SupabaseContextOptions
-): Promise<SupabaseContext> {
+async function getSupabaseContext(options?: SupabaseContextOptions): Promise<SupabaseContext> {
   const supabase = createClient();
 
   const {
@@ -84,31 +82,27 @@ async function getSupabaseContext(
     throw new Error(`Failed to resolve authenticated user: ${authError.message}`);
   }
   if (!user) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   const [{ data: userRow, error: userRowError }] = await Promise.all([
-    supabase
-      .from("users")
-      .select("user_id")
-      .eq("auth_user_id", user.id)
-      .maybeSingle(),
+    supabase.from('users').select('user_id').eq('auth_user_id', user.id).maybeSingle(),
   ]);
 
   const customerIdResult =
     options?.customerId !== undefined
       ? { data: options.customerId, error: null }
-      : await supabase.rpc("current_customer_id");
+      : await supabase.rpc('current_customer_id');
 
   if (customerIdResult.error || !customerIdResult.data) {
     throw new Error(
-      `Unable to resolve current customer id: ${customerIdResult.error?.message ?? "not available"}`
+      `Unable to resolve current customer id: ${customerIdResult.error?.message ?? 'not available'}`
     );
   }
 
   if (userRowError || !userRow?.user_id) {
     throw new Error(
-      `Unable to resolve application user id: ${userRowError?.message ?? "user record not found"}`
+      `Unable to resolve application user id: ${userRowError?.message ?? 'user record not found'}`
     );
   }
 
@@ -121,12 +115,12 @@ async function getSupabaseContext(
 }
 
 async function assertSystemAdmin(supabase: ReturnType<typeof createClient>): Promise<void> {
-  const { data, error } = await supabase.rpc("is_system_admin");
+  const { data, error } = await supabase.rpc('is_system_admin');
   if (error) {
     throw new Error(`Unable to verify system administrator privileges: ${error.message}`);
   }
   if (!data) {
-    throw new Error("Operation requires system administrator privileges.");
+    throw new Error('Operation requires system administrator privileges.');
   }
 }
 
@@ -135,12 +129,12 @@ export async function getCompanyStrategy(
 ): Promise<CompanyStrategy | null> {
   const { supabase, customerId } = await getSupabaseContext(options);
   const { data, error } = await supabase
-    .from("company_strategies")
-    .select("*")
-    .eq("customer_id", customerId)
+    .from('company_strategies')
+    .select('*')
+    .eq('customer_id', customerId)
     .maybeSingle();
 
-  if (error && error.code !== "PGRST116") {
+  if (error && error.code !== 'PGRST116') {
     throw new Error(`Failed to fetch company strategy: ${error.message}`);
   }
 
@@ -150,10 +144,10 @@ export async function getCompanyStrategy(
 export async function getCompanyStrategyById(strategyId: string): Promise<CompanyStrategy> {
   const { supabase, customerId } = await getSupabaseContext();
   const { data, error } = await supabase
-    .from("company_strategies")
-    .select("*")
-    .eq("strategy_id", strategyId)
-    .eq("customer_id", customerId)
+    .from('company_strategies')
+    .select('*')
+    .eq('strategy_id', strategyId)
+    .eq('customer_id', customerId)
     .single();
 
   if (error) {
@@ -188,7 +182,7 @@ export async function createCompanyStrategy(
   }
 
   const { data, error } = await supabase
-    .from("company_strategies")
+    .from('company_strategies')
     .insert(insertPayload)
     .select()
     .single();
@@ -226,10 +220,10 @@ export async function updateCompanyStrategy(
     updatePayload.effective_at = normalizeNullable(payload.effective_at);
 
   const { data, error } = await supabase
-    .from("company_strategies")
+    .from('company_strategies')
     .update(updatePayload)
-    .eq("strategy_id", strategyId)
-    .eq("customer_id", customerId)
+    .eq('strategy_id', strategyId)
+    .eq('customer_id', customerId)
     .select()
     .single();
 
@@ -243,10 +237,10 @@ export async function updateCompanyStrategy(
 export async function deleteCompanyStrategy(strategyId: string): Promise<void> {
   const { supabase, customerId } = await getSupabaseContext();
   const { error } = await supabase
-    .from("company_strategies")
+    .from('company_strategies')
     .delete()
-    .eq("strategy_id", strategyId)
-    .eq("customer_id", customerId);
+    .eq('strategy_id', strategyId)
+    .eq('customer_id', customerId);
 
   if (error) {
     throw new Error(`Failed to delete company strategy: ${error.message}`);
@@ -256,10 +250,10 @@ export async function deleteCompanyStrategy(strategyId: string): Promise<void> {
 export async function listStrategyPrinciples(strategyId: string): Promise<StrategyPrinciple[]> {
   const { supabase } = await getSupabaseContext();
   const { data, error } = await supabase
-    .from("strategy_principles")
-    .select("*")
-    .eq("strategy_id", strategyId)
-    .order("order_index", { ascending: true });
+    .from('strategy_principles')
+    .select('*')
+    .eq('strategy_id', strategyId)
+    .order('order_index', { ascending: true });
 
   if (error) {
     throw new Error(`Failed to fetch strategy principles: ${error.message}`);
@@ -285,7 +279,7 @@ export async function createStrategyPrinciple(
   };
 
   const { data, error } = await supabase
-    .from("strategy_principles")
+    .from('strategy_principles')
     .insert(insertPayload)
     .select()
     .single();
@@ -314,9 +308,9 @@ export async function updateStrategyPrinciple(
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
 
   const { data, error } = await supabase
-    .from("strategy_principles")
+    .from('strategy_principles')
     .update(updatePayload)
-    .eq("principle_id", principleId)
+    .eq('principle_id', principleId)
     .select()
     .single();
 
@@ -329,7 +323,10 @@ export async function updateStrategyPrinciple(
 
 export async function deleteStrategyPrinciple(principleId: string): Promise<void> {
   const { supabase } = await getSupabaseContext();
-  const { error } = await supabase.from("strategy_principles").delete().eq("principle_id", principleId);
+  const { error } = await supabase
+    .from('strategy_principles')
+    .delete()
+    .eq('principle_id', principleId);
   if (error) {
     throw new Error(`Failed to delete strategy principle: ${error.message}`);
   }
@@ -338,10 +335,10 @@ export async function deleteStrategyPrinciple(principleId: string): Promise<void
 export async function listStrategyValues(strategyId: string): Promise<StrategyValue[]> {
   const { supabase } = await getSupabaseContext();
   const { data, error } = await supabase
-    .from("strategy_values")
-    .select("*")
-    .eq("strategy_id", strategyId)
-    .order("order_index", { ascending: true });
+    .from('strategy_values')
+    .select('*')
+    .eq('strategy_id', strategyId)
+    .order('order_index', { ascending: true });
 
   if (error) {
     throw new Error(`Failed to fetch strategy values: ${error.message}`);
@@ -350,9 +347,7 @@ export async function listStrategyValues(strategyId: string): Promise<StrategyVa
   return data ?? [];
 }
 
-export async function createStrategyValue(
-  input: CreateStrategyValueInput
-): Promise<StrategyValue> {
+export async function createStrategyValue(input: CreateStrategyValueInput): Promise<StrategyValue> {
   const payload = createStrategyValueInputSchema.parse(input);
   const { supabase, userId } = await getSupabaseContext();
 
@@ -367,7 +362,7 @@ export async function createStrategyValue(
   };
 
   const { data, error } = await supabase
-    .from("strategy_values")
+    .from('strategy_values')
     .insert(insertPayload)
     .select()
     .single();
@@ -396,9 +391,9 @@ export async function updateStrategyValue(
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
 
   const { data, error } = await supabase
-    .from("strategy_values")
+    .from('strategy_values')
     .update(updatePayload)
-    .eq("value_id", valueId)
+    .eq('value_id', valueId)
     .select()
     .single();
 
@@ -411,7 +406,7 @@ export async function updateStrategyValue(
 
 export async function deleteStrategyValue(valueId: string): Promise<void> {
   const { supabase } = await getSupabaseContext();
-  const { error } = await supabase.from("strategy_values").delete().eq("value_id", valueId);
+  const { error } = await supabase.from('strategy_values').delete().eq('value_id', valueId);
   if (error) {
     throw new Error(`Failed to delete strategy value: ${error.message}`);
   }
@@ -424,10 +419,10 @@ export async function listCompetitors(
   const { supabase, customerId } = await getSupabaseContext(options);
 
   let query = supabase
-    .from("competitors")
-    .select("*")
-    .eq("customer_id", customerId)
-    .order("created_at", { ascending: false });
+    .from('competitors')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
 
   if (params.search) {
     query = query.or(
@@ -436,14 +431,14 @@ export async function listCompetitors(
   }
 
   if (params.statusId) {
-    query = query.eq("status_id", params.statusId);
+    query = query.eq('status_id', params.statusId);
   }
 
   if (params.sourceId) {
-    query = query.eq("source_id", params.sourceId);
+    query = query.eq('source_id', params.sourceId);
   }
 
-  if (typeof params.limit === "number") {
+  if (typeof params.limit === 'number') {
     const from = params.offset ?? 0;
     const to = from + params.limit - 1;
     query = query.range(from, to);
@@ -464,10 +459,10 @@ export async function getCompetitorById(
 ): Promise<Competitor> {
   const { supabase, customerId } = await getSupabaseContext(options);
   const { data, error } = await supabase
-    .from("competitors")
-    .select("*")
-    .eq("competitor_id", competitorId)
-    .eq("customer_id", customerId)
+    .from('competitors')
+    .select('*')
+    .eq('competitor_id', competitorId)
+    .eq('customer_id', customerId)
     .single();
 
   if (error) {
@@ -497,7 +492,7 @@ export async function createCompetitor(
   };
 
   const { data, error } = await supabase
-    .from("competitors")
+    .from('competitors')
     .insert(insertPayload)
     .select()
     .single();
@@ -524,19 +519,17 @@ export async function updateCompetitor(
   if (payload.name !== undefined) updatePayload.name = payload.name;
   if (payload.website_url !== undefined)
     updatePayload.website_url = normalizeNullable(payload.website_url);
-  if (payload.category !== undefined)
-    updatePayload.category = normalizeNullable(payload.category);
-  if (payload.summary !== undefined)
-    updatePayload.summary = normalizeNullable(payload.summary);
+  if (payload.category !== undefined) updatePayload.category = normalizeNullable(payload.category);
+  if (payload.summary !== undefined) updatePayload.summary = normalizeNullable(payload.summary);
   if (payload.status_id !== undefined) updatePayload.status_id = payload.status_id;
   if (payload.source_id !== undefined)
     updatePayload.source_id = normalizeNullable(payload.source_id);
 
   const { data, error } = await supabase
-    .from("competitors")
+    .from('competitors')
     .update(updatePayload)
-    .eq("competitor_id", competitorId)
-    .eq("customer_id", customerId)
+    .eq('competitor_id', competitorId)
+    .eq('customer_id', customerId)
     .select()
     .single();
 
@@ -553,25 +546,23 @@ export async function deleteCompetitor(
 ): Promise<void> {
   const { supabase, customerId } = await getSupabaseContext(options);
   const { error } = await supabase
-    .from("competitors")
+    .from('competitors')
     .delete()
-    .eq("competitor_id", competitorId)
-    .eq("customer_id", customerId);
+    .eq('competitor_id', competitorId)
+    .eq('customer_id', customerId);
 
   if (error) {
     throw new Error(`Failed to delete competitor: ${error.message}`);
   }
 }
 
-export async function listCompetitorSignals(
-  competitorId: string
-): Promise<CompetitorSignal[]> {
+export async function listCompetitorSignals(competitorId: string): Promise<CompetitorSignal[]> {
   const { supabase } = await getSupabaseContext();
   const { data, error } = await supabase
-    .from("competitor_signals")
-    .select("*")
-    .eq("competitor_id", competitorId)
-    .order("observed_at", { ascending: false });
+    .from('competitor_signals')
+    .select('*')
+    .eq('competitor_id', competitorId)
+    .order('observed_at', { ascending: false });
 
   if (error) {
     throw new Error(`Failed to fetch competitor signals: ${error.message}`);
@@ -597,7 +588,7 @@ export async function createCompetitorSignal(
   };
 
   const { data, error } = await supabase
-    .from("competitor_signals")
+    .from('competitor_signals')
     .insert(insertPayload)
     .select()
     .single();
@@ -627,9 +618,9 @@ export async function updateCompetitorSignal(
   if (payload.note !== undefined) updatePayload.note = normalizeNullable(payload.note);
 
   const { data, error } = await supabase
-    .from("competitor_signals")
+    .from('competitor_signals')
     .update(updatePayload)
-    .eq("signal_id", signalId)
+    .eq('signal_id', signalId)
     .select()
     .single();
 
@@ -642,7 +633,7 @@ export async function updateCompetitorSignal(
 
 export async function deleteCompetitorSignal(signalId: string): Promise<void> {
   const { supabase } = await getSupabaseContext();
-  const { error } = await supabase.from("competitor_signals").delete().eq("signal_id", signalId);
+  const { error } = await supabase.from('competitor_signals').delete().eq('signal_id', signalId);
   if (error) {
     throw new Error(`Failed to delete competitor signal: ${error.message}`);
   }
@@ -654,12 +645,12 @@ export async function listStrategyChangeLogs(
 ): Promise<StrategyChangeLog[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("strategy_change_logs")
-    .select("*")
-    .eq("strategy_id", strategyId)
-    .order("changed_at", { ascending: false });
+    .from('strategy_change_logs')
+    .select('*')
+    .eq('strategy_id', strategyId)
+    .order('changed_at', { ascending: false });
 
-  if (typeof params.limit === "number") {
+  if (typeof params.limit === 'number') {
     const from = params.offset ?? 0;
     const to = from + params.limit - 1;
     query = query.range(from, to);
@@ -690,7 +681,7 @@ export async function createStrategyChangeLog(
   };
 
   const { data, error } = await supabase
-    .from("strategy_change_logs")
+    .from('strategy_change_logs')
     .insert(insertPayload)
     .select()
     .single();
@@ -705,9 +696,9 @@ export async function createStrategyChangeLog(
 export async function deleteStrategyChangeLog(changeLogId: string): Promise<void> {
   const { supabase } = await getSupabaseContext();
   const { error } = await supabase
-    .from("strategy_change_logs")
+    .from('strategy_change_logs')
     .delete()
-    .eq("change_log_id", changeLogId);
+    .eq('change_log_id', changeLogId);
   if (error) {
     throw new Error(`Failed to delete strategy change log: ${error.message}`);
   }
@@ -718,11 +709,11 @@ export async function listPublicationStatuses(
 ): Promise<OptionPublicationStatus[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("option_publication_status")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .from('option_publication_status')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (!includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq('is_active', true);
   }
   const { data, error } = await query;
   if (error) {
@@ -736,11 +727,11 @@ export async function listCompetitorStatuses(
 ): Promise<OptionCompetitorStatus[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("option_competitor_status")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .from('option_competitor_status')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (!includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq('is_active', true);
   }
   const { data, error } = await query;
   if (error) {
@@ -754,11 +745,11 @@ export async function listCompetitorSignalTypes(
 ): Promise<OptionCompetitorSignalType[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("option_competitor_signal_type")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .from('option_competitor_signal_type')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (!includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq('is_active', true);
   }
   const { data, error } = await query;
   if (error) {
@@ -770,11 +761,11 @@ export async function listCompetitorSignalTypes(
 export async function listDataSources(includeInactive = false): Promise<OptionDataSource[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("option_data_source")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .from('option_data_source')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (!includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq('is_active', true);
   }
   const { data, error } = await query;
   if (error) {
@@ -788,11 +779,11 @@ export async function listStrategyChangeTypes(
 ): Promise<OptionStrategyChangeType[]> {
   const { supabase } = await getSupabaseContext();
   let query = supabase
-    .from("option_strategy_change_type")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .from('option_strategy_change_type')
+    .select('*')
+    .order('sort_order', { ascending: true });
   if (!includeInactive) {
-    query = query.eq("is_active", true);
+    query = query.eq('is_active', true);
   }
   const { data, error } = await query;
   if (error) {
@@ -809,7 +800,7 @@ export async function createPublicationStatusOption(
   await assertSystemAdmin(supabase);
 
   const { data, error } = await supabase
-    .from("option_publication_status")
+    .from('option_publication_status')
     .insert({
       programmatic_name: payload.programmatic_name,
       display_name: payload.display_name,
@@ -845,9 +836,9 @@ export async function updatePublicationStatusOption(
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
 
   const { data, error } = await supabase
-    .from("option_publication_status")
+    .from('option_publication_status')
     .update(updatePayload)
-    .eq("option_id", optionId)
+    .eq('option_id', optionId)
     .select()
     .single();
 
@@ -862,9 +853,9 @@ export async function deletePublicationStatusOption(optionId: string): Promise<v
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { error } = await supabase
-    .from("option_publication_status")
+    .from('option_publication_status')
     .delete()
-    .eq("option_id", optionId);
+    .eq('option_id', optionId);
   if (error) {
     throw new Error(`Failed to delete publication status option: ${error.message}`);
   }
@@ -877,7 +868,7 @@ export async function createCompetitorStatusOption(
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { data, error } = await supabase
-    .from("option_competitor_status")
+    .from('option_competitor_status')
     .insert({
       programmatic_name: payload.programmatic_name,
       display_name: payload.display_name,
@@ -909,9 +900,9 @@ export async function updateCompetitorStatusOption(
   if (payload.sort_order !== undefined) updatePayload.sort_order = payload.sort_order;
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
   const { data, error } = await supabase
-    .from("option_competitor_status")
+    .from('option_competitor_status')
     .update(updatePayload)
-    .eq("option_id", optionId)
+    .eq('option_id', optionId)
     .select()
     .single();
   if (error) {
@@ -924,9 +915,9 @@ export async function deleteCompetitorStatusOption(optionId: string): Promise<vo
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { error } = await supabase
-    .from("option_competitor_status")
+    .from('option_competitor_status')
     .delete()
-    .eq("option_id", optionId);
+    .eq('option_id', optionId);
   if (error) {
     throw new Error(`Failed to delete competitor status option: ${error.message}`);
   }
@@ -939,7 +930,7 @@ export async function createCompetitorSignalTypeOption(
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { data, error } = await supabase
-    .from("option_competitor_signal_type")
+    .from('option_competitor_signal_type')
     .insert({
       programmatic_name: payload.programmatic_name,
       display_name: payload.display_name,
@@ -971,9 +962,9 @@ export async function updateCompetitorSignalTypeOption(
   if (payload.sort_order !== undefined) updatePayload.sort_order = payload.sort_order;
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
   const { data, error } = await supabase
-    .from("option_competitor_signal_type")
+    .from('option_competitor_signal_type')
     .update(updatePayload)
-    .eq("option_id", optionId)
+    .eq('option_id', optionId)
     .select()
     .single();
   if (error) {
@@ -986,22 +977,20 @@ export async function deleteCompetitorSignalTypeOption(optionId: string): Promis
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { error } = await supabase
-    .from("option_competitor_signal_type")
+    .from('option_competitor_signal_type')
     .delete()
-    .eq("option_id", optionId);
+    .eq('option_id', optionId);
   if (error) {
     throw new Error(`Failed to delete competitor signal type option: ${error.message}`);
   }
 }
 
-export async function createDataSourceOption(
-  input: CreateOptionInput
-): Promise<OptionDataSource> {
+export async function createDataSourceOption(input: CreateOptionInput): Promise<OptionDataSource> {
   const payload = createOptionInputSchema.parse(input);
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { data, error } = await supabase
-    .from("option_data_source")
+    .from('option_data_source')
     .insert({
       programmatic_name: payload.programmatic_name,
       display_name: payload.display_name,
@@ -1033,9 +1022,9 @@ export async function updateDataSourceOption(
   if (payload.sort_order !== undefined) updatePayload.sort_order = payload.sort_order;
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
   const { data, error } = await supabase
-    .from("option_data_source")
+    .from('option_data_source')
     .update(updatePayload)
-    .eq("option_id", optionId)
+    .eq('option_id', optionId)
     .select()
     .single();
   if (error) {
@@ -1047,7 +1036,7 @@ export async function updateDataSourceOption(
 export async function deleteDataSourceOption(optionId: string): Promise<void> {
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
-  const { error } = await supabase.from("option_data_source").delete().eq("option_id", optionId);
+  const { error } = await supabase.from('option_data_source').delete().eq('option_id', optionId);
   if (error) {
     throw new Error(`Failed to delete data source option: ${error.message}`);
   }
@@ -1060,7 +1049,7 @@ export async function createStrategyChangeTypeOption(
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { data, error } = await supabase
-    .from("option_strategy_change_type")
+    .from('option_strategy_change_type')
     .insert({
       programmatic_name: payload.programmatic_name,
       display_name: payload.display_name,
@@ -1092,9 +1081,9 @@ export async function updateStrategyChangeTypeOption(
   if (payload.sort_order !== undefined) updatePayload.sort_order = payload.sort_order;
   if (payload.is_active !== undefined) updatePayload.is_active = payload.is_active;
   const { data, error } = await supabase
-    .from("option_strategy_change_type")
+    .from('option_strategy_change_type')
     .update(updatePayload)
-    .eq("option_id", optionId)
+    .eq('option_id', optionId)
     .select()
     .single();
   if (error) {
@@ -1107,9 +1096,9 @@ export async function deleteStrategyChangeTypeOption(optionId: string): Promise<
   const { supabase } = await getSupabaseContext();
   await assertSystemAdmin(supabase);
   const { error } = await supabase
-    .from("option_strategy_change_type")
+    .from('option_strategy_change_type')
     .delete()
-    .eq("option_id", optionId);
+    .eq('option_id', optionId);
   if (error) {
     throw new Error(`Failed to delete strategy change type option: ${error.message}`);
   }
@@ -1119,17 +1108,25 @@ export async function getStrategyWorkspaceData(): Promise<StrategyWorkspaceData>
   const strategy = await getCompanyStrategy();
   const strategyId = strategy?.strategy_id ?? null;
 
-  const [principles, values, competitors, publicationStatuses, competitorStatuses, signalTypes, dataSources, changeTypes] =
-    await Promise.all([
-      strategyId ? listStrategyPrinciples(strategyId) : Promise.resolve([]),
-      strategyId ? listStrategyValues(strategyId) : Promise.resolve([]),
-      listCompetitors(),
-      listPublicationStatuses(true),
-      listCompetitorStatuses(true),
-      listCompetitorSignalTypes(true),
-      listDataSources(true),
-      listStrategyChangeTypes(true),
-    ]);
+  const [
+    principles,
+    values,
+    competitors,
+    publicationStatuses,
+    competitorStatuses,
+    signalTypes,
+    dataSources,
+    changeTypes,
+  ] = await Promise.all([
+    strategyId ? listStrategyPrinciples(strategyId) : Promise.resolve([]),
+    strategyId ? listStrategyValues(strategyId) : Promise.resolve([]),
+    listCompetitors(),
+    listPublicationStatuses(true),
+    listCompetitorStatuses(true),
+    listCompetitorSignalTypes(true),
+    listDataSources(true),
+    listStrategyChangeTypes(true),
+  ]);
 
   const competitorSignals =
     competitors.length > 0
@@ -1156,5 +1153,3 @@ export async function getStrategyWorkspaceData(): Promise<StrategyWorkspaceData>
     changeTypes,
   };
 }
-
-

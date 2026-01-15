@@ -27,17 +27,17 @@ export default function CreatePersonaPage(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         <div>
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction='row' spacing={2} alignItems='center' justifyContent='space-between'>
+            <Stack direction='row' spacing={2} alignItems='center'>
               <Button
-                variant="outlined"
-                color="neutral"
+                variant='outlined'
+                color='neutral'
                 startDecorator={<ArrowLeftIcon size={16} />}
                 onClick={() => router.push('/strategy-forge/personas')}
               >
                 Back to Personas
               </Button>
-              <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+              <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
                 Create Persona
               </Typography>
             </Stack>
@@ -45,17 +45,17 @@ export default function CreatePersonaPage(): React.JSX.Element {
         </div>
 
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Stack spacing={3} alignItems="center">
-            <Typography level="h3" color="neutral">
+          <Stack spacing={3} alignItems='center'>
+            <Typography level='h3' color='neutral'>
               Create a New Persona
             </Typography>
-            <Typography level="body-lg" color="neutral">
+            <Typography level='body-lg' color='neutral'>
               Use AI to generate a comprehensive persona based on job role and company context
             </Typography>
             <Button
-              variant="solid"
-              color="primary"
-              size="lg"
+              variant='solid'
+              color='primary'
+              size='lg'
               startDecorator={<PlusIcon size={20} />}
               onClick={() => setIsDialogOpen(true)}
             >

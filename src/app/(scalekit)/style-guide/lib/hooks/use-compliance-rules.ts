@@ -6,7 +6,11 @@ import {
   deleteComplianceRule,
   listComplianceRules,
 } from '../api/compliance-rules';
-import type { CreateComplianceRulePayload, UpdateComplianceRulePayload, ListComplianceRulesParams } from '../api/compliance-rules';
+import type {
+  CreateComplianceRulePayload,
+  UpdateComplianceRulePayload,
+  ListComplianceRulesParams,
+} from '../api/compliance-rules';
 import { toast } from '@/components/core/toaster';
 
 export const complianceRuleKeys = {
@@ -53,7 +57,9 @@ export function useUpdateComplianceRule() {
   return useMutation({
     mutationFn: (payload: UpdateComplianceRulePayload) => updateComplianceRule(payload),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: complianceRuleKeys.detail(data.compliance_rule_id) });
+      queryClient.invalidateQueries({
+        queryKey: complianceRuleKeys.detail(data.compliance_rule_id),
+      });
       queryClient.invalidateQueries({ queryKey: complianceRuleKeys.lists() });
       toast.success('Compliance rule updated successfully');
     },
@@ -77,4 +83,3 @@ export function useDeleteComplianceRule() {
     },
   });
 }
-

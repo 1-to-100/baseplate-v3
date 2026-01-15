@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
   Alert,
   Button,
@@ -17,7 +17,7 @@ import {
   Stack,
   Textarea,
   Typography,
-} from "@mui/joy";
+} from '@mui/joy';
 import {
   ArrowCircleUp as ArrowCircleUpIcon,
   ArrowCircleDown as ArrowCircleDownIcon,
@@ -25,8 +25,8 @@ import {
   Plus as PlusIcon,
   Trash as TrashIcon,
   Sparkle as SparkleIcon,
-} from "@phosphor-icons/react/dist/ssr";
-import { useRouter } from "next/navigation";
+} from '@phosphor-icons/react/dist/ssr';
+import { useRouter } from 'next/navigation';
 import {
   useCompanyStrategyQuery,
   useStrategyValuesQuery,
@@ -35,7 +35,7 @@ import {
   useDeleteStrategyValueMutation,
   useStrategyChangeTypesQuery,
   useCreateStrategyChangeLogMutation,
-} from "../../../strategy-forge/lib/api";
+} from '../../../strategy-forge/lib/api';
 
 interface ValueDraft {
   id: string;
@@ -44,13 +44,13 @@ interface ValueDraft {
   description: string;
   order_index: number;
   is_active: boolean;
-  status: "existing" | "new" | "deleted";
+  status: 'existing' | 'new' | 'deleted';
   dirty: boolean;
 }
 
 const SUMMARY_MAX = 120;
 
-function draftsFromValues(values: ReturnType<typeof useStrategyValuesQuery>["data"]): ValueDraft[] {
+function draftsFromValues(values: ReturnType<typeof useStrategyValuesQuery>['data']): ValueDraft[] {
   if (!values) return [];
   return values
     .slice()
@@ -59,10 +59,10 @@ function draftsFromValues(values: ReturnType<typeof useStrategyValuesQuery>["dat
       id: value.value_id,
       value_id: value.value_id,
       name: value.name,
-      description: value.description ?? "",
+      description: value.description ?? '',
       order_index: index,
       is_active: value.is_active,
-      status: "existing",
+      status: 'existing',
       dirty: false,
     }));
 }
@@ -70,7 +70,7 @@ function draftsFromValues(values: ReturnType<typeof useStrategyValuesQuery>["dat
 function reindex(drafts: ValueDraft[]): ValueDraft[] {
   let position = 0;
   return drafts.map((draft) => {
-    if (draft.status === "deleted") {
+    if (draft.status === 'deleted') {
       return draft;
     }
     const updated: ValueDraft = { ...draft };
@@ -87,15 +87,12 @@ export default function ValuesEditorPage(): React.ReactElement {
   const router = useRouter();
   const { data: strategy } = useCompanyStrategyQuery();
   const strategyId = strategy?.strategy_id ?? null;
-  const {
-    data: values,
-    isLoading,
-  } = useStrategyValuesQuery(strategyId);
+  const { data: values, isLoading } = useStrategyValuesQuery(strategyId);
 
   const [drafts, setDrafts] = React.useState<ValueDraft[]>([]);
-  const [changeSummary, setChangeSummary] = React.useState("");
+  const [changeSummary, setChangeSummary] = React.useState('');
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<"idle" | "saving" | "success" | "error">("idle");
+  const [status, setStatus] = React.useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   const createValue = useCreateStrategyValueMutation();
   const updateValue = useUpdateStrategyValueMutation();
@@ -107,18 +104,18 @@ export default function ValuesEditorPage(): React.ReactElement {
     setDrafts(draftsFromValues(values));
   }, [values?.length]);
 
-  const visibleDrafts = drafts.filter((draft) => draft.status !== "deleted");
+  const visibleDrafts = drafts.filter((draft) => draft.status !== 'deleted');
 
   const handleAdd = () => {
     setDrafts((prev) => [
       {
         id: `temp-${Date.now()}`,
         value_id: null,
-        name: "",
-        description: "",
+        name: '',
+        description: '',
         order_index: 0,
         is_active: true,
-        status: "new",
+        status: 'new',
         dirty: true,
       },
       ...reindex(prev),
@@ -128,7 +125,7 @@ export default function ValuesEditorPage(): React.ReactElement {
   const handleMove = (id: string, direction: -1 | 1) => {
     setDrafts((prev) => {
       const list = prev.slice();
-      const visible = list.filter((draft) => draft.status !== "deleted");
+      const visible = list.filter((draft) => draft.status !== 'deleted');
       const currentIndex = visible.findIndex((draft) => draft.id === id);
       if (currentIndex === -1) return prev;
       const targetIndex = currentIndex + direction;
@@ -170,7 +167,7 @@ export default function ValuesEditorPage(): React.ReactElement {
         draft.id === id
           ? {
               ...draft,
-              status: "deleted",
+              status: 'deleted',
               dirty: true,
             }
           : draft
@@ -184,7 +181,7 @@ export default function ValuesEditorPage(): React.ReactElement {
         draft.id === id
           ? {
               ...draft,
-              status: draft.value_id ? "existing" : "new",
+              status: draft.value_id ? 'existing' : 'new',
               dirty: true,
             }
           : draft
@@ -193,17 +190,17 @@ export default function ValuesEditorPage(): React.ReactElement {
   };
 
   const summaryError = !changeSummary.trim()
-    ? "Change summary is required before saving."
+    ? 'Change summary is required before saving.'
     : changeSummary.length > SUMMARY_MAX
-    ? `Summary must be ${SUMMARY_MAX} characters or less.`
-    : null;
+      ? `Summary must be ${SUMMARY_MAX} characters or less.`
+      : null;
 
-  const hasChanges = drafts.some((draft) => draft.dirty || draft.status === "deleted");
+  const hasChanges = drafts.some((draft) => draft.dirty || draft.status === 'deleted');
 
   const handleSave = async () => {
     if (!strategy || !strategyId) return;
     if (!hasChanges) {
-      setErrorMessage("No changes detected.");
+      setErrorMessage('No changes detected.');
       return;
     }
     if (summaryError) {
@@ -212,17 +209,15 @@ export default function ValuesEditorPage(): React.ReactElement {
     }
 
     setErrorMessage(null);
-    setStatus("saving");
+    setStatus('saving');
 
     try {
       const normalized = reindex(drafts);
       setDrafts(normalized);
 
-      const toCreate = normalized.filter((draft) => draft.status === "new");
-      const toUpdate = normalized.filter(
-        (draft) => draft.status === "existing" && draft.dirty
-      );
-      const toDelete = normalized.filter((draft) => draft.status === "deleted" && draft.value_id);
+      const toCreate = normalized.filter((draft) => draft.status === 'new');
+      const toUpdate = normalized.filter((draft) => draft.status === 'existing' && draft.dirty);
+      const toDelete = normalized.filter((draft) => draft.status === 'deleted' && draft.value_id);
 
       for (const draft of toCreate) {
         await createValue.mutateAsync({
@@ -254,8 +249,8 @@ export default function ValuesEditorPage(): React.ReactElement {
       }
 
       const changeType =
-        changeTypes?.find((type) => type.programmatic_name === "reorder_values") ??
-        changeTypes?.find((type) => type.programmatic_name === "edit_value") ??
+        changeTypes?.find((type) => type.programmatic_name === 'reorder_values') ??
+        changeTypes?.find((type) => type.programmatic_name === 'edit_value') ??
         changeTypes?.[0] ??
         null;
 
@@ -266,7 +261,7 @@ export default function ValuesEditorPage(): React.ReactElement {
           summary: changeSummary.trim(),
           justification: null,
           meta: {
-            affected_sections: ["values"],
+            affected_sections: ['values'],
             change_count: {
               created: toCreate.length,
               updated: toUpdate.length,
@@ -276,70 +271,70 @@ export default function ValuesEditorPage(): React.ReactElement {
         });
       }
 
-      setStatus("success");
-      router.push("/strategy-forge/overview");
+      setStatus('success');
+      router.push('/strategy-forge/overview');
     } catch (error) {
-      console.error("Failed to save values", error);
-      setStatus("error");
-      setErrorMessage("Unable to save changes. Please try again.");
+      console.error('Failed to save values', error);
+      setStatus('error');
+      setErrorMessage('Unable to save changes. Please try again.');
     }
   };
 
   const handleCancel = () => {
-    if (hasChanges && !window.confirm("Discard unsaved changes?")) {
+    if (hasChanges && !window.confirm('Discard unsaved changes?')) {
       return;
     }
-    router.push("/strategy-forge/overview");
+    router.push('/strategy-forge/overview');
   };
 
   return (
     <Stack spacing={3}>
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={1}>
-            <Typography level="h1" sx={{ fontSize: "1.5rem" }}>
+            <Typography level='h1' sx={{ fontSize: '1.5rem' }}>
               Edit Values
             </Typography>
-            <Typography level="body-sm" color="neutral">
+            <Typography level='body-sm' color='neutral'>
               Define operating norms that shape culture, planning, and execution.
             </Typography>
           </Stack>
         </CardContent>
       </Card>
 
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={3}>
-            {status === "error" && errorMessage ? (
-              <Alert color="danger" variant="soft">
+            {status === 'error' && errorMessage ? (
+              <Alert color='danger' variant='soft'>
                 {errorMessage}
               </Alert>
             ) : null}
 
-            {status === "success" ? (
-              <Alert color="success" variant="soft">
+            {status === 'success' ? (
+              <Alert color='success' variant='soft'>
                 Values saved successfully.
               </Alert>
             ) : null}
 
             {isLoading && drafts.length === 0 ? (
-              <Stack spacing={2} alignItems="flex-start">
-                <Typography level="body-sm" color="neutral">
+              <Stack spacing={2} alignItems='flex-start'>
+                <Typography level='body-sm' color='neutral'>
                   Loading values…
                 </Typography>
-                <LinearProgress variant="soft" />
+                <LinearProgress variant='soft' />
               </Stack>
             ) : (
               <Stack spacing={2}>
                 <Button
-                  size="sm"
-                  variant="solid"
-                  startDecorator={<PlusIcon size={16} weight="bold" />}
+                  size='sm'
+                  variant='solid'
+                  startDecorator={<PlusIcon size={16} weight='bold' />}
                   onClick={handleAdd}
                   sx={{
-                    backgroundColor: "#292594",
-                    "&:hover": {
-                      backgroundColor: "#221f7b",
+                    backgroundColor: '#292594',
+                    '&:hover': {
+                      backgroundColor: '#221f7b',
                     },
                   }}
                 >
@@ -347,10 +342,10 @@ export default function ValuesEditorPage(): React.ReactElement {
                 </Button>
 
                 {drafts.length === 0 ? (
-                  <Card variant="outlined">
+                  <Card variant='outlined'>
                     <CardContent>
                       <Stack spacing={1}>
-                        <Typography level="body-sm" color="neutral">
+                        <Typography level='body-sm' color='neutral'>
                           No values yet. Add your first value to set clear operating norms.
                         </Typography>
                       </Stack>
@@ -361,67 +356,71 @@ export default function ValuesEditorPage(): React.ReactElement {
                     {drafts.map((draft) => (
                       <Card
                         key={draft.id}
-                        variant={draft.status === "deleted" ? "outlined" : "soft"}
-                        color={draft.status === "deleted" ? "neutral" : "primary"}
-                        sx={{ opacity: draft.status === "deleted" ? 0.6 : 1 }}
+                        variant={draft.status === 'deleted' ? 'outlined' : 'soft'}
+                        color={draft.status === 'deleted' ? 'neutral' : 'primary'}
+                        sx={{ opacity: draft.status === 'deleted' ? 0.6 : 1 }}
                       >
                         <CardContent>
                           <Stack spacing={1.5}>
                             <Stack
-                              direction={{ xs: "column", sm: "row" }}
+                              direction={{ xs: 'column', sm: 'row' }}
                               spacing={1}
-                              alignItems={{ xs: "flex-start", sm: "center" }}
-                              justifyContent="space-between"
+                              alignItems={{ xs: 'flex-start', sm: 'center' }}
+                              justifyContent='space-between'
                             >
-                              <Stack spacing={0.5} flex={1} sx={{ width: "100%" }}>
+                              <Stack spacing={0.5} flex={1} sx={{ width: '100%' }}>
                                 <FormLabel>Value name</FormLabel>
                                 <Input
                                   value={draft.name}
                                   onChange={(event) =>
                                     markDirty(draft.id, { name: event.target.value.slice(0, 120) })
                                   }
-                                  placeholder="Short, memorable value"
-                                  aria-label="Value name"
-                                  disabled={draft.status === "deleted"}
+                                  placeholder='Short, memorable value'
+                                  aria-label='Value name'
+                                  disabled={draft.status === 'deleted'}
                                 />
                               </Stack>
-                              <Stack direction="row" spacing={1} alignItems="center">
+                              <Stack direction='row' spacing={1} alignItems='center'>
                                 <IconButton
-                                  size="sm"
-                                  variant="outlined"
+                                  size='sm'
+                                  variant='outlined'
                                   onClick={() => handleMove(draft.id, -1)}
-                                  disabled={draft.status === "deleted" || visibleDrafts[0]?.id === draft.id}
-                                  aria-label="Move value up"
+                                  disabled={
+                                    draft.status === 'deleted' || visibleDrafts[0]?.id === draft.id
+                                  }
+                                  aria-label='Move value up'
                                 >
-                                  <ArrowCircleUpIcon size={18} weight="bold" />
+                                  <ArrowCircleUpIcon size={18} weight='bold' />
                                 </IconButton>
                                 <IconButton
-                                  size="sm"
-                                  variant="outlined"
+                                  size='sm'
+                                  variant='outlined'
                                   onClick={() => handleMove(draft.id, 1)}
                                   disabled={
-                                    draft.status === "deleted" ||
+                                    draft.status === 'deleted' ||
                                     visibleDrafts[visibleDrafts.length - 1]?.id === draft.id
                                   }
-                                  aria-label="Move value down"
+                                  aria-label='Move value down'
                                 >
-                                  <ArrowCircleDownIcon size={18} weight="bold" />
+                                  <ArrowCircleDownIcon size={18} weight='bold' />
                                 </IconButton>
                                 <IconButton
-                                  size="sm"
-                                  variant="outlined"
-                                  color="danger"
+                                  size='sm'
+                                  variant='outlined'
+                                  color='danger'
                                   onClick={() =>
-                                    draft.status === "deleted"
+                                    draft.status === 'deleted'
                                       ? handleUndoDelete(draft.id)
                                       : handleDelete(draft.id)
                                   }
-                                  aria-label={draft.status === "deleted" ? "Undo removal" : "Remove value"}
+                                  aria-label={
+                                    draft.status === 'deleted' ? 'Undo removal' : 'Remove value'
+                                  }
                                 >
-                                  {draft.status === "deleted" ? (
-                                    <ArrowCounterClockwiseIcon size={18} weight="bold" />
+                                  {draft.status === 'deleted' ? (
+                                    <ArrowCounterClockwiseIcon size={18} weight='bold' />
                                   ) : (
-                                    <TrashIcon size={18} weight="bold" />
+                                    <TrashIcon size={18} weight='bold' />
                                   )}
                                 </IconButton>
                               </Stack>
@@ -431,14 +430,17 @@ export default function ValuesEditorPage(): React.ReactElement {
                               <FormLabel>Value description</FormLabel>
                               <Textarea
                                 value={draft.description}
-                                onChange={(event) => markDirty(draft.id, { description: event.target.value })}
+                                onChange={(event) =>
+                                  markDirty(draft.id, { description: event.target.value })
+                                }
                                 minRows={3}
-                                placeholder="Explain the behaviors and examples that reflect this value."
-                                aria-label="Value description"
-                                disabled={draft.status === "deleted"}
+                                placeholder='Explain the behaviors and examples that reflect this value.'
+                                aria-label='Value description'
+                                disabled={draft.status === 'deleted'}
                               />
                               <FormHelperText>
-                                Include behaviors to encourage, discourage, and the contexts where this value matters most.
+                                Include behaviors to encourage, discourage, and the contexts where
+                                this value matters most.
                               </FormHelperText>
                             </FormControl>
                           </Stack>
@@ -455,34 +457,36 @@ export default function ValuesEditorPage(): React.ReactElement {
               <Input
                 value={changeSummary}
                 onChange={(event) => setChangeSummary(event.target.value.slice(0, SUMMARY_MAX))}
-                placeholder="Summarize the updates to values"
-                aria-label="Change summary"
+                placeholder='Summarize the updates to values'
+                aria-label='Change summary'
                 required
               />
-              <FormHelperText>{SUMMARY_MAX - changeSummary.length} characters remaining</FormHelperText>
+              <FormHelperText>
+                {SUMMARY_MAX - changeSummary.length} characters remaining
+              </FormHelperText>
             </Stack>
           </Stack>
         </CardContent>
       </Card>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent='flex-end'>
         <Button
-          variant="outlined"
-          color="neutral"
+          variant='outlined'
+          color='neutral'
           onClick={handleCancel}
-          startDecorator={<ArrowCounterClockwiseIcon size={16} weight="bold" />}
-          aria-haspopup={hasChanges ? "dialog" : undefined}
-          disabled={status === "saving"}
+          startDecorator={<ArrowCounterClockwiseIcon size={16} weight='bold' />}
+          aria-haspopup={hasChanges ? 'dialog' : undefined}
+          disabled={status === 'saving'}
         >
           Cancel
         </Button>
         <Button
-          variant="solid"
-          color="primary"
+          variant='solid'
+          color='primary'
           onClick={handleSave}
-          disabled={status === "saving" || !hasChanges || Boolean(summaryError)}
-          loading={status === "saving"}
-          startDecorator={<SparkleIcon size={16} weight="bold" />}
+          disabled={status === 'saving' || !hasChanges || Boolean(summaryError)}
+          loading={status === 'saving'}
+          startDecorator={<SparkleIcon size={16} weight='bold' />}
         >
           Save Draft
         </Button>

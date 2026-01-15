@@ -22,7 +22,12 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { Breadcrumbs } from '@mui/joy';
 import { Plus, PencilSimple, Trash, MagnifyingGlass } from '@phosphor-icons/react/dist/ssr';
-import { useComplianceRules, useCreateComplianceRule, useUpdateComplianceRule, useDeleteComplianceRule } from '@/app/(scalekit)/style-guide/lib/hooks';
+import {
+  useComplianceRules,
+  useCreateComplianceRule,
+  useUpdateComplianceRule,
+  useDeleteComplianceRule,
+} from '@/app/(scalekit)/style-guide/lib/hooks';
 import { useActiveStyleGuide } from '@/app/(scalekit)/style-guide/lib/hooks';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { useQuery } from '@tanstack/react-query';
@@ -66,7 +71,9 @@ export default function ComplianceRulesPage(): React.JSX.Element {
   });
 
   const { data: rulesData, isLoading: isLoadingRules } = useComplianceRules(
-    styleGuideId ? { style_guide_id: styleGuideId, severity_level: severityFilter || undefined } : undefined
+    styleGuideId
+      ? { style_guide_id: styleGuideId, severity_level: severityFilter || undefined }
+      : undefined
   );
 
   const isLoading = isUserLoading || isLoadingGuide || isLoadingRules;
@@ -184,8 +191,10 @@ export default function ComplianceRulesPage(): React.JSX.Element {
   if (!isLoading && (!customerId || !styleGuideId)) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert color="warning">
-          <Typography>Please create a style guide first before managing compliance rules.</Typography>
+        <Alert color='warning'>
+          <Typography>
+            Please create a style guide first before managing compliance rules.
+          </Typography>
         </Alert>
       </Box>
     );
@@ -196,27 +205,27 @@ export default function ComplianceRulesPage(): React.JSX.Element {
       <Stack spacing={3}>
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-          <BreadcrumbsItem href="/style-guide/">Style Guide</BreadcrumbsItem>
+          <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
           <Typography>Compliance Rules</Typography>
         </Breadcrumbs>
 
         {/* Page Header */}
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          spacing={2} 
-          justifyContent="space-between" 
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          justifyContent='space-between'
           alignItems={{ xs: 'flex-start', sm: 'center' }}
         >
           <Stack spacing={1}>
-            <Typography level="h1">Compliance Rules</Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='h1'>Compliance Rules</Typography>
+            <Typography level='body-md' color='neutral'>
               Create, edit, and classify rules that block or flag content during composition
             </Typography>
           </Stack>
           <Button
             startDecorator={<Plus />}
             onClick={handleOpenCreate}
-            aria-label="Create compliance rule"
+            aria-label='Create compliance rule'
           >
             New Rule
           </Button>
@@ -226,34 +235,37 @@ export default function ComplianceRulesPage(): React.JSX.Element {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <Input
             startDecorator={<MagnifyingGlass />}
-            placeholder="Search rules..."
+            placeholder='Search rules...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{ flex: 1 }}
-            aria-label="Search compliance rules"
+            aria-label='Search compliance rules'
           />
           <Select
             value={typeFilter || ''}
             onChange={(_event, value) => setTypeFilter(value || null)}
-            placeholder="All Types"
+            placeholder='All Types'
             sx={{ minWidth: 150 }}
-            aria-label="Filter by rule type"
+            aria-label='Filter by rule type'
           >
-            <Option value="">All Types</Option>
+            <Option value=''>All Types</Option>
             {ruleTypes.map((type) => (
-              <Option key={type.compliance_rule_type_option_item_id} value={type.compliance_rule_type_option_item_id}>
+              <Option
+                key={type.compliance_rule_type_option_item_id}
+                value={type.compliance_rule_type_option_item_id}
+              >
                 {type.display_name}
               </Option>
             ))}
           </Select>
-          <Stack direction="row" spacing={1}>
+          <Stack direction='row' spacing={1}>
             {[1, 2, 3].map((severity) => (
               <Chip
                 key={severity}
                 variant={severityFilter === severity ? 'solid' : 'outlined'}
                 color={severityColors[severity]}
                 onClick={() => setSeverityFilter(severityFilter === severity ? null : severity)}
-                role="button"
+                role='button'
                 aria-pressed={severityFilter === severity}
                 aria-label={`Filter by ${severityLabels[severity]} severity`}
               >
@@ -270,7 +282,7 @@ export default function ComplianceRulesPage(): React.JSX.Element {
           </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
-            <Table aria-label="Compliance rules table">
+            <Table aria-label='Compliance rules table'>
               <thead>
                 <tr>
                   <th>Rule Name</th>
@@ -285,7 +297,7 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                 {filteredRules.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
-                      <Typography level="body-md" color="neutral">
+                      <Typography level='body-md' color='neutral'>
                         {searchQuery || severityFilter || typeFilter
                           ? 'No rules match your filters'
                           : 'No compliance rules yet'}
@@ -296,25 +308,31 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                   filteredRules.map((rule) => (
                     <tr key={rule.compliance_rule_id}>
                       <td>
-                        <Typography fontWeight="md">{rule.rule_name || rule.name || '—'}</Typography>
+                        <Typography fontWeight='md'>
+                          {rule.rule_name || rule.name || '—'}
+                        </Typography>
                       </td>
                       <td>
-                        <Typography level="body-sm">
-                          {String((rule.compliance_rule_type_option_item?.display_name as string | undefined) || '—')}
+                        <Typography level='body-sm'>
+                          {String(
+                            (rule.compliance_rule_type_option_item?.display_name as
+                              | string
+                              | undefined) || '—'
+                          )}
                         </Typography>
                       </td>
                       <td>
                         <Chip
                           color={severityColors[rule.severity_level || 1]}
-                          size="sm"
-                          variant="soft"
+                          size='sm'
+                          variant='soft'
                         >
                           {severityLabels[rule.severity_level || 1]}
                         </Chip>
                       </td>
                       <td>
                         <Typography
-                          level="body-sm"
+                          level='body-sm'
                           sx={{
                             maxWidth: 300,
                             overflow: 'hidden',
@@ -326,25 +344,25 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                         </Typography>
                       </td>
                       <td>
-                        <Typography level="body-sm">
+                        <Typography level='body-sm'>
                           {new Date(rule.created_at).toLocaleDateString()}
                         </Typography>
                       </td>
                       <td>
-                        <Stack direction="row" spacing={1}>
+                        <Stack direction='row' spacing={1}>
                           <IconButton
-                            size="sm"
-                            variant="plain"
-                            color="neutral"
+                            size='sm'
+                            variant='plain'
+                            color='neutral'
                             onClick={() => handleOpenEdit(rule.compliance_rule_id)}
                             aria-label={`Edit ${rule.rule_name || rule.name || 'rule'}`}
                           >
                             <PencilSimple />
                           </IconButton>
                           <IconButton
-                            size="sm"
-                            variant="plain"
-                            color="danger"
+                            size='sm'
+                            variant='plain'
+                            color='danger'
                             onClick={() => handleDelete(rule.compliance_rule_id)}
                             aria-label={`Delete ${rule.rule_name || rule.name || 'rule'}`}
                           >
@@ -364,13 +382,13 @@ export default function ComplianceRulesPage(): React.JSX.Element {
       {/* Create/Edit Modal */}
       <Modal open={openModal} onClose={handleCloseModal}>
         <ModalDialog
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="compliance-rule-modal-title"
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='compliance-rule-modal-title'
           sx={{ minWidth: 600 }}
         >
           <ModalClose />
-          <Typography id="compliance-rule-modal-title" level="h2">
+          <Typography id='compliance-rule-modal-title' level='h2'>
             {editingRule ? 'Edit Compliance Rule' : 'Create Compliance Rule'}
           </Typography>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -379,13 +397,13 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                 <FormLabel>Rule Name *</FormLabel>
                 <Input
                   {...register('name')}
-                  placeholder="Enter rule name"
-                  aria-label="Rule name"
+                  placeholder='Enter rule name'
+                  aria-label='Rule name'
                   aria-describedby={errors.name ? 'name-error' : undefined}
-                  aria-required="true"
+                  aria-required='true'
                 />
                 {errors.name && (
-                  <FormHelperText id="name-error">{errors.name.message}</FormHelperText>
+                  <FormHelperText id='name-error'>{errors.name.message}</FormHelperText>
                 )}
               </FormControl>
 
@@ -396,8 +414,8 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                   onChange={(_event, value) =>
                     setValue('compliance_rule_type_option_item_id', value || null)
                   }
-                  placeholder="Select rule type"
-                  aria-label="Rule type"
+                  placeholder='Select rule type'
+                  aria-label='Rule type'
                 >
                   {ruleTypes.map((type) => (
                     <Option
@@ -410,17 +428,19 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                 </Select>
               </FormControl>
 
-              <Stack direction="row" spacing={2}>
+              <Stack direction='row' spacing={2}>
                 <FormControl sx={{ flex: 1 }}>
                   <FormLabel>Severity</FormLabel>
                   <Select
                     value={watch('severity_level')?.toString() || '1'}
-                    onChange={(_event, value) => setValue('severity_level', parseInt(value || '1', 10))}
-                    aria-label="Severity level"
+                    onChange={(_event, value) =>
+                      setValue('severity_level', parseInt(value || '1', 10))
+                    }
+                    aria-label='Severity level'
                   >
-                    <Option value="1">Info</Option>
-                    <Option value="2">Warning</Option>
-                    <Option value="3">Blocker</Option>
+                    <Option value='1'>Info</Option>
+                    <Option value='2'>Warning</Option>
+                    <Option value='3'>Blocker</Option>
                   </Select>
                 </FormControl>
               </Stack>
@@ -429,18 +449,18 @@ export default function ComplianceRulesPage(): React.JSX.Element {
                 <FormLabel>Suggested Replacement</FormLabel>
                 <Textarea
                   {...register('rule_replacement')}
-                  placeholder="Enter suggested replacement text or strategy"
+                  placeholder='Enter suggested replacement text or strategy'
                   minRows={3}
-                  aria-label="Suggested replacement"
+                  aria-label='Suggested replacement'
                 />
               </FormControl>
 
-              <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-                <Button variant="outlined" onClick={handleCloseModal}>
+              <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end' }}>
+                <Button variant='outlined' onClick={handleCloseModal}>
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
                 >
                   {editingRule ? 'Update' : 'Create'}
@@ -453,4 +473,3 @@ export default function ComplianceRulesPage(): React.JSX.Element {
     </Box>
   );
 }
-

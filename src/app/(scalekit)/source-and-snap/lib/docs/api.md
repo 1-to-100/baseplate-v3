@@ -5,6 +5,7 @@ This document describes the API layer for the Source & Snap feature, including d
 ## Overview
 
 The Source & Snap API provides CRUD operations for:
+
 - **Device Profile Options** (System-scoped): Device profiles for standardized web captures
 - **Capture Requests** (Customer-scoped): User-initiated requests to capture web pages
 - **Captures** (Customer-scoped): Processed capture artifacts with screenshots and source assets
@@ -95,6 +96,7 @@ interface WebScreenshotCapture {
 Fetch all device profile options with optional filtering.
 
 **Parameters:**
+
 - `params.is_active?: boolean` - Filter by active status
 - `params.is_mobile?: boolean` - Filter by mobile devices
 - `params.sort_by?: 'sort_order' | 'display_name' | 'created_at'` - Sort field
@@ -103,6 +105,7 @@ Fetch all device profile options with optional filtering.
 **Returns:** `Promise<DeviceProfileOption[]>`
 
 **Example:**
+
 ```typescript
 const profiles = await getDeviceProfileOptions({ is_active: true, is_mobile: false });
 ```
@@ -112,6 +115,7 @@ const profiles = await getDeviceProfileOptions({ is_active: true, is_mobile: fal
 Fetch a single device profile by ID.
 
 **Parameters:**
+
 - `id: string` - Device profile UUID
 
 **Returns:** `Promise<DeviceProfileOption>`
@@ -121,6 +125,7 @@ Fetch a single device profile by ID.
 Fetch a device profile by its programmatic name.
 
 **Parameters:**
+
 - `name: string` - Programmatic name (e.g., "desktop_1440_900")
 
 **Returns:** `Promise<DeviceProfileOption | null>`
@@ -130,11 +135,13 @@ Fetch a device profile by its programmatic name.
 Create a new device profile option.
 
 **Parameters:**
+
 - `payload: CreateDeviceProfileOptionPayload`
 
 **Returns:** `Promise<DeviceProfileOption>`
 
 **Example:**
+
 ```typescript
 const profile = await createDeviceProfileOption({
   programmatic_name: 'desktop_1920_1080',
@@ -151,6 +158,7 @@ const profile = await createDeviceProfileOption({
 Update an existing device profile option.
 
 **Parameters:**
+
 - `id: string` - Device profile UUID
 - `payload: UpdateDeviceProfileOptionPayload`
 
@@ -161,6 +169,7 @@ Update an existing device profile option.
 Delete a device profile option.
 
 **Parameters:**
+
 - `id: string` - Device profile UUID
 
 **Returns:** `Promise<void>`
@@ -172,6 +181,7 @@ Delete a device profile option.
 Fetch a paginated list of capture requests for the current customer.
 
 **Parameters:**
+
 - `params.page?: number` - Page number (default: 1)
 - `params.perPage?: number` - Items per page (default: 10)
 - `params.status?: 'queued' | 'in_progress' | 'completed' | 'failed' | 'canceled'` - Filter by status
@@ -184,6 +194,7 @@ Fetch a paginated list of capture requests for the current customer.
 **Returns:** `Promise<GetCaptureRequestsResponse>`
 
 **Example:**
+
 ```typescript
 const result = await getCaptureRequestsList({
   page: 1,
@@ -197,6 +208,7 @@ const result = await getCaptureRequestsList({
 Fetch a single capture request by ID.
 
 **Parameters:**
+
 - `id: string` - Capture request UUID
 
 **Returns:** `Promise<WebScreenshotCaptureRequest>`
@@ -206,6 +218,7 @@ Fetch a single capture request by ID.
 Create a new capture request.
 
 **Parameters:**
+
 - `payload: CreateCaptureRequestPayload`
   - `requested_url: string` - URL to capture (required)
   - `device_profile_id?: string | null` - Device profile UUID (optional)
@@ -216,6 +229,7 @@ Create a new capture request.
 **Returns:** `Promise<WebScreenshotCaptureRequest>`
 
 **Example:**
+
 ```typescript
 const request = await createCaptureRequest({
   requested_url: 'https://example.com',
@@ -230,6 +244,7 @@ const request = await createCaptureRequest({
 Update a capture request (typically used by workers to update status).
 
 **Parameters:**
+
 - `id: string` - Capture request UUID
 - `payload: UpdateCaptureRequestPayload`
 
@@ -240,6 +255,7 @@ Update a capture request (typically used by workers to update status).
 Delete a capture request (only by the user who created it).
 
 **Parameters:**
+
 - `id: string` - Capture request UUID
 
 **Returns:** `Promise<void>`
@@ -251,6 +267,7 @@ Delete a capture request (only by the user who created it).
 Fetch a paginated list of captures for the current customer.
 
 **Parameters:**
+
 - `params.page?: number` - Page number (default: 1)
 - `params.perPage?: number` - Items per page (default: 10)
 - `params.device_profile_id?: string | null` - Filter by device profile
@@ -266,6 +283,7 @@ Fetch a paginated list of captures for the current customer.
 Fetch a single capture by ID.
 
 **Parameters:**
+
 - `id: string` - Capture UUID
 
 **Returns:** `Promise<WebScreenshotCapture>`
@@ -275,6 +293,7 @@ Fetch a single capture by ID.
 Create a new capture artifact (typically called by workers after capture completes).
 
 **Parameters:**
+
 - `payload: CreateCapturePayload`
   - `customer_id: string` - Customer UUID (required)
   - `screenshot_storage_path: string` - Path to screenshot (required)
@@ -288,6 +307,7 @@ Create a new capture artifact (typically called by workers after capture complet
 Update a capture artifact.
 
 **Parameters:**
+
 - `id: string` - Capture UUID
 - `payload: UpdateCapturePayload`
 
@@ -298,6 +318,7 @@ Update a capture artifact.
 Delete a capture artifact.
 
 **Parameters:**
+
 - `id: string` - Capture UUID
 
 **Returns:** `Promise<void>`
@@ -444,6 +465,7 @@ try {
 ### Status Values
 
 Capture request status can be one of:
+
 - `queued` - Request is queued and waiting to be processed
 - `in_progress` - Capture is currently being processed
 - `completed` - Capture completed successfully
@@ -453,9 +475,9 @@ Capture request status can be one of:
 ### Capture Metadata
 
 The `capture_meta` field is a JSONB object that can contain:
+
 - `user_agent`: User agent string used for capture
 - `final_url`: Final URL after redirects
 - `http_status`: HTTP status code
 - `response_headers`: Summary of response headers
 - `design_tokens`: Extracted design tokens (colors, fonts, etc.)
-

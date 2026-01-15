@@ -7,9 +7,11 @@ The Style Guide feature combines both **Written Style Guide (VoiceOS)** and **Vi
 This feature centralizes a company's communication rules—both written and visual—into machine-readable style guides that ensure consistency across all content creation, AI generation, and brand touchpoints.
 
 ### Written Style Guide (VoiceOS)
+
 Codifies brand personality, voice attributes, approved/prohibited vocabulary, framing metaphors, inclusivity constraints, pacing, sentence-length preferences, and compliance rules.
 
 ### Visual Style Guide (VisualOS)
+
 Manages visual brand identity including color palettes, typography styles, logo assets, and social media templates.
 
 ## Directory Structure
@@ -88,9 +90,11 @@ Manages visual brand identity including color palettes, typography styles, logo 
 ### Written Style Guide Tables
 
 **Primary Table:**
+
 - `style_guides` - Customer-scoped written style guides
 
 **Secondary Tables:**
+
 - `framing_concepts` - Metaphors and framing options
 - `compliance_rules` - Compliance rules and validation
 - `vocabulary_entries` - Preferred/prohibited terms
@@ -99,6 +103,7 @@ Manages visual brand identity including color palettes, typography styles, logo 
 - `compliance_reviews` - Review workflow records
 
 **Option Singleton Tables:**
+
 - `language_level_option_items` - Reading level complexity
 - `use_of_jargon_option_items` - Jargon usage policies
 - `storytelling_option_items` - Storytelling styles
@@ -117,10 +122,10 @@ Manages visual brand identity including color palettes, typography styles, logo 
 ### Written Style Guide Example
 
 ```typescript
-import { 
-  getStyleGuideById, 
+import {
+  getStyleGuideById,
   createStyleGuide,
-  useActiveStyleGuide 
+  useActiveStyleGuide,
 } from '@/app/(scalekit)/style-guide';
 
 // Get active style guide (hook)
@@ -139,10 +144,7 @@ const newGuide = await createStyleGuide({
 ### Visual Style Guide Example
 
 ```typescript
-import { 
-  useVisualStyleGuides,
-  useCreatePaletteColor 
-} from '@/app/(scalekit)/style-guide';
+import { useVisualStyleGuides, useCreatePaletteColor } from '@/app/(scalekit)/style-guide';
 
 // Get visual style guides
 const { data: guides, isLoading } = useVisualStyleGuides();
@@ -167,13 +169,13 @@ import type {
   FramingConcept,
   ComplianceRule,
   VocabularyEntry,
-  
+
   // Visual Style Guide types
   VisualStyleGuide,
   LogoAsset,
   PaletteColor,
   TypographyStyle,
-  
+
   // Payload types
   CreateStyleGuidePayload,
   UpdateStyleGuidePayload,
@@ -183,6 +185,7 @@ import type {
 ## Key Features
 
 ### Written Style Guide (VoiceOS)
+
 - ✅ Machine-readable brand voice definition
 - ✅ Vocabulary management (preferred/prohibited)
 - ✅ Framing concepts and metaphors
@@ -190,6 +193,7 @@ import type {
 - ✅ Real-time content evaluation
 
 ### Visual Style Guide (VisualOS)
+
 - ✅ Color palette management
 - ✅ Typography system definition
 - ✅ Logo asset library
@@ -233,12 +237,14 @@ These pages test all API functions, RLS policies, and database schema integrity.
 ## Routes
 
 ### Written Style Guide
+
 - `/style-guide/pages/style-guide` - Main editor
 - `/style-guide/pages/compliance-rules` - Rules management
 - `/style-guide/pages/vocabulary` - Vocabulary management
 - `/style-guide/pages/framing-concepts` - Framing concepts
 
 ### Visual Style Guide
+
 - `/style-guide/pages/visual-guides/create` - Create visual guide
 - `/style-guide/pages/visual-guides/[guideId]` - Edit visual guide
 - `/style-guide/pages/visual-guides/[guideId]/colors` - Color palette

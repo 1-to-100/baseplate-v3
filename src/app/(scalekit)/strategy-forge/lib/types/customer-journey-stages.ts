@@ -46,4 +46,3 @@ export interface GetCustomerJourneyStagesResponse {
   data: CustomerJourneyStage[];
   count: number;
 }
-

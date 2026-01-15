@@ -58,13 +58,10 @@ Deno.serve(async (req) => {
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create Supabase client with auth context
@@ -81,7 +78,7 @@ Deno.serve(async (req) => {
 
     // Extract token and authenticate user
     const token = authHeader.replace('Bearer ', '');
-    
+
     const {
       data: { user },
       error: userError,
@@ -90,22 +87,25 @@ Deno.serve(async (req) => {
     if (userError || !user) {
       console.error('Authentication failed:', userError?.message);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Authentication required',
-          message: 'You must be signed in to use this function'
+          message: 'You must be signed in to use this function',
         }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     console.log('Authenticated user:', user.id);
-    
+
     // Verify auth.uid() is accessible (needed for Storage RLS)
     // The Authorization header passed to createClient should ensure auth.uid() is set
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
     if (sessionError) {
       console.error('Error getting session:', sessionError);
     } else if (session) {
@@ -125,15 +125,15 @@ Deno.serve(async (req) => {
     if (!web_screenshot_capture_request_id) {
       return new Response(
         JSON.stringify({ error: 'web_screenshot_capture_request_id is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     console.log('Processing capture request:', web_screenshot_capture_request_id);
-    
+
     // Store request ID for error handling
     requestId = web_screenshot_capture_request_id;
 
@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
     // Update request status to in_progress
     await supabase
       .from('web_screenshot_capture_requests')
-      .update({ 
+      .update({
         status: 'in_progress',
         started_at: new Date().toISOString(),
       })
@@ -225,11 +225,14 @@ Deno.serve(async (req) => {
     // Browserless API configuration
     // Connect to Browserless via WebSocket endpoint
     // Set BROWSERLESS_TOKEN as environment variable (BROWSERLESS_URL is optional)
-    const browserlessToken = Deno.env.get('BROWSERLESS_TOKEN') || Deno.env.get('PUPPETEER_BROWSERLESS_IO_KEY') || '';
+    const browserlessToken =
+      Deno.env.get('BROWSERLESS_TOKEN') || Deno.env.get('PUPPETEER_BROWSERLESS_IO_KEY') || '';
     const browserlessWsUrl = Deno.env.get('BROWSERLESS_WS_URL') || 'wss://chrome.browserless.io';
 
     if (!browserlessToken) {
-      throw new Error('BROWSERLESS_TOKEN or PUPPETEER_BROWSERLESS_IO_KEY environment variable is required');
+      throw new Error(
+        'BROWSERLESS_TOKEN or PUPPETEER_BROWSERLESS_IO_KEY environment variable is required'
+      );
     }
 
     console.log('Taking screenshot of:', captureRequest.requested_url);
@@ -240,7 +243,7 @@ Deno.serve(async (req) => {
     let browser;
     let page;
     let isIntentionallyDisconnecting = false;
-    
+
     try {
       browser = await puppeteer.connect({
         browserWSEndpoint: `${browserlessWsUrl}?token=${browserlessToken}`,
@@ -253,7 +256,7 @@ Deno.serve(async (req) => {
       }
 
       page = await browser.newPage();
-      
+
       // Set up error handlers to catch unexpected disconnection
       // Only log as error if we're not intentionally disconnecting
       browser.on('disconnected', () => {
@@ -271,7 +274,9 @@ Deno.serve(async (req) => {
       });
     } catch (connectionError) {
       console.error('Failed to connect to browser:', connectionError);
-      throw new Error(`Failed to connect to Browserless: ${connectionError instanceof Error ? connectionError.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to connect to Browserless: ${connectionError instanceof Error ? connectionError.message : 'Unknown error'}`
+      );
     }
 
     try {
@@ -293,13 +298,14 @@ Deno.serve(async (req) => {
         page.on('request', (request) => {
           const url = request.url();
           const resourceType = request.resourceType();
-          if (resourceType === 'image' && (
-            url.includes('doubleclick') || 
-            url.includes('google-analytics') || 
-            url.includes('googletagmanager') || 
-            url.includes('facebook') || 
-            url.includes('analytics')
-          )) {
+          if (
+            resourceType === 'image' &&
+            (url.includes('doubleclick') ||
+              url.includes('google-analytics') ||
+              url.includes('googletagmanager') ||
+              url.includes('facebook') ||
+              url.includes('analytics'))
+          ) {
             request.abort();
           } else {
             request.continue();
@@ -311,7 +317,7 @@ Deno.serve(async (req) => {
       let response;
       let navigationAttempts = 0;
       const maxNavigationAttempts = 3;
-      
+
       while (navigationAttempts < maxNavigationAttempts) {
         try {
           // Check if browser is still connected before navigation
@@ -329,21 +335,30 @@ Deno.serve(async (req) => {
           break; // Success, exit retry loop
         } catch (navError) {
           navigationAttempts++;
-          const errorMessage = navError instanceof Error ? navError.message : 'Unknown navigation error';
-          
-          if (errorMessage.includes('browser has disconnected') || errorMessage.includes('Target closed')) {
+          const errorMessage =
+            navError instanceof Error ? navError.message : 'Unknown navigation error';
+
+          if (
+            errorMessage.includes('browser has disconnected') ||
+            errorMessage.includes('Target closed')
+          ) {
             if (navigationAttempts >= maxNavigationAttempts) {
-              throw new Error(`Navigation failed after ${maxNavigationAttempts} attempts: ${errorMessage}`);
+              throw new Error(
+                `Navigation failed after ${maxNavigationAttempts} attempts: ${errorMessage}`
+              );
             }
-            console.warn(`Navigation attempt ${navigationAttempts} failed, retrying...`, errorMessage);
-            
+            console.warn(
+              `Navigation attempt ${navigationAttempts} failed, retrying...`,
+              errorMessage
+            );
+
             // Try to reconnect if browser disconnected
             try {
               await page.close();
             } catch (closeError) {
               // Ignore close errors
             }
-            
+
             // Reconnect browser
             try {
               browser = await puppeteer.connect({
@@ -351,42 +366,45 @@ Deno.serve(async (req) => {
                 defaultViewport: null,
               });
               page = await browser.newPage();
-              
+
               // Re-setup viewport and user agent
               await page.setViewport({
                 width: viewportWidth,
                 height: viewportHeight,
                 deviceScaleFactor: devicePixelRatio,
               });
-              
+
               if (userAgent) {
                 await page.setUserAgent(userAgent);
               }
-              
+
               // Re-setup request interception if needed
               if (captureRequest.block_tracking) {
                 await page.setRequestInterception(true);
                 page.on('request', (request) => {
                   const url = request.url();
                   const resourceType = request.resourceType();
-                  if (resourceType === 'image' && (
-                    url.includes('doubleclick') || 
-                    url.includes('google-analytics') || 
-                    url.includes('googletagmanager') || 
-                    url.includes('facebook') || 
-                    url.includes('analytics')
-                  )) {
+                  if (
+                    resourceType === 'image' &&
+                    (url.includes('doubleclick') ||
+                      url.includes('google-analytics') ||
+                      url.includes('googletagmanager') ||
+                      url.includes('facebook') ||
+                      url.includes('analytics'))
+                  ) {
                     request.abort();
                   } else {
                     request.continue();
                   }
                 });
               }
-              
+
               // Wait a bit before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             } catch (reconnectError) {
-              throw new Error(`Failed to reconnect browser: ${reconnectError instanceof Error ? reconnectError.message : 'Unknown error'}`);
+              throw new Error(
+                `Failed to reconnect browser: ${reconnectError instanceof Error ? reconnectError.message : 'Unknown error'}`
+              );
             }
           } else {
             // Other navigation errors, don't retry
@@ -402,10 +420,10 @@ Deno.serve(async (req) => {
       await page.waitForTimeout(2000);
 
       // Take screenshot
-      const screenshot = await page.screenshot({
+      const screenshot = (await page.screenshot({
         fullPage: captureRequest.full_page,
         type: 'png',
-      }) as Uint8Array;
+      })) as Uint8Array;
 
       // Extract HTML and CSS if requested
       let htmlContent: string | null = null;
@@ -418,10 +436,10 @@ Deno.serve(async (req) => {
         cssContent = await page.evaluate(() => {
           const stylesheets = Array.from(document.styleSheets);
           let cssText = '';
-          stylesheets.forEach(sheet => {
+          stylesheets.forEach((sheet) => {
             try {
               const rules = Array.from(sheet.cssRules || []);
-              rules.forEach(rule => {
+              rules.forEach((rule) => {
                 cssText += rule.cssText + '\n';
               });
             } catch (e) {
@@ -434,13 +452,15 @@ Deno.serve(async (req) => {
 
       // Calculate page height
       const pageHeight = captureRequest.full_page
-        ? await page.evaluate(() => Math.max(
-            document.body.scrollHeight,
-            document.body.offsetHeight,
-            document.documentElement.clientHeight,
-            document.documentElement.scrollHeight,
-            document.documentElement.offsetHeight
-          ))
+        ? await page.evaluate(() =>
+            Math.max(
+              document.body.scrollHeight,
+              document.body.offsetHeight,
+              document.documentElement.clientHeight,
+              document.documentElement.scrollHeight,
+              document.documentElement.offsetHeight
+            )
+          )
         : viewportHeight;
 
       // Convert screenshot to buffer
@@ -454,7 +474,10 @@ Deno.serve(async (req) => {
       const storagePath = `${captureRequest.customer_id}/${filename}`;
 
       // Verify auth context is properly set for Storage
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
       console.log('Preparing to upload screenshot:', {
         storagePath,
         customerId: captureRequest.customer_id,
@@ -512,14 +535,14 @@ Deno.serve(async (req) => {
           name: uploadError.name,
           error: JSON.stringify(uploadError, null, 2),
         });
-        
+
         // Try to get more info about the user context
         const { data: sessionData } = await supabase.auth.getSession();
         console.error('Current session:', {
           hasSession: !!sessionData?.session,
           userId: sessionData?.session?.user?.id,
         });
-        
+
         throw new Error(`Failed to upload screenshot: ${uploadError.message}`);
       }
 
@@ -555,7 +578,7 @@ Deno.serve(async (req) => {
           web_screenshot_capture_request_id: captureRequest.web_screenshot_capture_request_id,
           options_device_profile_id: captureRequest.device_profile_id,
           page_title: pageTitle,
-              screenshot_storage_path: screenshotStoragePath,
+          screenshot_storage_path: screenshotStoragePath,
           screenshot_width: screenshotWidth,
           screenshot_height: screenshotHeight,
           screenshot_size_bytes: screenshotSizeBytes,
@@ -577,7 +600,7 @@ Deno.serve(async (req) => {
       // Update request status to completed
       await supabase
         .from('web_screenshot_capture_requests')
-        .update({ 
+        .update({
           status: 'completed',
           finished_at: new Date().toISOString(),
         })
@@ -585,46 +608,47 @@ Deno.serve(async (req) => {
 
       console.log('=== CAPTURE WEB SCREENSHOT COMPLETED ===');
 
-          // Generate a signed URL for the response (valid for 1 hour)
-          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-            .from('screenshots')
-            .createSignedUrl(storagePath, 3600);
+      // Generate a signed URL for the response (valid for 1 hour)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('screenshots')
+        .createSignedUrl(storagePath, 3600);
 
-          const screenshotUrl = signedUrlData?.signedUrl || storagePath;
+      const screenshotUrl = signedUrlData?.signedUrl || storagePath;
 
-          return new Response(
-            JSON.stringify({ 
-              success: true,
-              capture_id: captureRecord.web_screenshot_capture_id,
-              screenshot_url: screenshotUrl,
-            }),
-            { 
-              status: 200, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          capture_id: captureRecord.web_screenshot_capture_id,
+          screenshot_url: screenshotUrl,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     } finally {
       // Clean up: close page and browser connection
       // Mark that we're intentionally disconnecting to avoid false error logs
       isIntentionallyDisconnecting = true;
-      
+
       try {
         if (page && !page.isClosed()) {
-          await page.close().catch(err => console.warn('Error closing page:', err));
+          await page.close().catch((err) => console.warn('Error closing page:', err));
         }
       } catch (pageError) {
         console.warn('Error closing page:', pageError);
       }
-      
+
       try {
         if (browser && browser.isConnected()) {
-          await browser.disconnect().catch(err => console.warn('Error disconnecting browser:', err));
+          await browser
+            .disconnect()
+            .catch((err) => console.warn('Error disconnecting browser:', err));
         }
       } catch (browserError) {
         console.warn('Error disconnecting browser:', browserError);
       }
     }
-
   } catch (error) {
     console.error('Error in capture-web-screenshot:', error);
 
@@ -635,17 +659,15 @@ Deno.serve(async (req) => {
         // Use service role key for error updates (bypasses RLS)
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
         if (serviceRoleKey) {
-          const adminSupabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            serviceRoleKey,
-          );
+          const adminSupabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceRoleKey);
 
           await adminSupabase
             .from('web_screenshot_capture_requests')
-            .update({ 
+            .update({
               status: 'failed',
               finished_at: new Date().toISOString(),
-              error_message: error instanceof Error ? error.message.substring(0, 1000) : 'Unknown error',
+              error_message:
+                error instanceof Error ? error.message.substring(0, 1000) : 'Unknown error',
             })
             .eq('web_screenshot_capture_request_id', requestId);
         }
@@ -655,15 +677,14 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Failed to capture screenshot',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
 });
-

@@ -64,13 +64,17 @@ export function useCreateLogoAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewLogoAsset, 'logo_asset_id' | 'customer_id' | 'created_at'>) => {
+    mutationFn: async (
+      input: Omit<NewLogoAsset, 'logo_asset_id' | 'customer_id' | 'created_at'>
+    ) => {
       const result = await createLogoAsset(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
       toast.success('Logo asset uploaded successfully');
     },
@@ -90,7 +94,9 @@ export function useUpdateLogoAsset() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.detail(String(data.logo_asset_id)) });
       toast.success('Logo asset updated successfully');
     },
@@ -184,7 +190,7 @@ export function useSaveGeneratedLogo() {
       visualStyleGuideId: string;
       logoUrl: string;
       logoTypeOptionId?: string;
-      allLogoUrls?: string[];  // All generated logos to store as presets
+      allLogoUrls?: string[]; // All generated logos to store as presets
     }): Promise<SaveGeneratedLogoResponse> => {
       const supabase = createClient();
 
@@ -213,7 +219,9 @@ export function useSaveGeneratedLogo() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(variables.visualStyleGuideId) });
       queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: logoAssetKeys.presets(variables.visualStyleGuideId) });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.presets(variables.visualStyleGuideId),
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to save generated logo');

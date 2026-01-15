@@ -18,10 +18,20 @@ import Button from '@mui/joy/Button';
 import { toast } from '@/components/core/toaster';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { createCustomerJourneyStage, updateCustomerJourneyStage, getCustomerJourneyStagesList } from '../api';
-import { createCustomerJourneyStageSchema, updateCustomerJourneyStageSchema } from '../schemas/customer-journey-stages';
+import {
+  createCustomerJourneyStage,
+  updateCustomerJourneyStage,
+  getCustomerJourneyStagesList,
+} from '../api';
+import {
+  createCustomerJourneyStageSchema,
+  updateCustomerJourneyStageSchema,
+} from '../schemas/customer-journey-stages';
 import type { CustomerJourneyStage, JourneyPhaseType } from '../types';
-import type { CreateCustomerJourneyStageFormData, UpdateCustomerJourneyStageFormData } from '../schemas/customer-journey-stages';
+import type {
+  CreateCustomerJourneyStageFormData,
+  UpdateCustomerJourneyStageFormData,
+} from '../schemas/customer-journey-stages';
 
 interface CreateEditStageModalProps {
   open: boolean;
@@ -46,7 +56,7 @@ export function CreateEditStageModal({
   isCreating,
 }: CreateEditStageModalProps): React.JSX.Element {
   const queryClient = useQueryClient();
-  
+
   const {
     register,
     handleSubmit,
@@ -55,7 +65,9 @@ export function CreateEditStageModal({
     setValue,
     watch,
   } = useForm<CreateCustomerJourneyStageFormData | UpdateCustomerJourneyStageFormData>({
-    resolver: zodResolver(isCreating ? createCustomerJourneyStageSchema : updateCustomerJourneyStageSchema),
+    resolver: zodResolver(
+      isCreating ? createCustomerJourneyStageSchema : updateCustomerJourneyStageSchema
+    ),
     defaultValues: {
       journey_phase: 'Marketing',
       name: '',
@@ -77,7 +89,7 @@ export function CreateEditStageModal({
       if (stages.length === 0) {
         return 1;
       }
-      const maxOrderIndex = Math.max(...stages.map(stage => stage.order_index || 0));
+      const maxOrderIndex = Math.max(...stages.map((stage) => stage.order_index || 0));
       return maxOrderIndex + 1;
     } catch (error) {
       console.error('Error getting next order index:', error);
@@ -115,7 +127,9 @@ export function CreateEditStageModal({
       onSuccess();
     },
     onError: (error) => {
-      toast.error(`Failed to create stage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to create stage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
@@ -128,30 +142,37 @@ export function CreateEditStageModal({
       onSuccess();
     },
     onError: (error) => {
-      toast.error(`Failed to update stage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to update stage: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
-  const onSubmit = async (data: CreateCustomerJourneyStageFormData | UpdateCustomerJourneyStageFormData) => {
+  const onSubmit = async (
+    data: CreateCustomerJourneyStageFormData | UpdateCustomerJourneyStageFormData
+  ) => {
     if (isCreating) {
       // Ensure required fields are present
       if (!data.name || !data.journey_phase) {
         toast.error('Name and Journey Phase are required');
         return;
       }
-      
+
       // Auto-generate code from name (lowercase)
-      const generatedCode = data.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      
+      const generatedCode = data.name
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
       // Auto-generate order index
       const nextOrderIndex = await getNextOrderIndex(data.journey_phase);
-      
+
       const createData = {
         ...data,
         code: generatedCode,
         order_index: nextOrderIndex,
       };
-      
+
       createMutation.mutate(createData as CreateCustomerJourneyStageFormData);
     } else if (stage) {
       // For edit mode, use the user-provided code (no auto-generation)
@@ -167,7 +188,7 @@ export function CreateEditStageModal({
   return (
     <Modal open={open} onClose={onClose}>
       <ModalDialog
-        aria-labelledby="create-edit-stage-modal"
+        aria-labelledby='create-edit-stage-modal'
         sx={{
           maxWidth: 600,
           width: '100%',
@@ -176,10 +197,10 @@ export function CreateEditStageModal({
         }}
       >
         <ModalClose />
-        <Typography id="create-edit-stage-modal" level="h2">
+        <Typography id='create-edit-stage-modal' level='h2'>
           {isCreating ? 'Create New Stage' : 'Edit Stage'}
         </Typography>
-        
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={3} sx={{ mt: 2 }}>
             <FormControl error={!!errors.journey_phase}>
@@ -187,7 +208,7 @@ export function CreateEditStageModal({
               <Select
                 value={watch('journey_phase')}
                 onChange={(_, value) => setValue('journey_phase', value as JourneyPhaseType)}
-                placeholder="Select journey phase"
+                placeholder='Select journey phase'
               >
                 {JOURNEY_PHASES.map((phase) => (
                   <Option key={phase.value} value={phase.value}>
@@ -196,7 +217,7 @@ export function CreateEditStageModal({
                 ))}
               </Select>
               {errors.journey_phase && (
-                <Typography level="body-sm" color="danger" sx={{ mt: 0.5 }}>
+                <Typography level='body-sm' color='danger' sx={{ mt: 0.5 }}>
                   {errors.journey_phase.message}
                 </Typography>
               )}
@@ -204,13 +225,9 @@ export function CreateEditStageModal({
 
             <FormControl error={!!errors.name}>
               <FormLabel>Name *</FormLabel>
-              <Input
-                {...register('name')}
-                placeholder="Enter stage name"
-                disabled={isLoading}
-              />
+              <Input {...register('name')} placeholder='Enter stage name' disabled={isLoading} />
               {errors.name && (
-                <Typography level="body-sm" color="danger" sx={{ mt: 0.5 }}>
+                <Typography level='body-sm' color='danger' sx={{ mt: 0.5 }}>
                   {errors.name.message}
                 </Typography>
               )}
@@ -220,12 +237,12 @@ export function CreateEditStageModal({
               <FormLabel>Description *</FormLabel>
               <Textarea
                 {...register('description')}
-                placeholder="Enter stage description"
+                placeholder='Enter stage description'
                 minRows={3}
                 disabled={isLoading}
               />
               {errors.description && (
-                <Typography level="body-sm" color="danger" sx={{ mt: 0.5 }}>
+                <Typography level='body-sm' color='danger' sx={{ mt: 0.5 }}>
                   {errors.description.message}
                 </Typography>
               )}
@@ -235,12 +252,12 @@ export function CreateEditStageModal({
               <FormLabel>Graduation Criteria *</FormLabel>
               <Textarea
                 {...register('graduation_criteria')}
-                placeholder="Enter graduation criteria"
+                placeholder='Enter graduation criteria'
                 minRows={3}
                 disabled={isLoading}
               />
               {errors.graduation_criteria && (
-                <Typography level="body-sm" color="danger" sx={{ mt: 0.5 }}>
+                <Typography level='body-sm' color='danger' sx={{ mt: 0.5 }}>
                   {errors.graduation_criteria.message}
                 </Typography>
               )}
@@ -250,24 +267,20 @@ export function CreateEditStageModal({
             {!isCreating && (
               <FormControl error={!!errors.code}>
                 <FormLabel>Code</FormLabel>
-                <Input
-                  {...register('code')}
-                  placeholder="Enter stage code"
-                  disabled={isLoading}
-                />
+                <Input {...register('code')} placeholder='Enter stage code' disabled={isLoading} />
                 {errors.code && (
-                  <Typography level="body-sm" color="danger" sx={{ mt: 0.5 }}>
+                  <Typography level='body-sm' color='danger' sx={{ mt: 0.5 }}>
                     {errors.code.message}
                   </Typography>
                 )}
               </FormControl>
             )}
 
-            <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+            <Stack direction='row' spacing={2} sx={{ mt: 3 }}>
               <Button
-                type="submit"
-                variant="solid"
-                color="primary"
+                type='submit'
+                variant='solid'
+                color='primary'
                 loading={isLoading}
                 disabled={isLoading}
                 sx={{ flex: 1 }}
@@ -275,8 +288,8 @@ export function CreateEditStageModal({
                 {isCreating ? 'Create Stage' : 'Update Stage'}
               </Button>
               <Button
-                variant="outlined"
-                color="neutral"
+                variant='outlined'
+                color='neutral'
                 onClick={onClose}
                 disabled={isLoading}
                 sx={{ flex: 1 }}

@@ -5,7 +5,6 @@ import { Card, Grid, IconButton } from '@mui/joy';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import CircularProgress from '@mui/joy/CircularProgress';
-import Input from '@mui/joy/Input';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import Modal from '@mui/joy/Modal';
@@ -26,13 +25,13 @@ import {
   useSaveGeneratedLogo,
   useUpdateLogoAsset,
   type GeneratedLogo,
-} from "@/app/(scalekit)/style-guide/lib/hooks";
+} from '@/app/(scalekit)/style-guide/lib/hooks';
 import type { LogoAsset, LogoTypeOption } from '@/app/(scalekit)/style-guide/lib/types';
 import {
   uploadLogoFile,
   deleteLogoFile,
   ensureLogoBucketExists,
-} from "@/app/(scalekit)/style-guide/lib/api/logo_storage";
+} from '@/app/(scalekit)/style-guide/lib/api/logo_storage';
 import Image from 'next/image';
 import { GenerateLogoModal } from './generate-logo-modal';
 
@@ -83,25 +82,25 @@ function LogoPresetSelector({
   return (
     <Box>
       <Stack
-        direction="row"
+        direction='row'
         sx={{
-          justifyContent: "space-between",
-          alignItems: "center",
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: hasGeneratedPresets ? 2 : 0,
         }}
       >
-        <Typography level="body-sm" color="neutral">
+        <Typography level='body-sm' color='neutral'>
           {hasGeneratedPresets
-            ? "Select a generated logo to use"
-            : "Generate a logo with AI to get started"}
+            ? 'Select a generated logo to use'
+            : 'Generate a logo with AI to get started'}
         </Typography>
         <Button
-          variant="plain"
-          color="primary"
+          variant='plain'
+          color='primary'
           startDecorator={<Plus />}
           onClick={onGenerateWithAI}
         >
-          {hasGeneratedPresets ? "Regenerate Logos" : "Generate Logo with AI"}
+          {hasGeneratedPresets ? 'Regenerate Logos' : 'Generate Logo with AI'}
         </Button>
       </Stack>
 
@@ -109,25 +108,25 @@ function LogoPresetSelector({
         <Grid container spacing={2}>
           {generatedLogoPresets.map((logo, index) => (
             <LogoOptionCard key={logo.id} onClick={() => onSelectGeneratedLogo?.(logo)} py={2}>
-              <Stack alignItems="center" justifyContent="center" gap={1}>
+              <Stack alignItems='center' justifyContent='center' gap={1}>
                 <Box
                   sx={{
-                    position: "relative",
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "var(--joy-radius-sm)",
-                    overflow: "hidden",
+                    position: 'relative',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: 'var(--joy-radius-sm)',
+                    overflow: 'hidden',
                   }}
                 >
                   <Image
                     src={logo.url}
                     alt={`Generated logo option ${index + 1}`}
                     fill
-                    style={{ objectFit: "contain" }}
+                    style={{ objectFit: 'contain' }}
                     unoptimized
                   />
                 </Box>
-                <Typography level="body-sm" color="neutral">
+                <Typography level='body-sm' color='neutral'>
                   Option {index + 1}
                 </Typography>
               </Stack>
@@ -463,7 +462,6 @@ export default function VisualStyleGuideLogos({
 
         // Generate storage path: {guideId}/{logoTypeId}/{timestamp}-{filename}
         const timestamp = Date.now();
-        const fileExtension = file.name.split('.').pop() || (isSvg ? 'svg' : 'png');
         const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase();
         const storagePath = `${guideId}/${logoTypeOptionId}/${timestamp}-${sanitizedFileName}`;
 
@@ -530,7 +528,7 @@ export default function VisualStyleGuideLogos({
         }
       }
     },
-    [guideId, logoTypes, logos, createLogo, updateLogo]
+    [guideId, logoTypes, logos, createLogo, updateLogo, getSignedUrl]
   );
 
   const handleDownloadLogo = React.useCallback(
@@ -650,9 +648,9 @@ export default function VisualStyleGuideLogos({
           allLogoUrls,
         });
 
-        toast.success("Generated logo saved to all logo types");
+        toast.success('Generated logo saved to all logo types');
       } catch (error) {
-        console.error("Save generated logo error:", error);
+        console.error('Save generated logo error:', error);
         throw error;
       } finally {
         setIsSavingGeneratedLogo(false);
@@ -673,10 +671,10 @@ export default function VisualStyleGuideLogos({
           logoUrl: logo.url,
         });
 
-        toast.success("Logo saved to all logo types");
+        toast.success('Logo saved to all logo types');
       } catch (error) {
-        console.error("Save logo error:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to save logo");
+        console.error('Save logo error:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to save logo');
       } finally {
         setIsSavingGeneratedLogo(false);
       }

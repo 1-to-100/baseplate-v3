@@ -39,8 +39,8 @@ export function SortableTableHeader({
     <th>
       <Tooltip title={`Sort by ${label}`}>
         <IconButton
-          variant="plain"
-          size="sm"
+          variant='plain'
+          size='sm'
           onClick={handleClick}
           sx={{
             '--IconButton-size': '24px',
@@ -66,4 +66,3 @@ export function SortableTableHeader({
     </th>
   );
 }
-

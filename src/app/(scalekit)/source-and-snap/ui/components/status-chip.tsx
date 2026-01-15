@@ -11,7 +11,10 @@ interface StatusChipProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const statusConfig: Record<CaptureRequestStatus, { color: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'; label: string }> = {
+const statusConfig: Record<
+  CaptureRequestStatus,
+  { color: 'success' | 'warning' | 'danger' | 'neutral' | 'primary'; label: string }
+> = {
   queued: { color: 'neutral', label: 'Queued' },
   in_progress: { color: 'primary', label: 'In Progress' },
   completed: { color: 'success', label: 'Completed' },
@@ -23,9 +26,8 @@ export function StatusChip({ status, size = 'sm' }: StatusChipProps): React.JSX.
   const config = statusConfig[status];
 
   return (
-    <Chip size={size} variant="soft" color={config.color}>
+    <Chip size={size} variant='soft' color={config.color}>
       {config.label}
     </Chip>
   );
 }
-

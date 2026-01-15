@@ -11,4 +11,3 @@ export default function CapturePage(): React.JSX.Element {
     </Box>
   );
 }
-

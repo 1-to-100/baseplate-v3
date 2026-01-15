@@ -224,16 +224,18 @@ export const framingConceptSchema = z.object({
 /**
  * Create Framing Concept payload validation schema
  */
-export const createFramingConceptPayloadSchema = z.object({
-  style_guide_id: uuidSchema.optional(),
-  written_style_guide_id: uuidSchema.optional(),
-  name: z.string().min(1),
-  description: z.string().nullable().optional(),
-  example_usage: z.string().nullable().optional(),
-}).refine(
-  (data) => data.style_guide_id !== undefined || data.written_style_guide_id !== undefined,
-  { message: "Either style_guide_id or written_style_guide_id must be provided" }
-);
+export const createFramingConceptPayloadSchema = z
+  .object({
+    style_guide_id: uuidSchema.optional(),
+    written_style_guide_id: uuidSchema.optional(),
+    name: z.string().min(1),
+    description: z.string().nullable().optional(),
+    example_usage: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => data.style_guide_id !== undefined || data.written_style_guide_id !== undefined,
+    { message: 'Either style_guide_id or written_style_guide_id must be provided' }
+  );
 
 /**
  * Update Framing Concept payload validation schema
@@ -316,17 +318,19 @@ export const vocabularyEntrySchema = z.object({
 /**
  * Create Vocabulary Entry payload validation schema
  */
-export const createVocabularyEntryPayloadSchema = z.object({
-  style_guide_id: uuidSchema.optional(),
-  written_style_guide_id: uuidSchema.optional(),
-  name: z.string().min(1),
-  vocabulary_type: vocabularyTypeSchema,
-  suggested_replacement: z.string().nullable().optional(),
-  example_usage: z.string().nullable().optional(),
-}).refine(
-  (data) => data.style_guide_id !== undefined || data.written_style_guide_id !== undefined,
-  { message: "Either style_guide_id or written_style_guide_id must be provided" }
-);
+export const createVocabularyEntryPayloadSchema = z
+  .object({
+    style_guide_id: uuidSchema.optional(),
+    written_style_guide_id: uuidSchema.optional(),
+    name: z.string().min(1),
+    vocabulary_type: vocabularyTypeSchema,
+    suggested_replacement: z.string().nullable().optional(),
+    example_usage: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => data.style_guide_id !== undefined || data.written_style_guide_id !== undefined,
+    { message: 'Either style_guide_id or written_style_guide_id must be provided' }
+  );
 
 /**
  * Update Vocabulary Entry payload validation schema
@@ -501,4 +505,3 @@ export const updateComplianceReviewPayloadSchema = z.object({
   requested_changes_json: z.record(z.unknown()).nullable().optional(),
   resolved_at: timestampSchema.nullable().optional(),
 });
-

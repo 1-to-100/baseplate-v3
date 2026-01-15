@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
 // Import Supabase client
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -37,13 +37,10 @@ Deno.serve(async (req) => {
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create Supabase client with auth context
@@ -70,11 +67,17 @@ Deno.serve(async (req) => {
       console.error('Authentication failed:', {
         error: userError?.message,
         hasUser: !!user,
-        authHeader: authHeader ? 'present' : 'missing'
+        authHeader: authHeader ? 'present' : 'missing',
       });
-      
+
       // Decode the JWT to see what we received
-      let tokenInfo: any = null;
+      let tokenInfo: {
+        role?: string;
+        iss?: string;
+        sub?: string;
+        hasSub?: boolean;
+        isAnonKey?: boolean;
+      } | null = null;
       try {
         const parts = token.split('.');
         if (parts.length === 3) {
@@ -84,48 +87,50 @@ Deno.serve(async (req) => {
             iss: payload.iss,
             sub: payload.sub,
             hasSub: !!payload.sub,
-            isAnonKey: payload.role === 'anon'
+            isAnonKey: payload.role === 'anon',
           };
           console.log('JWT payload info:', tokenInfo);
         }
       } catch (decodeError) {
         console.error('Could not decode JWT:', decodeError);
       }
-      
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Authentication required',
           message: 'You must be signed in to use this function',
           details: userError?.message || 'No authenticated user found',
-          tokenReceived: tokenInfo?.isAnonKey ? 'anon key (not a user token)' : 'invalid or expired token',
+          tokenReceived: tokenInfo?.isAnonKey
+            ? 'anon key (not a user token)'
+            : 'invalid or expired token',
           howToFix: [
             '1. Sign in to your application',
             '2. Navigate to the diagnostics page while signed in',
-            '3. Run the test again with your user session'
-          ]
+            '3. Run the test again with your user session',
+          ],
         }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
-    
+
     console.log('✅ User authenticated successfully:', {
       userId: user.id,
-      email: user.email
+      email: user.email,
     });
 
     // Parse request body
-    const body = await req.json() as CreatePersonaRequest;
+    const body = (await req.json()) as CreatePersonaRequest;
     const { name, description } = body;
 
     if (!name || !description) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: name and description' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
@@ -138,7 +143,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (userRecordError || !userRecord) {
-      throw new Error('Failed to get user record: ' + (userRecordError?.message ?? 'No user record found'));
+      throw new Error(
+        'Failed to get user record: ' + (userRecordError?.message ?? 'No user record found')
+      );
     }
 
     const customerId = userRecord.customer_id;
@@ -151,7 +158,9 @@ Deno.serve(async (req) => {
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (typeof customerId !== 'string' || !uuidRegex.test(customerId)) {
-      throw new Error(`Invalid customer_id format: expected UUID, got ${typeof customerId}: ${customerId}`);
+      throw new Error(
+        `Invalid customer_id format: expected UUID, got ${typeof customerId}: ${customerId}`
+      );
     }
 
     console.log('=== USER & CUSTOMER IDENTIFICATION ===');
@@ -184,7 +193,7 @@ Deno.serve(async (req) => {
       .select('name')
       .eq('customer_id', customerId)
       .maybeSingle();
-    
+
     if (customerError) {
       console.warn('Could not fetch customer name from customers table:', customerError.message);
     } else if (customerData?.name) {
@@ -258,28 +267,104 @@ Make the persona detailed and actionable for marketing and sales teams.
           schema: {
             type: 'object',
             properties: {
-              titles: { type: 'array', items: { type: 'string' }, description: 'Array of job titles and variations' },
-              experience_level: { type: 'number', description: 'Years of experience (0-2: Entry, 2-5: Early career, 5-10: Mid-level, 10-15: Senior, 15-20: Executive, 20+: Veteran)' },
-              job_responsibilities: { type: 'string', description: 'Markdown formatted unordered list of responsibilities of the role in the context of the solution' },
-              is_manager: { type: 'boolean', description: 'Whether this role typically manages others' },
-              department: { type: 'string', description: 'Department name' },
-              pain_points_html: { type: 'string', description: 'Markdown formatted unordered list of general job challenges' },
-              goals_html: { type: 'string', description: 'Markdown formatted unordered list of general job goals' },
-              solution_relevant_pain_points_html: { type: 'string', description: 'Markdown formatted unordered list of challenges the solution addresses' },
-              solution_relevant_goals_html: { type: 'string', description: 'Markdown formatted unordered list of goals the solution helps achieve' },
-              current_solutions_html: { type: 'string', description: 'Markdown formatted unordered list of current tools and processes' },
-              switching_costs_html: { type: 'string', description: 'Markdown formatted unordered list of costs of switching to the solution' },
-              unsatisfied_with_html: { type: 'string', description: 'Markdown formatted unordered list of current solution problems' },
-              ideal_outcome_html: { type: 'string', description: 'Markdown formatted unordered list of desired outcomes' },
-              buying_behavior: { type: 'string', description: 'Markdown formatted unordered list of summary of purchasing habits' },
-              digital_savviness: { 
-                type: 'string', 
-                enum: ['Digital Novice', 'Basic User', 'Digital Citizen', 'Intermediate User', 'Tech-Savvy', 'Power User', 'Digital Specialist', 'Tech Expert', 'Innovator', 'Digital Thought Leader'],
-                description: 'Level of digital expertise' 
+              titles: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Array of job titles and variations',
               },
-              is_decider: { type: 'boolean', description: 'Whether this role typically makes purchasing decisions' },
+              experience_level: {
+                type: 'number',
+                description:
+                  'Years of experience (0-2: Entry, 2-5: Early career, 5-10: Mid-level, 10-15: Senior, 15-20: Executive, 20+: Veteran)',
+              },
+              job_responsibilities: {
+                type: 'string',
+                description:
+                  'Markdown formatted unordered list of responsibilities of the role in the context of the solution',
+              },
+              is_manager: {
+                type: 'boolean',
+                description: 'Whether this role typically manages others',
+              },
+              department: { type: 'string', description: 'Department name' },
+              pain_points_html: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of general job challenges',
+              },
+              goals_html: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of general job goals',
+              },
+              solution_relevant_pain_points_html: {
+                type: 'string',
+                description:
+                  'Markdown formatted unordered list of challenges the solution addresses',
+              },
+              solution_relevant_goals_html: {
+                type: 'string',
+                description:
+                  'Markdown formatted unordered list of goals the solution helps achieve',
+              },
+              current_solutions_html: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of current tools and processes',
+              },
+              switching_costs_html: {
+                type: 'string',
+                description:
+                  'Markdown formatted unordered list of costs of switching to the solution',
+              },
+              unsatisfied_with_html: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of current solution problems',
+              },
+              ideal_outcome_html: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of desired outcomes',
+              },
+              buying_behavior: {
+                type: 'string',
+                description: 'Markdown formatted unordered list of summary of purchasing habits',
+              },
+              digital_savviness: {
+                type: 'string',
+                enum: [
+                  'Digital Novice',
+                  'Basic User',
+                  'Digital Citizen',
+                  'Intermediate User',
+                  'Tech-Savvy',
+                  'Power User',
+                  'Digital Specialist',
+                  'Tech Expert',
+                  'Innovator',
+                  'Digital Thought Leader',
+                ],
+                description: 'Level of digital expertise',
+              },
+              is_decider: {
+                type: 'boolean',
+                description: 'Whether this role typically makes purchasing decisions',
+              },
             },
-            required: ['titles', 'experience_level', 'job_responsibilities', 'is_manager', 'department', 'pain_points_html', 'goals_html', 'solution_relevant_pain_points_html', 'solution_relevant_goals_html', 'current_solutions_html', 'switching_costs_html', 'unsatisfied_with_html', 'ideal_outcome_html', 'buying_behavior', 'digital_savviness', 'is_decider'],
+            required: [
+              'titles',
+              'experience_level',
+              'job_responsibilities',
+              'is_manager',
+              'department',
+              'pain_points_html',
+              'goals_html',
+              'solution_relevant_pain_points_html',
+              'solution_relevant_goals_html',
+              'current_solutions_html',
+              'switching_costs_html',
+              'unsatisfied_with_html',
+              'ideal_outcome_html',
+              'buying_behavior',
+              'digital_savviness',
+              'is_decider',
+            ],
             additionalProperties: false,
           },
         },
@@ -310,8 +395,8 @@ Make the persona detailed and actionable for marketing and sales teams.
       digital_savviness: personaRecommendation.digital_savviness,
       is_decider: personaRecommendation.is_decider,
       customer_id: customerId,
-      created_by: baseplateUserId,  // Baseplate user_id (references users.user_id)
-      updated_by: baseplateUserId,  // Baseplate user_id (references users.user_id)
+      created_by: baseplateUserId, // Baseplate user_id (references users.user_id)
+      updated_by: baseplateUserId, // Baseplate user_id (references users.user_id)
     };
 
     console.log('=== DATABASE INSERT ===');
@@ -351,10 +436,9 @@ Make the persona detailed and actionable for marketing and sales teams.
         status: 200,
       }
     );
-
   } catch (error) {
     console.error('Error in create-persona function:', error);
-    
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'An unexpected error occurred',

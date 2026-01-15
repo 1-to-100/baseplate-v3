@@ -87,11 +87,14 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
       // Step 1: Create the capture request
       const result = await createMutation.mutateAsync(data);
       toast.success('Capture request created successfully');
-      
+
       // Step 2: Call the edge function to capture the screenshot
       setIsCapturing(true);
       try {
-        console.log('Invoking capture-web-screenshot edge function for new request:', result.web_screenshot_capture_request_id);
+        console.log(
+          'Invoking capture-web-screenshot edge function for new request:',
+          result.web_screenshot_capture_request_id
+        );
         const supabase = createClient();
         const { data: functionData, error: functionError } = await supabase.functions.invoke(
           'capture-web-screenshot',
@@ -109,24 +112,21 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
 
         if (functionData?.success && functionData.capture_id) {
           toast.success('Screenshot captured successfully!');
-          
+
           const captureId = functionData.capture_id;
-          
+
           // Step 3: Open a new window with the capture viewer
           const captureViewerUrl = `/source-and-snap/captures/${captureId}`;
           window.open(captureViewerUrl, '_blank');
-          
+
           // Step 4: Call extract-colors function with the capture ID
           try {
             console.log('Calling extract-colors function for capture:', captureId);
-            const { error: extractError } = await supabase.functions.invoke(
-              'extract-colors',
-              {
-                body: {
-                  web_screenshot_capture_id: captureId,
-                },
-              }
-            );
+            const { error: extractError } = await supabase.functions.invoke('extract-colors', {
+              body: {
+                web_screenshot_capture_id: captureId,
+              },
+            });
 
             if (extractError) {
               console.error('Extract colors error:', extractError);
@@ -139,7 +139,7 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
             console.error('Exception calling extract-colors:', extractErr);
             // Don't throw - this is a background operation
           }
-          
+
           if (onSuccess) {
             onSuccess(result.web_screenshot_capture_request_id);
           } else {
@@ -150,9 +150,8 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
           throw new Error(functionData?.message || 'Failed to capture screenshot');
         }
       } catch (captureError) {
-        const errorMessage = captureError instanceof Error 
-          ? captureError.message 
-          : 'Failed to capture screenshot';
+        const errorMessage =
+          captureError instanceof Error ? captureError.message : 'Failed to capture screenshot';
         setValidationError(errorMessage);
         toast.error(errorMessage);
         // Still navigate to captures list so user can see the request
@@ -163,7 +162,8 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
         setIsCapturing(false);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create capture request';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create capture request';
       setValidationError(errorMessage);
       toast.error(errorMessage);
       setIsCapturing(false);
@@ -177,15 +177,20 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
     }
   };
 
-  const isFormDirty = watch('requested_url') !== '' || deviceProfileId !== null || fullPage || includeSource || !blockTracking;
+  const isFormDirty =
+    watch('requested_url') !== '' ||
+    deviceProfileId !== null ||
+    fullPage ||
+    includeSource ||
+    !blockTracking;
 
   return (
-    <Card variant="outlined">
+    <Card variant='outlined'>
       <CardContent>
         <Stack spacing={3}>
           <Stack spacing={1}>
-            <Typography level="h2">New Web Capture</Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='h2'>New Web Capture</Typography>
+            <Typography level='body-md' color='neutral'>
               Enter a public URL and capture settings to enqueue a screenshot job
             </Typography>
           </Stack>
@@ -194,16 +199,16 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
 
           {validationError && (
             <Alert
-              color="danger"
-              variant="soft"
-              role="alert"
+              color='danger'
+              variant='soft'
+              role='alert'
               endDecorator={
                 <IconButton
-                  variant="plain"
-                  size="sm"
-                  color="danger"
+                  variant='plain'
+                  size='sm'
+                  color='danger'
                   onClick={() => setValidationError(null)}
-                  aria-label="Dismiss error"
+                  aria-label='Dismiss error'
                 >
                   <CloseIcon size={16} />
                 </IconButton>
@@ -220,10 +225,10 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
                 <FormLabel>Capture URL *</FormLabel>
                 <Input
                   {...register('requested_url')}
-                  type="url"
-                  placeholder="https://example.com"
+                  type='url'
+                  placeholder='https://example.com'
                   autoFocus
-                  aria-label="Capture URL"
+                  aria-label='Capture URL'
                   aria-invalid={!!errors.requested_url}
                   aria-describedby={errors.requested_url ? 'url-error' : 'url-help'}
                   onKeyDown={(e) => {
@@ -234,9 +239,9 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
                   }}
                 />
                 {errors.requested_url && (
-                  <FormHelperText id="url-error">{errors.requested_url.message}</FormHelperText>
+                  <FormHelperText id='url-error'>{errors.requested_url.message}</FormHelperText>
                 )}
-                <FormHelperText id="url-help">
+                <FormHelperText id='url-help'>
                   Enter a public URL to capture. The URL will be validated before submission.
                 </FormHelperText>
               </FormControl>
@@ -251,14 +256,14 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
 
               {/* Capture Options */}
               <Stack spacing={2}>
-                <Typography level="title-sm">Capture Options</Typography>
+                <Typography level='title-sm'>Capture Options</Typography>
 
                 <FormControl>
-                  <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction='row' spacing={2} alignItems='center'>
                     <Switch
                       checked={fullPage}
                       onChange={(e) => setValue('full_page', e.target.checked)}
-                      aria-label="Full Page Capture"
+                      aria-label='Full Page Capture'
                     />
                     <Box>
                       <FormLabel>Full Page Capture</FormLabel>
@@ -270,28 +275,29 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
                 </FormControl>
 
                 <FormControl>
-                  <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction='row' spacing={2} alignItems='center'>
                     <Switch
                       checked={includeSource}
                       onChange={(e) => setValue('include_source', e.target.checked)}
-                      aria-label="Include Source (HTML/CSS)"
-                      aria-describedby="include-source-help"
+                      aria-label='Include Source (HTML/CSS)'
+                      aria-describedby='include-source-help'
                     />
                     <Box>
                       <FormLabel>Include Source (HTML/CSS)</FormLabel>
-                      <FormHelperText id="include-source-help">
-                        Also capture raw HTML and CSS files. This may increase job time and storage usage.
+                      <FormHelperText id='include-source-help'>
+                        Also capture raw HTML and CSS files. This may increase job time and storage
+                        usage.
                       </FormHelperText>
                     </Box>
                   </Stack>
                 </FormControl>
 
                 <FormControl>
-                  <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction='row' spacing={2} alignItems='center'>
                     <Switch
                       checked={blockTracking}
                       onChange={(e) => setValue('block_tracking', e.target.checked)}
-                      aria-label="Block Tracking"
+                      aria-label='Block Tracking'
                     />
                     <Box>
                       <FormLabel>Block Tracking</FormLabel>
@@ -304,20 +310,24 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
               </Stack>
 
               {/* Actions */}
-              <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Stack direction='row' spacing={2} justifyContent='flex-end'>
                 {onCancel && (
-                  <Button variant="outlined" onClick={onCancel} disabled={isSubmitting}>
+                  <Button variant='outlined' onClick={onCancel} disabled={isSubmitting}>
                     Cancel
                   </Button>
                 )}
-                <Button variant="outlined" onClick={handleReset} disabled={isSubmitting || !isFormDirty}>
+                <Button
+                  variant='outlined'
+                  onClick={handleReset}
+                  disabled={isSubmitting || !isFormDirty}
+                >
                   Reset
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   loading={isSubmitting || isCapturing}
                   disabled={isSubmitting || isCapturing}
-                  aria-label="Scan and create capture"
+                  aria-label='Scan and create capture'
                   aria-busy={isSubmitting || isCapturing}
                 >
                   {isCapturing ? 'Scanning and Creating...' : 'Scan and Create'}
@@ -330,4 +340,3 @@ export function WebCaptureForm({ onSuccess, onCancel }: WebCaptureFormProps): Re
     </Card>
   );
 }
-

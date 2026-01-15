@@ -34,7 +34,11 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
   const queryClient = useQueryClient();
 
   // Fetch persona data
-  const { data: persona, isLoading, error } = useQuery({
+  const {
+    data: persona,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['persona', resolvedParams.id],
     queryFn: () => PersonasAPI.getById(resolvedParams.id),
     enabled: !!resolvedParams.id && !!auth.user,
@@ -48,12 +52,18 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
       router.push('/strategy-forge/personas');
     },
     onError: (error) => {
-      toast.error(`Failed to delete persona: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to delete persona: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     },
   });
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${persona?.name}"? This action cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${persona?.name}"? This action cannot be undone.`
+      )
+    ) {
       deleteMutation.mutate();
     }
   };
@@ -73,11 +83,13 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
   if (error || !persona) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Typography color="danger">
-          {error ? `Error loading persona: ${error instanceof Error ? error.message : 'Unknown error'}` : 'Persona not found'}
+        <Typography color='danger'>
+          {error
+            ? `Error loading persona: ${error instanceof Error ? error.message : 'Unknown error'}`
+            : 'Persona not found'}
         </Typography>
         <Button
-          variant="outlined"
+          variant='outlined'
           startDecorator={<ArrowLeftIcon />}
           onClick={() => router.push('/strategy-forge/personas')}
           sx={{ mt: 2 }}
@@ -89,7 +101,7 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
   }
 
   const renderHtmlContent = (content: string | null | undefined) => {
-    if (!content) return <Typography color="neutral">Not specified</Typography>;
+    if (!content) return <Typography color='neutral'>Not specified</Typography>;
     return (
       <Box
         sx={{
@@ -108,32 +120,33 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Header */}
         <div>
           <Button
-            variant="outlined"
+            variant='outlined'
             startDecorator={<ArrowLeftIcon />}
             onClick={() => router.back()}
             sx={{ mb: 2 }}
           >
             Back
           </Button>
-          <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack
+            direction='row'
+            spacing={2}
+            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          >
             <div>
-              <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+              <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
                 {persona.name}
               </Typography>
-              <Typography level="body-md" sx={{ mt: 1 }}>
+              <Typography level='body-md' sx={{ mt: 1 }}>
                 Persona Details
               </Typography>
             </div>
-            <Stack direction="row" spacing={1}>
-              <Button
-                startDecorator={<PencilSimpleIcon />}
-                onClick={handleEdit}
-              >
+            <Stack direction='row' spacing={1}>
+              <Button startDecorator={<PencilSimpleIcon />} onClick={handleEdit}>
                 Edit
               </Button>
               <Button
-                color="danger"
-                variant="solid"
+                color='danger'
+                variant='solid'
                 startDecorator={<TrashIcon />}
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
@@ -149,70 +162,62 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Basic Information */}
         <Card>
           <CardContent>
-            <Typography level="title-md" sx={{ mb: 2 }}>
+            <Typography level='title-md' sx={{ mb: 2 }}>
               Basic Information
             </Typography>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Name:
                 </Typography>
                 <Typography>{persona.name}</Typography>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Titles:
                 </Typography>
                 <Typography>{persona.titles || 'Not specified'}</Typography>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Department:
                 </Typography>
                 <Typography>{persona.department || 'Not specified'}</Typography>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Manager:
                 </Typography>
-                <Chip
-                  size="sm"
-                  color={persona.is_manager ? 'success' : 'neutral'}
-                  variant="soft"
-                >
+                <Chip size='sm' color={persona.is_manager ? 'success' : 'neutral'} variant='soft'>
                   {persona.is_manager ? 'Yes' : 'No'}
                 </Chip>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Decision Maker:
                 </Typography>
-                <Chip
-                  size="sm"
-                  color={persona.is_decider ? 'primary' : 'neutral'}
-                  variant="soft"
-                >
+                <Chip size='sm' color={persona.is_decider ? 'primary' : 'neutral'} variant='soft'>
                   {persona.is_decider ? 'Yes' : 'No'}
                 </Chip>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Experience:
                 </Typography>
                 <Typography>{persona.experience_years || 'Not specified'}</Typography>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Education:
                 </Typography>
                 <Typography>{persona.education_levels || 'Not specified'}</Typography>
               </Stack>
               {persona.job_responsibilities && (
                 <div>
-                  <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                  <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                     Job Responsibilities:
                   </Typography>
-                  <Typography level="body-sm">{persona.job_responsibilities}</Typography>
+                  <Typography level='body-sm'>{persona.job_responsibilities}</Typography>
                 </div>
               )}
             </Stack>
@@ -222,30 +227,30 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Pain Points & Goals */}
         <Card>
           <CardContent>
-            <Typography level="title-md" sx={{ mb: 2 }}>
+            <Typography level='title-md' sx={{ mb: 2 }}>
               Pain Points & Goals
             </Typography>
             <Stack spacing={3}>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Pain Points:
                 </Typography>
                 {renderHtmlContent(persona.pain_points_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Goals:
                 </Typography>
                 {renderHtmlContent(persona.goals_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Solution-Relevant Pain Points:
                 </Typography>
                 {renderHtmlContent(persona.solution_relevant_pain_points_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Solution-Relevant Goals:
                 </Typography>
                 {renderHtmlContent(persona.solution_relevant_goals_html)}
@@ -257,30 +262,30 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Current Solutions & Switching */}
         <Card>
           <CardContent>
-            <Typography level="title-md" sx={{ mb: 2 }}>
+            <Typography level='title-md' sx={{ mb: 2 }}>
               Current Solutions & Switching
             </Typography>
             <Stack spacing={3}>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Current Solutions:
                 </Typography>
                 {renderHtmlContent(persona.current_solutions_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Switching Costs:
                 </Typography>
                 {renderHtmlContent(persona.switching_costs_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Unsatisfied With:
                 </Typography>
                 {renderHtmlContent(persona.unsatisfied_with_html)}
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Ideal Outcome:
                 </Typography>
                 {renderHtmlContent(persona.ideal_outcome_html)}
@@ -292,18 +297,18 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Behavior & Characteristics */}
         <Card>
           <CardContent>
-            <Typography level="title-md" sx={{ mb: 2 }}>
+            <Typography level='title-md' sx={{ mb: 2 }}>
               Behavior & Characteristics
             </Typography>
             <Stack spacing={2}>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Buying Behavior:
                 </Typography>
                 <Typography>{persona.buying_behavior || 'Not specified'}</Typography>
               </div>
               <div>
-                <Typography level="body-sm" sx={{ fontWeight: 'md', mb: 1 }}>
+                <Typography level='body-sm' sx={{ fontWeight: 'md', mb: 1 }}>
                   Digital Savviness:
                 </Typography>
                 <Typography>{persona.digital_savviness || 'Not specified'}</Typography>
@@ -315,18 +320,18 @@ export default function PersonaDetailsPage({ params }: PersonaDetailsPageProps):
         {/* Metadata */}
         <Card>
           <CardContent>
-            <Typography level="title-md" sx={{ mb: 2 }}>
+            <Typography level='title-md' sx={{ mb: 2 }}>
               Metadata
             </Typography>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Created:
                 </Typography>
                 <Typography>{new Date(persona.created_at).toLocaleString()}</Typography>
               </Stack>
-              <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Typography level="body-sm" sx={{ minWidth: 120, fontWeight: 'md' }}>
+              <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+                <Typography level='body-sm' sx={{ minWidth: 120, fontWeight: 'md' }}>
                   Updated:
                 </Typography>
                 <Typography>{new Date(persona.updated_at).toLocaleString()}</Typography>

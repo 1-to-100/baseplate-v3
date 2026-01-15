@@ -87,14 +87,13 @@ type PaginatedResponse<T> = {
  * @param styleGuideId - UUID of the style guide
  * @returns Style guide with related option items
  */
-export async function getStyleGuideById(
-  styleGuideId: string
-): Promise<StyleGuideResponse> {
+export async function getStyleGuideById(styleGuideId: string): Promise<StyleGuideResponse> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from('style_guides')
-    .select(`
+    .select(
+      `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -103,7 +102,8 @@ export async function getStyleGuideById(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `)
+    `
+    )
     .eq('style_guide_id', styleGuideId)
     .single();
 
@@ -126,7 +126,8 @@ export async function getActiveStyleGuideByCustomerId(
 
   const { data, error } = await supabase
     .from('style_guides')
-    .select(`
+    .select(
+      `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -135,7 +136,8 @@ export async function getActiveStyleGuideByCustomerId(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `)
+    `
+    )
     .eq('customer_id', customerId)
     .eq('active', true)
     .maybeSingle();
@@ -166,9 +168,8 @@ export async function listStyleGuides(
     order_direction = 'desc',
   } = params;
 
-  let query = supabase
-    .from('style_guides')
-    .select(`
+  let query = supabase.from('style_guides').select(
+    `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -177,7 +178,9 @@ export async function listStyleGuides(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `, { count: 'exact' });
+    `,
+    { count: 'exact' }
+  );
 
   if (customer_id) {
     query = query.eq('customer_id', customer_id);
@@ -261,7 +264,8 @@ export async function createStyleGuide(
   const { data, error } = await supabase
     .from('style_guides')
     .insert(insertPayload)
-    .select(`
+    .select(
+      `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -270,7 +274,8 @@ export async function createStyleGuide(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -304,7 +309,8 @@ export async function updateStyleGuide(
     .from('style_guides')
     .update(updateData)
     .eq('style_guide_id', style_guide_id)
-    .select(`
+    .select(
+      `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -313,7 +319,8 @@ export async function updateStyleGuide(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -328,9 +335,7 @@ export async function updateStyleGuide(
  * @param styleGuideId - UUID of the style guide to delete
  * @returns Deleted style guide
  */
-export async function deleteStyleGuide(
-  styleGuideId: string
-): Promise<StyleGuide> {
+export async function deleteStyleGuide(styleGuideId: string): Promise<StyleGuide> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -361,7 +366,8 @@ export async function searchStyleGuides(
 
   let query = supabase
     .from('style_guides')
-    .select(`
+    .select(
+      `
       *,
       formality_option_item:formality_option_items(*),
       sentence_length_option_item:sentence_option_items_singleton(*),
@@ -370,7 +376,8 @@ export async function searchStyleGuides(
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
       language_level_option_item:language_level_option_items(*)
-    `)
+    `
+    )
     .ilike('guide_name', `%${searchTerm}%`);
 
   if (customerId) {
@@ -385,4 +392,3 @@ export async function searchStyleGuides(
 
   return (data || []) as StyleGuideResponse[];
 }
-

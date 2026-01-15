@@ -40,7 +40,7 @@ import { createPersonaWithAI } from '@/lib/api/create-persona-edge';
 // Simple usage
 const result = await createPersonaWithAI({
   name: 'Chief Marketing Officer',
-  description: 'Senior executive responsible for marketing strategy, brand positioning, and growth'
+  description: 'Senior executive responsible for marketing strategy, brand positioning, and growth',
 });
 
 console.log('Created persona ID:', result.persona_id);
@@ -54,7 +54,7 @@ import { createPersonaWithAI } from '@/lib/api/create-persona-edge';
 
 function CreatePersonaForm() {
   const queryClient = useQueryClient();
-  
+
   const mutation = useMutation({
     mutationFn: createPersonaWithAI,
     onSuccess: (data) => {
@@ -102,8 +102,8 @@ curl -i --location --request POST \
 
 ```typescript
 interface CreatePersonaRequest {
-  name: string;           // Persona name (e.g., "Chief Marketing Officer")
-  description: string;    // Brief job description for context
+  name: string; // Persona name (e.g., "Chief Marketing Officer")
+  description: string; // Brief job description for context
 }
 ```
 
@@ -114,8 +114,8 @@ interface CreatePersonaRequest {
 ```typescript
 interface CreatePersonaResponse {
   success: true;
-  persona_id: string;     // UUID of the created persona
-  persona: Persona;       // Full persona object
+  persona_id: string; // UUID of the created persona
+  persona: Persona; // Full persona object
 }
 ```
 
@@ -123,7 +123,7 @@ interface CreatePersonaResponse {
 
 ```typescript
 interface ErrorResponse {
-  error: string;          // Error message
+  error: string; // Error message
 }
 ```
 
@@ -131,33 +131,33 @@ interface ErrorResponse {
 
 The AI generates the following fields:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Persona name |
-| `titles` | string | Comma-separated job titles and variations |
-| `department` | string | Department name |
-| `job_responsibilities` | string | Markdown list of role responsibilities |
-| `is_manager` | boolean | Whether the role manages others |
-| `experience_years` | string | Years of experience |
-| `pain_points_html` | string | Markdown list of general job challenges |
-| `goals_html` | string | Markdown list of general job goals |
-| `solution_relevant_pain_points_html` | string | Markdown list of challenges your solution addresses |
-| `solution_relevant_goals_html` | string | Markdown list of goals your solution helps achieve |
-| `current_solutions_html` | string | Markdown list of current tools and processes |
-| `switching_costs_html` | string | Markdown list of switching costs |
-| `unsatisfied_with_html` | string | Markdown list of current solution problems |
-| `ideal_outcome_html` | string | Markdown list of desired outcomes |
-| `buying_behavior` | string | Markdown list of purchasing habits |
-| `digital_savviness` | enum | Level of digital expertise |
-| `is_decider` | boolean | Whether the role makes purchasing decisions |
+| Field                                | Type    | Description                                         |
+| ------------------------------------ | ------- | --------------------------------------------------- |
+| `name`                               | string  | Persona name                                        |
+| `titles`                             | string  | Comma-separated job titles and variations           |
+| `department`                         | string  | Department name                                     |
+| `job_responsibilities`               | string  | Markdown list of role responsibilities              |
+| `is_manager`                         | boolean | Whether the role manages others                     |
+| `experience_years`                   | string  | Years of experience                                 |
+| `pain_points_html`                   | string  | Markdown list of general job challenges             |
+| `goals_html`                         | string  | Markdown list of general job goals                  |
+| `solution_relevant_pain_points_html` | string  | Markdown list of challenges your solution addresses |
+| `solution_relevant_goals_html`       | string  | Markdown list of goals your solution helps achieve  |
+| `current_solutions_html`             | string  | Markdown list of current tools and processes        |
+| `switching_costs_html`               | string  | Markdown list of switching costs                    |
+| `unsatisfied_with_html`              | string  | Markdown list of current solution problems          |
+| `ideal_outcome_html`                 | string  | Markdown list of desired outcomes                   |
+| `buying_behavior`                    | string  | Markdown list of purchasing habits                  |
+| `digital_savviness`                  | enum    | Level of digital expertise                          |
+| `is_decider`                         | boolean | Whether the role makes purchasing decisions         |
 
 ## How It Works
 
 1. **Authentication**: Verifies the user's JWT token
-2. **Context Gathering**: 
+2. **Context Gathering**:
    - Retrieves the user's customer_id
    - Fetches company information for context
-3. **AI Generation**: 
+3. **AI Generation**:
    - Builds a comprehensive prompt with company and job context
    - Uses OpenAI GPT-4 with structured output (Zod schema)
    - Validates the response against the schema
@@ -172,7 +172,7 @@ The function handles various error scenarios:
 
 - **401 Unauthorized**: Missing or invalid authorization header
 - **400 Bad Request**: Missing required fields (name or description)
-- **500 Internal Server Error**: 
+- **500 Internal Server Error**:
   - Failed to get customer ID
   - Failed to generate persona with AI
   - Failed to save to database
@@ -191,16 +191,19 @@ All errors return a JSON object with an `error` field containing a descriptive m
 ## Local Development
 
 1. Start Supabase locally:
+
    ```bash
    supabase start
    ```
 
 2. Set environment variables in `.env.local`:
+
    ```bash
    OPENAI_API_KEY=your_openai_api_key
    ```
 
 3. Serve the function:
+
    ```bash
    supabase functions serve create-persona
    ```
@@ -229,6 +232,7 @@ These are automatically installed by Deno based on the `deno.json` import map.
 ## Monitoring
 
 Check function logs in the Supabase Dashboard:
+
 - Navigate to Edge Functions → create-persona → Logs
 - Monitor for errors, performance, and invocation counts
 
@@ -241,18 +245,21 @@ Check function logs in the Supabase Dashboard:
 ## Troubleshooting
 
 ### "Missing authorization header"
+
 Ensure you're passing the Authorization header with a valid Supabase JWT token.
 
 ### "Failed to get customer ID"
+
 Check that the `customer_id()` RPC function exists in your database and the user has a valid customer association.
 
 ### "OPENAI_API_KEY environment variable not set"
+
 Add the OpenAI API key to your Supabase project's edge function secrets.
 
 ### "Invalid response structure"
+
 The AI occasionally returns unexpected formats. The function includes robust parsing and validation. If this persists, check the OpenAI API status.
 
 ## Version History
 
 - **v1.0.0** (Current): Initial implementation with Vercel AI SDK and structured output
-

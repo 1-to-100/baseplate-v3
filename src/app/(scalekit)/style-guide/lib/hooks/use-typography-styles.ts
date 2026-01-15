@@ -31,13 +31,17 @@ export function useCreateTypographyStyle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: Omit<NewTypographyStyle, 'typography_style_id' | 'customer_id' | 'created_at'>) => {
+    mutationFn: async (
+      input: Omit<NewTypographyStyle, 'typography_style_id' | 'customer_id' | 'created_at'>
+    ) => {
       const result = await createTypographyStyle(input);
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: typographyStyleKeys.list(String(data.visual_style_guide_id || '')) });
+      queryClient.invalidateQueries({
+        queryKey: typographyStyleKeys.list(String(data.visual_style_guide_id || '')),
+      });
       queryClient.invalidateQueries({ queryKey: typographyStyleKeys.lists() });
       toast.success('Typography style created successfully');
     },
@@ -57,8 +61,12 @@ export function useUpdateTypographyStyle() {
       return result.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: typographyStyleKeys.list(String(data.visual_style_guide_id || '')) });
-      queryClient.invalidateQueries({ queryKey: typographyStyleKeys.detail(String(data.typography_style_id)) });
+      queryClient.invalidateQueries({
+        queryKey: typographyStyleKeys.list(String(data.visual_style_guide_id || '')),
+      });
+      queryClient.invalidateQueries({
+        queryKey: typographyStyleKeys.detail(String(data.typography_style_id)),
+      });
       toast.success('Typography style updated successfully');
     },
     onError: (error: Error) => {
@@ -85,4 +93,3 @@ export function useDeleteTypographyStyle() {
     },
   });
 }
-

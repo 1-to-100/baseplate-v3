@@ -45,4 +45,3 @@ export interface GetSegmentsResponse {
     next: number | null;
   };
 }
-

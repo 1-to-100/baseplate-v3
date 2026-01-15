@@ -68,14 +68,17 @@ export function CaptureJobList(): React.JSX.Element {
   });
 
   // Build query params
-  const queryParams = React.useMemo(() => ({
-    page,
-    perPage,
-    search: debouncedSearch || undefined,
-    orderBy: sortBy,
-    orderDirection: sortDirection,
-    device_profile_id: selectedDeviceProfileId || undefined,
-  }), [page, perPage, debouncedSearch, sortBy, sortDirection, selectedDeviceProfileId]);
+  const queryParams = React.useMemo(
+    () => ({
+      page,
+      perPage,
+      search: debouncedSearch || undefined,
+      orderBy: sortBy,
+      orderDirection: sortDirection,
+      device_profile_id: selectedDeviceProfileId || undefined,
+    }),
+    [page, perPage, debouncedSearch, sortBy, sortDirection, selectedDeviceProfileId]
+  );
 
   // Fetch captures
   const { data, isLoading, error, refetch } = useCapturesList(queryParams);
@@ -158,8 +161,8 @@ export function CaptureJobList(): React.JSX.Element {
   if (error) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Alert color="danger" variant="soft">
-          <Typography color="danger">
+        <Alert color='danger' variant='soft'>
+          <Typography color='danger'>
             Error loading captures: {error instanceof Error ? error.message : 'Unknown error'}
           </Typography>
         </Alert>
@@ -171,22 +174,22 @@ export function CaptureJobList(): React.JSX.Element {
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+        <Stack direction='row' spacing={2} alignItems='center' justifyContent='space-between'>
           <div>
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level="h1">
+            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
               Captures
             </Typography>
-            <Typography level="body-md" color="neutral">
+            <Typography level='body-md' color='neutral'>
               View and manage completed web screenshot captures
             </Typography>
           </div>
-          <Stack direction="row" spacing={2}>
-            <Tooltip title="Refresh captures">
+          <Stack direction='row' spacing={2}>
+            <Tooltip title='Refresh captures'>
               <IconButton
-                variant="outlined"
+                variant='outlined'
                 onClick={() => refetch()}
                 disabled={isLoading}
-                aria-label="Refresh captures"
+                aria-label='Refresh captures'
                 aria-busy={isLoading}
               >
                 <RefreshIcon size={16} />
@@ -202,40 +205,43 @@ export function CaptureJobList(): React.JSX.Element {
         </Stack>
 
         {/* Filters */}
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             <Stack spacing={2}>
-              <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+              <Stack direction='row' spacing={2} flexWrap='wrap' alignItems='center'>
                 <Input
-                  placeholder="Search by page title..."
+                  placeholder='Search by page title...'
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   startDecorator={<SearchIcon size={16} />}
                   endDecorator={
                     search && (
                       <IconButton
-                        variant="plain"
-                        size="sm"
+                        variant='plain'
+                        size='sm'
                         onClick={() => setSearch('')}
-                        aria-label="Clear search"
+                        aria-label='Clear search'
                       >
                         <ClearIcon size={16} />
                       </IconButton>
                     )
                   }
                   sx={{ flexGrow: 1, minWidth: 200 }}
-                  aria-label="Search captures"
+                  aria-label='Search captures'
                 />
                 <Select
-                  placeholder="Filter by device profile"
+                  placeholder='Filter by device profile'
                   value={selectedDeviceProfileId}
                   onChange={(_, value) => setSelectedDeviceProfileId(value)}
                   sx={{ minWidth: 200 }}
-                  aria-label="Filter by device profile"
+                  aria-label='Filter by device profile'
                 >
                   <Option value={null}>All Profiles</Option>
                   {deviceProfiles.map((profile) => (
-                    <Option key={profile.options_device_profile_id} value={profile.options_device_profile_id}>
+                    <Option
+                      key={profile.options_device_profile_id}
+                      value={profile.options_device_profile_id}
+                    >
                       {profile.display_name}
                     </Option>
                   ))}
@@ -247,27 +253,23 @@ export function CaptureJobList(): React.JSX.Element {
 
         {/* Bulk Actions Bar */}
         {selectedCaptureIds.size > 0 && (
-          <Card variant="outlined" color="primary">
+          <Card variant='outlined' color='primary'>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center" aria-live="polite">
-                <Typography level="body-md">
+              <Stack direction='row' spacing={2} alignItems='center' aria-live='polite'>
+                <Typography level='body-md'>
                   {selectedCaptureIds.size} capture(s) selected
                 </Typography>
                 <Button
-                  size="sm"
-                  variant="outlined"
-                  color="danger"
+                  size='sm'
+                  variant='outlined'
+                  color='danger'
                   startDecorator={<DeleteIcon size={16} />}
                   onClick={handleBulkDelete}
                   disabled={deleteMutation.isPending}
                 >
                   Delete Selected
                 </Button>
-                <Button
-                  size="sm"
-                  variant="plain"
-                  onClick={() => setSelectedCaptureIds(new Set())}
-                >
+                <Button size='sm' variant='plain' onClick={() => setSelectedCaptureIds(new Set())}>
                   Clear Selection
                 </Button>
               </Stack>
@@ -276,7 +278,7 @@ export function CaptureJobList(): React.JSX.Element {
         )}
 
         {/* Table */}
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             {isLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -284,13 +286,13 @@ export function CaptureJobList(): React.JSX.Element {
               </Box>
             ) : captures.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography level="body-lg" color="neutral" sx={{ mb: 2 }}>
+                <Typography level='body-lg' color='neutral' sx={{ mb: 2 }}>
                   No captures found
                 </Typography>
                 <Button
                   startDecorator={<PlusIcon size={16} />}
                   onClick={() => router.push('/source-and-snap/capture')}
-                  aria-label="Create First Capture"
+                  aria-label='Create First Capture'
                 >
                   Create First Capture
                 </Button>
@@ -305,19 +307,19 @@ export function CaptureJobList(): React.JSX.Element {
                           checked={allSelected}
                           indeterminate={someSelected}
                           onChange={(e) => handleSelectAll(e.target.checked)}
-                          aria-label="Select all"
+                          aria-label='Select all'
                         />
                       </th>
                       <SortableTableHeader
-                        column="page_title"
-                        label="Page Title"
+                        column='page_title'
+                        label='Page Title'
                         currentSort={sortBy}
                         currentDirection={sortDirection}
                         onSort={handleSort}
                       />
                       <SortableTableHeader
-                        column="captured_at"
-                        label="Captured"
+                        column='captured_at'
+                        label='Captured'
                         currentSort={sortBy}
                         currentDirection={sortDirection}
                         onSort={handleSort}
@@ -344,7 +346,9 @@ export function CaptureJobList(): React.JSX.Element {
                             onClick={() => handleView(capture.web_screenshot_capture_id)}
                             sx={{ cursor: 'pointer' }}
                           >
-                            {capture.page_title || capture.capture_request?.requested_url || 'Untitled'}
+                            {capture.page_title ||
+                              capture.capture_request?.requested_url ||
+                              'Untitled'}
                           </Link>
                         </td>
                         <td>
@@ -352,9 +356,7 @@ export function CaptureJobList(): React.JSX.Element {
                             <span>{dayjs(capture.captured_at).fromNow()}</span>
                           </Tooltip>
                         </td>
-                        <td>
-                          {capture.device_profile?.display_name || 'Default'}
-                        </td>
+                        <td>{capture.device_profile?.display_name || 'Default'}</td>
                         <td>
                           {capture.screenshot_width && capture.screenshot_height
                             ? `${capture.screenshot_width} × ${capture.screenshot_height}px`
@@ -365,18 +367,20 @@ export function CaptureJobList(): React.JSX.Element {
                             <MenuButton
                               slots={{ root: IconButton }}
                               slotProps={{ root: { variant: 'plain', size: 'sm' } }}
-                              aria-haspopup="true"
+                              aria-haspopup='true'
                               aria-controls={`menu-${capture.web_screenshot_capture_id}`}
                             >
                               <MoreIcon size={16} />
                             </MenuButton>
                             <Menu id={`menu-${capture.web_screenshot_capture_id}`}>
-                              <MenuItem onClick={() => handleView(capture.web_screenshot_capture_id)}>
+                              <MenuItem
+                                onClick={() => handleView(capture.web_screenshot_capture_id)}
+                              >
                                 <ViewIcon size={16} style={{ marginRight: 8 }} />
                                 View
                               </MenuItem>
                               <MenuItem
-                                color="danger"
+                                color='danger'
                                 onClick={() => handleDelete(capture.web_screenshot_capture_id)}
                               >
                                 <DeleteIcon size={16} style={{ marginRight: 8 }} />
@@ -410,4 +414,3 @@ export function CaptureJobList(): React.JSX.Element {
     </Box>
   );
 }
-

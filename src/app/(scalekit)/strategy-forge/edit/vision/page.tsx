@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
   Alert,
   Button,
@@ -16,32 +16,32 @@ import {
   Stack,
   Textarea,
   Typography,
-} from "@mui/joy";
-import { useRouter } from "next/navigation";
-import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from "@phosphor-icons/react/dist/ssr";
+} from '@mui/joy';
+import { useRouter } from 'next/navigation';
+import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr';
 import {
   useCompanyStrategyQuery,
   useStrategyChangeTypesQuery,
   useUpdateCompanyStrategyMutation,
   useCreateStrategyChangeLogMutation,
-} from "../../../strategy-forge/lib/api";
-import type { UpdateCompanyStrategyInput } from "../../../strategy-forge/lib/schemas/strategy-foundation";
+} from '../../../strategy-forge/lib/api';
+import type { UpdateCompanyStrategyInput } from '../../../strategy-forge/lib/schemas/strategy-foundation';
 
 const VISION_MAX = 800;
 const SUMMARY_MAX = 120;
 
-type EditorStatus = "idle" | "saving" | "success" | "error";
+type EditorStatus = 'idle' | 'saving' | 'success' | 'error';
 
 function useVisionState() {
   const { data: strategy } = useCompanyStrategyQuery();
 
-  const [vision, setVision] = React.useState("");
-  const [visionDescription, setVisionDescription] = React.useState("");
+  const [vision, setVision] = React.useState('');
+  const [visionDescription, setVisionDescription] = React.useState('');
 
   React.useEffect(() => {
     if (!strategy) return;
-    setVision(strategy.vision ?? "");
-    setVisionDescription(strategy.vision_description ?? "");
+    setVision(strategy.vision ?? '');
+    setVisionDescription(strategy.vision_description ?? '');
   }, [strategy?.strategy_id]);
 
   return {
@@ -62,20 +62,20 @@ export default function VisionEditorPage(): React.ReactElement {
   const updateStrategy = useUpdateCompanyStrategyMutation();
   const createChangeLog = useCreateStrategyChangeLogMutation();
 
-  const [changeSummary, setChangeSummary] = React.useState("");
-  const [status, setStatus] = React.useState<EditorStatus>("idle");
+  const [changeSummary, setChangeSummary] = React.useState('');
+  const [status, setStatus] = React.useState<EditorStatus>('idle');
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const hasVisionChanges = vision !== (strategy?.vision ?? "");
-  const hasVisionDescriptionChanges = visionDescription !== (strategy?.vision_description ?? "");
+  const hasVisionChanges = vision !== (strategy?.vision ?? '');
+  const hasVisionDescriptionChanges = visionDescription !== (strategy?.vision_description ?? '');
 
   const hasChanges = hasVisionChanges || hasVisionDescriptionChanges;
 
   const summaryError = !changeSummary.trim()
-    ? "Change summary is required when saving."
+    ? 'Change summary is required when saving.'
     : changeSummary.length > SUMMARY_MAX
-    ? `Summary must be ${SUMMARY_MAX} characters or less.`
-    : null;
+      ? `Summary must be ${SUMMARY_MAX} characters or less.`
+      : null;
 
   const visionRemaining = VISION_MAX - vision.length;
 
@@ -84,7 +84,7 @@ export default function VisionEditorPage(): React.ReactElement {
     setErrorMessage(null);
 
     if (!hasChanges) {
-      setErrorMessage("No changes detected to save.");
+      setErrorMessage('No changes detected to save.');
       return;
     }
 
@@ -94,7 +94,7 @@ export default function VisionEditorPage(): React.ReactElement {
     }
 
     try {
-      setStatus("saving");
+      setStatus('saving');
       const payload: UpdateCompanyStrategyInput = {
         vision,
         vision_description: visionDescription || null,
@@ -107,7 +107,9 @@ export default function VisionEditorPage(): React.ReactElement {
       });
 
       const changeTypePreference =
-        changeTypes?.find((type) => type.programmatic_name === "edit_vision") ?? changeTypes?.[0] ?? null;
+        changeTypes?.find((type) => type.programmatic_name === 'edit_vision') ??
+        changeTypes?.[0] ??
+        null;
 
       if (changeTypePreference) {
         await createChangeLog.mutateAsync({
@@ -115,74 +117,75 @@ export default function VisionEditorPage(): React.ReactElement {
           change_type_id: changeTypePreference.option_id,
           summary: changeSummary.trim(),
           justification: null,
-          meta: { affected_sections: ["vision"] },
+          meta: { affected_sections: ['vision'] },
         });
       }
 
-      setStatus("success");
-      router.push("/strategy-forge/overview");
+      setStatus('success');
+      router.push('/strategy-forge/overview');
     } catch (error) {
-      console.error("Failed to save vision", error);
-      setStatus("error");
-      setErrorMessage("Unable to save changes. Please try again.");
+      console.error('Failed to save vision', error);
+      setStatus('error');
+      setErrorMessage('Unable to save changes. Please try again.');
     }
   };
 
   const handleCancel = () => {
-    if (hasChanges && !window.confirm("Discard unsaved changes?")) {
+    if (hasChanges && !window.confirm('Discard unsaved changes?')) {
       return;
     }
-    router.push("/strategy-forge/overview");
+    router.push('/strategy-forge/overview');
   };
 
-  const isSaving = status === "saving" || updateStrategy.isPending;
+  const isSaving = status === 'saving' || updateStrategy.isPending;
 
   return (
     <Stack spacing={3}>
-      <Card variant="outlined">
+      <Card variant='outlined'>
         <CardContent>
           <Stack spacing={1}>
-            <Typography level="h1" sx={{ fontSize: "1.5rem" }}>
+            <Typography level='h1' sx={{ fontSize: '1.5rem' }}>
               Edit Vision
             </Typography>
-            <Typography level="body-sm" color="neutral">
-              Guided editor with prompts, examples, and governance controls. Provide a short summary outlining the changes before saving.
+            <Typography level='body-sm' color='neutral'>
+              Guided editor with prompts, examples, and governance controls. Provide a short summary
+              outlining the changes before saving.
             </Typography>
           </Stack>
         </CardContent>
       </Card>
 
-      {status === "error" && errorMessage ? (
-        <Alert color="danger" variant="soft">
+      {status === 'error' && errorMessage ? (
+        <Alert color='danger' variant='soft'>
           {errorMessage}
         </Alert>
       ) : null}
 
-      {status === "success" ? (
-        <Alert color="success" variant="soft">
+      {status === 'success' ? (
+        <Alert color='success' variant='soft'>
           Vision saved successfully.
         </Alert>
       ) : null}
 
       {!strategy ? (
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
-            <Stack spacing={2} alignItems="flex-start">
-              <Typography level="body-sm" color="neutral">
+            <Stack spacing={2} alignItems='flex-start'>
+              <Typography level='body-sm' color='neutral'>
                 Preparing editor…
               </Typography>
-              <LinearProgress variant="soft" />
+              <LinearProgress variant='soft' />
             </Stack>
           </CardContent>
         </Card>
       ) : (
-        <Card variant="outlined">
+        <Card variant='outlined'>
           <CardContent>
             <Stack spacing={3}>
-              <Stack spacing={2} id="strategy-vision-editor">
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography level="title-lg">Vision</Typography>
-                  <Chip size="sm" variant="soft" color="neutral">
+              <Stack spacing={2} id='strategy-vision-editor'>
+                <Stack direction='row' spacing={1} alignItems='center'>
+                  <Typography level='title-lg'>Vision</Typography>
+                  <Chip size='sm' variant='soft' color='neutral'>
                     {vision.length}/{VISION_MAX}
                   </Chip>
                 </Stack>
@@ -191,8 +194,8 @@ export default function VisionEditorPage(): React.ReactElement {
                   <Input
                     value={vision}
                     onChange={(event) => setVision(event.target.value.slice(0, VISION_MAX))}
-                    aria-label="Vision statement"
-                    placeholder="Describe the future state you are building"
+                    aria-label='Vision statement'
+                    placeholder='Describe the future state you are building'
                   />
                   <FormHelperText>{visionRemaining} characters remaining</FormHelperText>
                 </FormControl>
@@ -202,28 +205,31 @@ export default function VisionEditorPage(): React.ReactElement {
                     value={visionDescription}
                     onChange={(event) => setVisionDescription(event.target.value)}
                     minRows={4}
-                    placeholder="Explain implications, measurable outcomes, and strategic bets"
-                    aria-label="Vision description"
+                    placeholder='Explain implications, measurable outcomes, and strategic bets'
+                    aria-label='Vision description'
                   />
                   <FormHelperText>
-                    Link the vision to tangible metrics or strategic bets so teams can align execution.
+                    Link the vision to tangible metrics or strategic bets so teams can align
+                    execution.
                   </FormHelperText>
                 </FormControl>
               </Stack>
 
               <Stack spacing={0.5}>
-                <Typography level="title-sm">Change summary</Typography>
-                <Typography level="body-xs" color="neutral">
+                <Typography level='title-sm'>Change summary</Typography>
+                <Typography level='body-xs' color='neutral'>
                   Summaries appear in the change log for audit and communication purposes.
                 </Typography>
                 <Input
                   value={changeSummary}
                   onChange={(event) => setChangeSummary(event.target.value.slice(0, SUMMARY_MAX))}
-                  placeholder="Summarize the edits made"
-                  aria-label="Change summary"
+                  placeholder='Summarize the edits made'
+                  aria-label='Change summary'
                   required
                 />
-                <FormHelperText>{SUMMARY_MAX - changeSummary.length} characters remaining</FormHelperText>
+                <FormHelperText>
+                  {SUMMARY_MAX - changeSummary.length} characters remaining
+                </FormHelperText>
               </Stack>
             </Stack>
           </CardContent>
@@ -232,20 +238,20 @@ export default function VisionEditorPage(): React.ReactElement {
 
       <Divider />
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="flex-end">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent='flex-end'>
         <Button
-          variant="outlined"
-          color="neutral"
+          variant='outlined'
+          color='neutral'
           onClick={handleCancel}
-          startDecorator={<ArrowsCounterClockwiseIcon size={16} weight="bold" />}
+          startDecorator={<ArrowsCounterClockwiseIcon size={16} weight='bold' />}
           disabled={isSaving}
-          aria-haspopup={hasChanges ? "dialog" : undefined}
+          aria-haspopup={hasChanges ? 'dialog' : undefined}
         >
           Cancel
         </Button>
         <Button
-          variant="solid"
-          color="primary"
+          variant='solid'
+          color='primary'
           onClick={handleSave}
           disabled={isSaving || !hasChanges || Boolean(summaryError)}
           loading={isSaving}
@@ -256,4 +262,3 @@ export default function VisionEditorPage(): React.ReactElement {
     </Stack>
   );
 }
-

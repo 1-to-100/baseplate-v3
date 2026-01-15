@@ -11,7 +11,7 @@
       "~/components/*": ["./lib/components/*"],
       "~/schemas/*": ["./lib/schemas/*"],
       "~/sql/*": ["./lib/sql/*"],
-      
+
       // Root aliases (for shared code across the app)
       "@/*": ["../../../../src/*"]
     },
@@ -19,10 +19,7 @@
     "declaration": true,
     "declarationMap": true
   },
-  "include": [
-    "./**/*.ts",
-    "./**/*.tsx"
-  ],
+  "include": ["./**/*.ts", "./**/*.tsx"],
   "exclude": [
     "node_modules",
     "**/lib/edge/**",
@@ -32,4 +29,3 @@
     "**/*.spec.tsx"
   ]
 }
-

@@ -51,7 +51,9 @@ export function useCreateCaptureRequest() {
     mutationFn: createCaptureRequest,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: captureRequestKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: captureRequestKeys.detail(data.web_screenshot_capture_request_id) });
+      queryClient.invalidateQueries({
+        queryKey: captureRequestKeys.detail(data.web_screenshot_capture_request_id),
+      });
     },
   });
 }
@@ -62,11 +64,17 @@ export function useCreateCaptureRequest() {
 export function useUpdateCaptureRequest() {
   const queryClient = useQueryClient();
 
-  return useMutation<WebScreenshotCaptureRequest, Error, { id: string; payload: UpdateCaptureRequestPayload }>({
+  return useMutation<
+    WebScreenshotCaptureRequest,
+    Error,
+    { id: string; payload: UpdateCaptureRequestPayload }
+  >({
     mutationFn: ({ id, payload }) => updateCaptureRequest(id, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: captureRequestKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: captureRequestKeys.detail(data.web_screenshot_capture_request_id) });
+      queryClient.invalidateQueries({
+        queryKey: captureRequestKeys.detail(data.web_screenshot_capture_request_id),
+      });
     },
   });
 }
@@ -84,4 +92,3 @@ export function useDeleteCaptureRequest() {
     },
   });
 }
-

@@ -1,18 +1,16 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const uuidSchema = z.string().uuid();
 const isoDateTimeSchema = z
   .string()
   .datetime({ offset: true })
-  .or(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, "Expected ISO-8601 timestamp"));
+  .or(
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, 'Expected ISO-8601 timestamp')
+  );
 
-const nullableString = z
-  .string()
-  .trim()
-  .min(1)
-  .max(4000)
-  .nullable()
-  .optional();
+const nullableString = z.string().trim().min(1).max(4000).nullable().optional();
 
 export const createCompanyStrategyInputSchema = z.object({
   strategy_id: uuidSchema.optional(),
@@ -38,7 +36,7 @@ export const updateCompanyStrategyInputSchema = z
     effective_at: isoDateTimeSchema.nullable().optional(),
   })
   .refine((val) => Object.keys(val).length > 0, {
-    message: "At least one field must be provided to update a strategy.",
+    message: 'At least one field must be provided to update a strategy.',
   });
 
 export const createStrategyPrincipleInputSchema = z.object({
@@ -57,7 +55,7 @@ export const updateStrategyPrincipleInputSchema = z
     is_active: z.boolean().optional(),
   })
   .refine((val) => Object.keys(val).length > 0, {
-    message: "At least one field must be provided to update a strategy principle.",
+    message: 'At least one field must be provided to update a strategy principle.',
   });
 
 export const createStrategyValueInputSchema = z.object({
@@ -76,7 +74,7 @@ export const updateStrategyValueInputSchema = z
     is_active: z.boolean().optional(),
   })
   .refine((val) => Object.keys(val).length > 0, {
-    message: "At least one field must be provided to update a strategy value.",
+    message: 'At least one field must be provided to update a strategy value.',
   });
 
 const optionalUrlSchema = z
@@ -107,7 +105,7 @@ export const updateCompetitorInputSchema = z
     source_id: uuidSchema.optional().nullable(),
   })
   .refine((val) => Object.keys(val).length > 0, {
-    message: "At least one field must be provided to update a competitor.",
+    message: 'At least one field must be provided to update a competitor.',
   });
 
 export const createCompetitorSignalInputSchema = z.object({
@@ -126,7 +124,7 @@ export const updateCompetitorSignalInputSchema = z
     note: nullableString,
   })
   .refine((val) => Object.keys(val).length > 0, {
-    message: "At least one field must be provided to update a competitor signal.",
+    message: 'At least one field must be provided to update a competitor signal.',
   });
 
 export const createStrategyChangeLogInputSchema = z.object({
@@ -146,12 +144,11 @@ const baseOptionUpsertSchema = z.object({
 });
 
 export const createOptionInputSchema = baseOptionUpsertSchema;
-export const updateOptionInputSchema = baseOptionUpsertSchema.partial().refine(
-  (val) => Object.keys(val).length > 0,
-  {
-    message: "At least one field must be provided to update an option record.",
-  }
-);
+export const updateOptionInputSchema = baseOptionUpsertSchema
+  .partial()
+  .refine((val) => Object.keys(val).length > 0, {
+    message: 'At least one field must be provided to update an option record.',
+  });
 
 export type CreateCompanyStrategyInput = z.infer<typeof createCompanyStrategyInputSchema>;
 export type UpdateCompanyStrategyInput = z.infer<typeof updateCompanyStrategyInputSchema>;
@@ -166,5 +163,3 @@ export type UpdateCompetitorSignalInput = z.infer<typeof updateCompetitorSignalI
 export type CreateStrategyChangeLogInput = z.infer<typeof createStrategyChangeLogInputSchema>;
 export type CreateOptionInput = z.infer<typeof createOptionInputSchema>;
 export type UpdateOptionInput = z.infer<typeof updateOptionInputSchema>;
-
-

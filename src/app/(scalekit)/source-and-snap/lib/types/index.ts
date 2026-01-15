@@ -189,4 +189,3 @@ export interface GetCapturesResponse {
     next: number | null;
   };
 }
-

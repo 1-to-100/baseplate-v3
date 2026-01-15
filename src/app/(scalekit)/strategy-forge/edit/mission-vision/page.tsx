@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default function MissionVisionRedirect(): never {
-  redirect("/strategy-forge/edit/mission");
+  redirect('/strategy-forge/edit/mission');
 }

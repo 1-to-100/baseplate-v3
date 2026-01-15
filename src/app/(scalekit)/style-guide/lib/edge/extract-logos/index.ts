@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import OpenAI from 'https://esm.sh/openai@4';
 
@@ -92,9 +92,9 @@ NOTE: logo_assets can be an empty array [] if no clear logos are found.`;
  */
 function validateLogosResponse(response: unknown): ExtractedLogos {
   console.log('Validating logos response...');
-  
+
   let data: Record<string, unknown>;
-  
+
   if (Array.isArray(response)) {
     if (response.length === 0) throw new Error('Empty response array');
     data = response[0] as Record<string, unknown>;
@@ -143,20 +143,21 @@ Deno.serve(async (req) => {
       requestBody = JSON.parse(text);
     } catch (parseError) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Invalid request body',
-          usage: 'Please provide: { "visual_style_guide_id": "uuid", "starting_url": "https://..." }'
+          usage:
+            'Please provide: { "visual_style_guide_id": "uuid", "starting_url": "https://..." }',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { visual_style_guide_id, starting_url } = requestBody;
-    
+
     if (!visual_style_guide_id || !starting_url) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Both visual_style_guide_id and starting_url are required'
+        JSON.stringify({
+          error: 'Both visual_style_guide_id and starting_url are required',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -181,7 +182,10 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
@@ -237,27 +241,29 @@ Deno.serve(async (req) => {
 
     // Call GPT-5 with web_search
     console.log('Calling GPT-5 with web_search...');
-    
+
     const urlObj = new URL(starting_url);
     const domain = urlObj.hostname.replace(/^www\./, '');
     console.log('Filtering web search to domain:', domain);
-    
+
     const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}\n\nCRITICAL: Return ONLY valid JSON, no markdown or code blocks.`;
 
     const responsePayload = {
       model: 'gpt-5',
       input: combinedPrompt,
-      tools: [{
-        type: 'web_search',
-        filters: { allowed_domains: [domain] }
-      }],
+      tools: [
+        {
+          type: 'web_search',
+          filters: { allowed_domains: [domain] },
+        },
+      ],
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${openaiKey}`,
         'OpenAI-Beta': 'responses=v1',
       },
       body: JSON.stringify(responsePayload),
@@ -271,24 +277,28 @@ Deno.serve(async (req) => {
 
     const responseData = await apiResponse.json();
     console.log('Response received from GPT-5');
-    
+
     const output = (responseData.output || []) as Array<Record<string, unknown>>;
-    const messageItem = output.find((item) => item.type === 'message') as { content?: Array<Record<string, unknown>> } | undefined;
-    
+    const messageItem = output.find((item) => item.type === 'message') as
+      | { content?: Array<Record<string, unknown>> }
+      | undefined;
+
     if (!messageItem) {
       throw new Error('No message in OpenAI response');
     }
 
     const content = (messageItem.content || []) as Array<Record<string, unknown>>;
-    const textItem = content.find((item) => item.type === 'output_text') as { text?: string } | undefined;
-    
+    const textItem = content.find((item) => item.type === 'output_text') as
+      | { text?: string }
+      | undefined;
+
     if (!textItem || !textItem.text) {
       throw new Error('No text in message content');
     }
 
     const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
-    
+
     // Log web search calls
     const webSearchCalls = output.filter((item) => item.type === 'web_search_call');
     console.log(`✓ Web searches performed: ${webSearchCalls.length}`);
@@ -308,7 +318,7 @@ Deno.serve(async (req) => {
     // Insert logo assets (if any were found)
     if (extractedData.logo_assets.length > 0) {
       console.log(`Inserting ${extractedData.logo_assets.length} logo assets...`);
-      
+
       const logoAssetRecords = extractedData.logo_assets.map((logo) => ({
         customer_id: customerId,
         visual_style_guide_id: visual_style_guide_id,
@@ -341,7 +351,7 @@ Deno.serve(async (req) => {
     } else {
       console.log('No logo assets to insert');
     }
-    
+
     console.log('=== EXTRACT LOGOS COMPLETE ===');
 
     // Return 204 No Content (success, no return value)
@@ -349,18 +359,16 @@ Deno.serve(async (req) => {
       status: 204,
       headers: corsHeaders,
     });
-
   } catch (error) {
     console.error('Error in extract-logos:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unexpected error',
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
 });
-
