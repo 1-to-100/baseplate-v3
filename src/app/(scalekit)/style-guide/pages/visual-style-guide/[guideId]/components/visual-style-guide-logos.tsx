@@ -477,12 +477,22 @@ export default function VisualStyleGuideLogos({
         const existingLogo = logos?.find((l) => l.logo_type_option_id === logoTypeOptionId);
 
         if (existingLogo) {
-          // Delete old file from storage if it exists
+          // Delete old file from storage if it exists AND no other logos are using it
           if (existingLogo.storage_path && existingLogo.storage_path !== storagePath) {
-            const deleteResult = await deleteLogoFile(existingLogo.storage_path);
-            if (!deleteResult.ok) {
-              console.error('Failed to delete old file from storage:', deleteResult.error);
-              // Continue with update even if old file deletion fails
+            // Check if other logos are using the same storage path (shared file from AI generation)
+            const otherLogosUsingSamePath = logos?.filter(
+              (l) =>
+                l.logo_asset_id !== existingLogo.logo_asset_id &&
+                l.storage_path === existingLogo.storage_path
+            );
+
+            // Only delete the file if no other logos reference it
+            if (!otherLogosUsingSamePath || otherLogosUsingSamePath.length === 0) {
+              const deleteResult = await deleteLogoFile(existingLogo.storage_path);
+              if (!deleteResult.ok) {
+                console.error('Failed to delete old file from storage:', deleteResult.error);
+                // Continue with update even if old file deletion fails
+              }
             }
           }
 
@@ -595,12 +605,22 @@ export default function VisualStyleGuideLogos({
     if (!logoToDelete) return;
 
     try {
-      // Delete file from storage if it exists
+      // Delete file from storage if it exists AND no other logos are using it
       if (logoToDelete.storage_path) {
-        const deleteResult = await deleteLogoFile(logoToDelete.storage_path);
-        if (!deleteResult.ok) {
-          console.error('Failed to delete file from storage:', deleteResult.error);
-          // Continue with database deletion even if storage deletion fails
+        // Check if other logos are using the same storage path (shared file from AI generation)
+        const otherLogosUsingSamePath = logos?.filter(
+          (l) =>
+            l.logo_asset_id !== logoToDelete.logo_asset_id &&
+            l.storage_path === logoToDelete.storage_path
+        );
+
+        // Only delete the file if no other logos reference it
+        if (!otherLogosUsingSamePath || otherLogosUsingSamePath.length === 0) {
+          const deleteResult = await deleteLogoFile(logoToDelete.storage_path);
+          if (!deleteResult.ok) {
+            console.error('Failed to delete file from storage:', deleteResult.error);
+            // Continue with database deletion even if storage deletion fails
+          }
         }
       }
 
@@ -612,7 +632,7 @@ export default function VisualStyleGuideLogos({
     } catch (error) {
       toast.error('Failed to delete logo');
     }
-  }, [logoToDelete, deleteLogo]);
+  }, [logoToDelete, deleteLogo, logos]);
 
   // Open the generate logo modal
   const handleGenerateWithAI = React.useCallback(() => {
