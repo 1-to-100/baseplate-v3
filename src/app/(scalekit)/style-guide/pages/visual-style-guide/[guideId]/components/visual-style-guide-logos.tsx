@@ -182,6 +182,7 @@ type LogoEditItemProps = {
 type LogoEditItemPropsWithUpload = LogoEditItemProps & {
   onUploadClick: (logoTypeId: string) => void;
   onDownloadClick: (logo: LogoAsset) => void;
+  isUploading?: boolean;
 };
 
 function LogoEditItem({
@@ -191,6 +192,7 @@ function LogoEditItem({
   onUploadClick,
   onDownloadClick,
   onImageError,
+  isUploading,
 }: LogoEditItemPropsWithUpload): React.JSX.Element {
   const getImageSrc = () => {
     if (logo?.file_url) return logo.file_url;
@@ -204,6 +206,25 @@ function LogoEditItem({
   };
 
   const imageSrc = getImageSrc();
+
+  const renderImageContent = () => {
+    if (isUploading) {
+      return <CircularProgress size='sm' />;
+    }
+    if (imageSrc) {
+      return (
+        <Image
+          src={imageSrc}
+          alt={String(logoType.display_name || '')}
+          fill
+          style={{ objectFit: 'contain' }}
+          unoptimized
+          onError={() => (logo ? onImageError?.(logo) : undefined)}
+        />
+      );
+    }
+    return <FileImage size={32} />;
+  };
 
   return (
     <ListItem key={String(logoType.logo_type_option_id)} sx={{ p: 0 }}>
@@ -226,18 +247,7 @@ function LogoEditItem({
                 px: 2,
               }}
             >
-              {imageSrc ? (
-                <Image
-                  src={imageSrc}
-                  alt={String(logoType.display_name || '')}
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  unoptimized
-                  onError={() => (logo ? onImageError?.(logo) : undefined)}
-                />
-              ) : (
-                <FileImage size={32} />
-              )}
+              {renderImageContent()}
             </Stack>
           </Grid>
           <Grid xs={12} sm={8} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -827,26 +837,21 @@ export default function VisualStyleGuideLogos({
                       : undefined;
 
                     return (
-                      <Box key={String(logoType.logo_type_option_id)}>
-                        <LogoEditItem
-                          logoType={logoType}
-                          logo={logoWithUrl}
-                          onDeleteClick={() => {
-                            if (logo) {
-                              setLogoToDelete(logo);
-                            }
-                            setDeleteLogoDialogOpen(true);
-                          }}
-                          onUploadClick={handleUploadClick}
-                          onDownloadClick={handleDownloadLogo}
-                          onImageError={(l) => refreshLogoUrl(l)}
-                        />
-                        {uploadingLogoId === String(logoType.logo_type_option_id) && (
-                          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
-                            <CircularProgress size='sm' />
-                          </Box>
-                        )}
-                      </Box>
+                      <LogoEditItem
+                        key={String(logoType.logo_type_option_id)}
+                        logoType={logoType}
+                        logo={logoWithUrl}
+                        onDeleteClick={() => {
+                          if (logo) {
+                            setLogoToDelete(logo);
+                          }
+                          setDeleteLogoDialogOpen(true);
+                        }}
+                        onUploadClick={handleUploadClick}
+                        onDownloadClick={handleDownloadLogo}
+                        onImageError={(l) => refreshLogoUrl(l)}
+                        isUploading={uploadingLogoId === String(logoType.logo_type_option_id)}
+                      />
                     );
                   })}
                 </List>
