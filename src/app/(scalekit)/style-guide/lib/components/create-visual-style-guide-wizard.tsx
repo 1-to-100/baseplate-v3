@@ -210,12 +210,15 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
         toast.warning(
           `Visual style guide created, but some extractions failed. Check the guide for details.`
         );
+        // Navigate with extraction failed flag
+        router.push(
+          `${paths.dashboard.visualOs.overview(visualStyleGuideId)}?extractionFailed=true`
+        );
       } else {
         toast.success('Visual style guide created and analyzed successfully!');
+        // Navigate to the created guide
+        router.push(paths.dashboard.visualOs.overview(visualStyleGuideId));
       }
-
-      // Navigate to the created guide
-      router.push(paths.dashboard.visualOs.overview(visualStyleGuideId));
     } catch (error) {
       console.error('Error in scan process:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to scan website');
