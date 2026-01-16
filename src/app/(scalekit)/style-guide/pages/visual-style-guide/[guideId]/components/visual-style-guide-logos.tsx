@@ -32,6 +32,7 @@ import {
   deleteLogoFile,
   ensureLogoBucketExists,
 } from '@/app/(scalekit)/style-guide/lib/api/logo_storage';
+import { createZipFromFiles, fetchFileAsBlob, dataUrlToBlob } from '@/lib/helpers/zip-utils';
 import Image from 'next/image';
 import { GenerateLogoModal } from './generate-logo-modal';
 
@@ -409,6 +410,7 @@ export default function VisualStyleGuideLogos({
   const [uploadingLogoId, setUploadingLogoId] = React.useState<string | null>(null);
   const [generateLogoModalOpen, setGenerateLogoModalOpen] = React.useState(false);
   const [isSavingGeneratedLogo, setIsSavingGeneratedLogo] = React.useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = React.useState(false);
 
   const handleUploadClick = (logoTypeId?: string) => {
     if (logoTypeId && fileInputRef.current) {
@@ -588,18 +590,78 @@ export default function VisualStyleGuideLogos({
       return;
     }
 
+    setIsDownloadingAll(true);
+
     try {
-      for (const logo of logos) {
-        await handleDownloadLogo(logo);
-        // Small delay between downloads to avoid overwhelming the browser
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      const zipFiles: { filename: string; data: Blob }[] = [];
+
+      // Fetch all logos in parallel
+      const logoPromises = logos.map(async (logo) => {
+        try {
+          let blob: Blob;
+          let filename: string;
+
+          if (logo.storage_path) {
+            // Get signed URL from storage and fetch
+            const signedUrl = await getSignedUrl(logo.storage_path);
+            blob = await fetchFileAsBlob(signedUrl);
+            filename = logo.storage_path.split('/').pop() || 'logo.png';
+          } else if (logo.file_url) {
+            // Fetch from direct URL
+            blob = await fetchFileAsBlob(logo.file_url);
+            filename = 'logo.png';
+          } else if (logo.file_blob) {
+            // Convert base64 blob
+            blob = dataUrlToBlob(logo.file_blob);
+            filename = logo.is_vector ? 'logo.svg' : 'logo.png';
+          } else {
+            return null; // Skip logos without file data
+          }
+
+          // Get logo type name for better filename
+          const logoType = logoTypes?.find(
+            (lt) => lt.logo_type_option_id === logo.logo_type_option_id
+          );
+          const typeName = logoType?.display_name
+            ? String(logoType.display_name).toLowerCase().replace(/\s+/g, '-')
+            : 'logo';
+
+          // Create unique filename with logo type
+          const extension = filename.split('.').pop() || 'png';
+          const uniqueFilename = `${typeName}.${extension}`;
+
+          return { filename: uniqueFilename, data: blob };
+        } catch (error) {
+          console.error(`Failed to fetch logo ${logo.logo_asset_id}:`, error);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(logoPromises);
+
+      // Filter out null results (failed fetches)
+      for (const result of results) {
+        if (result) {
+          zipFiles.push(result);
+        }
       }
-      toast.success('All logos downloaded');
+
+      if (zipFiles.length === 0) {
+        toast.error('No logos could be downloaded');
+        return;
+      }
+
+      // Create and download the zip file
+      await createZipFromFiles(zipFiles, 'logos.zip');
+
+      toast.success(`Downloaded ${zipFiles.length} logo${zipFiles.length > 1 ? 's' : ''} as zip`);
     } catch (error) {
       console.error('Download all error:', error);
-      toast.error('Failed to download some logos');
+      toast.error('Failed to create zip file');
+    } finally {
+      setIsDownloadingAll(false);
     }
-  }, [logos, handleDownloadLogo]);
+  }, [logos, logoTypes, getSignedUrl]);
 
   const handleDeleteLogo = React.useCallback(async () => {
     if (!logoToDelete) return;
@@ -720,8 +782,13 @@ export default function VisualStyleGuideLogos({
             Logos
           </Typography>
           {logos && logos.length > 0 && (
-            <Button variant='plain' startDecorator={<Download />} onClick={handleDownloadAll}>
-              Download All
+            <Button
+              variant='plain'
+              startDecorator={isDownloadingAll ? <CircularProgress size='sm' /> : <Download />}
+              onClick={handleDownloadAll}
+              disabled={isDownloadingAll}
+            >
+              {isDownloadingAll ? 'Downloading...' : 'Download All'}
             </Button>
           )}
         </Stack>
