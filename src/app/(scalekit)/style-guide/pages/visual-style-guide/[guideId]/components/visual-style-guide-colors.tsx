@@ -442,13 +442,15 @@ export default function VisualStyleGuideColors({
     async (presetColors: readonly string[]) => {
       try {
         const usageOptions = Object.values(COLOR_USAGE_OPTION);
+        // Use full colors array to find existing colors (including foreground/background)
+        const allColors = colors || [];
 
         await Promise.all(
           presetColors.map(async (hex, index) => {
             const usageOption = usageOptions[index] as ColorUsageOption;
 
-            // Check if a color with this usage_option already exists
-            const existingColor = sortedColors.find(
+            // Check if a color with this usage_option already exists in ALL colors
+            const existingColor = allColors.find(
               (c: PaletteColor) => c.usage_option === usageOption
             );
 
@@ -461,8 +463,8 @@ export default function VisualStyleGuideColors({
             } else {
               // Create new color
               const maxSortOrder =
-                sortedColors.length > 0
-                  ? Math.max(...sortedColors.map((c: PaletteColor) => c.sort_order as number))
+                allColors.length > 0
+                  ? Math.max(...allColors.map((c: PaletteColor) => c.sort_order as number))
                   : 0;
 
               await createColor.mutateAsync({
@@ -482,7 +484,7 @@ export default function VisualStyleGuideColors({
         toast.error('Failed to update color palette');
       }
     },
-    [createColor, updateColor, guideId, sortedColors]
+    [createColor, updateColor, guideId, colors]
   );
 
   return (
@@ -519,14 +521,6 @@ export default function VisualStyleGuideColors({
                   );
                 })}
               </List>
-              <Button
-                variant='plain'
-                onClick={() => setAddColorDialogOpen(true)}
-                startDecorator={<Plus />}
-                sx={{ mt: 2.5 }}
-              >
-                Add Additional Color
-              </Button>
             </>
           );
 
