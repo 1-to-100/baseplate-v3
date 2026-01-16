@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from '@/components/core/toaster';
+import { useGoogleFont } from '@/hooks/use-google-font';
 import { Box, Button, Card, Grid, Option, Select } from '@mui/joy';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Input from '@mui/joy/Input';
@@ -142,6 +143,7 @@ type TypographyEditItemProps = {
   option: TypographyStyleOption | undefined;
   fontOptions: FontOption[] | undefined;
   onUpdateTypography: (styleId: string, field: string, value: unknown) => Promise<void>;
+  onDropdownOpen?: () => void;
 };
 
 function TypographyEditItem({
@@ -149,6 +151,7 @@ function TypographyEditItem({
   option,
   fontOptions,
   onUpdateTypography,
+  onDropdownOpen,
 }: TypographyEditItemProps): React.JSX.Element {
   // Check if current font_family exists in fontOptions
   const currentFontFamily = String(style.font_family || '');
@@ -178,6 +181,11 @@ function TypographyEditItem({
               );
             }
           }}
+          onListboxOpenChange={(isOpen) => {
+            if (isOpen && onDropdownOpen) {
+              onDropdownOpen();
+            }
+          }}
           size='sm'
           aria-label={`Select font for ${String(option?.display_name || 'Unknown')}`}
         >
@@ -196,10 +204,10 @@ function TypographyEditItem({
           {fontOptions?.map((font) => (
             <Option
               key={String(font.font_option_id)}
-              value={String(font.programmatic_name || '')}
+              value={String(font.display_name || '')}
               sx={(theme) => ({
-                fontFamily: font.programmatic_name
-                  ? `${font.programmatic_name}, ${theme.fontFamily.body}`
+                fontFamily: font.display_name
+                  ? `"${font.display_name}", ${theme.fontFamily.body}`
                   : theme.fontFamily.body,
               })}
             >
@@ -286,6 +294,26 @@ export default function VisualStyleGuideTypography({
   const { data: fontOptions } = useFontOptions();
   const { data: colors, isLoading: colorsLoading } = usePaletteColors();
 
+  // Extract unique font families from saved typography styles (DB data)
+  const savedFontFamilies = React.useMemo(() => {
+    return (typographyStyles || [])
+      .map((style) => style.font_family)
+      .filter((font): font is string => Boolean(font));
+  }, [typographyStyles]);
+
+  // Load fonts from DB on mount and provide loadFont/loadFonts for new selections
+  const { loadFont, loadFonts } = useGoogleFont(savedFontFamilies);
+
+  // Handler to load all font options when dropdown opens
+  const handleFontDropdownOpen = React.useCallback(() => {
+    if (fontOptions && fontOptions.length > 0) {
+      const fontNames = fontOptions
+        .map((f) => f.display_name)
+        .filter((name): name is string => Boolean(name));
+      loadFonts(fontNames);
+    }
+  }, [fontOptions, loadFonts]);
+
   const foregroundAndBackgroundColors = React.useMemo(() => {
     return (colors || [])
       .filter(
@@ -327,6 +355,12 @@ export default function VisualStyleGuideTypography({
   const handleUpdateTypography = React.useCallback(
     async (styleId: string, field: string, value: unknown) => {
       try {
+        // If updating font_family, try to load the font (silent failure - won't block DB update)
+        if (field === 'font_family' && typeof value === 'string') {
+          // Don't await - let font load in background, don't block DB update
+          loadFont(value);
+        }
+
         await updateTypography.mutateAsync({
           id: styleId,
           input: { [field]: value },
@@ -335,7 +369,7 @@ export default function VisualStyleGuideTypography({
         toast.error('Failed to update typography style');
       }
     },
-    [updateTypography]
+    [updateTypography, loadFont]
   );
 
   const handleUpdateColor = React.useCallback(
@@ -357,6 +391,9 @@ export default function VisualStyleGuideTypography({
   const handleSelectTypographyPreset = React.useCallback(
     async (fontFamily: string) => {
       try {
+        // Load the font from Google Fonts (silent failure - won't block DB update)
+        loadFont(fontFamily);
+
         // Update all typography styles with the selected font family
         if (typographyStyles && typographyStyles.length > 0) {
           await Promise.all(
@@ -391,7 +428,14 @@ export default function VisualStyleGuideTypography({
         toast.error('Failed to update typography');
       }
     },
-    [typographyStyles, typographyOptions, guideId, handleUpdateTypography, createTypographyStyle]
+    [
+      typographyStyles,
+      typographyOptions,
+      guideId,
+      handleUpdateTypography,
+      createTypographyStyle,
+      loadFont,
+    ]
   );
 
   const handleAddCustomTypography = React.useCallback(() => {
@@ -447,6 +491,7 @@ export default function VisualStyleGuideTypography({
                         option={option}
                         fontOptions={fontOptions}
                         onUpdateTypography={handleUpdateTypography}
+                        onDropdownOpen={handleFontDropdownOpen}
                       />
                     );
                   }
