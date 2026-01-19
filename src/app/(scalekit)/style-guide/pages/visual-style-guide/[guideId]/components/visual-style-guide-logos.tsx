@@ -104,7 +104,7 @@ function LogoPresetSelector({
         <Typography level='body-sm' color='neutral'>
           {hasGeneratedPresets
             ? 'Select a generated logo to use'
-            : 'Generate a logo with AI to get started'}
+            : 'Generate a logo with AI or upload your own logo'}
         </Typography>
         <Button
           variant='plain'
@@ -217,26 +217,62 @@ function LogoEditItem({
   };
 
   const imageSrc = getImageSrc();
+  const hasLogo = !!imageSrc;
 
-  const renderImageContent = () => {
-    if (isUploading) {
-      return <CircularProgress size='sm' />;
-    }
-    if (imageSrc) {
-      return (
-        <Image
-          src={imageSrc}
-          alt={String(logoType.display_name || '')}
-          fill
-          style={{ objectFit: 'contain' }}
-          unoptimized
-          onError={() => (logo ? onImageError?.(logo) : undefined)}
-        />
-      );
-    }
-    return <FileImage size={32} />;
-  };
+  // When no logo exists, show the upload card UI
+  if (!hasLogo) {
+    return (
+      <ListItem key={String(logoType.logo_type_option_id)} sx={{ p: 0 }}>
+        <Box sx={{ width: '100%' }}>
+          <Typography level='body-sm' sx={{ mb: 1 }}>
+            {String(logoType.display_name || '')}
+          </Typography>
+          <Card
+            variant='outlined'
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 2,
+              p: 2,
+              cursor: 'pointer',
+              transition: 'border-color 0.15s ease',
+              '&:hover': {
+                borderColor: 'primary.outlinedColor',
+              },
+            }}
+            onClick={() => onUploadClick(String(logoType.logo_type_option_id))}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100px',
+                height: '72px',
+                backgroundColor: 'background.level2',
+                borderRadius: 'var(--joy-radius-sm)',
+              }}
+            >
+              {isUploading ? (
+                <CircularProgress size='sm' />
+              ) : (
+                <Upload size={24} color='var(--joy-palette-warning-500)' />
+              )}
+            </Box>
+            <Stack>
+              <Typography level='title-sm'>Upload Image</Typography>
+              <Typography level='body-sm' color='neutral'>
+                File upload, supports PNG, SVG
+              </Typography>
+            </Stack>
+          </Card>
+        </Box>
+      </ListItem>
+    );
+  }
 
+  // When logo exists, show the existing UI with image preview and actions
   return (
     <ListItem key={String(logoType.logo_type_option_id)} sx={{ p: 0 }}>
       <Box sx={{ width: '100%' }}>
@@ -258,7 +294,18 @@ function LogoEditItem({
                 px: 2,
               }}
             >
-              {renderImageContent()}
+              {isUploading ? (
+                <CircularProgress size='sm' />
+              ) : (
+                <Image
+                  src={imageSrc}
+                  alt={String(logoType.display_name || '')}
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  unoptimized
+                  onError={() => (logo ? onImageError?.(logo) : undefined)}
+                />
+              )}
             </Stack>
           </Grid>
           <Grid xs={12} sm={8} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -273,7 +320,7 @@ function LogoEditItem({
                   ? String((logo as { filename?: string }).filename)
                   : logo?.storage_path
                     ? logo.storage_path.split('/').pop() || 'logo.png'
-                    : 'imagename.png'}
+                    : 'logo.png'}
               </Typography>
               <Stack direction='row' spacing={1}>
                 {logo && (
