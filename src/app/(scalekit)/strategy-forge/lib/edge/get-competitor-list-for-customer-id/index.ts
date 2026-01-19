@@ -114,6 +114,36 @@ async function callOpenAI(args: {
     model: 'gpt-5',
     input: prompt,
     reasoning: { effort: 'medium' as const },
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'competitors_response',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            competitors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', description: 'Company name' },
+                  website_url: { type: 'string', description: 'Official website URL (https://)' },
+                  description: {
+                    type: 'string',
+                    description: '2-3 sentences explaining positioning and differentiation',
+                  },
+                },
+                required: ['name', 'website_url', 'description'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['competitors'],
+          additionalProperties: false,
+        },
+      },
+    },
   };
 
   const response = await fetch('https://api.openai.com/v1/responses', {

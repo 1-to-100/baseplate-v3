@@ -521,6 +521,28 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
     model: 'gpt-5',
     input: prompt,
     reasoning: { effort: 'low' },
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'strategy_items_response',
+        strict: true,
+        schema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Concise name (max 8 words)' },
+              description: {
+                type: 'string',
+                description: '2-3 sentence description highlighting why it matters',
+              },
+            },
+            required: ['name', 'description'],
+            additionalProperties: false,
+          },
+        },
+      },
+    },
   };
 
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -952,6 +974,81 @@ Deno.serve(async (req) => {
           filters: { allowed_domains: [domain] },
         },
       ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'strategy_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              company_name: { type: ['string', 'null'], description: 'Company name' },
+              tagline: { type: ['string', 'null'], description: 'Company tagline' },
+              one_sentence_summary: {
+                type: ['string', 'null'],
+                description: 'One sentence summary of the company',
+              },
+              problem_overview: {
+                type: ['string', 'null'],
+                description: 'Overview of the problem the company solves',
+              },
+              solution_overview: {
+                type: ['string', 'null'],
+                description: 'Overview of the company solution',
+              },
+              content_authoring_prompt: {
+                type: ['string', 'null'],
+                description: 'Prompt for content authoring',
+              },
+              mission: { type: 'string', description: 'Company mission statement' },
+              mission_description: { type: 'string', description: 'Detailed mission description' },
+              vision: { type: 'string', description: 'Company vision statement' },
+              vision_description: { type: 'string', description: 'Detailed vision description' },
+              values: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Value name' },
+                    description: { type: 'string', description: 'Value description' },
+                  },
+                  required: ['name', 'description'],
+                  additionalProperties: false,
+                },
+                description: 'Company values (3-6 items)',
+              },
+              principles: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Principle name' },
+                    description: { type: 'string', description: 'Principle description' },
+                  },
+                  required: ['name', 'description'],
+                  additionalProperties: false,
+                },
+                description: 'Company principles (3-6 items)',
+              },
+            },
+            required: [
+              'mission',
+              'mission_description',
+              'vision',
+              'vision_description',
+              'values',
+              'principles',
+              'company_name',
+              'tagline',
+              'one_sentence_summary',
+              'problem_overview',
+              'solution_overview',
+              'content_authoring_prompt',
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     const openAiResponse = await fetch('https://api.openai.com/v1/responses', {

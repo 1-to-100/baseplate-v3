@@ -257,6 +257,42 @@ Deno.serve(async (req) => {
           filters: { allowed_domains: [domain] },
         },
       ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'logo_extraction_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              logo_assets: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    logo_type_option_id: {
+                      type: 'string',
+                      description: 'UUID from logo type options',
+                    },
+                    description: {
+                      type: ['string', 'null'],
+                      description: 'Description of the logo variation and where it is used',
+                    },
+                    file_url: {
+                      type: ['string', 'null'],
+                      description: 'Direct URL to the logo file if found',
+                    },
+                  },
+                  required: ['logo_type_option_id', 'description', 'file_url'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['logo_assets'],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/responses', {

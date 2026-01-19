@@ -340,6 +340,35 @@ ${userPrompt}`;
           },
         },
       ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'segments_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              segments: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Name of the market segment' },
+                    description: {
+                      type: 'string',
+                      description: 'Description of the segment (one paragraph, 4-6 sentences)',
+                    },
+                  },
+                  required: ['name', 'description'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['segments'],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     console.log('Request payload model:', responsePayload.model);

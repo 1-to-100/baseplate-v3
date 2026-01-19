@@ -396,6 +396,63 @@ Deno.serve(async (req) => {
           ],
         },
       ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'typography_extraction_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              typography_styles: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    typography_style_option_id: {
+                      type: 'string',
+                      description: 'UUID from typography style options',
+                    },
+                    font_option_id: {
+                      type: ['string', 'null'],
+                      description: 'UUID from font options if matched',
+                    },
+                    font_family: {
+                      type: 'string',
+                      description: 'Font family name (e.g., "Inter", "Roboto")',
+                    },
+                    font_size_px: { type: 'integer', description: 'Font size in pixels' },
+                    line_height: {
+                      type: ['number', 'null'],
+                      description: 'Line height multiplier (e.g., 1.5)',
+                    },
+                    font_weight: {
+                      type: ['string', 'null'],
+                      description: 'Font weight (e.g., "400", "bold")',
+                    },
+                    color: {
+                      type: ['string', 'null'],
+                      description: 'Text color as hex code with # prefix',
+                    },
+                  },
+                  required: [
+                    'typography_style_option_id',
+                    'font_option_id',
+                    'font_family',
+                    'font_size_px',
+                    'line_height',
+                    'font_weight',
+                    'color',
+                  ],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['typography_styles'],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {

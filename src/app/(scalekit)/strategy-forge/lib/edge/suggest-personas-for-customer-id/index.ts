@@ -317,6 +317,35 @@ ${userPrompt}`;
           },
         },
       ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'personas_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              personas: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Name of the persona' },
+                    description: {
+                      type: 'string',
+                      description: 'Description of the persona (one paragraph, 4-6 sentences)',
+                    },
+                  },
+                  required: ['name', 'description'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['personas'],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     console.log('Request payload model:', responsePayload.model);

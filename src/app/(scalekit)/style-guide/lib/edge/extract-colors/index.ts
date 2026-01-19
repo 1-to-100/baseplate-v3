@@ -381,6 +381,47 @@ Deno.serve(async (req) => {
           ],
         },
       ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'color_extraction_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              palette_colors: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    hex: {
+                      type: 'string',
+                      description: 'Hex color code with # prefix (e.g., "#1976D2")',
+                    },
+                    name: {
+                      type: 'string',
+                      description: 'Descriptive color name (e.g., "Primary Blue")',
+                    },
+                    usage_option: {
+                      type: 'string',
+                      enum: ['primary', 'secondary', 'foreground', 'background', 'accent'],
+                      description: 'How the color is used in the design',
+                    },
+                    sort_order: {
+                      type: 'integer',
+                      description: 'Order for display (starting from 1)',
+                    },
+                  },
+                  required: ['hex', 'name', 'usage_option', 'sort_order'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['palette_colors'],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {

@@ -576,6 +576,115 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
           },
         },
       ],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'style_guide_response',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              brand_personality: {
+                type: ['string', 'null'],
+                description: '1-2 sentences describing the company overall personality and tone',
+              },
+              brand_voice: {
+                type: ['string', 'null'],
+                description: 'Comma-separated list of 3-5 adjectives describing the brand voice',
+              },
+              formality_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from formality options',
+              },
+              sentence_length_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from sentence length options',
+              },
+              pacing_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from pacing options',
+              },
+              humor_usage_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from humor usage options',
+              },
+              storytelling_style_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from storytelling style options',
+              },
+              use_of_jargon_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from jargon usage options',
+              },
+              language_level_option_item_id: {
+                type: ['string', 'null'],
+                description: 'UUID from language level options',
+              },
+              inclusivity_guidelines: {
+                type: ['string', 'null'],
+                description: '2-4 sentences of inclusive language guidelines',
+              },
+              framing_concepts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Short name for the framing concept' },
+                    description: {
+                      type: 'string',
+                      description:
+                        'One paragraph (3-5 sentences) explaining how to apply this framing',
+                    },
+                  },
+                  required: ['name', 'description'],
+                  additionalProperties: false,
+                },
+                description: '3-7 framing concepts (metaphors, analogies) found in the content',
+              },
+              vocabulary_entries: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'The word or phrase' },
+                    vocabulary_type: {
+                      type: 'string',
+                      enum: ['preferred', 'prohibited'],
+                      description: 'Whether this term should be used or avoided',
+                    },
+                    suggested_replacement: {
+                      type: ['string', 'null'],
+                      description: 'For prohibited words, what to use instead',
+                    },
+                    example_usage: {
+                      type: ['string', 'null'],
+                      description: 'For preferred words, an example of usage',
+                    },
+                  },
+                  required: ['name', 'vocabulary_type', 'suggested_replacement', 'example_usage'],
+                  additionalProperties: false,
+                },
+                description: '15-35 vocabulary entries (both preferred and prohibited terms)',
+              },
+            },
+            required: [
+              'brand_personality',
+              'brand_voice',
+              'formality_option_item_id',
+              'sentence_length_option_item_id',
+              'pacing_option_item_id',
+              'humor_usage_option_item_id',
+              'storytelling_style_option_item_id',
+              'use_of_jargon_option_item_id',
+              'language_level_option_item_id',
+              'inclusivity_guidelines',
+              'framing_concepts',
+              'vocabulary_entries',
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
     };
 
     console.log('Request payload model:', responsePayload.model);
