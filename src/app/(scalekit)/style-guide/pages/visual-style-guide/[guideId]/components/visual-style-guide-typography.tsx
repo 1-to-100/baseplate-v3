@@ -66,9 +66,16 @@ const TYPOGRAPHY_PRESETS = [
 type TypographyPresetSelectorProps = {
   onSelectPreset: (fontFamily: string) => void;
   onAddCustom: () => void;
+  loadingPreset: string | null;
 };
 
-function TypographyPresetSelector({ onSelectPreset, onAddCustom }: TypographyPresetSelectorProps) {
+function TypographyPresetSelector({
+  onSelectPreset,
+  onAddCustom,
+  loadingPreset,
+}: TypographyPresetSelectorProps) {
+  const isLoading = loadingPreset !== null;
+
   return (
     <Box>
       <Stack
@@ -81,53 +88,80 @@ function TypographyPresetSelector({ onSelectPreset, onAddCustom }: TypographyPre
         <Typography level='body-sm' color='neutral'>
           Select from recommendation or add own typography
         </Typography>
-        <Button variant='plain' color='primary' startDecorator={<Plus />} onClick={onAddCustom}>
+        <Button
+          variant='plain'
+          color='primary'
+          startDecorator={<Plus />}
+          onClick={onAddCustom}
+          disabled={isLoading}
+        >
           Add Your Own
         </Button>
       </Stack>
 
       <Grid container spacing={2}>
-        {TYPOGRAPHY_PRESETS.map((preset) => (
-          <Grid key={preset.id} xs={12} sm={4}>
-            <Card
-              variant='soft'
-              onClick={() => onSelectPreset(preset.fontFamily)}
-              sx={{
-                cursor: 'pointer',
-                textAlign: 'center',
-                py: 2,
-                px: 1.5,
-                border: '2px solid transparent',
-                borderColor: 'neutral.outlinedBorder',
-                transition: 'border-color 0.15s ease',
-                '&:hover': {
-                  borderColor: 'primary.outlinedColor',
-                },
-              }}
-            >
-              <Stack>
-                <Typography
-                  level='title-md'
-                  sx={{
-                    fontFamily: `${preset.fontFamily}, sans-serif`,
-                    mb: 1,
-                  }}
-                >
-                  {preset.fontFamily}
-                </Typography>
-                <Typography
-                  level='body-sm'
-                  color='neutral'
-                  sx={{
-                    fontFamily: `${preset.fontFamily}, sans-serif`,
-                  }}
-                >
-                  {preset.sampleText}
-                </Typography>
-              </Stack>
-            </Card>
-          </Grid>
-        ))}
+        {TYPOGRAPHY_PRESETS.map((preset) => {
+          const isSelected = loadingPreset === preset.fontFamily;
+          const isDisabled = isLoading && !isSelected;
+
+          return (
+            <Grid key={preset.id} xs={12} sm={4}>
+              <Card
+                variant='soft'
+                onClick={() => !isLoading && onSelectPreset(preset.fontFamily)}
+                sx={{
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  textAlign: 'center',
+                  py: 2,
+                  px: 1.5,
+                  border: '2px solid transparent',
+                  borderColor: isSelected ? 'primary.outlinedColor' : 'neutral.outlinedBorder',
+                  transition: 'border-color 0.15s ease, opacity 0.15s ease',
+                  opacity: isDisabled ? 0.5 : 1,
+                  pointerEvents: isLoading ? 'none' : 'auto',
+                  '&:hover': {
+                    borderColor: isLoading ? undefined : 'primary.outlinedColor',
+                  },
+                }}
+              >
+                <Stack sx={{ position: 'relative', alignItems: 'center' }}>
+                  {isSelected && (
+                    <CircularProgress
+                      size='sm'
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
+                  <Typography
+                    level='title-md'
+                    sx={{
+                      fontFamily: `${preset.fontFamily}, sans-serif`,
+                      mb: 1,
+                      opacity: isSelected ? 0.3 : 1,
+                    }}
+                  >
+                    {preset.fontFamily}
+                  </Typography>
+                  <Typography
+                    level='body-sm'
+                    color='neutral'
+                    sx={{
+                      fontFamily: `${preset.fontFamily}, sans-serif`,
+                      opacity: isSelected ? 0.3 : 1,
+                    }}
+                  >
+                    {preset.sampleText}
+                  </Typography>
+                </Stack>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
     </Box>
   );
@@ -288,6 +322,8 @@ export default function VisualStyleGuideTypography({
   guideId,
   isEditableView,
 }: VisualStyleGuideTypographyProps): React.JSX.Element {
+  const [loadingPreset, setLoadingPreset] = React.useState<string | null>(null);
+
   const { data: typographyStyles, isLoading: typographyLoading } = useTypographyStyles(guideId);
   const { data: typographyOptions } = useTypographyStyleOptions();
 
@@ -390,6 +426,7 @@ export default function VisualStyleGuideTypography({
 
   const handleSelectTypographyPreset = React.useCallback(
     async (fontFamily: string) => {
+      setLoadingPreset(fontFamily);
       try {
         // Load the font from Google Fonts (silent failure - won't block DB update)
         loadFont(fontFamily);
@@ -398,41 +435,58 @@ export default function VisualStyleGuideTypography({
         if (typographyStyles && typographyStyles.length > 0) {
           await Promise.all(
             typographyStyles.map((style) =>
-              handleUpdateTypography(String(style.typography_style_id), 'font_family', fontFamily)
+              updateTypography.mutateAsync({
+                id: String(style.typography_style_id),
+                input: { font_family: fontFamily },
+                silent: true,
+              })
             )
           );
           toast.success(`Typography updated to ${fontFamily}`);
         } else if (typographyOptions && typographyOptions.length > 0) {
           // Create typography styles for each typography option with the selected font
-          for (const typographyOption of typographyOptions) {
-            await createTypographyStyle.mutateAsync({
-              visual_style_guide_id: guideId,
-              typography_style_option_id: typographyOption.typography_style_option_id,
-              font_option_id: null,
-              font_family: fontFamily,
-              font_fallbacks: null,
-              font_size_px: getDefaultFontSize(String(typographyOption.programmatic_name || '')),
-              line_height: getDefaultLineHeight(String(typographyOption.programmatic_name || '')),
-              font_weight: getDefaultFontWeight(String(typographyOption.programmatic_name || '')),
-              color: null,
-              css_snippet: null,
-              licensing_notes: null,
-              created_by_user_id: null,
-            });
-          }
+          await Promise.all(
+            typographyOptions.map((typographyOption) =>
+              createTypographyStyle.mutateAsync({
+                input: {
+                  visual_style_guide_id: guideId,
+                  typography_style_option_id: typographyOption.typography_style_option_id,
+                  font_option_id: null,
+                  font_family: fontFamily,
+                  font_fallbacks: null,
+                  font_size_px: getDefaultFontSize(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  line_height: getDefaultLineHeight(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  font_weight: getDefaultFontWeight(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  color: null,
+                  css_snippet: null,
+                  licensing_notes: null,
+                  created_by_user_id: null,
+                },
+                silent: true,
+              })
+            )
+          );
           toast.success(`Typography styles created with ${fontFamily}`);
         } else {
           toast.error('No typography options available');
         }
       } catch (error) {
         toast.error('Failed to update typography');
+      } finally {
+        setLoadingPreset(null);
       }
     },
     [
       typographyStyles,
       typographyOptions,
       guideId,
-      handleUpdateTypography,
+      updateTypography,
       createTypographyStyle,
       loadFont,
     ]
@@ -459,6 +513,7 @@ export default function VisualStyleGuideTypography({
               <TypographyPresetSelector
                 onSelectPreset={handleSelectTypographyPreset}
                 onAddCustom={handleAddCustomTypography}
+                loadingPreset={loadingPreset}
               />
               <List sx={{ p: 0, gap: 2, mt: 2 }}>
                 {mergedItems.map((item) => {
