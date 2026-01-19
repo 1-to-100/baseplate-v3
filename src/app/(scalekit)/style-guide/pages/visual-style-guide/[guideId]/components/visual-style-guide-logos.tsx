@@ -36,6 +36,17 @@ import { createZipFromFiles, fetchFileAsBlob, dataUrlToBlob } from '@/lib/helper
 import Image from 'next/image';
 import { GenerateLogoModal } from './generate-logo-modal';
 
+/**
+ * Array of logo type programmatic names that are currently active/visible (case insensitive).
+ * Other logo types (favicon, horizontal, etc.) will be added in future iterations.
+ * This constant is used to filter logo types for display and when saving generated logos.
+ */
+const ACTIVE_LOGO_TYPES = ['primary_logo'];
+
+/** Helper to check if a logo type is active by programmatic_name (case insensitive) */
+const isActiveLogoType = (programmaticName: string | null | undefined): boolean =>
+  ACTIVE_LOGO_TYPES.includes(String(programmaticName ?? '').toLowerCase());
+
 type LogoOptionCardProps = {
   onClick: () => void;
   children: React.ReactNode;
@@ -723,7 +734,7 @@ export default function VisualStyleGuideLogos({
     [generateLogoMutation, guideId]
   );
 
-  // Save a generated logo to the visual style guide for ALL logo types and store presets in Supabase
+  // Save a generated logo to the visual style guide for active logo types and store presets in Supabase
   const handleSaveGeneratedLogo = React.useCallback(
     async (selectedLogo: GeneratedLogo, allLogos: GeneratedLogo[]) => {
       setIsSavingGeneratedLogo(true);
@@ -732,15 +743,21 @@ export default function VisualStyleGuideLogos({
         // Extract all logo URLs for storing as presets
         const allLogoUrls = allLogos.map((logo) => logo.url);
 
-        // Use edge function to save logo to ALL logo types (Primary, Favicon, Horizontal, etc.)
+        // Get active logo type IDs based on ACTIVE_LOGO_TYPES (case insensitive)
+        const activeLogoTypeIds = logoTypes
+          ?.filter((lt) => isActiveLogoType(lt.programmatic_name))
+          .map((lt) => String(lt.logo_type_option_id));
+
+        // Use edge function to save logo only to active logo types
         // React Query will auto-invalidate logo assets and presets queries
         await saveGeneratedLogoMutation.mutateAsync({
           visualStyleGuideId: guideId,
           logoUrl: selectedLogo.url,
+          logoTypeOptionIds: activeLogoTypeIds,
           allLogoUrls,
         });
 
-        toast.success('Generated logo saved to all logo types');
+        toast.success('Generated logo saved successfully');
       } catch (error) {
         console.error('Save generated logo error:', error);
         throw error;
@@ -748,7 +765,7 @@ export default function VisualStyleGuideLogos({
         setIsSavingGeneratedLogo(false);
       }
     },
-    [guideId, saveGeneratedLogoMutation]
+    [guideId, saveGeneratedLogoMutation, logoTypes]
   );
 
   // Handle selecting a generated logo preset from the LogoPresetSelector
@@ -757,13 +774,19 @@ export default function VisualStyleGuideLogos({
       setIsSavingGeneratedLogo(true);
 
       try {
-        // Use edge function to save logo to ALL logo types (Primary, Favicon, Horizontal, etc.)
+        // Get active logo type IDs based on ACTIVE_LOGO_TYPES (case insensitive)
+        const activeLogoTypeIds = logoTypes
+          ?.filter((lt) => isActiveLogoType(lt.programmatic_name))
+          .map((lt) => String(lt.logo_type_option_id));
+
+        // Use edge function to save logo only to active logo types
         await saveGeneratedLogoMutation.mutateAsync({
           visualStyleGuideId: guideId,
           logoUrl: logo.url,
+          logoTypeOptionIds: activeLogoTypeIds,
         });
 
-        toast.success('Logo saved to all logo types');
+        toast.success('Logo saved successfully');
       } catch (error) {
         console.error('Save logo error:', error);
         toast.error(error instanceof Error ? error.message : 'Failed to save logo');
@@ -771,7 +794,7 @@ export default function VisualStyleGuideLogos({
         setIsSavingGeneratedLogo(false);
       }
     },
-    [guideId, saveGeneratedLogoMutation]
+    [guideId, saveGeneratedLogoMutation, logoTypes]
   );
 
   return (
@@ -816,7 +839,57 @@ export default function VisualStyleGuideLogos({
                   onSelectGeneratedLogo={handleSelectGeneratedLogo}
                 />
                 <List sx={{ p: 0, gap: 2, mt: 2 }}>
-                  {logoTypes?.map((logoType) => {
+                  {logoTypes
+                    ?.filter((logoType) => isActiveLogoType(logoType.programmatic_name))
+                    .map((logoType) => {
+                      const logo = logos?.find(
+                        (l) => l.logo_type_option_id === logoType.logo_type_option_id
+                      );
+                      const logoId = logo ? String(logo.logo_asset_id) : null;
+                      // Get the generated URL from logoImageUrls (which includes signed URLs for storage_path)
+                      const generatedUrl = logoId ? logoImageUrls[logoId] : undefined;
+
+                      // Use the generated URL if available, otherwise fall back to logo.file_url
+                      // Priority: generatedUrl (from logoImageUrls) > logo.file_url
+                      // Only set file_url if we have a valid URL string
+                      const finalImageUrl = generatedUrl || logo?.file_url || undefined;
+
+                      // Create a new logo object with the updated file_url only if it's different
+                      const logoWithUrl = logo
+                        ? finalImageUrl && finalImageUrl !== logo.file_url
+                          ? { ...logo, file_url: finalImageUrl }
+                          : logo
+                        : undefined;
+
+                      return (
+                        <LogoEditItem
+                          key={String(logoType.logo_type_option_id)}
+                          logoType={logoType}
+                          logo={logoWithUrl}
+                          onDeleteClick={() => {
+                            if (logo) {
+                              setLogoToDelete(logo);
+                            }
+                            setDeleteLogoDialogOpen(true);
+                          }}
+                          onUploadClick={handleUploadClick}
+                          onDownloadClick={handleDownloadLogo}
+                          onImageError={(l) => refreshLogoUrl(l)}
+                          isUploading={uploadingLogoId === String(logoType.logo_type_option_id)}
+                        />
+                      );
+                    })}
+                </List>
+              </>
+            );
+
+          // Preview
+          return (
+            <Card variant='outlined' sx={{ p: 0 }}>
+              <List>
+                {logoTypes
+                  ?.filter((logoType) => isActiveLogoType(logoType.programmatic_name))
+                  .map((logoType) => {
                     const logo = logos?.find(
                       (l) => l.logo_type_option_id === logoType.logo_type_option_id
                     );
@@ -837,61 +910,15 @@ export default function VisualStyleGuideLogos({
                       : undefined;
 
                     return (
-                      <LogoEditItem
+                      <LogoPreviewItem
                         key={String(logoType.logo_type_option_id)}
                         logoType={logoType}
                         logo={logoWithUrl}
-                        onDeleteClick={() => {
-                          if (logo) {
-                            setLogoToDelete(logo);
-                          }
-                          setDeleteLogoDialogOpen(true);
-                        }}
-                        onUploadClick={handleUploadClick}
                         onDownloadClick={handleDownloadLogo}
                         onImageError={(l) => refreshLogoUrl(l)}
-                        isUploading={uploadingLogoId === String(logoType.logo_type_option_id)}
                       />
                     );
                   })}
-                </List>
-              </>
-            );
-
-          // Preview
-          return (
-            <Card variant='outlined' sx={{ p: 0 }}>
-              <List>
-                {logoTypes?.map((logoType) => {
-                  const logo = logos?.find(
-                    (l) => l.logo_type_option_id === logoType.logo_type_option_id
-                  );
-                  const logoId = logo ? String(logo.logo_asset_id) : null;
-                  // Get the generated URL from logoImageUrls (which includes signed URLs for storage_path)
-                  const generatedUrl = logoId ? logoImageUrls[logoId] : undefined;
-
-                  // Use the generated URL if available, otherwise fall back to logo.file_url
-                  // Priority: generatedUrl (from logoImageUrls) > logo.file_url
-                  // Only set file_url if we have a valid URL string
-                  const finalImageUrl = generatedUrl || logo?.file_url || undefined;
-
-                  // Create a new logo object with the updated file_url only if it's different
-                  const logoWithUrl = logo
-                    ? finalImageUrl && finalImageUrl !== logo.file_url
-                      ? { ...logo, file_url: finalImageUrl }
-                      : logo
-                    : undefined;
-
-                  return (
-                    <LogoPreviewItem
-                      key={String(logoType.logo_type_option_id)}
-                      logoType={logoType}
-                      logo={logoWithUrl}
-                      onDownloadClick={handleDownloadLogo}
-                      onImageError={(l) => refreshLogoUrl(l)}
-                    />
-                  );
-                })}
               </List>
             </Card>
           );

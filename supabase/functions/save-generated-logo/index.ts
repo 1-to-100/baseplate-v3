@@ -17,6 +17,7 @@ interface SaveGeneratedLogoRequest {
   visual_style_guide_id: string
   logo_url: string
   logo_type_option_id?: string
+  logo_type_option_ids?: string[]  // Array of logo type IDs to save to (if not provided, saves to all active types)
   all_logo_urls?: string[]  // All generated logos to store as presets
 }
 
@@ -42,7 +43,7 @@ serve(async (req) => {
 
     // Parse request body
     const body: SaveGeneratedLogoRequest = await req.json()
-    const { visual_style_guide_id, logo_url, logo_type_option_id, all_logo_urls } = body
+    const { visual_style_guide_id, logo_url, logo_type_option_id, logo_type_option_ids, all_logo_urls } = body
 
     if (!visual_style_guide_id || !logo_url) {
       throw new ApiError('Both visual_style_guide_id and logo_url are required', 400)
@@ -86,7 +87,16 @@ serve(async (req) => {
       throw new ApiError('No active logo types found in database', 500)
     }
 
-    console.log(`Found ${logoTypes.length} logo types to update`)
+    // Filter logo types if specific IDs are provided
+    const filteredLogoTypes = logo_type_option_ids && logo_type_option_ids.length > 0
+      ? logoTypes.filter(lt => logo_type_option_ids.includes(lt.logo_type_option_id))
+      : logoTypes
+
+    if (!filteredLogoTypes?.length) {
+      throw new ApiError('No matching logo types found for provided IDs', 400)
+    }
+
+    console.log(`Found ${filteredLogoTypes.length} logo types to update (filtered from ${logoTypes.length} total)`)
 
     // Download the image from the URL (DALL-E or Supabase signed URL)
     console.log('Downloading image from URL...')
@@ -156,8 +166,8 @@ serve(async (req) => {
     // Collect old storage paths to delete (only unique paths that are different from the new shared path)
     const oldPathsToDelete: string[] = []
 
-    // Create/update logo_assets for ALL logo types, all pointing to the SAME shared file
-    for (const logoType of logoTypes) {
+    // Create/update logo_assets for filtered logo types, all pointing to the SAME shared file
+    for (const logoType of filteredLogoTypes) {
       const logoTypeOptionId = logoType.logo_type_option_id
       console.log(`Processing logo type: ${logoType.display_name || logoType.programmatic_name} (${logoTypeOptionId})`)
 

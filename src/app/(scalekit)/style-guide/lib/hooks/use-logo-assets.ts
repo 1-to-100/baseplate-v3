@@ -190,6 +190,7 @@ export function useSaveGeneratedLogo() {
       visualStyleGuideId: string;
       logoUrl: string;
       logoTypeOptionId?: string;
+      logoTypeOptionIds?: string[]; // Array of logo type IDs to save to (if not provided, saves to all active types)
       allLogoUrls?: string[]; // All generated logos to store as presets
     }): Promise<SaveGeneratedLogoResponse> => {
       const supabase = createClient();
@@ -201,6 +202,7 @@ export function useSaveGeneratedLogo() {
             visual_style_guide_id: params.visualStyleGuideId,
             logo_url: params.logoUrl,
             logo_type_option_id: params.logoTypeOptionId,
+            logo_type_option_ids: params.logoTypeOptionIds,
             all_logo_urls: params.allLogoUrls,
           },
         }
