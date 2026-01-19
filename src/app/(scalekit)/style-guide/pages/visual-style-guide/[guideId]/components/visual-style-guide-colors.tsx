@@ -163,6 +163,93 @@ function DeleteColorModal({ open, onClose, onDelete }: DeleteColorModalProps) {
   );
 }
 
+type ColorPresetMappingModalProps = {
+  open: boolean;
+  presetColors: readonly string[];
+  colorMappings: Record<number, ColorUsageOption>;
+  isLoading: boolean;
+  onMappingChange: (index: number, usage: ColorUsageOption) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+};
+
+function ColorPresetMappingModal({
+  open,
+  presetColors,
+  colorMappings,
+  isLoading,
+  onMappingChange,
+  onClose,
+  onConfirm,
+}: ColorPresetMappingModalProps) {
+  // Check if all colors have been mapped
+  const allMapped = presetColors.every((_, index) => colorMappings[index] !== undefined);
+
+  return (
+    <Modal open={open} onClose={isLoading ? undefined : onClose}>
+      <ModalDialog sx={{ minWidth: 400 }}>
+        {!isLoading && <ModalClose />}
+        <Typography level='title-lg'>Map Colors to Usage</Typography>
+        <Typography level='body-sm' color='neutral' sx={{ mt: 1 }}>
+          Assign each color from the preset to a usage option.
+        </Typography>
+
+        <List sx={{ mt: 2, gap: 2, p: 0 }}>
+          {presetColors.map((hex, index) => (
+            <ListItem key={index} sx={{ p: 0 }}>
+              <Grid container spacing={2} sx={{ width: '100%', alignItems: 'center' }}>
+                <Grid xs={3}>
+                  <Box
+                    sx={{
+                      bgcolor: hex,
+                      borderRadius: 'md',
+                      width: '100%',
+                      height: 40,
+                      border: '1px solid',
+                      borderColor: 'neutral.outlinedBorder',
+                    }}
+                  />
+                </Grid>
+                <Grid xs={4}>
+                  <Typography level='body-sm'>{hex.toUpperCase()}</Typography>
+                </Grid>
+                <Grid xs={5}>
+                  <Select
+                    size='sm'
+                    placeholder='Select usage'
+                    value={colorMappings[index] || null}
+                    disabled={isLoading}
+                    onChange={(_, newValue) => {
+                      if (newValue) {
+                        onMappingChange(index, newValue as ColorUsageOption);
+                      }
+                    }}
+                  >
+                    {USAGE_OPTIONS.map((opt) => (
+                      <Option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Grid>
+              </Grid>
+            </ListItem>
+          ))}
+        </List>
+
+        <Stack direction='row' spacing={2} sx={{ justifyContent: 'flex-end', mt: 3 }}>
+          <Button variant='outlined' onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} disabled={!allMapped || isLoading} loading={isLoading}>
+            Apply Colors
+          </Button>
+        </Stack>
+      </ModalDialog>
+    </Modal>
+  );
+}
+
 type ColorPalettePresetSelectorProps = {
   onSelectPreset: (colors: readonly string[]) => void;
   onAddCustom: () => void;
@@ -363,6 +450,12 @@ export default function VisualStyleGuideColors({
   const [deleteColorDialogOpen, setDeleteColorDialogOpen] = React.useState(false);
   const [colorToDelete, setColorToDelete] = React.useState<PaletteColor | null>(null);
 
+  // State for preset mapping modal
+  const [presetMappingModalOpen, setPresetMappingModalOpen] = React.useState(false);
+  const [selectedPresetColors, setSelectedPresetColors] = React.useState<readonly string[]>([]);
+  const [colorMappings, setColorMappings] = React.useState<Record<number, ColorUsageOption>>({});
+  const [isApplyingPreset, setIsApplyingPreset] = React.useState(false);
+
   const sortedColors = React.useMemo(() => {
     return (colors || [])
       .filter(
@@ -438,54 +531,98 @@ export default function VisualStyleGuideColors({
     }
   }, [colorToDelete, deleteColor]);
 
-  const handleSelectPreset = React.useCallback(
-    async (presetColors: readonly string[]) => {
-      try {
-        const usageOptions = Object.values(COLOR_USAGE_OPTION);
-        // Use full colors array to find existing colors (including foreground/background)
-        const allColors = colors || [];
-
-        await Promise.all(
-          presetColors.map(async (hex, index) => {
-            const usageOption = usageOptions[index] as ColorUsageOption;
-
-            // Check if a color with this usage_option already exists in ALL colors
-            const existingColor = allColors.find(
-              (c: PaletteColor) => c.usage_option === usageOption
-            );
-
-            if (existingColor) {
-              // Update existing color
-              await updateColor.mutateAsync({
-                id: String(existingColor.palette_color_id),
-                input: { hex },
-              });
-            } else {
-              // Create new color
-              const maxSortOrder =
-                allColors.length > 0
-                  ? Math.max(...allColors.map((c: PaletteColor) => c.sort_order as number))
-                  : 0;
-
-              await createColor.mutateAsync({
-                hex,
-                name: null,
-                usage_option: usageOption,
-                sort_order: maxSortOrder + index + 1,
-                contrast_ratio_against_background: null,
-                style_guide_id: guideId,
-              });
-            }
-          })
-        );
-
-        toast.success('Color palette updated successfully');
-      } catch (error) {
-        toast.error('Failed to update color palette');
+  // Open the preset mapping modal with default mappings by index
+  const handleSelectPreset = React.useCallback((presetColors: readonly string[]) => {
+    const usageOptions = Object.values(COLOR_USAGE_OPTION) as ColorUsageOption[];
+    // Initialize default mappings: index 0 -> primary, index 1 -> secondary, etc.
+    const defaultMappings: Record<number, ColorUsageOption> = {};
+    presetColors.forEach((_, index) => {
+      const usageOption = usageOptions[index];
+      if (usageOption !== undefined) {
+        defaultMappings[index] = usageOption;
       }
-    },
-    [createColor, updateColor, guideId, colors]
-  );
+    });
+
+    setSelectedPresetColors(presetColors);
+    setColorMappings(defaultMappings);
+    setPresetMappingModalOpen(true);
+  }, []);
+
+  // Handle mapping change in the modal with swap behavior
+  const handleMappingChange = React.useCallback((index: number, usage: ColorUsageOption) => {
+    setColorMappings((prev) => {
+      const newMappings = { ...prev };
+      const currentUsageForIndex = prev[index];
+
+      // Find if another index already has this usage
+      const existingIndex = Object.entries(prev).find(
+        ([idx, u]) => u === usage && Number(idx) !== index
+      );
+
+      if (existingIndex) {
+        // Swap: give the other index the current index's usage
+        const otherIndex = Number(existingIndex[0]);
+        if (currentUsageForIndex) {
+          newMappings[otherIndex] = currentUsageForIndex;
+        }
+      }
+
+      // Assign the new usage to the current index
+      newMappings[index] = usage;
+
+      return newMappings;
+    });
+  }, []);
+
+  // Apply the mapped colors when user confirms
+  const handleConfirmPresetMapping = React.useCallback(async () => {
+    setIsApplyingPreset(true);
+    try {
+      const allColors = colors || [];
+
+      await Promise.all(
+        selectedPresetColors.map(async (hex, index) => {
+          const usageOption = colorMappings[index];
+          if (!usageOption) return;
+
+          // Check if a color with this usage_option already exists
+          const existingColor = allColors.find((c: PaletteColor) => c.usage_option === usageOption);
+
+          if (existingColor) {
+            // Update existing color
+            await updateColor.mutateAsync({
+              id: String(existingColor.palette_color_id),
+              input: { hex },
+            });
+          } else {
+            // Create new color
+            const maxSortOrder =
+              allColors.length > 0
+                ? Math.max(...allColors.map((c: PaletteColor) => c.sort_order as number))
+                : 0;
+
+            await createColor.mutateAsync({
+              hex,
+              name: null,
+              usage_option: usageOption,
+              sort_order: maxSortOrder + index + 1,
+              contrast_ratio_against_background: null,
+              style_guide_id: guideId,
+            });
+          }
+        })
+      );
+
+      setPresetMappingModalOpen(false);
+      setSelectedPresetColors([]);
+      setColorMappings({});
+      toast.success('Color palette updated successfully');
+    } catch (error) {
+      toast.error('Failed to update color palette');
+    } finally {
+      setIsApplyingPreset(false);
+    }
+  }, [createColor, updateColor, guideId, colors, selectedPresetColors, colorMappings]);
 
   return (
     <Box>
@@ -559,6 +696,20 @@ export default function VisualStyleGuideColors({
         open={deleteColorDialogOpen}
         onClose={() => setDeleteColorDialogOpen(false)}
         onDelete={handleDeleteColor}
+      />
+
+      <ColorPresetMappingModal
+        open={presetMappingModalOpen}
+        presetColors={selectedPresetColors}
+        colorMappings={colorMappings}
+        isLoading={isApplyingPreset}
+        onMappingChange={handleMappingChange}
+        onClose={() => {
+          setPresetMappingModalOpen(false);
+          setSelectedPresetColors([]);
+          setColorMappings({});
+        }}
+        onConfirm={handleConfirmPresetMapping}
       />
     </Box>
   );
