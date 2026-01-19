@@ -885,7 +885,7 @@ export default function VisualStyleGuideLogos({
                   generatedLogoPresets={generatedLogoPresets}
                   onSelectGeneratedLogo={handleSelectGeneratedLogo}
                 />
-                <List sx={{ p: 0, gap: 2, mt: 2 }}>
+                <List sx={{ p: 0, gap: 2, mt: 1 }}>
                   {logoTypes
                     ?.filter((logoType) => isActiveLogoType(logoType.programmatic_name))
                     .map((logoType) => {
