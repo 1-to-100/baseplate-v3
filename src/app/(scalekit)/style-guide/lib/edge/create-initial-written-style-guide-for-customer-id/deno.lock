@@ -2,20 +2,11 @@
   "version": "3",
   "packages": {
     "specifiers": {
-      "jsr:@supabase/functions-js": "jsr:@supabase/functions-js@2.90.1",
       "npm:@supabase/supabase-js@2": "npm:@supabase/supabase-js@2.90.1",
       "npm:openai@4": "npm:openai@4.104.0_zod@3.24.1",
       "npm:openai@^4.52.5": "npm:openai@4.104.0_zod@3.24.1",
       "npm:zod-to-json-schema@3.24.1": "npm:zod-to-json-schema@3.24.1_zod@3.24.1",
       "npm:zod@3.24.1": "npm:zod@3.24.1"
-    },
-    "jsr": {
-      "@supabase/functions-js@2.90.1": {
-        "integrity": "9a077ecf42aa84594ef3aac621d643e15ffaa9506a4c051e35c93f127ffdb035",
-        "dependencies": [
-          "npm:openai@^4.52.5"
-        ]
-      }
     },
     "npm": {
       "@supabase/auth-js@2.90.1": {
@@ -330,7 +321,6 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@supabase/functions-js",
       "npm:@supabase/supabase-js@2",
       "npm:openai@4",
       "npm:zod-to-json-schema@3.24.1",

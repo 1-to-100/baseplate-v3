@@ -1,9 +1,10 @@
 /// <reference lib="deno.ns" />
+/// <reference lib="dom" />
 
 // Import Supabase client
 import { createClient } from '@supabase/supabase-js';
 // Import Puppeteer for browser automation
-import puppeteer from 'puppeteer';
+import puppeteer, { type HTTPRequest } from 'puppeteer';
 
 // CORS headers
 const corsHeaders = {
@@ -265,11 +266,11 @@ Deno.serve(async (req) => {
         }
       });
 
-      page.on('error', (error) => {
+      page.on('error', (error: Error) => {
         console.error('Page error:', error);
       });
 
-      page.on('pageerror', (error) => {
+      page.on('pageerror', (error: Error) => {
         console.error('Page error event:', error);
       });
     } catch (connectionError) {
@@ -295,7 +296,7 @@ Deno.serve(async (req) => {
       // Block tracking if requested
       if (captureRequest.block_tracking) {
         await page.setRequestInterception(true);
-        page.on('request', (request) => {
+        page.on('request', (request: HTTPRequest) => {
           const url = request.url();
           const resourceType = request.resourceType();
           if (
@@ -381,7 +382,7 @@ Deno.serve(async (req) => {
               // Re-setup request interception if needed
               if (captureRequest.block_tracking) {
                 await page.setRequestInterception(true);
-                page.on('request', (request) => {
+                page.on('request', (request: HTTPRequest) => {
                   const url = request.url();
                   const resourceType = request.resourceType();
                   if (
@@ -417,7 +418,7 @@ Deno.serve(async (req) => {
       const pageTitle = await page.title();
 
       // Wait a bit for any dynamic content
-      await page.waitForTimeout(2000);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Take screenshot
       const screenshot = (await page.screenshot({
@@ -633,7 +634,7 @@ Deno.serve(async (req) => {
 
       try {
         if (page && !page.isClosed()) {
-          await page.close().catch((err) => console.warn('Error closing page:', err));
+          await page.close().catch((err: unknown) => console.warn('Error closing page:', err));
         }
       } catch (pageError) {
         console.warn('Error closing page:', pageError);
