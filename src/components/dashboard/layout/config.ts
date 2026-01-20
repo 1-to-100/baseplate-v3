@@ -35,6 +35,13 @@ export const layoutConfig: LayoutConfig = {
           href: paths.dashboard.documentation.list,
           icon: 'documentation',
         },
+        {
+          key: 'segments',
+          title: 'Segments',
+          href: paths.creso.segments.list,
+          icon: 'grid-four',
+          matcher: { type: 'startsWith', href: paths.creso.segments.list },
+        },
         { key: 'divider1', type: 'divider' },
         {
           key: 'role',
