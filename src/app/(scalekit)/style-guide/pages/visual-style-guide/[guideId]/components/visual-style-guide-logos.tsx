@@ -658,13 +658,24 @@ export default function VisualStyleGuideLogos({
       return;
     }
 
+    // Filter logos to only include those with active logo types
+    const activeLogos = logos.filter((logo) => {
+      const logoType = logoTypes?.find((lt) => lt.logo_type_option_id === logo.logo_type_option_id);
+      return logoType && isActiveLogoType(logoType.programmatic_name);
+    });
+
+    if (activeLogos.length === 0) {
+      toast.error('No active logos available to download');
+      return;
+    }
+
     setIsDownloadingAll(true);
 
     try {
       const zipFiles: { filename: string; data: Blob }[] = [];
 
-      // Fetch all logos in parallel
-      const logoPromises = logos.map(async (logo) => {
+      // Fetch active logos in parallel
+      const logoPromises = activeLogos.map(async (logo) => {
         try {
           let blob: Blob;
           let filename: string;
