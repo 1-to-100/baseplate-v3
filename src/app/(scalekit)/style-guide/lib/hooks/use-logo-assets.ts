@@ -126,7 +126,7 @@ export function useDeleteLogoAsset() {
 }
 
 /**
- * Hook to generate logos using AI (DALL-E 3)
+ * Hook to generate logos using AI (gpt-image-1.5)
  * Calls the generate-logo edge function with user prompt and visual style guide context
  */
 export function useGenerateLogo() {
@@ -179,7 +179,7 @@ interface SaveGeneratedLogoResponse {
 
 /**
  * Hook to save a generated logo to Supabase storage
- * Downloads the image server-side to avoid CORS issues with DALL-E URLs
+ * Downloads the image server-side to avoid CORS issues with AI-generated image URLs
  * Also stores all generated logos as presets for future selection
  */
 export function useSaveGeneratedLogo() {

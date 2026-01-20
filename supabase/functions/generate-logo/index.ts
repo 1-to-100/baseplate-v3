@@ -32,7 +32,7 @@ interface PaletteColor {
 }
 
 /**
- * Builds an enhanced prompt for DALL-E logo generation
+ * Builds an enhanced prompt for gpt-image-1.5 logo generation
  * Combines user input with company context and brand colors
  */
 function buildEnhancedPrompt(
@@ -81,7 +81,7 @@ function buildEnhancedPrompt(
 }
 
 /**
- * Generates a single logo using DALL-E 3
+ * Generates a single logo using gpt-image-1.5
  */
 async function generateSingleLogo(
   openaiKey: string,
@@ -95,26 +95,25 @@ async function generateSingleLogo(
       'Authorization': `Bearer ${openaiKey}`,
     },
     body: JSON.stringify({
-      model: 'dall-e-3',
+      model: 'gpt-image-1.5',
       prompt: prompt,
-      n: 1, // DALL-E 3 only supports n=1
+      n: 1,
       size: '1024x1024',
-      quality: 'hd',
-      response_format: 'url',
+      quality: 'high',
     }),
   })
 
   if (!response.ok) {
     const errorData = await response.json()
-    console.error(`DALL-E API error for logo ${index}:`, errorData)
-    throw new ApiError(`DALL-E API error: ${JSON.stringify(errorData)}`, 500)
+    console.error(`gpt-image-1.5 API error for logo ${index}:`, errorData)
+    throw new ApiError(`gpt-image-1.5 API error: ${JSON.stringify(errorData)}`, 500)
   }
 
   const data = await response.json()
   const imageData = data.data?.[0]
 
   if (!imageData?.url) {
-    throw new ApiError('No image URL in DALL-E response', 500)
+    throw new ApiError('No image URL in gpt-image-1.5 response', 500)
   }
 
   return {
@@ -211,8 +210,8 @@ serve(async (req) => {
 
     console.log('Enhanced prompt length:', enhancedPrompt.length)
 
-    // Generate 3 logos in parallel using DALL-E 3
-    console.log('Generating 3 logo variations with DALL-E 3...')
+    // Generate 3 logos in parallel using gpt-image-1.5
+    console.log('Generating 3 logo variations with gpt-image-1.5...')
     
     const logoPromises = [0, 1, 2].map((index) =>
       generateSingleLogo(openaiKey, enhancedPrompt, index)

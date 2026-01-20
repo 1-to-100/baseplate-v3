@@ -4,9 +4,9 @@ import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared
 import { createServiceClient } from '../_shared/supabase.ts'
 
 // Purpose: Solves the CORS issue when saving AI-generated logos.
-// Problem it solves: When DALL-E generates logos, it returns temporary URLs. Browsers can't download these URLs directly due to CORS restrictions.
+// Problem it solves: When gpt-image-1.5 generates logos, it returns temporary URLs. Browsers can't download these URLs directly due to CORS restrictions.
 // How it works:
-// Receives request with visual_style_guide_id, logo_url (DALL-E URL), and optional logo_type_option_id
+// Receives request with visual_style_guide_id, logo_url (AI-generated URL), and optional logo_type_option_id
 // Downloads the image server-side (lines 79-89) - bypasses CORS since it runs on Supabase edge
 // Uploads to Supabase Storage (lines 95-107) at path: {guideId}/{logoTypeId}/{timestamp}-generated-logo.png
 // Creates a signed URL for display (lines 109-119)
@@ -98,7 +98,7 @@ serve(async (req) => {
 
     console.log(`Found ${filteredLogoTypes.length} logo types to update (filtered from ${logoTypes.length} total)`)
 
-    // Download the image from the URL (DALL-E or Supabase signed URL)
+    // Download the image from the URL (AI-generated or Supabase signed URL)
     console.log('Downloading image from URL...')
     console.log('URL preview:', logo_url.substring(0, 100) + '...')
     
