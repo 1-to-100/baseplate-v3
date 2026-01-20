@@ -1,7 +1,11 @@
-// Setup type definitions for built-in Supabase Runtime APIs
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+/// <reference lib="deno.ns" />
+import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+import {
+  styleGuideJsonSchema,
+  safeParseStyleGuideResponse,
+  type StyleGuideResponse,
+} from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -39,32 +43,7 @@ interface OptionItem {
   name?: string;
 }
 
-interface FramingConcept {
-  name: string;
-  description: string;
-}
-
-interface VocabularyEntry {
-  name: string;
-  vocabulary_type: 'preferred' | 'prohibited';
-  suggested_replacement?: string;
-  example_usage?: string;
-}
-
-interface GeneratedStyleGuide {
-  brand_personality?: string;
-  brand_voice?: string;
-  formality_option_item_id?: string | null;
-  sentence_length_option_item_id?: string | null;
-  pacing_option_item_id?: string | null;
-  humor_usage_option_item_id?: string | null;
-  storytelling_style_option_item_id?: string | null;
-  use_of_jargon_option_item_id?: string | null;
-  language_level_option_item_id?: string | null;
-  inclusivity_guidelines?: string;
-  framing_concepts?: FramingConcept[];
-  vocabulary_entries?: VocabularyEntry[];
-}
+// StyleGuideResponse type is imported from schema.ts
 
 // System prompt for style guide generation
 const SYSTEM_PROMPT = `You are an expert head of marketing and brand strategist with deep expertise in content strategy, brand voice development, and style guide creation. Your role is to analyze company website content and extract comprehensive style guide information that will help maintain consistent brand communication across all marketing materials.
@@ -217,97 +196,41 @@ Return your response as a JSON object with the following structure:
 }
 
 /**
- * Validates the generated style guide response
+ * Validates the generated style guide response using Zod schema
  */
-function validateStyleGuideResponse(response: unknown): GeneratedStyleGuide {
-  let data: Record<string, unknown>;
-
-  // Handle array response
+function validateStyleGuideResponse(response: unknown): StyleGuideResponse {
+  // Handle array response (some APIs wrap response in array)
+  let data = response;
   if (Array.isArray(response)) {
     if (response.length === 0) {
       throw new Error('No style guide data generated');
     }
-    data = response[0] as Record<string, unknown>;
-  }
-  // Handle object response
-  else if (response && typeof response === 'object') {
-    data = response as Record<string, unknown>;
-  } else {
-    throw new Error('Invalid response format: Expected object or array');
+    data = response[0];
   }
 
-  // Validate required fields exist (all are optional but we want at least some data)
-  const hasAnyData = Object.values(data).some(
-    (value) => value !== null && value !== undefined && value !== ''
+  const result = safeParseStyleGuideResponse(data);
+
+  if (!result.success) {
+    console.error('Validation errors:', result.error.issues);
+    throw new Error(
+      `Invalid style guide response: ${result.error.issues.map((i) => i.message).join(', ')}`
+    );
+  }
+
+  // Validate that we have at least some meaningful data
+  const hasAnyData = Object.values(result.data).some(
+    (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== '' &&
+      !(Array.isArray(value) && value.length === 0)
   );
 
   if (!hasAnyData) {
     throw new Error('No style guide data was generated');
   }
 
-  // Validate framing_concepts if present
-  let framingConcepts: FramingConcept[] = [];
-  if (Array.isArray(data.framing_concepts)) {
-    framingConcepts = (data.framing_concepts as Array<Record<string, unknown>>)
-      .filter(
-        (item) => item && typeof item.name === 'string' && typeof item.description === 'string'
-      )
-      .map((item) => ({
-        name: item.name,
-        description: item.description,
-      }));
-  }
-
-  // Validate vocabulary_entries if present
-  let vocabularyEntries: VocabularyEntry[] = [];
-  if (Array.isArray(data.vocabulary_entries)) {
-    vocabularyEntries = (data.vocabulary_entries as Array<Record<string, unknown>>)
-      .filter(
-        (item) =>
-          item &&
-          typeof item.name === 'string' &&
-          (item.vocabulary_type === 'preferred' || item.vocabulary_type === 'prohibited')
-      )
-      .map((item) => ({
-        name: item.name,
-        vocabulary_type: item.vocabulary_type,
-        suggested_replacement:
-          typeof item.suggested_replacement === 'string' ? item.suggested_replacement : undefined,
-        example_usage: typeof item.example_usage === 'string' ? item.example_usage : undefined,
-      }));
-  }
-
-  return {
-    brand_personality:
-      typeof data.brand_personality === 'string' ? data.brand_personality : undefined,
-    brand_voice: typeof data.brand_voice === 'string' ? data.brand_voice : undefined,
-    formality_option_item_id:
-      typeof data.formality_option_item_id === 'string' ? data.formality_option_item_id : null,
-    sentence_length_option_item_id:
-      typeof data.sentence_length_option_item_id === 'string'
-        ? data.sentence_length_option_item_id
-        : null,
-    pacing_option_item_id:
-      typeof data.pacing_option_item_id === 'string' ? data.pacing_option_item_id : null,
-    humor_usage_option_item_id:
-      typeof data.humor_usage_option_item_id === 'string' ? data.humor_usage_option_item_id : null,
-    storytelling_style_option_item_id:
-      typeof data.storytelling_style_option_item_id === 'string'
-        ? data.storytelling_style_option_item_id
-        : null,
-    use_of_jargon_option_item_id:
-      typeof data.use_of_jargon_option_item_id === 'string'
-        ? data.use_of_jargon_option_item_id
-        : null,
-    language_level_option_item_id:
-      typeof data.language_level_option_item_id === 'string'
-        ? data.language_level_option_item_id
-        : null,
-    inclusivity_guidelines:
-      typeof data.inclusivity_guidelines === 'string' ? data.inclusivity_guidelines : undefined,
-    framing_concepts: framingConcepts,
-    vocabulary_entries: vocabularyEntries,
-  };
+  return result.data;
 }
 
 Deno.serve(async (req) => {
@@ -323,13 +246,13 @@ Deno.serve(async (req) => {
     console.log('=== CREATE INITIAL WRITTEN STYLE GUIDE STARTED ===');
 
     // Parse request body to get URL
-    let requestBody: RequestBody = {};
+    let requestBody: Partial<RequestBody> = {};
     try {
       const text = await req.text();
       if (text) {
         requestBody = JSON.parse(text);
       }
-    } catch (parseError) {
+    } catch (_parseError) {
       console.log('No request body or invalid JSON, will use default behavior');
     }
 
@@ -578,111 +501,10 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
       ],
       text: {
         format: {
-          type: 'json_schema',
-          name: 'style_guide_response',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              brand_personality: {
-                type: ['string', 'null'],
-                description: '1-2 sentences describing the company overall personality and tone',
-              },
-              brand_voice: {
-                type: ['string', 'null'],
-                description: 'Comma-separated list of 3-5 adjectives describing the brand voice',
-              },
-              formality_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from formality options',
-              },
-              sentence_length_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from sentence length options',
-              },
-              pacing_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from pacing options',
-              },
-              humor_usage_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from humor usage options',
-              },
-              storytelling_style_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from storytelling style options',
-              },
-              use_of_jargon_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from jargon usage options',
-              },
-              language_level_option_item_id: {
-                type: ['string', 'null'],
-                description: 'UUID from language level options',
-              },
-              inclusivity_guidelines: {
-                type: ['string', 'null'],
-                description: '2-4 sentences of inclusive language guidelines',
-              },
-              framing_concepts: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Short name for the framing concept' },
-                    description: {
-                      type: 'string',
-                      description:
-                        'One paragraph (3-5 sentences) explaining how to apply this framing',
-                    },
-                  },
-                  required: ['name', 'description'],
-                  additionalProperties: false,
-                },
-                description: '3-7 framing concepts (metaphors, analogies) found in the content',
-              },
-              vocabulary_entries: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'The word or phrase' },
-                    vocabulary_type: {
-                      type: 'string',
-                      enum: ['preferred', 'prohibited'],
-                      description: 'Whether this term should be used or avoided',
-                    },
-                    suggested_replacement: {
-                      type: ['string', 'null'],
-                      description: 'For prohibited words, what to use instead',
-                    },
-                    example_usage: {
-                      type: ['string', 'null'],
-                      description: 'For preferred words, an example of usage',
-                    },
-                  },
-                  required: ['name', 'vocabulary_type', 'suggested_replacement', 'example_usage'],
-                  additionalProperties: false,
-                },
-                description: '15-35 vocabulary entries (both preferred and prohibited terms)',
-              },
-            },
-            required: [
-              'brand_personality',
-              'brand_voice',
-              'formality_option_item_id',
-              'sentence_length_option_item_id',
-              'pacing_option_item_id',
-              'humor_usage_option_item_id',
-              'storytelling_style_option_item_id',
-              'use_of_jargon_option_item_id',
-              'language_level_option_item_id',
-              'inclusivity_guidelines',
-              'framing_concepts',
-              'vocabulary_entries',
-            ],
-            additionalProperties: false,
-          },
+          type: styleGuideJsonSchema.type,
+          name: styleGuideJsonSchema.name,
+          strict: styleGuideJsonSchema.strict,
+          schema: styleGuideJsonSchema.schema,
         },
       },
     };
@@ -744,7 +566,8 @@ CRITICAL: You MUST return your response as valid JSON only, with no additional t
     const webSearchCalls = output.filter((item) => item.type === 'web_search_call');
     console.log(`✓ Web search performed: ${webSearchCalls.length} searches`);
     webSearchCalls.forEach((call: Record<string, unknown>, idx: number) => {
-      console.log(`  Search ${idx + 1}: ${call.action?.query || call.action?.type || 'unknown'}`);
+      const action = call.action as Record<string, unknown> | undefined;
+      console.log(`  Search ${idx + 1}: ${action?.query || action?.type || 'unknown'}`);
     });
 
     // Parse the response

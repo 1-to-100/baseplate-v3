@@ -1,7 +1,6 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from '@supabase/supabase-js';
+import { personasJsonSchema, parsePersonasResponse, type PersonasResponse } from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -28,15 +27,6 @@ interface CustomerInfo {
   content_authoring_prompt?: string;
   created_at: string;
   updated_at: string;
-}
-
-interface Persona {
-  name: string;
-  description: string;
-}
-
-interface PersonasResponse {
-  personas: Persona[];
 }
 
 // System prompt for persona generation
@@ -101,56 +91,6 @@ Return your response as a JSON object with the following structure:
 }
 
 CRITICAL: You MUST return your response as valid JSON only, with no additional text, markdown formatting, or code blocks. Return ONLY the JSON object.`;
-}
-
-/**
- * Validates the generated personas response
- */
-function validatePersonasResponse(response: unknown): PersonasResponse {
-  let data: Record<string, unknown>;
-
-  // Handle array response
-  if (Array.isArray(response)) {
-    if (response.length === 0) {
-      throw new Error('No personas generated');
-    }
-    data = response[0] as Record<string, unknown>;
-  }
-  // Handle object response
-  else if (response && typeof response === 'object') {
-    data = response as Record<string, unknown>;
-  } else {
-    throw new Error('Invalid response format: Expected object or array');
-  }
-
-  // Validate personas array exists
-  if (!Array.isArray(data.personas)) {
-    throw new Error('No personas array in response');
-  }
-
-  // Validate and filter personas
-  const personas: Persona[] = data.personas
-    .filter(
-      (item: unknown): item is { name: string; description: string } =>
-        typeof item === 'object' &&
-        item !== null &&
-        'name' in item &&
-        'description' in item &&
-        typeof (item as { name: unknown }).name === 'string' &&
-        typeof (item as { description: unknown }).description === 'string' &&
-        (item as { name: string }).name.trim() !== '' &&
-        (item as { description: string }).description.trim() !== ''
-    )
-    .map((item) => ({
-      name: item.name.trim(),
-      description: item.description.trim(),
-    }));
-
-  if (personas.length === 0) {
-    throw new Error('No valid personas were generated');
-  }
-
-  return { personas };
 }
 
 Deno.serve(async (req) => {
@@ -318,33 +258,7 @@ ${userPrompt}`;
         },
       ],
       text: {
-        format: {
-          type: 'json_schema',
-          name: 'personas_response',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              personas: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Name of the persona' },
-                    description: {
-                      type: 'string',
-                      description: 'Description of the persona (one paragraph, 4-6 sentences)',
-                    },
-                  },
-                  required: ['name', 'description'],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ['personas'],
-            additionalProperties: false,
-          },
-        },
+        format: personasJsonSchema,
       },
     };
 
@@ -422,9 +336,9 @@ ${userPrompt}`;
       throw new Error('Invalid JSON response from OpenAI');
     }
 
-    // Validate and extract personas data
-    const personasData = validatePersonasResponse(parsedResponse);
-    console.log('Personas data validated');
+    // Validate and extract personas data using Zod schema
+    const personasData: PersonasResponse = parsePersonasResponse(parsedResponse);
+    console.log('Personas data validated with Zod schema');
     console.log(`Generated ${personasData.personas.length} personas`);
 
     console.log('=== PERSONA GENERATION COMPLETE ===');

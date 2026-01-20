@@ -1,7 +1,6 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from '@supabase/supabase-js';
+import { colorsJsonSchema, safeParseColorsResponse, type ColorsResponse } from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -16,17 +15,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Type definitions
-interface PaletteColorData {
-  hex: string;
-  name: string;
-  usage_option: 'primary' | 'secondary' | 'foreground' | 'background' | 'accent';
-  sort_order: number;
-}
-
-interface ExtractedColors {
-  palette_colors: PaletteColorData[];
-}
+// PaletteColorItem and ColorsResponse types are imported from schema.ts
 
 // System prompt for color extraction
 const SYSTEM_PROMPT = `You are an expert color analyst and brand designer. Your role is to analyze websites and extract accurate color palette information including primary brand colors, secondary/accent colors, foreground text colors, and background colors.`;
@@ -132,45 +121,28 @@ Return your response as a JSON object with this EXACT structure:
 }
 
 /**
- * Validates the extracted colors response
+ * Validates the extracted colors response using Zod schema
  */
-function validateColorsResponse(response: unknown): ExtractedColors {
+function validateColorsResponse(response: unknown): ColorsResponse {
   console.log('Validating colors response...');
 
-  let data: Record<string, unknown>;
-
+  // Handle array response (some APIs wrap response in array)
+  let data = response;
   if (Array.isArray(response)) {
     if (response.length === 0) throw new Error('Empty response array');
-    data = response[0] as Record<string, unknown>;
-  } else if (response && typeof response === 'object') {
-    data = response as Record<string, unknown>;
-  } else {
-    throw new Error('Invalid response format');
+    data = response[0];
   }
 
-  if (!Array.isArray(data.palette_colors)) {
-    throw new Error('palette_colors must be an array');
+  const result = safeParseColorsResponse(data);
+
+  if (!result.success) {
+    console.error('Validation errors:', result.error.issues);
+    throw new Error(
+      `Invalid colors response: ${result.error.issues.map((i) => i.message).join(', ')}`
+    );
   }
 
-  const paletteColors = (data.palette_colors as Array<Record<string, unknown>>)
-    .filter(
-      (item) =>
-        item &&
-        typeof item.hex === 'string' &&
-        item.hex.startsWith('#') &&
-        typeof item.name === 'string' &&
-        typeof item.usage_option === 'string' &&
-        ['primary', 'secondary', 'foreground', 'background', 'accent'].includes(
-          item.usage_option
-        ) &&
-        typeof item.sort_order === 'number'
-    )
-    .map((item) => ({
-      hex: item.hex,
-      name: item.name,
-      usage_option: item.usage_option,
-      sort_order: item.sort_order,
-    }));
+  const paletteColors = result.data.palette_colors;
 
   console.log(`✓ Validated ${paletteColors.length} palette colors`);
 
@@ -183,7 +155,7 @@ function validateColorsResponse(response: unknown): ExtractedColors {
   }
 
   // Verify we have required usage types
-  const usageTypes = paletteColors.map((c: PaletteColorData) => c.usage_option);
+  const usageTypes = paletteColors.map((c) => c.usage_option);
   if (!usageTypes.includes('foreground')) {
     console.warn('Warning: No foreground color provided');
   }
@@ -191,7 +163,7 @@ function validateColorsResponse(response: unknown): ExtractedColors {
     console.warn('Warning: No background color provided');
   }
 
-  return { palette_colors: paletteColors };
+  return result.data;
 }
 
 Deno.serve(async (req) => {
@@ -382,44 +354,11 @@ Deno.serve(async (req) => {
         },
       ],
       response_format: {
-        type: 'json_schema',
+        type: colorsJsonSchema.type,
         json_schema: {
-          name: 'color_extraction_response',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              palette_colors: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    hex: {
-                      type: 'string',
-                      description: 'Hex color code with # prefix (e.g., "#1976D2")',
-                    },
-                    name: {
-                      type: 'string',
-                      description: 'Descriptive color name (e.g., "Primary Blue")',
-                    },
-                    usage_option: {
-                      type: 'string',
-                      enum: ['primary', 'secondary', 'foreground', 'background', 'accent'],
-                      description: 'How the color is used in the design',
-                    },
-                    sort_order: {
-                      type: 'integer',
-                      description: 'Order for display (starting from 1)',
-                    },
-                  },
-                  required: ['hex', 'name', 'usage_option', 'sort_order'],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ['palette_colors'],
-            additionalProperties: false,
-          },
+          name: colorsJsonSchema.name,
+          strict: colorsJsonSchema.strict,
+          schema: colorsJsonSchema.schema,
         },
       },
     };

@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "test": "deno test --allow-net --allow-env --allow-read",
+    "test:watch": "deno test --allow-net --allow-env --allow-read --watch"
+  },
+  "imports": {
+    "zod": "https://esm.sh/zod@3.24.1",
+    "zod-to-json-schema": "https://esm.sh/zod-to-json-schema@3.24.1",
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}

@@ -1,6 +1,11 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
+import {
+  strategyResponseJsonSchema,
+  supplementalStrategyItemsJsonSchema,
+  safeParseSupplementalStrategyItems,
+  type StrategyItem,
+} from './schema.ts';
 
 interface RequestBody {
   customer_id: string;
@@ -31,11 +36,6 @@ interface CustomerInfoRow {
 interface CompanyStrategyRow {
   strategy_id: string;
   customer_id: string;
-}
-
-interface StrategyItem {
-  name: string;
-  description: string;
 }
 
 interface StrategyGenerationResult {
@@ -522,26 +522,7 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
     input: prompt,
     reasoning: { effort: 'low' },
     text: {
-      format: {
-        type: 'json_schema',
-        name: 'strategy_items_response',
-        strict: true,
-        schema: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Concise name (max 8 words)' },
-              description: {
-                type: 'string',
-                description: '2-3 sentence description highlighting why it matters',
-              },
-            },
-            required: ['name', 'description'],
-            additionalProperties: false,
-          },
-        },
-      },
+      format: supplementalStrategyItemsJsonSchema,
     },
   };
 
@@ -587,40 +568,30 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
   let parsed: unknown;
   try {
     parsed = JSON.parse(textItem.text);
-  } catch (error) {
+  } catch {
     console.error(`Failed to parse supplemental ${label} JSON:`, textItem.text);
     throw new Error(`OpenAI supplemental ${label} response was not valid JSON.`);
   }
 
-  if (!Array.isArray(parsed)) {
-    throw new Error(`OpenAI supplemental ${label} response was not an array.`);
+  // Validate with Zod schema
+  const result = safeParseSupplementalStrategyItems(parsed);
+
+  if (!result.success) {
+    console.error(`Supplemental ${label} validation failed:`, result.error.issues);
+    const errorMessages = result.error.issues
+      .map((issue: { message: string }) => issue.message)
+      .join(', ');
+    throw new Error(`OpenAI supplemental ${label} response failed validation: ${errorMessages}`);
   }
 
-  return parsed
-    .map((item, index) => {
-      if (!item || typeof item !== 'object') {
-        console.warn(`Supplemental ${label} item #${index + 1} is not an object.`);
-        return null;
-      }
+  const validatedItems = result.data;
+  console.log(`✓ Validated ${validatedItems.length} supplemental ${label} items with Zod`);
 
-      const { name, description } = item as Record<string, unknown>;
-
-      if (typeof name !== 'string' || !name.trim()) {
-        console.warn(`Supplemental ${label} item #${index + 1} missing name.`);
-        return null;
-      }
-
-      if (typeof description !== 'string' || !description.trim()) {
-        console.warn(`Supplemental ${label} item "${name}" missing description.`);
-        return null;
-      }
-
-      return {
-        name: name.trim(),
-        description: normalizeMultiline(description),
-      };
-    })
-    .filter((item): item is StrategyItem => Boolean(item));
+  // Apply normalization to descriptions
+  return validatedItems.map((item: StrategyItem) => ({
+    name: item.name.trim(),
+    description: normalizeMultiline(item.description),
+  }));
 }
 
 Deno.serve(async (req) => {
@@ -975,79 +946,7 @@ Deno.serve(async (req) => {
         },
       ],
       text: {
-        format: {
-          type: 'json_schema',
-          name: 'strategy_response',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              company_name: { type: ['string', 'null'], description: 'Company name' },
-              tagline: { type: ['string', 'null'], description: 'Company tagline' },
-              one_sentence_summary: {
-                type: ['string', 'null'],
-                description: 'One sentence summary of the company',
-              },
-              problem_overview: {
-                type: ['string', 'null'],
-                description: 'Overview of the problem the company solves',
-              },
-              solution_overview: {
-                type: ['string', 'null'],
-                description: 'Overview of the company solution',
-              },
-              content_authoring_prompt: {
-                type: ['string', 'null'],
-                description: 'Prompt for content authoring',
-              },
-              mission: { type: 'string', description: 'Company mission statement' },
-              mission_description: { type: 'string', description: 'Detailed mission description' },
-              vision: { type: 'string', description: 'Company vision statement' },
-              vision_description: { type: 'string', description: 'Detailed vision description' },
-              values: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Value name' },
-                    description: { type: 'string', description: 'Value description' },
-                  },
-                  required: ['name', 'description'],
-                  additionalProperties: false,
-                },
-                description: 'Company values (3-6 items)',
-              },
-              principles: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string', description: 'Principle name' },
-                    description: { type: 'string', description: 'Principle description' },
-                  },
-                  required: ['name', 'description'],
-                  additionalProperties: false,
-                },
-                description: 'Company principles (3-6 items)',
-              },
-            },
-            required: [
-              'mission',
-              'mission_description',
-              'vision',
-              'vision_description',
-              'values',
-              'principles',
-              'company_name',
-              'tagline',
-              'one_sentence_summary',
-              'problem_overview',
-              'solution_overview',
-              'content_authoring_prompt',
-            ],
-            additionalProperties: false,
-          },
-        },
+        format: strategyResponseJsonSchema,
       },
     };
 
@@ -1401,7 +1300,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : 'Unexpected error',
-        errorDetails: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+        errorDetails: Deno.env.get('NODE_ENV') === 'development' ? errorDetails : undefined,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

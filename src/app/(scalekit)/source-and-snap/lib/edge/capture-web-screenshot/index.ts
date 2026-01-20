@@ -641,9 +641,7 @@ Deno.serve(async (req) => {
 
       try {
         if (browser && browser.isConnected()) {
-          await browser
-            .disconnect()
-            .catch((err) => console.warn('Error disconnecting browser:', err));
+          browser.disconnect();
         }
       } catch (browserError) {
         console.warn('Error disconnecting browser:', browserError);
