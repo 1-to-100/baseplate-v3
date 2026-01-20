@@ -1,0 +1,69 @@
+name: Deno Edge Function Tests
+
+on:
+  push:
+    paths:
+      - 'src/**/edge/**'
+      - 'testing/unit/edge-functions/**'
+      - 'supabase/functions/**'
+  pull_request:
+    paths:
+      - 'src/**/edge/**'
+      - 'testing/unit/edge-functions/**'
+      - 'supabase/functions/**'
+
+jobs:
+  type-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        edge-function:
+          - path: src/app/(scalekit)/strategy-forge/lib/edge/get-competitor-list-for-customer-id
+            name: get-competitor-list-for-customer-id
+          - path: src/app/(scalekit)/strategy-forge/lib/edge/create-initial-customer-strategy-for-customer-id
+            name: create-initial-customer-strategy-for-customer-id
+          - path: src/app/(scalekit)/strategy-forge/lib/edge/suggest-segments-for-customer-id
+            name: suggest-segments-for-customer-id
+          - path: src/app/(scalekit)/strategy-forge/lib/edge/suggest-personas-for-customer-id
+            name: suggest-personas-for-customer-id
+          - path: src/app/(scalekit)/strategy-forge/lib/edge/create-persona
+            name: create-persona
+          - path: src/app/(scalekit)/source-and-snap/lib/edge/capture-web-screenshot
+            name: capture-web-screenshot
+          - path: src/app/(scalekit)/style-guide/lib/edge/extract-fonts
+            name: extract-fonts
+          - path: src/app/(scalekit)/style-guide/lib/edge/extract-colors
+            name: extract-colors
+          - path: src/app/(scalekit)/style-guide/lib/edge/extract-logos
+            name: extract-logos
+          - path: src/app/(scalekit)/style-guide/lib/edge/create-initial-written-style-guide-for-customer-id
+            name: create-initial-written-style-guide-for-customer-id
+    name: Type check ${{ matrix.edge-function.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type check ${{ matrix.edge-function.name }}
+        working-directory: ${{ matrix.edge-function.path }}
+        run: deno check index.ts
+
+  test:
+    runs-on: ubuntu-latest
+    needs: type-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run unit and contract tests
+        working-directory: testing/unit/edge-functions
+        run: deno task test
