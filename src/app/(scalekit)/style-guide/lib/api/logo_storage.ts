@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/client";
-import type { ApiResult } from "../types";
+import { createClient } from '@/lib/supabase/client';
+import type { ApiResult } from '../types';
 
-const BUCKET_NAME = "logos";
+const BUCKET_NAME = 'logos';
 const SIGNED_URL_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 
 export interface StoredPresetLogo {
@@ -13,9 +13,7 @@ export interface StoredPresetLogo {
 /**
  * List preset logo files for a visual style guide
  */
-export async function listLogoPresets(
-  guideId: string
-): Promise<ApiResult<string[]>> {
+export async function listLogoPresets(guideId: string): Promise<ApiResult<string[]>> {
   const supabase = createClient();
 
   const { data: presetFiles, error } = await supabase.storage
@@ -27,7 +25,7 @@ export async function listLogoPresets(
   }
 
   const pngFiles = (presetFiles || [])
-    .filter((file) => file.name.endsWith(".png"))
+    .filter((file) => file.name.endsWith('.png'))
     .map((file) => `${guideId}/presets/${file.name}`);
 
   return { ok: true, data: pngFiles };
@@ -54,25 +52,28 @@ export async function getLogoPresetSignedUrls(
     return { ok: true, data: [] };
   }
 
-  // Generate signed URLs for each preset file
-  const presets: StoredPresetLogo[] = [];
+  // Generate signed URLs for each preset file in parallel
+  const pngFiles = presetFiles.filter((f) => f.name.endsWith('.png'));
 
-  for (const [index, file] of presetFiles
-    .filter((f) => f.name.endsWith(".png"))
-    .entries()) {
-    const storagePath = `${guideId}/presets/${file.name}`;
-    const { data: signedData } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+  const presetResults = await Promise.all(
+    pngFiles.map(async (file, index) => {
+      const storagePath = `${guideId}/presets/${file.name}`;
+      const { data: signedData } = await supabase.storage
+        .from(BUCKET_NAME)
+        .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
 
-    if (signedData?.signedUrl) {
-      presets.push({
-        id: `preset-${index}`,
-        url: signedData.signedUrl,
-        storagePath,
-      });
-    }
-  }
+      if (signedData?.signedUrl) {
+        return {
+          id: `preset-${index}`,
+          url: signedData.signedUrl,
+          storagePath,
+        };
+      }
+      return null;
+    })
+  );
+
+  const presets = presetResults.filter((preset): preset is StoredPresetLogo => preset !== null);
 
   return { ok: true, data: presets };
 }
@@ -80,18 +81,16 @@ export async function getLogoPresetSignedUrls(
 /**
  * Get a signed URL for a storage path
  */
-export async function getLogoSignedUrl(
-  storagePath: string
-): Promise<ApiResult<string>> {
+export async function getLogoSignedUrl(storagePath: string): Promise<ApiResult<string>> {
   const supabase = createClient();
 
   // Clean the path
-  const cleanPath = storagePath.trim().startsWith("/")
+  const cleanPath = storagePath.trim().startsWith('/')
     ? storagePath.trim().slice(1)
     : storagePath.trim();
 
   if (!cleanPath) {
-    return { ok: false, error: "Storage path is empty" };
+    return { ok: false, error: 'Storage path is empty' };
   }
 
   const { data, error } = await supabase.storage
@@ -101,7 +100,7 @@ export async function getLogoSignedUrl(
   if (error || !data?.signedUrl) {
     return {
       ok: false,
-      error: error?.message || "Failed to create signed URL",
+      error: error?.message || 'Failed to create signed URL',
     };
   }
 
@@ -111,18 +110,13 @@ export async function getLogoSignedUrl(
 /**
  * Upload a file to logo storage
  */
-export async function uploadLogoFile(
-  storagePath: string,
-  file: File
-): Promise<ApiResult<string>> {
+export async function uploadLogoFile(storagePath: string, file: File): Promise<ApiResult<string>> {
   const supabase = createClient();
 
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(storagePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
+  const { error } = await supabase.storage.from(BUCKET_NAME).upload(storagePath, file, {
+    contentType: file.type,
+    upsert: true,
+  });
 
   if (error) {
     return { ok: false, error: error.message };
@@ -134,17 +128,15 @@ export async function uploadLogoFile(
 /**
  * Delete a file from logo storage
  */
-export async function deleteLogoFile(
-  storagePath: string
-): Promise<ApiResult<boolean>> {
+export async function deleteLogoFile(storagePath: string): Promise<ApiResult<boolean>> {
   const supabase = createClient();
 
-  const cleanPath = storagePath.trim().startsWith("/")
+  const cleanPath = storagePath.trim().startsWith('/')
     ? storagePath.trim().slice(1)
     : storagePath.trim();
 
   if (!cleanPath) {
-    return { ok: false, error: "Storage path is empty" };
+    return { ok: false, error: 'Storage path is empty' };
   }
 
   const { error } = await supabase.storage.from(BUCKET_NAME).remove([cleanPath]);
@@ -162,30 +154,19 @@ export async function deleteLogoFile(
 export async function ensureLogoBucketExists(): Promise<ApiResult<boolean>> {
   const supabase = createClient();
 
-  const { error: listError } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list("", { limit: 1 });
+  const { error: listError } = await supabase.storage.from(BUCKET_NAME).list('', { limit: 1 });
 
   if (
     listError &&
-    (listError.message.includes("not found") ||
-      listError.message.includes("Bucket not found"))
+    (listError.message.includes('not found') || listError.message.includes('Bucket not found'))
   ) {
-    const { error: createError } = await supabase.storage.createBucket(
-      BUCKET_NAME,
-      {
-        public: false,
-        allowedMimeTypes: [
-          "image/svg+xml",
-          "image/png",
-          "image/jpeg",
-          "image/jpg",
-        ],
-      }
-    );
+    const { error: createError } = await supabase.storage.createBucket(BUCKET_NAME, {
+      public: false,
+      allowedMimeTypes: ['image/svg+xml', 'image/png', 'image/jpeg', 'image/jpg'],
+    });
 
     if (createError) {
-      return { ok: false, error: "Failed to access storage bucket" };
+      return { ok: false, error: 'Failed to access storage bucket' };
     }
   } else if (listError) {
     return { ok: false, error: listError.message };

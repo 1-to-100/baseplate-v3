@@ -4,6 +4,9 @@ import { handleCors } from '../_shared/cors.ts'
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 
+// Configuration
+const OPENAI_IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1.5'
+
 // Response types
 interface GeneratedLogo {
   id: string
@@ -32,7 +35,7 @@ interface PaletteColor {
 }
 
 /**
- * Builds an enhanced prompt for gpt-image-1.5 logo generation
+ * Builds an enhanced prompt for OpenAI image model logo generation
  * Combines user input with company context and brand colors
  */
 function buildEnhancedPrompt(
@@ -81,7 +84,7 @@ function buildEnhancedPrompt(
 }
 
 /**
- * Generates a single logo using gpt-image-1.5
+ * Generates a single logo using OpenAI image model
  */
 async function generateSingleLogo(
   openaiKey: string,
@@ -95,7 +98,7 @@ async function generateSingleLogo(
       'Authorization': `Bearer ${openaiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-image-1.5',
+      model: OPENAI_IMAGE_MODEL,
       prompt: prompt,
       n: 1,
       size: '1024x1024',
@@ -105,15 +108,15 @@ async function generateSingleLogo(
 
   if (!response.ok) {
     const errorData = await response.json()
-    console.error(`gpt-image-1.5 API error for logo ${index}:`, errorData)
-    throw new ApiError(`gpt-image-1.5 API error: ${JSON.stringify(errorData)}`, 500)
+    console.error(`OpenAI image API error for logo ${index} (model: ${OPENAI_IMAGE_MODEL}):`, errorData)
+    throw new ApiError(`OpenAI image API error: ${JSON.stringify(errorData)}`, 500)
   }
 
   const data = await response.json()
   const imageData = data.data?.[0]
 
   if (!imageData?.url) {
-    throw new ApiError('No image URL in gpt-image-1.5 response', 500)
+    throw new ApiError('No image URL in OpenAI response', 500)
   }
 
   return {
@@ -210,8 +213,8 @@ serve(async (req) => {
 
     console.log('Enhanced prompt length:', enhancedPrompt.length)
 
-    // Generate 3 logos in parallel using gpt-image-1.5
-    console.log('Generating 3 logo variations with gpt-image-1.5...')
+    // Generate 3 logos in parallel using OpenAI image model
+    console.log(`Generating 3 logo variations with ${OPENAI_IMAGE_MODEL}...`)
     
     const logoPromises = [0, 1, 2].map((index) =>
       generateSingleLogo(openaiKey, enhancedPrompt, index)
