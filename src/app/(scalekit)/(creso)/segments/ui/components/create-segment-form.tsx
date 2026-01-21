@@ -25,10 +25,16 @@ import { CaretUp } from '@phosphor-icons/react/dist/ssr/CaretUp';
 import { toast } from '@/components/core/toaster';
 import { getIndustries, getCompanySizes } from '../../lib/api/options';
 import { createSegment } from '../../lib/api/segments';
+import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
 import { ListType, ListSubtype } from '../../lib/types/list';
+import type { CompanyPreview } from '../../lib/types/search';
 import { paths } from '@/paths';
+import Table from '@mui/joy/Table';
+import Avatar from '@mui/joy/Avatar';
+import CircularProgress from '@mui/joy/CircularProgress';
+import Chip from '@mui/joy/Chip';
 
 interface CreateSegmentFormProps {
   onSuccess?: (segmentId: string) => void;
@@ -58,6 +64,15 @@ export function CreateSegmentForm({
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>([]);
   const [selectedPersonas, setSelectedPersonas] = React.useState<number[]>([]);
 
+  // Search/preview state
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [companies, setCompanies] = React.useState<CompanyPreview[]>([]);
+  const [totalCount, setTotalCount] = React.useState(0);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [perPage] = React.useState(25);
+  const [hasSearched, setHasSearched] = React.useState(false);
+  const [searchError, setSearchError] = React.useState<string | null>(null);
+
   // Fetch options from database
   const { data: industries, isLoading: industriesLoading } = useQuery({
     queryKey: ['industries'],
@@ -83,6 +98,116 @@ export function CreateSegmentForm({
 
   const canSaveSegment = () => {
     return segmentName.trim().length >= 3;
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      selectedCountry !== null ||
+      selectedState !== null ||
+      selectedCompanySizes.length > 0 ||
+      selectedIndustries.length > 0 ||
+      selectedTechnographics.length > 0
+    );
+  };
+
+  const applyFilters = async (page: number = 1) => {
+    if (!hasActiveFilters()) {
+      toast.error('Please select at least one filter to search for companies');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    setCurrentPage(page);
+
+    try {
+      // Build filter object
+      const country = selectedCountry
+        ? countries.find((c) => c.code === selectedCountry)?.name
+        : null;
+      const location =
+        selectedState && locationOptions.length > 0
+          ? locationOptions.find((l) => l.code === selectedState)?.name
+          : null;
+
+      // Get industry names from IDs
+      const categoryNames =
+        industries && selectedIndustries.length > 0
+          ? industries
+              .filter((ind) => selectedIndustries.includes(ind.industry_id))
+              .map((ind) => ind.value)
+          : [];
+
+      // Get company size range from IDs
+      const companySizeRanges =
+        companySizes && selectedCompanySizes.length > 0
+          ? companySizes
+              .filter((cs) => selectedCompanySizes.includes(cs.company_size_id))
+              .map((cs) => cs.value)
+          : [];
+
+      // For now, use the first company size range
+      // TODO: Handle multiple company size ranges properly
+      const employees = companySizeRanges.length > 0 ? companySizeRanges[0] : null;
+
+      const response = await searchByFilters(
+        {
+          country,
+          location,
+          employees,
+          categories: categoryNames,
+          technographics: selectedTechnographics,
+          personas: selectedPersonas,
+        },
+        {
+          page,
+          perPage,
+        }
+      );
+
+      setCompanies(response.data);
+      setTotalCount(response.totalCount);
+      setHasSearched(true);
+
+      if (response.data.length === 0) {
+        toast.info('No companies found matching your filters. Try broadening your criteria.');
+      } else {
+        toast.success(`Found ${response.totalCount} companies`);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+
+      // Check if it's a "no results" error
+      const isNoResults =
+        error instanceof Error && (error as Error & { isNoResults?: boolean }).isNoResults;
+
+      if (isNoResults) {
+        // For "no results" errors, show a friendly info message
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No companies found matching your filters. Try broadening your criteria.';
+        setSearchError(null); // Don't show as error state
+        setHasSearched(true);
+        setCompanies([]);
+        setTotalCount(0);
+        toast.info(message, { duration: 5000 });
+      } else {
+        // For actual errors (network, auth, etc.), show error
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to search for companies';
+        setSearchError(errorMessage);
+        toast.error(errorMessage);
+        setCompanies([]);
+        setTotalCount(0);
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    applyFilters(newPage);
   };
 
   const saveSegment = async () => {
@@ -498,6 +623,21 @@ export function CreateSegmentForm({
           )}
         </Box>
       </Box>
+
+      {/* Apply Filters Button */}
+      <Box sx={{ p: 2, pl: 0, borderTop: '1px solid var(--joy-palette-divider)' }}>
+        <Button
+          fullWidth
+          variant='solid'
+          color='primary'
+          onClick={() => applyFilters(1)}
+          disabled={isSearching || !hasActiveFilters()}
+          loading={isSearching}
+          size='lg'
+        >
+          {isSearching ? 'Searching...' : 'Apply Filters'}
+        </Button>
+      </Box>
     </Box>
   );
 
@@ -512,24 +652,212 @@ export function CreateSegmentForm({
         overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          p: 3,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          textAlign: 'center',
-        }}
-      >
-        <Typography level='h1' sx={{ mb: 2, fontSize: '2rem' }}>
-          Setup filters to create new segment
-        </Typography>
-        <Typography level='body-lg' sx={{ color: 'text.secondary', maxWidth: 600 }}>
-          Narrow down your audience using filters and save them as a reusable segment.
-        </Typography>
-      </Box>
+      {!hasSearched ? (
+        // Empty state - no search performed yet
+        <Box
+          sx={{
+            p: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <Typography level='h1' sx={{ mb: 2, fontSize: '2rem' }}>
+            Setup filters to create new segment
+          </Typography>
+          <Typography level='body-lg' sx={{ color: 'text.secondary', maxWidth: 600 }}>
+            Narrow down your audience using filters and save them as a reusable segment.
+          </Typography>
+        </Box>
+      ) : (
+        // Company preview table
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          {/* Header with count */}
+          <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Stack
+              direction='row'
+              spacing={2}
+              sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <Typography level='title-lg'>
+                {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
+              </Typography>
+              {totalCount > perPage && (
+                <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
+                </Typography>
+              )}
+            </Stack>
+          </Box>
+
+          {/* Table */}
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+            {isSearching ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            ) : companies.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 8, px: 4 }}>
+                <Typography level='h4' sx={{ mb: 1 }}>
+                  No companies found
+                </Typography>
+                <Typography level='body-md' sx={{ color: 'text.secondary', mb: 2 }}>
+                  No companies match your current filter criteria.
+                </Typography>
+                <Typography level='body-sm' sx={{ color: 'text.tertiary' }}>
+                  Try adjusting your filters:
+                </Typography>
+                <Box
+                  component='ul'
+                  sx={{
+                    textAlign: 'left',
+                    display: 'inline-block',
+                    mt: 1,
+                    color: 'text.tertiary',
+                    fontSize: 'sm',
+                    listStyle: 'disc',
+                    pl: 2,
+                  }}
+                >
+                  <li>Select a different country or remove location filters</li>
+                  <li>Choose broader company size ranges</li>
+                  <li>Try different or fewer industries</li>
+                  <li>Remove technology filters</li>
+                </Box>
+              </Box>
+            ) : (
+              <Table
+                sx={{
+                  '& thead th': {
+                    bgcolor: 'var(--joy-palette-background-level1)',
+                  },
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={{ width: 60 }}>Logo</th>
+                    <th>Company Name</th>
+                    <th style={{ width: 200 }}>Location</th>
+                    <th style={{ width: 120 }}>Employees</th>
+                    <th style={{ width: 200 }}>Industry</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {companies.map((company) => (
+                    <tr key={company.id}>
+                      <td>
+                        <Avatar
+                          src={company.logo}
+                          alt={company.name}
+                          sx={{ width: 40, height: 40 }}
+                        >
+                          {company.name.charAt(0).toUpperCase()}
+                        </Avatar>
+                      </td>
+                      <td>
+                        <Box>
+                          <Typography level='body-md' fontWeight={500}>
+                            {company.fullName || company.name}
+                          </Typography>
+                          {company.type && (
+                            <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                              {company.type}
+                            </Typography>
+                          )}
+                        </Box>
+                      </td>
+                      <td>
+                        <Typography level='body-sm'>
+                          {[
+                            company.location?.city?.name,
+                            company.location?.region?.name,
+                            company.location?.country?.name,
+                          ]
+                            .filter(Boolean)
+                            .join(', ') || 'N/A'}
+                        </Typography>
+                      </td>
+                      <td>
+                        <Typography level='body-sm'>
+                          {company.nbEmployees?.toLocaleString() ||
+                            (company.nbEmployeesMin && company.nbEmployeesMax
+                              ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
+                              : 'N/A')}
+                        </Typography>
+                      </td>
+                      <td>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {company.categories && company.categories.length > 0 ? (
+                            company.categories.slice(0, 2).map((cat, idx) => (
+                              <Chip key={idx} size='sm' variant='soft'>
+                                {cat.name}
+                              </Chip>
+                            ))
+                          ) : (
+                            <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                              N/A
+                            </Typography>
+                          )}
+                          {company.categories && company.categories.length > 2 && (
+                            <Chip size='sm' variant='soft'>
+                              +{company.categories.length - 2}
+                            </Chip>
+                          )}
+                        </Box>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </Box>
+
+          {/* Pagination */}
+          {totalCount > perPage && !isSearching && (
+            <Box
+              sx={{
+                p: 2,
+                borderTop: '1px solid var(--joy-palette-divider)',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 1,
+              }}
+            >
+              <Button
+                variant='outlined'
+                size='sm'
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
+                <Typography level='body-sm'>
+                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
+                </Typography>
+              </Box>
+              <Button
+                variant='outlined'
+                size='sm'
+                disabled={currentPage >= Math.ceil(totalCount / perPage)}
+                onClick={() => handlePageChange(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 
