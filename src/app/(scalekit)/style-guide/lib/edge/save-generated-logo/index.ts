@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { authenticateRequest } from '../_shared/auth.ts'
-import { handleCors } from '../_shared/cors.ts'
-import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
-import { createServiceClient } from '../_shared/supabase.ts'
+import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts'
+import { handleCors } from '../../../../../../../supabase/functions/_shared/cors.ts'
+import { ApiError, createErrorResponse, createSuccessResponse } from '../../../../../../../supabase/functions/_shared/errors.ts'
+import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts'
 
 // Purpose: Solves the CORS issue when saving AI-generated logos.
 // Problem it solves: When gpt-image-1.5 generates logos, it returns temporary URLs. Browsers can't download these URLs directly due to CORS restrictions.
