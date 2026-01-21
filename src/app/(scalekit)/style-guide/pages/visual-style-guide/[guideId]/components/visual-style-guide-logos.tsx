@@ -82,14 +82,17 @@ type LogoPresetSelectorProps = {
   onGenerateWithAI: () => void;
   generatedLogoPresets?: GeneratedLogo[];
   onSelectGeneratedLogo?: (logo: GeneratedLogo) => void;
+  selectingPresetId?: string | null;
 };
 
 function LogoPresetSelector({
   onGenerateWithAI,
   generatedLogoPresets,
   onSelectGeneratedLogo,
+  selectingPresetId,
 }: LogoPresetSelectorProps) {
   const hasGeneratedPresets = generatedLogoPresets && generatedLogoPresets.length > 0;
+  const isSelecting = !!selectingPresetId;
 
   return (
     <Box>
@@ -118,32 +121,64 @@ function LogoPresetSelector({
 
       {hasGeneratedPresets && (
         <Grid container spacing={2}>
-          {generatedLogoPresets.map((logo, index) => (
-            <LogoOptionCard key={logo.id} onClick={() => onSelectGeneratedLogo?.(logo)} py={2}>
-              <Stack alignItems='center' justifyContent='center' gap={1}>
-                <Box
+          {generatedLogoPresets.map((logo, index) => {
+            const isThisSelecting = selectingPresetId === logo.id;
+            const isDisabled = isSelecting && !isThisSelecting;
+
+            return (
+              <Grid key={logo.id} xs={12} sm={4}>
+                <Card
+                  variant='soft'
+                  onClick={isDisabled ? undefined : () => onSelectGeneratedLogo?.(logo)}
                   sx={{
-                    position: 'relative',
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: 'var(--joy-radius-sm)',
-                    overflow: 'hidden',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 2,
+                    px: 2,
+                    border: '2px solid transparent',
+                    borderColor: isThisSelecting ? 'primary.500' : 'neutral.outlinedBorder',
+                    transition: 'border-color 0.15s ease, opacity 0.15s ease',
+                    opacity: isDisabled ? 0.5 : 1,
+                    '&:hover': {
+                      borderColor: isDisabled ? 'neutral.outlinedBorder' : 'primary.outlinedColor',
+                    },
                   }}
                 >
-                  <Image
-                    src={logo.url}
-                    alt={`Generated logo option ${index + 1}`}
-                    fill
-                    style={{ objectFit: 'contain' }}
-                    unoptimized
-                  />
-                </Box>
-                <Typography level='body-sm' color='neutral'>
-                  Option {index + 1}
-                </Typography>
-              </Stack>
-            </LogoOptionCard>
-          ))}
+                  <Stack alignItems='center' justifyContent='center' gap={1}>
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: 'var(--joy-radius-sm)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isThisSelecting ? (
+                        <CircularProgress size='sm' />
+                      ) : (
+                        <Image
+                          src={logo.url}
+                          alt={`Generated logo option ${index + 1}`}
+                          fill
+                          style={{ objectFit: 'contain' }}
+                          unoptimized
+                        />
+                      )}
+                    </Box>
+                    <Typography level='body-sm' color='neutral'>
+                      {isThisSelecting ? 'Saving...' : `Option ${index + 1}`}
+                    </Typography>
+                  </Stack>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
     </Box>
@@ -479,6 +514,7 @@ export default function VisualStyleGuideLogos({
   const [generateLogoModalOpen, setGenerateLogoModalOpen] = React.useState(false);
   const [isSavingGeneratedLogo, setIsSavingGeneratedLogo] = React.useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = React.useState(false);
+  const [selectingPresetId, setSelectingPresetId] = React.useState<string | null>(null);
 
   const handleUploadClick = (logoTypeId?: string) => {
     if (logoTypeId && fileInputRef.current) {
@@ -830,6 +866,7 @@ export default function VisualStyleGuideLogos({
   const handleSelectGeneratedLogo = React.useCallback(
     async (logo: GeneratedLogo) => {
       setIsSavingGeneratedLogo(true);
+      setSelectingPresetId(logo.id);
 
       try {
         // Get active logo type IDs based on ACTIVE_LOGO_TYPES (case insensitive)
@@ -850,6 +887,7 @@ export default function VisualStyleGuideLogos({
         toast.error(error instanceof Error ? error.message : 'Failed to save logo');
       } finally {
         setIsSavingGeneratedLogo(false);
+        setSelectingPresetId(null);
       }
     },
     [guideId, saveGeneratedLogoMutation, logoTypes]
@@ -895,6 +933,7 @@ export default function VisualStyleGuideLogos({
                   onGenerateWithAI={handleGenerateWithAI}
                   generatedLogoPresets={generatedLogoPresets}
                   onSelectGeneratedLogo={handleSelectGeneratedLogo}
+                  selectingPresetId={selectingPresetId}
                 />
                 <List sx={{ p: 0, gap: 2, mt: 1 }}>
                   {logoTypes
