@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { authenticateRequest } from '../_shared/auth.ts'
 import { handleCors } from '../_shared/cors.ts'
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
@@ -41,6 +42,10 @@ serve(async (req) => {
   try {
     console.log('=== SAVE GENERATED LOGO STARTED ===')
 
+    // Authenticate user
+    const user = await authenticateRequest(req)
+    console.log('Authenticated user:', user.id)
+
     // Parse request body
     const body: SaveGeneratedLogoRequest = await req.json()
     const { visual_style_guide_id, logo_url, logo_type_option_id, logo_type_option_ids, all_logo_urls } = body
@@ -69,8 +74,10 @@ serve(async (req) => {
     const customerId = visualGuide.customer_id
     console.log('Customer ID:', customerId)
 
-    // Note: JWT verification disabled - no user access check
-    // In production, you should enable JWT verification and check user.customer_id === customerId
+    // Verify user has access to this customer
+    if (user.customer_id !== customerId) {
+      throw new ApiError('You do not have access to this visual style guide', 403)
+    }
 
     // Fetch ALL active logo type options to set the logo for all of them
     const { data: logoTypes, error: logoTypesError } = await supabase
