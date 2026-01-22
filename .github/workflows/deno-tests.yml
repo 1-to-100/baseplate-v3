@@ -19,6 +19,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     env:
       DENO_NO_PACKAGE_JSON: 1
     steps:
