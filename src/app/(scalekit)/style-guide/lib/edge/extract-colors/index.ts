@@ -276,7 +276,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const screenshotUrl = signedUrlData.signedUrl;
+    let screenshotUrl = signedUrlData.signedUrl;
+
+    // If PUBLIC_SUPABASE_URL is set, swap the origin for external API access (e.g., OpenAI)
+    const publicUrl = Deno.env.get('PUBLIC_SUPABASE_URL');
+    if (publicUrl) {
+      const url = new URL(screenshotUrl);
+      const pub = new URL(publicUrl);
+      url.protocol = pub.protocol;
+      url.hostname = pub.hostname;
+      url.port = pub.port;
+      screenshotUrl = url.toString();
+    }
     console.log('Screenshot URL generated');
 
     // Get HTML and CSS content
