@@ -1,8 +1,0 @@
-{
-  "imports": {
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
-    "openai": "npm:openai@4",
-    "zod": "npm:zod@3.24.1",
-    "zod-to-json-schema": "npm:zod-to-json-schema@3.24.1"
-  }
-}

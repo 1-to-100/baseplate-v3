@@ -1,121 +1,148 @@
-# Edge Function Unit Tests
+# Edge Function Test Utilities
 
-Unit and contract tests for Supabase Edge Functions using Deno.
+Shared testing utilities for Supabase Edge Functions using Deno.
 
-## Setup
+## Overview
 
-No installation required - Deno manages dependencies automatically via import maps in `deno.json`.
+All schema tests are **co-located** with their edge functions. This directory contains only shared testing utilities like the mock generator.
+
+## Directory Structure
+
+```
+deno.json                              # Root config with shared dependencies
+testing/unit/edge-functions/
+├── mock-generator.ts                  # Schema-driven mock data generator
+├── mock-generator.test.ts             # Tests for the mock generator
+└── README.md                          # This file
+
+src/app/(scalekit)/<app>/lib/edge/<function>/
+├── index.ts                           # Edge function entry point
+├── schema.ts                          # Zod schemas + JSON schema export
+└── schema.test.ts                     # Co-located tests
+```
 
 ## Running Tests
 
+### Run all edge function tests
+
+From the repository root:
+
 ```bash
-# Navigate to the edge-functions test directory
-cd testing/unit/edge-functions
+deno task test:edge
+```
 
-# Run all tests
-deno task test
+This single command runs:
+- All co-located schema tests (`src/**/edge/**/*.test.ts`)
+- Mock generator utility tests (`testing/unit/edge-functions/*.test.ts`)
 
-# Run tests in watch mode (re-runs on file changes)
-deno task test:watch
+## Mock Generator
 
-# Run a specific test file
-deno test --allow-net --allow-env --allow-read get-competitor-list.test.ts
+Use the mock generator to create valid test data from Zod schemas:
+
+```typescript
+import {
+  generateMock,
+  generateMockArray,
+  generateInvalidMock,
+  generateMockWithExtra,
+} from '../../../../../../../testing/unit/edge-functions/mock-generator.ts';
+import { ColorsResponseSchema, PaletteColorItemSchema } from './schema.ts';
+
+// Generate valid mock data
+const validResponse = generateMock(ColorsResponseSchema);
+
+// Generate array of mocks
+const mocks = generateMockArray(PaletteColorItemSchema, 5);
+
+// Generate invalid mock for rejection testing
+const invalidMock = generateInvalidMock(PaletteColorItemSchema, ['name']);
+
+// Generate mock with extra fields for strict mode testing
+const mockWithExtra = generateMockWithExtra(PaletteColorItemSchema, {
+  extra_field: 'should be rejected',
+});
+```
+
+### Import Path from Co-located Tests
+
+From an edge function directory (e.g., `src/app/(scalekit)/style-guide/lib/edge/extract-colors/`), the mock generator is 7 directory levels up:
+
+```typescript
+import { generateMock } from '../../../../../../../testing/unit/edge-functions/mock-generator.ts';
 ```
 
 ## Test Categories
 
-### 1. Schema Validation Tests (Unit Tests)
+All edge function tests follow these categories:
 
-Tests that verify Zod schemas correctly validate data structures. These run without network access.
+### 1. Schema Validation Tests
+
+Tests that verify Zod schemas correctly validate data structures:
 
 - **Valid response handling** - Ensures correctly structured data passes validation
 - **Required field enforcement** - Verifies missing required fields are rejected
-- **Strict mode enforcement** - Confirms extra/unknown fields are rejected (matches OpenAI strict mode)
+- **Strict mode enforcement** - Confirms extra/unknown fields are rejected
+- **Type validation** - Wrong types are rejected (strings for numbers, etc.)
 - **Edge cases** - Empty arrays, null values, boundary conditions
 
 ### 2. JSON Schema Export Tests
 
-Tests that verify the generated JSON Schema (used for OpenAI's `response_format`) has the correct structure.
-
-- **Structure validation** - Confirms `type: 'json_schema'`, `strict: true`, and proper nesting
-- **Property existence** - Ensures all expected properties are defined
-- **OpenAI compatibility** - Validates schema meets OpenAI strict mode requirements
+Tests that verify the generated JSON Schema exists for OpenAI's `response_format`.
 
 ### 3. Contract Tests
 
-Tests that verify the Zod schema and JSON Schema remain in sync - critical for ensuring type safety end-to-end.
+Tests that verify schemas have expected fields:
 
-- **Required fields alignment** - JSON Schema `required` array matches Zod schema
-- **Nested structure alignment** - Nested object definitions match between schemas
-- **additionalProperties enforcement** - Both schemas reject extra fields
-- **OpenAI strict mode requirements** - All objects have `additionalProperties: false`
-
-### 4. Integration Tests (Optional)
-
-Tests that call deployed Edge Functions to verify real responses match expected schemas.
-
-These tests are **skipped by default** and only run when environment variables are set.
-
-#### Required Environment Variables
-
-```bash
-export SUPABASE_URL="https://your-project.supabase.co"
-export SUPABASE_ANON_KEY="your-anon-key"
-export TEST_AUTH_TOKEN="valid-jwt-token"
-export TEST_CUSTOMER_ID="uuid-of-test-customer"
-```
-
-#### Running Integration Tests
-
-```bash
-# Set environment variables, then run
-deno task test
-```
-
-## Test Pattern: Schema-First Testing
-
-These tests follow the **schema-first testing pattern**:
-
-1. **Single Source of Truth** - Zod schemas define both:
-   - TypeScript types (via `z.infer<typeof Schema>`)
-   - OpenAI JSON Schema (via `zodToJsonSchema()`)
-
-2. **Contract Testing** - Tests verify Zod and JSON Schema stay aligned, ensuring:
-   - What we tell OpenAI to return matches what we validate
-   - Type safety from API response through to application code
-
-3. **Layered Validation**:
-   ```
-   OpenAI Response
-        ↓
-   JSON Schema (enforced by OpenAI strict mode)
-        ↓
-   Zod Schema (runtime validation in Edge Function)
-        ↓
-   TypeScript Types (compile-time safety)
-   ```
+- **Field existence** - Required fields are present in the schema
 
 ## Adding New Tests
 
 When adding tests for a new Edge Function:
 
-1. Create `<function-name>.test.ts` in this directory
-2. Import the schema from the Edge Function's `schema.ts` (path goes up 3 levels to repo root):
-   ```typescript
-   import {
-     MyResponseSchema,
-     safeParseMyResponse,
-     myJsonSchema,
-   } from '../../../src/app/(scalekit)/<app>/lib/edge/<function>/schema.ts';
-   ```
-3. Add tests for each category (schema, JSON export, contract, integration)
-4. Update `deno.json` imports if new dependencies are needed
+1. Create `schema.test.ts` in the edge function directory alongside `schema.ts`
+2. Import the schema and mock generator
+3. Add tests for each category (schema, JSON export, contract)
+
+Example:
+
+```typescript
+import { assertEquals, assertExists, assert } from '@std/assert';
+import { MyResponseSchema, safeParseMyResponse, myJsonSchema } from './schema.ts';
+import { generateMock, generateInvalidMock, getSchemaFields } from '../../../../../../../testing/unit/edge-functions/mock-generator.ts';
+
+Deno.test('Schema: validates generated mock data', () => {
+  const mock = generateMock(MyResponseSchema);
+  const result = safeParseMyResponse(mock);
+  assertEquals(result.success, true);
+});
+
+Deno.test('Schema: rejects missing required fields', () => {
+  const invalidMock = generateInvalidMock(MyResponseSchema, ['required_field']);
+  const result = safeParseMyResponse(invalidMock);
+  assertEquals(result.success, false);
+});
+
+Deno.test('JSON Schema: exports valid schema for OpenAI', () => {
+  assertExists(myJsonSchema);
+  assertExists(myJsonSchema.schema);
+});
+
+Deno.test('Contract: schema has expected fields', () => {
+  const fields = getSchemaFields(MyResponseSchema);
+  assert(fields.includes('required_field'));
+});
+```
 
 ## Continuous Integration
 
-These tests run in GitHub Actions on:
+Tests run automatically in GitHub Actions on:
 - Push to `src/**/edge/**`
 - Push to `testing/unit/edge-functions/**`
 - Push to `supabase/functions/**`
+- Push to `deno.json`
 
-See `.github/workflows/deno-tests.yml` for the full CI configuration.
+The CI workflow:
+1. Type-checks all edge function files
+2. Runs `deno task test:edge`
+
+See `.github/workflows/deno-tests.yml` for the full configuration.
