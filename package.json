@@ -13,7 +13,8 @@
     "prepare": "husky",
     "type:check": "tsc --pretty --noEmit",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build -o public/storybook-static"
+    "build-storybook": "storybook build -o public/storybook-static",
+    "supabase:wrap-functions": "node supabase/scripts/wrap-feature-functions.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.7.0",
