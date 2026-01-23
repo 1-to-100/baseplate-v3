@@ -142,6 +142,8 @@ export const paths = {
       create: '/segments/create',
       details: (segmentId: string) => `/segments/${segmentId}`,
       edit: (segmentId: string) => `/segments/${segmentId}/edit`,
+      companyDetails: (segmentId: string, companyId: string) =>
+        `/segments/${segmentId}/${companyId}`,
     },
     companies: {
       list: '/companies',
