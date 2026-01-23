@@ -14,6 +14,7 @@ type StyleGuide = {
   guide_name: string;
   brand_personality: string | null;
   brand_voice: string | null;
+  narrative_voice: string | null;
   formality_option_item_id: string | null;
   sentence_length_option_item_id: string | null;
   pacing_option_item_id: string | null;
@@ -21,6 +22,7 @@ type StyleGuide = {
   storytelling_style_option_item_id: string | null;
   use_of_jargon_option_item_id: string | null;
   language_level_option_item_id: string | null;
+  emotional_tone_option_item_id: string | null;
   inclusivity_guidelines?: string | null;
   active?: boolean;
   created_by: string | null;
@@ -31,30 +33,42 @@ type StyleGuide = {
 export type StyleGuideResponse = StyleGuide & {
   formality_option_item?: {
     formality_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   sentence_length_option_item?: {
     sentence_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   pacing_option_item?: {
     pacing_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   humor_usage_option_item?: {
     humor_usage_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   storytelling_style_option_item?: {
     storytelling_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   use_of_jargon_option_item?: {
     use_of_jargon_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
   language_level_option_item?: {
     language_level_option_item_id: string;
+    display_name?: string;
+    [key: string]: unknown;
+  };
+  emotional_tone_option_item?: {
+    emotional_tone_option_item_id: string;
+    display_name?: string;
     [key: string]: unknown;
   };
 };
@@ -101,7 +115,8 @@ export async function getStyleGuideById(styleGuideId: string): Promise<StyleGuid
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `
     )
     .eq('style_guide_id', styleGuideId)
@@ -135,7 +150,8 @@ export async function getActiveStyleGuideByCustomerId(
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `
     )
     .eq('customer_id', customerId)
@@ -177,7 +193,8 @@ export async function listStyleGuides(
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `,
     { count: 'exact' }
   );
@@ -273,7 +290,8 @@ export async function createStyleGuide(
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `
     )
     .single();
@@ -318,7 +336,8 @@ export async function updateStyleGuide(
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `
     )
     .single();
@@ -375,7 +394,8 @@ export async function searchStyleGuides(
       humor_usage_option_item:humor_usage_option_items(*),
       storytelling_style_option_item:storytelling_option_items(*),
       use_of_jargon_option_item:use_of_jargon_option_items(*),
-      language_level_option_item:language_level_option_items(*)
+      language_level_option_item:language_level_option_items(*),
+      emotional_tone_option_item:emotional_tone_option_items(*)
     `
     )
     .ilike('guide_name', `%${searchTerm}%`);
