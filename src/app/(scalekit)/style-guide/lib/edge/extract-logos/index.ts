@@ -1,7 +1,6 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from '@supabase/supabase-js';
+import { logosJsonSchema, safeParseLogosResponse, type LogosResponse } from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -24,15 +23,7 @@ interface LogoTypeOption {
   description: string;
 }
 
-interface LogoAssetData {
-  logo_type_option_id: string;
-  description?: string;
-  file_url?: string;
-}
-
-interface ExtractedLogos {
-  logo_assets: LogoAssetData[];
-}
+// LogoAssetItem and LogosResponse types are imported from schema.ts
 
 // System prompt for logo extraction
 const SYSTEM_PROMPT = `You are an expert brand designer and logo analyst. Your role is to analyze websites, take a screenshot of two or more pages, and identify all logo variations and their usage patterns, including primary logos, secondary logos, icons, wordmarks, and stacked versions.`;
@@ -88,33 +79,28 @@ NOTE: logo_assets can be an empty array [] if no clear logos are found.`;
 }
 
 /**
- * Validates the extracted logos response
+ * Validates the extracted logos response using Zod schema
  */
-function validateLogosResponse(response: unknown): ExtractedLogos {
+function validateLogosResponse(response: unknown): LogosResponse {
   console.log('Validating logos response...');
 
-  let data: Record<string, unknown>;
-
+  // Handle array response (some APIs wrap response in array)
+  let data = response;
   if (Array.isArray(response)) {
     if (response.length === 0) throw new Error('Empty response array');
-    data = response[0] as Record<string, unknown>;
-  } else if (response && typeof response === 'object') {
-    data = response as Record<string, unknown>;
-  } else {
-    throw new Error('Invalid response format');
+    data = response[0];
   }
 
-  if (!Array.isArray(data.logo_assets)) {
-    throw new Error('logo_assets must be an array');
+  const result = safeParseLogosResponse(data);
+
+  if (!result.success) {
+    console.error('Validation errors:', result.error.issues);
+    throw new Error(
+      `Invalid logos response: ${result.error.issues.map((i) => i.message).join(', ')}`
+    );
   }
 
-  const logoAssets = (data.logo_assets as Array<Record<string, unknown>>)
-    .filter((item) => item && typeof item.logo_type_option_id === 'string')
-    .map((item) => ({
-      logo_type_option_id: item.logo_type_option_id,
-      description: typeof item.description === 'string' ? item.description : undefined,
-      file_url: typeof item.file_url === 'string' ? item.file_url : undefined,
-    }));
+  const logoAssets = result.data.logo_assets;
 
   console.log(`✓ Validated ${logoAssets.length} logo assets`);
 
@@ -123,7 +109,7 @@ function validateLogosResponse(response: unknown): ExtractedLogos {
     console.log('No logos found on website');
   }
 
-  return { logo_assets: logoAssets };
+  return result.data;
 }
 
 Deno.serve(async (req) => {
@@ -257,6 +243,14 @@ Deno.serve(async (req) => {
           filters: { allowed_domains: [domain] },
         },
       ],
+      text: {
+        format: {
+          type: logosJsonSchema.type,
+          name: logosJsonSchema.name,
+          strict: logosJsonSchema.strict,
+          schema: logosJsonSchema.schema,
+        },
+      },
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/responses', {
