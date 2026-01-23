@@ -27,6 +27,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     # Only run if tests passed (or manual trigger)
     if: >
       github.event_name == 'workflow_dispatch' ||
