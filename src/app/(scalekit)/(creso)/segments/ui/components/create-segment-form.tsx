@@ -1,9 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
 import Button from '@mui/joy/Button';
@@ -28,7 +25,7 @@ import { createSegment, editSegment, getSegmentById } from '../../lib/api/segmen
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
-import { ListType, ListSubtype, type List } from '../../lib/types/list';
+import { type List } from '../../lib/types/list';
 import type { CompanyPreview } from '../../lib/types/search';
 import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
 import { paths } from '@/paths';

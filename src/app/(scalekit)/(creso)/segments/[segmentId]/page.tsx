@@ -231,7 +231,15 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                       </thead>
                       <tbody>
                         {companies.map((company) => (
-                          <tr key={company.company_id}>
+                          <tr
+                            key={company.company_id}
+                            onClick={() =>
+                              router.push(
+                                paths.creso.segments.companyDetails(segmentId!, company.company_id)
+                              )
+                            }
+                            style={{ cursor: 'pointer' }}
+                          >
                             <td>
                               <Avatar
                                 src={company.logo || undefined}
