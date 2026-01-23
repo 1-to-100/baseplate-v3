@@ -71,6 +71,14 @@ export interface ListWithRelations extends List {
   company_count?: number;
 }
 
+/**
+ * List type for display in segments list page
+ * Extends List with company_count from list_companies join
+ */
+export interface ListForDisplay extends List {
+  company_count?: number;
+}
+
 // ============================================================================
 // INPUT TYPES (for creating/updating records)
 // ============================================================================
@@ -101,4 +109,17 @@ export interface ListFilters {
     max?: number;
   };
   [key: string]: unknown;
+}
+
+/**
+ * Segment filter DTO for creating segments
+ * Used when calling the segments-create edge function
+ */
+export interface SegmentFilterDto {
+  country?: string;
+  location?: string;
+  categories?: string[];
+  employees?: string[];
+  technographics?: string[];
+  personas?: number[];
 }

@@ -47,6 +47,7 @@ export function CreateSegmentForm({
 }: CreateSegmentFormProps): React.JSX.Element {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState('');
 
   // Accordion states
@@ -98,6 +99,15 @@ export function CreateSegmentForm({
 
   const canSaveSegment = () => {
     return segmentName.trim().length >= 3;
+  };
+
+  const canSave = () => {
+    return (
+      segmentName.trim().length >= 3 &&
+      segmentName.trim().length <= 100 &&
+      hasSearched &&
+      companies.length > 0
+    );
   };
 
   const hasActiveFilters = () => {
@@ -210,57 +220,66 @@ export function CreateSegmentForm({
     applyFilters(newPage);
   };
 
-  const saveSegment = async () => {
-    if (!canSaveSegment()) {
-      toast.error('Please enter a segment name (at least 3 characters)');
+  const handleSaveSegment = async () => {
+    if (!canSave()) {
+      if (segmentName.trim().length < 3) {
+        toast.error('Please enter a segment name (at least 3 characters)');
+      } else if (!hasSearched || companies.length === 0) {
+        toast.error(
+          'Please apply filters and ensure companies are found before saving the segment'
+        );
+      }
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSaving(true);
 
     try {
+      // Build filter object for API call
       const country = selectedCountry
         ? countries.find((c) => c.code === selectedCountry)?.name
-        : null;
+        : undefined;
       const location =
         selectedState && locationOptions.length > 0
           ? locationOptions.find((l) => l.code === selectedState)?.name
-          : null;
+          : undefined;
 
-      // TODO: Get actual customer_id and user_id from auth context
-      const segmentData = {
+      // Get industry names from IDs
+      const categoryNames =
+        industries && selectedIndustries.length > 0
+          ? industries
+              .filter((ind) => selectedIndustries.includes(ind.industry_id))
+              .map((ind) => ind.value)
+          : [];
+
+      // Get company size range from IDs
+      const companySizeRanges =
+        companySizes && selectedCompanySizes.length > 0
+          ? companySizes
+              .filter((cs) => selectedCompanySizes.includes(cs.company_size_id))
+              .map((cs) => cs.value)
+          : [];
+
+      // Create segment via API
+      await createSegment({
         name: segmentName,
-        customer_id: 'mock-customer-id', // TODO: Replace with actual customer_id
-        list_type: ListType.SEGMENT,
-        subtype: ListSubtype.COMPANY,
-        is_static: false,
-        user_id: 'mock-user-id', // TODO: Replace with actual user_id
-        description: null,
         filters: {
           country,
           location,
-          company_sizes: selectedCompanySizes,
-          industries: selectedIndustries,
-          technologies: selectedTechnographics,
+          categories: categoryNames,
+          employees: companySizeRanges,
+          technographics: selectedTechnographics,
           personas: selectedPersonas,
         },
-      };
+      });
 
-      console.log('Creating segment with data:', segmentData);
-      const result = await createSegment(segmentData);
-
-      toast.success('Segment created successfully (stub)');
-
-      if (onSuccess) {
-        onSuccess(result.list_id);
-      } else {
-        router.push(paths.dashboard.segments.list);
-      }
+      toast.success('Segment created! Processing companies in background...');
+      router.push(paths.dashboard.segments.list);
     } catch (error) {
-      console.error('Error creating segment:', error);
-      toast.error('Failed to create segment');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create segment';
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
@@ -675,21 +694,33 @@ export function CreateSegmentForm({
       ) : (
         // Company preview table
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          {/* Header with count */}
+          {/* Header with count and Save button */}
           <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
             <Stack
               direction='row'
               spacing={2}
               sx={{ alignItems: 'center', justifyContent: 'space-between' }}
             >
-              <Typography level='title-lg'>
-                {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
-              </Typography>
-              {totalCount > perPage && (
-                <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
+              <Box sx={{ flex: 1 }}>
+                <Typography level='title-lg'>
+                  {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
                 </Typography>
-              )}
+                {totalCount > perPage && (
+                  <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                    Page {currentPage} of {Math.ceil(totalCount / perPage)}
+                  </Typography>
+                )}
+              </Box>
+              <Button
+                variant='solid'
+                color='primary'
+                onClick={handleSaveSegment}
+                disabled={!canSave()}
+                loading={isSaving}
+                size='lg'
+              >
+                Save Segment
+              </Button>
             </Stack>
           </Box>
 
@@ -888,7 +919,7 @@ export function CreateSegmentForm({
           <Button
             variant='solid'
             color='primary'
-            onClick={saveSegment}
+            onClick={handleSaveSegment}
             disabled={!canSaveSegment() || isSubmitting}
             loading={isSubmitting}
           >
