@@ -124,7 +124,6 @@ function SegmentCard({
   onDelete: (segmentId: string) => void;
 }) {
   const router = useRouter();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openMenu, setOpenMenu] = useState(false);
 
   const filters = (segment.filters || {}) as {
@@ -142,18 +141,21 @@ function SegmentCard({
     router.push(paths.dashboard.segments.details(segment.list_id));
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuButtonClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setOpenMenu(true);
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
     setOpenMenu(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (segment.status === ListStatus.PROCESSING) {
+      toast.error('Cannot delete a segment that is currently being processed');
+      handleMenuClose();
+      return;
+    }
     onDelete(segment.list_id);
     handleMenuClose();
   };
@@ -217,12 +219,24 @@ function SegmentCard({
                 sx: { minWidth: 0, p: 0.5, borderRadius: '50%' },
               },
             }}
-            onClick={handleMenuOpen}
+            onClick={handleMenuButtonClick}
           >
             <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
           </MenuButton>
-          <Menu placement='bottom-start' onClose={handleMenuClose}>
-            <MenuItem color='danger' onClick={handleDelete}>
+          <Menu
+            placement='bottom-start'
+            onClose={handleMenuClose}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem
+              color='danger'
+              onClick={handleDelete}
+              disabled={isProcessing}
+              sx={{
+                opacity: isProcessing ? 0.5 : 1,
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+              }}
+            >
               <TrashIcon size={20} />
               Delete
             </MenuItem>
@@ -343,21 +357,23 @@ function SegmentTableRow({
   onDelete: (segmentId: string) => void;
 }) {
   const router = useRouter();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openMenu, setOpenMenu] = useState(false);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuButtonClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-    setOpenMenu(true);
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
     setOpenMenu(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (segment.status === ListStatus.PROCESSING) {
+      toast.error('Cannot delete a segment that is currently being processed');
+      handleMenuClose();
+      return;
+    }
     onDelete(segment.list_id);
     handleMenuClose();
   };
@@ -433,15 +449,24 @@ function SegmentTableRow({
                 sx: { minWidth: 0, p: 0.5, borderRadius: '50%' },
               },
             }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMenuOpen(e);
-            }}
+            onClick={handleMenuButtonClick}
           >
             <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
           </MenuButton>
-          <Menu placement='bottom-start' onClose={handleMenuClose}>
-            <MenuItem color='danger' onClick={handleDelete}>
+          <Menu
+            placement='bottom-start'
+            onClose={handleMenuClose}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MenuItem
+              color='danger'
+              onClick={handleDelete}
+              disabled={isProcessing}
+              sx={{
+                opacity: isProcessing ? 0.5 : 1,
+                cursor: isProcessing ? 'not-allowed' : 'pointer',
+              }}
+            >
               <TrashIcon size={20} />
               Delete
             </MenuItem>

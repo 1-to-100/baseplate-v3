@@ -13,7 +13,7 @@ import FormLabel from '@mui/joy/FormLabel';
 import FormHelperText from '@mui/joy/FormHelperText';
 import Autocomplete from '@mui/joy/Autocomplete';
 import Typography from '@mui/joy/Typography';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { MapPin } from '@phosphor-icons/react/dist/ssr/MapPin';
 import { Buildings } from '@phosphor-icons/react/dist/ssr/Buildings';
@@ -24,12 +24,13 @@ import { CaretDown } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretUp } from '@phosphor-icons/react/dist/ssr/CaretUp';
 import { toast } from '@/components/core/toaster';
 import { getIndustries, getCompanySizes } from '../../lib/api/options';
-import { createSegment } from '../../lib/api/segments';
+import { createSegment, editSegment, getSegmentById } from '../../lib/api/segments';
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
-import { ListType, ListSubtype } from '../../lib/types/list';
+import { ListType, ListSubtype, type List } from '../../lib/types/list';
 import type { CompanyPreview } from '../../lib/types/search';
+import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
 import { paths } from '@/paths';
 import Table from '@mui/joy/Table';
 import Avatar from '@mui/joy/Avatar';
@@ -37,15 +38,55 @@ import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
 
 interface CreateSegmentFormProps {
+  segmentId?: string;
+  initialSegmentData?: List;
   onSuccess?: (segmentId: string) => void;
   onCancel?: () => void;
 }
 
+// Helper functions for mapping filter values to form state
+function mapCompanySizeValuesToIds(values: string[], companySizes: OptionCompanySize[]): number[] {
+  return values
+    .map((value) => {
+      const companySize = companySizes.find((cs) => cs.value === value);
+      return companySize?.company_size_id;
+    })
+    .filter((id): id is number => id !== undefined);
+}
+
+function mapIndustryNamesToIds(names: string[], industries: OptionIndustry[]): number[] {
+  return names
+    .map((name) => {
+      const industry = industries.find((ind) => ind.value === name);
+      return industry?.industry_id;
+    })
+    .filter((id): id is number => id !== undefined);
+}
+
+function findCountryCodeByName(name: string): string | null {
+  const country = countries.find((c) => c.name === name);
+  return country?.code || null;
+}
+
+function findStateCodeByName(name: string, countryCode: string): string | null {
+  if (countryCode === 'USA') {
+    const state = usStates.find((s) => s.name === name);
+    return state?.code || null;
+  } else if (countryCode === 'CAN') {
+    const province = canadianProvinces.find((p) => p.name === name);
+    return province?.code || null;
+  }
+  return null;
+}
+
 export function CreateSegmentForm({
+  segmentId,
+  initialSegmentData,
   onSuccess,
   onCancel,
 }: CreateSegmentFormProps): React.JSX.Element {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState('');
@@ -73,6 +114,7 @@ export function CreateSegmentForm({
   const [perPage] = React.useState(25);
   const [hasSearched, setHasSearched] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
+  const [formInitialized, setFormInitialized] = React.useState(false);
 
   // Fetch options from database
   const { data: industries, isLoading: industriesLoading } = useQuery({
@@ -85,6 +127,16 @@ export function CreateSegmentForm({
     queryFn: getCompanySizes,
   });
 
+  // Fetch segment data if segmentId is provided and initialSegmentData is not
+  const { data: segmentData, isLoading: segmentLoading } = useQuery({
+    queryKey: ['segment', segmentId, 'form'],
+    queryFn: () => getSegmentById(segmentId!, { page: 1, perPage: 1 }),
+    enabled: !!segmentId && !initialSegmentData,
+  });
+
+  const segment = initialSegmentData || segmentData?.segment;
+  const isEditMode = !!segmentId;
+
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
     if (selectedCountry === 'USA') {
@@ -96,6 +148,66 @@ export function CreateSegmentForm({
   }, [selectedCountry]);
 
   const showLocationDropdown = locationOptions.length > 0;
+
+  // Populate form fields when segment data is available (edit mode)
+  React.useEffect(() => {
+    if (segment && industries && companySizes) {
+      // Set segment name
+      setSegmentName(segment.name || '');
+
+      // Parse filters
+      const filters = (segment.filters || {}) as {
+        country?: string;
+        location?: string;
+        employees?: string | string[];
+        categories?: string[];
+        technographics?: string[];
+        personas?: number[];
+      };
+
+      // Set country
+      if (filters.country) {
+        const countryCode = findCountryCodeByName(filters.country);
+        setSelectedCountry(countryCode);
+      }
+
+      // Set state/province
+      if (filters.location && filters.country) {
+        const countryCode = findCountryCodeByName(filters.country);
+        if (countryCode) {
+          const stateCode = findStateCodeByName(filters.location, countryCode);
+          setSelectedState(stateCode);
+        }
+      }
+
+      // Set company sizes
+      if (filters.employees) {
+        const employeesArray = Array.isArray(filters.employees)
+          ? filters.employees
+          : [filters.employees];
+        const companySizeIds = mapCompanySizeValuesToIds(employeesArray, companySizes);
+        setSelectedCompanySizes(companySizeIds);
+      }
+
+      // Set industries
+      if (filters.categories && filters.categories.length > 0) {
+        const industryIds = mapIndustryNamesToIds(filters.categories, industries);
+        setSelectedIndustries(industryIds);
+      }
+
+      // Set technographics
+      if (filters.technographics && filters.technographics.length > 0) {
+        setSelectedTechnographics(filters.technographics);
+      }
+
+      // Set personas
+      if (filters.personas && filters.personas.length > 0) {
+        setSelectedPersonas(filters.personas);
+      }
+
+      setFormInitialized(true);
+    }
+  }, [segment, industries, companySizes]);
 
   const canSaveSegment = () => {
     return segmentName.trim().length >= 3;
@@ -220,6 +332,36 @@ export function CreateSegmentForm({
     applyFilters(newPage);
   };
 
+  // Auto-trigger search in edit mode after form is initialized
+  React.useEffect(() => {
+    if (
+      isEditMode &&
+      formInitialized &&
+      !hasSearched &&
+      (selectedCountry !== null ||
+        selectedState !== null ||
+        selectedCompanySizes.length > 0 ||
+        selectedIndustries.length > 0 ||
+        selectedTechnographics.length > 0)
+    ) {
+      // Small delay to ensure all state updates are complete
+      const timer = setTimeout(() => {
+        applyFilters(1);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isEditMode,
+    formInitialized,
+    hasSearched,
+    selectedCountry,
+    selectedState,
+    selectedCompanySizes,
+    selectedIndustries,
+    selectedTechnographics,
+  ]);
+
   const handleSaveSegment = async () => {
     if (!canSave()) {
       if (segmentName.trim().length < 3) {
@@ -260,23 +402,47 @@ export function CreateSegmentForm({
               .map((cs) => cs.value)
           : [];
 
-      // Create segment via API
-      await createSegment({
-        name: segmentName,
-        filters: {
-          country,
-          location,
-          categories: categoryNames,
-          employees: companySizeRanges,
-          technographics: selectedTechnographics,
-          personas: selectedPersonas,
-        },
-      });
+      const filters = {
+        country,
+        location,
+        categories: categoryNames,
+        employees: companySizeRanges,
+        technographics: selectedTechnographics,
+        personas: selectedPersonas,
+      };
 
-      toast.success('Segment created! Processing companies in background...');
-      router.push(paths.dashboard.segments.list);
+      if (isEditMode && segmentId) {
+        // Edit existing segment
+        await editSegment(segmentId, {
+          name: segmentName,
+          filters,
+        });
+
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ['segment', segmentId] });
+        queryClient.invalidateQueries({ queryKey: ['segment', segmentId, 'edit'] });
+        queryClient.invalidateQueries({ queryKey: ['segment', segmentId, 'form'] });
+        queryClient.invalidateQueries({ queryKey: ['segments'] });
+
+        toast.success('Segment updated successfully!');
+        router.push(paths.dashboard.segments.details(segmentId));
+      } else {
+        // Create new segment
+        await createSegment({
+          name: segmentName,
+          filters,
+        });
+
+        toast.success('Segment created! Processing companies in background...');
+        router.push(paths.dashboard.segments.list);
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create segment';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : isEditMode
+            ? 'Failed to update segment'
+            : 'Failed to create segment';
       toast.error(errorMessage);
     } finally {
       setIsSaving(false);
@@ -685,43 +851,29 @@ export function CreateSegmentForm({
           }}
         >
           <Typography level='h1' sx={{ mb: 2, fontSize: '2rem' }}>
-            Setup filters to create new segment
+            {isEditMode ? 'Update segment filters' : 'Setup filters to create new segment'}
           </Typography>
           <Typography level='body-lg' sx={{ color: 'text.secondary', maxWidth: 600 }}>
-            Narrow down your audience using filters and save them as a reusable segment.
+            {isEditMode
+              ? 'Modify the filters below to update your segment criteria.'
+              : 'Narrow down your audience using filters and save them as a reusable segment.'}
           </Typography>
         </Box>
       ) : (
         // Company preview table
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          {/* Header with count and Save button */}
+          {/* Header with count */}
           <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-            <Stack
-              direction='row'
-              spacing={2}
-              sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-            >
-              <Box sx={{ flex: 1 }}>
-                <Typography level='title-lg'>
-                  {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
+            <Box sx={{ flex: 1 }}>
+              <Typography level='title-lg'>
+                {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
+              </Typography>
+              {totalCount > perPage && (
+                <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
                 </Typography>
-                {totalCount > perPage && (
-                  <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                    Page {currentPage} of {Math.ceil(totalCount / perPage)}
-                  </Typography>
-                )}
-              </Box>
-              <Button
-                variant='solid'
-                color='primary'
-                onClick={handleSaveSegment}
-                disabled={!canSave()}
-                loading={isSaving}
-                size='lg'
-              >
-                Save Segment
-              </Button>
-            </Stack>
+              )}
+            </Box>
           </Box>
 
           {/* Table */}
@@ -923,7 +1075,13 @@ export function CreateSegmentForm({
             disabled={!canSaveSegment() || isSubmitting}
             loading={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : 'Save'}
+            {isSubmitting
+              ? isEditMode
+                ? 'Updating...'
+                : 'Saving...'
+              : isEditMode
+                ? 'Update'
+                : 'Save'}
           </Button>
         </Box>
       </Box>
