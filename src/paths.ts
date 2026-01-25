@@ -55,6 +55,12 @@ export const paths = {
       create: '/segments/create',
       edit: (segmentId: string) => `/segments/${segmentId}/edit`,
     },
+    companies: {
+      list: '/companies',
+      create: '/companies/create',
+      details: (companyId: string) => `/companies/${companyId}`,
+      edit: (companyId: string) => `/companies/${companyId}/edit`,
+    },
     roleSettings: {
       list: '/dashboard/role-settings',
       details: (roleId: string) => `/dashboard/role-settings/${roleId}`,
