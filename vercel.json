@@ -6,6 +6,6 @@
   "devCommand": "pnpm run dev",
   "regions": ["iad1"],
   "git": {
-    "deploymentEnabled": { "*": false, "master": true, "feat/segments-and-companies": true }
+    "deploymentEnabled": { "*": false, "master": false, "feat/segments-and-companies": true }
   }
 }
