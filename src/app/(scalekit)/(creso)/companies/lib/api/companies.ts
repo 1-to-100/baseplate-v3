@@ -33,7 +33,7 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
   let query = supabase.from('companies').select('*', { count: 'exact' });
 
   // Apply search filter
-  const search = params.search || params.name || '';
+  const search = params.search || '';
   if (search && search.trim()) {
     query = query.or(
       `display_name.ilike.%${search}%,legal_name.ilike.%${search}%,domain.ilike.%${search}%`
