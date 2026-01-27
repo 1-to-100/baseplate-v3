@@ -28,10 +28,18 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
   const [isReanalyzing, setIsReanalyzing] = React.useState<boolean>(false);
 
   const { data: guide, isLoading, refetch } = useStyleGuide(guideId);
-  const { data: framingConceptsData, isLoading: framingConceptsLoading } = useFramingConcepts({
+  const {
+    data: framingConceptsData,
+    isLoading: framingConceptsLoading,
+    refetch: refetchFramingConcepts,
+  } = useFramingConcepts({
     style_guide_id: guideId,
   });
-  const { data: vocabularyData, isLoading: vocabularyLoading } = useVocabularyEntries({
+  const {
+    data: vocabularyData,
+    isLoading: vocabularyLoading,
+    refetch: refetchVocabulary,
+  } = useVocabularyEntries({
     style_guide_id: guideId,
   });
 
@@ -100,7 +108,7 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
       }
 
       toast.success('Style guide reanalyzed successfully!');
-      await refetch();
+      await Promise.all([refetch(), refetchFramingConcepts(), refetchVocabulary()]);
     } catch (error) {
       console.error('Error reanalyzing style guide:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to reanalyze style guide');
@@ -163,6 +171,8 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
                   isLoading={framingConceptsLoading || vocabularyLoading}
                   onSaveSuccess={() => {
                     refetch();
+                    refetchFramingConcepts();
+                    refetchVocabulary();
                   }}
                 />
               ) : (

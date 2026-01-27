@@ -13,7 +13,6 @@ export default function WrittenStyleGuideBreadcrumbs({
 }: WrittenStyleGuideBreadcrumbsProps): React.JSX.Element {
   return (
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
-      <BreadcrumbsItem href='/style-guide/'>Founder&apos;s Desk</BreadcrumbsItem>
       <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
       <Typography>{guideName || 'Written Style'}</Typography>
     </Breadcrumbs>

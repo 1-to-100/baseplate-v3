@@ -201,15 +201,6 @@ export default function WrittenStyleGuideSummary({
     <Stack spacing={2}>
       <Stack direction='row' justifyContent='space-between' alignItems='center'>
         <Typography level='title-sm'>Content</Typography>
-        <Button
-          variant='plain'
-          color='primary'
-          size='sm'
-          startDecorator={<PencilLine size={16} />}
-          onClick={onEditClick}
-        >
-          Edit
-        </Button>
       </Stack>
 
       <Table

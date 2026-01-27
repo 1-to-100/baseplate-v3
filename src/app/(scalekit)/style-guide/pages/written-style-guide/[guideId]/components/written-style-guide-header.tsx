@@ -32,9 +32,6 @@ export default function WrittenStyleGuideHeader({
     >
       <Stack direction='row' spacing={2} alignItems='center'>
         <Typography level='h1'>Written Style</Typography>
-        <Chip size='sm' variant='soft' color='neutral'>
-          Draft
-        </Chip>
       </Stack>
       <Stack direction='row' spacing={1}>
         {onReanalyze && (
