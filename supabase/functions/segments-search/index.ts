@@ -6,6 +6,8 @@ import { DiffbotClient } from './diffbot-client.ts';
 import { DqlAdapter } from './dql-adapter.ts';
 import { SearchByFiltersRequest, SearchByFiltersResponse, CompanyPreview } from './types.ts';
 
+export const DIFFBOT_COMPANIES_LIMIT = 5
+
 serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -26,14 +28,11 @@ serve(async (req) => {
       throw new ApiError('Filters are required', 400);
     }
 
-    const { filters, page = 1, perPage = 50 } = body;
+    const { filters, page = 1, perPage = DIFFBOT_COMPANIES_LIMIT } = body;
 
     // Validate pagination parameters
     if (page < 1) {
       throw new ApiError('Page must be >= 1', 400);
-    }
-    if (perPage < 1 || perPage > 100) {
-      throw new ApiError('perPage must be between 1 and 100', 400);
     }
 
     // Convert filters to DQL
