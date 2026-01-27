@@ -123,3 +123,18 @@ export interface SegmentFilterDto {
   technographics?: string[];
   personas?: number[];
 }
+
+/**
+ * AI-generated segment response
+ * Returned by the segments-ai edge function
+ */
+export interface AiGeneratedSegment {
+  name: string;
+  filters: {
+    country?: string;
+    location?: string;
+    categories?: string[];
+    employees?: string[];
+    technographics?: string[];
+  };
+}

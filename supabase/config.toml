@@ -151,3 +151,6 @@ verify_jwt = false
 
 [functions.team-management]
 verify_jwt = false
+
+[functions.segments-ai]
+verify_jwt = false

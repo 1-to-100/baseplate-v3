@@ -1,4 +1,5 @@
 import { DiffbotOrganizationResponse, DiffbotOrganization } from './types.ts';
+import { DIFFBOT_COMPANIES_LIMIT } from './index.ts';
 
 /**
  * Diffbot API client for organization search
@@ -30,7 +31,7 @@ export class DiffbotClient {
     data: DiffbotOrganization[];
     totalCount: number;
   }> {
-    const size = options?.size || 50;
+    const size = options?.size || DIFFBOT_COMPANIES_LIMIT;
     const from = options?.from || 0;
     const getClause = options?.getClause || 'id,name,fullName,type,logo,image,diffbotUri,location,nbActiveEmployeeEdges,nbEmployees,nbEmployeesMin,nbEmployeesMax,homepageUri,categories';
 

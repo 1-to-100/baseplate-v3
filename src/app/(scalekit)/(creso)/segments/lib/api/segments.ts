@@ -4,11 +4,63 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { List, ListForDisplay, SegmentFilterDto } from '../types/list';
+import type { List, ListForDisplay, SegmentFilterDto, AiGeneratedSegment } from '../types/list';
 
 interface CreateSegmentInput {
   name: string;
   filters: SegmentFilterDto;
+}
+
+/**
+ * Ask AI to generate segment filters from a natural language description
+ * Calls the segments-ai edge function which uses OpenAI to generate filters
+ *
+ * @param description - Natural language description of the desired segment
+ * @returns Promise resolving to the AI-generated segment name and filters
+ */
+export async function askAiSegment(description: string): Promise<AiGeneratedSegment> {
+  const supabase = createClient();
+
+  // Get authenticated user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  // Call segments-ai edge function
+  const { data, error } = await supabase.functions.invoke('segments-ai', {
+    body: { description },
+  });
+
+  if (error) {
+    // Extract error message from response
+    let errorMessage = 'Failed to generate segment from AI';
+
+    // Check if error has context (raw Response object)
+    const errorObj = error as { context?: Response; error?: string; message?: string };
+    if (errorObj.context) {
+      try {
+        const clonedResponse = errorObj.context.clone();
+        const errorData = await clonedResponse.json();
+        if (errorData && typeof errorData === 'object') {
+          const data = errorData as { error?: string; message?: string };
+          errorMessage = data.error || data.message || errorMessage;
+        }
+      } catch {
+        errorMessage = errorObj.message || errorMessage;
+      }
+    } else {
+      errorMessage = errorObj.message || errorMessage;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return data as AiGeneratedSegment;
 }
 
 /**

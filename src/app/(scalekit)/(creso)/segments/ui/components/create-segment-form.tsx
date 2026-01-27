@@ -25,7 +25,8 @@ import { createSegment, editSegment, getSegmentById } from '../../lib/api/segmen
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
-import { type List } from '../../lib/types/list';
+import { type List, type AiGeneratedSegment } from '../../lib/types/list';
+import { AskAiSegment } from './ask-ai-segment';
 import type { CompanyPreview } from '../../lib/types/search';
 import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
 import { paths } from '@/paths';
@@ -33,6 +34,7 @@ import Table from '@mui/joy/Table';
 import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
+import { useCallback } from 'react';
 
 interface CreateSegmentFormProps {
   segmentId?: string;
@@ -456,6 +458,67 @@ export function CreateSegmentForm({
       router.push(paths.dashboard.segments.list);
     }
   };
+
+  // Handle AI-generated segment - populate form fields from AI response
+  const handleAiSegmentGenerated = useCallback(
+    (aiSegment: AiGeneratedSegment) => {
+      // Set the segment name
+      if (aiSegment.name) {
+        setSegmentName(aiSegment.name);
+      }
+
+      const { filters } = aiSegment;
+      if (!filters) return;
+
+      // Map country name to country code
+      if (filters.country) {
+        const countryCode = findCountryCodeByName(filters.country);
+        if (countryCode) {
+          setSelectedCountry(countryCode);
+          setGeoAccordionOpen(true);
+
+          // Map location/state if provided
+          if (filters.location && countryCode) {
+            const stateCode = findStateCodeByName(filters.location, countryCode);
+            if (stateCode) {
+              setSelectedState(stateCode);
+            }
+          }
+        }
+      }
+
+      // Map company sizes (employees)
+      if (filters.employees && filters.employees.length > 0 && companySizes) {
+        const companySizeIds = mapCompanySizeValuesToIds(filters.employees, companySizes);
+        if (companySizeIds.length > 0) {
+          setSelectedCompanySizes(companySizeIds);
+          setCompanySizeAccordionOpen(true);
+        }
+      }
+
+      // Map industries (categories)
+      if (filters.categories && filters.categories.length > 0 && industries) {
+        const industryIds = mapIndustryNamesToIds(filters.categories, industries);
+        if (industryIds.length > 0) {
+          setSelectedIndustries(industryIds);
+          setIndustryAccordionOpen(true);
+        }
+      }
+
+      // Set technographics directly
+      if (filters.technographics && filters.technographics.length > 0) {
+        setSelectedTechnographics(filters.technographics);
+        setTechnographicsAccordionOpen(true);
+      }
+
+      // Reset search state since filters changed
+      setHasSearched(false);
+      setCompanies([]);
+      setTotalCount(0);
+      setSearchError(null);
+    },
+    [countries, companySizes, industries, locationOptions]
+  );
 
   // Filters Panel (Left Side)
   const filtersPanel = (
@@ -1046,45 +1109,60 @@ export function CreateSegmentForm({
 
   return (
     <Box>
-      {/* Top Action Buttons */}
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 2,
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-        }}
-      >
-        <FormControl sx={{ flex: 1 }}>
-          <Input
-            value={segmentName}
-            onChange={(e) => setSegmentName(e.target.value)}
-            placeholder='Enter segment name'
-            size='lg'
-          />
-        </FormControl>
-        <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-          <Button variant='outlined' color='neutral' onClick={handleCancel} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            variant='solid'
-            color='primary'
-            onClick={handleSaveSegment}
-            disabled={!canSaveSegment() || isSubmitting}
-            loading={isSubmitting}
-          >
-            {isSubmitting
-              ? isEditMode
-                ? 'Updating...'
-                : 'Saving...'
-              : isEditMode
-                ? 'Update'
-                : 'Save'}
-          </Button>
+      {/* Top Action Bar */}
+      <Stack spacing={2} sx={{ mb: 2 }}>
+        {/* Segment Name and Action Buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <FormControl sx={{ flex: 1 }}>
+            <Input
+              value={segmentName}
+              onChange={(e) => setSegmentName(e.target.value)}
+              placeholder='Enter segment name'
+              size='lg'
+            />
+          </FormControl>
+          <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+            <Button
+              variant='outlined'
+              color='neutral'
+              onClick={handleCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant='solid'
+              color='primary'
+              onClick={handleSaveSegment}
+              disabled={!canSaveSegment() || isSubmitting}
+              loading={isSubmitting}
+            >
+              {isSubmitting
+                ? isEditMode
+                  ? 'Updating...'
+                  : 'Saving...'
+                : isEditMode
+                  ? 'Update'
+                  : 'Save'}
+            </Button>
+          </Box>
         </Box>
-      </Box>
+
+        {/* AI Segment Generator - only show in create mode */}
+        {!isEditMode && (
+          <AskAiSegment
+            onAiSegmentGenerated={handleAiSegmentGenerated}
+            disabled={isSubmitting || industriesLoading || companySizesLoading}
+          />
+        )}
+      </Stack>
 
       {/* Two Column Layout */}
       <Box
