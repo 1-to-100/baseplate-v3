@@ -430,6 +430,9 @@ export function CreateSegmentForm({
           filters,
         });
 
+        // Invalidate segments query to refresh the list
+        queryClient.invalidateQueries({ queryKey: ['segments'] });
+
         toast.success('Segment created! Processing companies in background...');
         router.push(paths.dashboard.segments.list);
       }
