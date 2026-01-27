@@ -193,8 +193,8 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
     );
   }
 
-  // Show loading while checking for existing guide
-  if (isLoading || (guideToEdit?.style_guide_id && !isGenerating)) {
+  // Show loading while checking for existing guide or generating
+  if (isLoading || isGenerating) {
     return (
       <Box
         sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}
