@@ -652,69 +652,254 @@ export function CreateSegmentForm({
               borderBottom: !geoAccordionOpen ? '1px solid var(--joy-palette-divider)' : 'none',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               cursor: 'pointer',
+              position: 'relative',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <MapPin
-                size={20}
-                color={
-                  selectedCountry || selectedState
-                    ? 'var(--joy-palette-primary-500)'
-                    : 'var(--joy-palette-text-primary)'
-                }
-              />
-              <Typography
-                fontWeight={500}
-                fontSize={14}
-                sx={{
-                  color:
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <MapPin
+                  size={20}
+                  color={
                     selectedCountry || selectedState
                       ? 'var(--joy-palette-primary-500)'
-                      : 'var(--joy-palette-text-primary)',
-                }}
-              >
-                Countries
-              </Typography>
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color:
+                      selectedCountry || selectedState
+                        ? 'var(--joy-palette-primary-500)'
+                        : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Countries
+                </Typography>
+              </Box>
+              {/* Selected country/state chips when accordion is closed */}
+              {!geoAccordionOpen && (selectedCountry || selectedState) && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  {/* Show country chip if country selected and no state selected for USA/CAN */}
+                  {selectedCountry &&
+                    !(
+                      selectedState &&
+                      (selectedCountry === 'USA' || selectedCountry === 'CAN')
+                    ) && (
+                      <Tooltip
+                        title='Includes all states unless you specify particular states'
+                        placement='top'
+                        sx={{
+                          background: '#DAD8FD',
+                          color: '#3D37DD',
+                          maxWidth: 200,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            bgcolor: 'var(--joy-palette-background-level2)',
+                            borderRadius: 20,
+                            px: 1.5,
+                            py: 0.5,
+                            fontSize: 12,
+                            height: 22,
+                            gap: 0.5,
+                          }}
+                        >
+                          <Typography sx={{ fontSize: 12 }}>
+                            {countries.find((c) => c.code === selectedCountry)?.name}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                    )}
+                  {/* Show state/province chip if state selected */}
+                  {selectedCountry && selectedState && locationOptions.length > 0 && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: 'var(--joy-palette-background-level2)',
+                        borderRadius: 20,
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: 12,
+                        height: 22,
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 12 }}>
+                        {locationOptions.find((s) => s.code === selectedState)?.name}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
             </Box>
-            {geoAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mt: !geoAccordionOpen && (selectedCountry || selectedState) ? 0 : 0,
+              }}
+            >
+              {/* Clear all button when accordion is closed and selections exist */}
+              {!geoAccordionOpen && (selectedCountry || selectedState) && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'var(--joy-palette-background-level2)',
+                    borderRadius: '999px',
+                    px: 1,
+                    py: 0.25,
+                    height: 28,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCountry(null);
+                    setSelectedState(null);
+                  }}
+                >
+                  <Typography
+                    fontWeight={500}
+                    fontSize={12}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    {Number(
+                      !!selectedCountry &&
+                        !(selectedState && (selectedCountry === 'USA' || selectedCountry === 'CAN'))
+                    ) + Number(!!selectedState)}
+                  </Typography>
+                  <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} color='var(--joy-palette-text-primary)' />
+                  </Box>
+                </Box>
+              )}
+              {geoAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
           </Box>
           {geoAccordionOpen && (
-            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-              <Stack spacing={2}>
-                <FormControl size='sm'>
-                  <FormLabel>Country</FormLabel>
-                  <Autocomplete
-                    options={countries}
-                    getOptionLabel={(option) => option.name}
-                    value={countries.find((c) => c.code === selectedCountry) || null}
-                    onChange={(_, value) => {
-                      setSelectedCountry(value?.code || null);
-                      if (!value) setSelectedState(null);
-                    }}
-                    placeholder='Select country'
-                    size='sm'
-                    disabled={countries.length === 0}
-                  />
-                  {countries.length === 0 && (
-                    <FormHelperText>Country options coming soon</FormHelperText>
+            <Box sx={{ pl: 0, pr: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+              <Autocomplete
+                placeholder='Country'
+                options={countries}
+                getOptionLabel={(option) => option.name}
+                value={countries.find((c) => c.code === selectedCountry) || null}
+                onChange={(_, value) => {
+                  setSelectedCountry(value?.code || null);
+                  if (!value) setSelectedState(null);
+                }}
+                sx={{ mb: 2, width: '100%', fontSize: 14 }}
+                slotProps={{
+                  listbox: { sx: { fontSize: 14 } },
+                  option: { sx: { fontSize: 14 } },
+                }}
+                isOptionEqualToValue={(option, value) => option.code === value.code}
+              />
+              {selectedCountry && showLocationDropdown && (
+                <Autocomplete
+                  placeholder={selectedCountry === 'CAN' ? 'Province' : 'State'}
+                  options={locationOptions}
+                  getOptionLabel={(option) => option.name}
+                  value={locationOptions.find((l) => l.code === selectedState) || null}
+                  onChange={(_, value) => setSelectedState(value?.code || null)}
+                  sx={{ mb: 2, width: '100%', fontSize: 14 }}
+                  slotProps={{
+                    listbox: { sx: { fontSize: 14 } },
+                    option: { sx: { fontSize: 14 } },
+                  }}
+                  isOptionEqualToValue={(option, value) => option.code === value.code}
+                />
+              )}
+              {/* Selected country/state chips inside accordion */}
+              <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                {/* Country chip - show if country selected and no state selected for USA/CAN */}
+                {selectedCountry &&
+                  !(selectedState && (selectedCountry === 'USA' || selectedCountry === 'CAN')) && (
+                    <Tooltip
+                      title='Includes all states unless you specify particular states'
+                      placement='top'
+                      sx={{
+                        background: '#DAD8FD',
+                        color: '#3D37DD',
+                        maxWidth: 200,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12 }}>
+                          {countries.find((c) => c.code === selectedCountry)?.name}
+                        </Typography>
+                        <Box
+                          sx={{
+                            fontSize: 12,
+                            p: 0,
+                            height: 16,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onClick={() => {
+                            setSelectedCountry(null);
+                            setSelectedState(null);
+                          }}
+                        >
+                          <X size={14} />
+                        </Box>
+                      </Box>
+                    </Tooltip>
                   )}
-                </FormControl>
-                {showLocationDropdown && (
-                  <FormControl size='sm'>
-                    <FormLabel>State/Province</FormLabel>
-                    <Autocomplete
-                      options={locationOptions}
-                      getOptionLabel={(option) => option.name}
-                      value={locationOptions.find((l) => l.code === selectedState) || null}
-                      onChange={(_, value) => setSelectedState(value?.code || null)}
-                      placeholder={`Select ${selectedCountry === 'USA' ? 'state' : 'province'}`}
-                      size='sm'
-                    />
-                  </FormControl>
+                {/* State/province chip */}
+                {selectedCountry && selectedState && locationOptions.length > 0 && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      bgcolor: 'var(--joy-palette-background-level2)',
+                      borderRadius: 20,
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: 12,
+                      height: 22,
+                      gap: 0.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12 }}>
+                      {locationOptions.find((s) => s.code === selectedState)?.name}
+                    </Typography>
+                    <Box
+                      sx={{
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onClick={() => setSelectedState(null)}
+                    >
+                      <X size={14} />
+                    </Box>
+                  </Box>
                 )}
-              </Stack>
+              </Box>
             </Box>
           )}
         </Box>
