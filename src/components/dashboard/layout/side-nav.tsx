@@ -20,6 +20,7 @@ import { NoSsr } from '@/components/core/no-ssr';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { ColorSchemeSwitch } from './color-scheme-switch';
 import { icons } from './nav-icons';
+import { CreditBalanceWidget } from '@/components/credits';
 import {
   isSystemAdministrator,
   isCustomerSuccess,
@@ -152,6 +153,9 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
             },
           }}
         >
+          <NoSsr>
+            <CreditBalanceWidget />
+          </NoSsr>
           <NoSsr>
             <ColorSchemeSwitch />
           </NoSsr>
