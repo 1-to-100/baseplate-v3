@@ -7,7 +7,7 @@ import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { paths } from '@/paths';
 import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { getSegmentById, getSegmentCompanies } from '../../lib/api/segments';
 import {
@@ -26,6 +26,8 @@ import {
   type CompanyDetailsData,
   type SimplePerson,
 } from '@/app/(scalekit)/(creso)/segments/ui/components/company-details';
+import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
+import type { CompanyItem } from '@/app/(scalekit)/(creso)/companies/lib/types/company';
 
 interface PageProps {
   params: Promise<{
@@ -111,6 +113,47 @@ function toSimplePerson(person: {
   };
 }
 
+// Map segment company + scoring to CompanyItem for EditCompanyModal
+function toCompanyItemForEdit(
+  company: {
+    company_id: string;
+    display_name?: string | null;
+    legal_name?: string | null;
+    description?: string | null;
+    website_url?: string | null;
+    categories?: string[] | null;
+    employees?: number | null;
+    country?: string | null;
+    region?: string | null;
+    address?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    created_at?: string;
+    updated_at?: string;
+  },
+  scoring?: { revenue?: number | null } | null
+): CompanyItem {
+  const numericId =
+    parseInt(company.company_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0;
+  return {
+    id: numericId,
+    company_id: company.company_id,
+    name: company.display_name || company.legal_name || 'Unknown',
+    description: company.description || undefined,
+    website: company.website_url || undefined,
+    country: company.country || undefined,
+    region: company.region || undefined,
+    address: company.address || undefined,
+    email: company.email || undefined,
+    phone: company.phone || undefined,
+    revenue: scoring?.revenue ?? undefined,
+    employees: company.employees ?? undefined,
+    categories: company.categories ?? undefined,
+    created_at: company.created_at || new Date().toISOString(),
+    updated_at: company.updated_at || new Date().toISOString(),
+  };
+}
+
 export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Element {
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
   const [companyId, setCompanyId] = React.useState<string | null>(null);
@@ -122,6 +165,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   const [isDebugModalOpen, setIsDebugModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const popperRef = useRef<HTMLDivElement | null>(null);
+  const queryClient = useQueryClient();
 
   // PeopleList table state
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -481,6 +525,20 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         data={diffbotJson}
         isLoading={diffbotLoading}
         error={diffbotError as Error | null}
+      />
+
+      {/* Edit Company Modal */}
+      <EditCompanyModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        company={
+          companyData ? toCompanyItemForEdit(companyData.company, companyData.scoring) : null
+        }
+        onSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: ['company', segmentId, companyId, 'with-scoring'],
+          });
+        }}
       />
     </Box>
   );
