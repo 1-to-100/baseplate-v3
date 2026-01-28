@@ -1059,8 +1059,7 @@ export default function Page(): React.JSX.Element {
             onClose={handleCloseCompanyPopover}
             anchorEl={companyPopoverAnchorEl}
             companyId={company.id}
-            onEdit={handleEditCompany}
-            onAddToList={handleAddToList}
+            company_id={company.company_id}
           />
         ))}
 
