@@ -157,3 +157,6 @@ verify_jwt = false
 
 [functions.segments-update]
 verify_jwt = false
+
+[functions.industries-smart-search]
+verify_jwt = false

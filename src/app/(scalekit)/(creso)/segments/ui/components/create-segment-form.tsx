@@ -19,8 +19,19 @@ import { Code } from '@phosphor-icons/react/dist/ssr/Code';
 import { Users } from '@phosphor-icons/react/dist/ssr/Users';
 import { CaretDown } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretUp } from '@phosphor-icons/react/dist/ssr/CaretUp';
+import Switch from '@mui/joy/Switch';
+import Tooltip from '@mui/joy/Tooltip';
+import IconButton from '@mui/joy/IconButton';
+import { Info } from '@phosphor-icons/react/dist/ssr/Info';
+import { Check } from '@phosphor-icons/react/dist/ssr/Check';
+import { X } from '@phosphor-icons/react/dist/ssr/X';
 import { toast } from '@/components/core/toaster';
-import { getIndustries, getCompanySizes } from '../../lib/api/options';
+import {
+  getIndustries,
+  getCompanySizes,
+  smartSearchIndustries,
+  type SmartSearchIndustry,
+} from '../../lib/api/options';
 import { createSegment, editSegment, getSegmentById } from '../../lib/api/segments';
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
@@ -106,6 +117,13 @@ export function CreateSegmentForm({
   const [selectedIndustries, setSelectedIndustries] = React.useState<number[]>([]);
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>([]);
   const [selectedPersonas, setSelectedPersonas] = React.useState<number[]>([]);
+
+  // Smart search state
+  const [smartSearchEnabled, setSmartSearchEnabled] = React.useState(false);
+  const [industrySearchQuery, setIndustrySearchQuery] = React.useState('');
+  const [isSmartSearching, setIsSmartSearching] = React.useState(false);
+  const [smartSearchResults, setSmartSearchResults] = React.useState<SmartSearchIndustry[]>([]);
+  const [suggestedIndustries, setSuggestedIndustries] = React.useState<SmartSearchIndustry[]>([]);
 
   // Search/preview state
   const [isSearching, setIsSearching] = React.useState(false);
@@ -524,6 +542,62 @@ export function CreateSegmentForm({
     [countries, companySizes, industries, locationOptions]
   );
 
+  // Handle smart search for industries
+  const handleSmartSearch = useCallback(async () => {
+    if (!industrySearchQuery.trim() || !industries) return;
+
+    setIsSmartSearching(true);
+    try {
+      const results = await smartSearchIndustries(industrySearchQuery.trim());
+      setSmartSearchResults(results);
+
+      if (results.length > 0) {
+        // Auto-select first 3 industries
+        const top3 = results.slice(0, 3);
+        const top3Ids = top3
+          .map((r) => industries.find((ind) => ind.value === r.value)?.industry_id)
+          .filter((id): id is number => id !== undefined);
+        setSelectedIndustries((prev) => {
+          // Add new ones without duplicates
+          const newIds = top3Ids.filter((id) => !prev.includes(id));
+          return [...prev, ...newIds];
+        });
+
+        // Put the rest as suggestions
+        const rest = results.slice(3);
+        setSuggestedIndustries(rest);
+      }
+    } catch (error) {
+      console.error('Smart search failed:', error);
+      toast.error('Smart search failed. Please try again.');
+    } finally {
+      setIsSmartSearching(false);
+    }
+  }, [industrySearchQuery, industries]);
+
+  // Reset smart search when disabled
+  React.useEffect(() => {
+    if (!smartSearchEnabled) {
+      setIndustrySearchQuery('');
+      setSmartSearchResults([]);
+      setSuggestedIndustries([]);
+    }
+  }, [smartSearchEnabled]);
+
+  // Handle adding a suggested industry
+  const handleAddSuggestedIndustry = useCallback(
+    (industryValue: string) => {
+      if (!industries) return;
+      const industry = industries.find((ind) => ind.value === industryValue);
+      if (industry && !selectedIndustries.includes(industry.industry_id)) {
+        setSelectedIndustries((prev) => [...prev, industry.industry_id]);
+        // Remove from suggestions
+        setSuggestedIndustries((prev) => prev.filter((s) => s.value !== industryValue));
+      }
+    },
+    [industries, selectedIndustries]
+  );
+
   // Filters Panel (Left Side)
   const filtersPanel = (
     <Box
@@ -755,22 +829,212 @@ export function CreateSegmentForm({
           </Box>
           {industryAccordionOpen && (
             <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-              <FormControl size='sm'>
+              {/* Smart Search Toggle */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mb: 2,
+                  mt: 1,
+                }}
+              >
+                <Switch
+                  checked={smartSearchEnabled}
+                  onChange={() => setSmartSearchEnabled((v) => !v)}
+                  sx={{ mr: 1 }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography
+                    fontWeight={300}
+                    fontSize={14}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    Smart search
+                  </Typography>
+                  <Tooltip
+                    title='Includes similar terms to help you find more relevant results.'
+                    placement='top'
+                    sx={{
+                      background: '#DAD8FD',
+                      color: '#3D37DD',
+                      maxWidth: 200,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
+                      <Info size={16} />
+                    </Box>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Smart Search Query Input */}
+              {smartSearchEnabled && (
+                <FormControl sx={{ mb: 2 }}>
+                  <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>
+                    Search Query
+                  </FormLabel>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                    <Input
+                      value={industrySearchQuery}
+                      onChange={(e) => setIndustrySearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && industrySearchQuery.trim().length > 0) {
+                          e.preventDefault();
+                          handleSmartSearch();
+                        }
+                      }}
+                      placeholder="Enter search query (e.g., 'Health care')"
+                      sx={{ fontSize: 14, flex: 1 }}
+                      disabled={isSmartSearching}
+                    />
+                    <IconButton
+                      onClick={handleSmartSearch}
+                      disabled={isSmartSearching || industrySearchQuery.trim().length === 0}
+                      sx={{ minWidth: 40, height: 40 }}
+                      color='primary'
+                    >
+                      <Check size={20} />
+                    </IconButton>
+                  </Box>
+                </FormControl>
+              )}
+
+              {/* Industry Autocomplete */}
+              <FormControl sx={{ mb: 1 }}>
+                <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>Industry</FormLabel>
                 <Autocomplete
                   multiple
+                  disableCloseOnSelect
                   options={industries || []}
                   getOptionLabel={(option) => option.value}
                   value={(industries || []).filter((ind) =>
                     selectedIndustries.includes(ind.industry_id)
                   )}
-                  onChange={(_, value) => setSelectedIndustries(value.map((v) => v.industry_id))}
-                  placeholder='Select industries'
-                  size='sm'
-                  loading={industriesLoading}
+                  onChange={(_, value) => {
+                    setSelectedIndustries(value.map((v) => v.industry_id));
+                    // Remove any selected items from suggestedIndustries
+                    if (value.length > 0) {
+                      setSuggestedIndustries((prev) =>
+                        prev.filter((item) => !value.some((v) => v.value === item.value))
+                      );
+                    }
+                  }}
+                  sx={{ mb: 1, width: '100%', fontSize: 14 }}
+                  slotProps={{
+                    input: {
+                      placeholder:
+                        isSmartSearching && smartSearchEnabled
+                          ? 'Loading smart search results...'
+                          : isSmartSearching
+                            ? 'Loading industries...'
+                            : smartSearchEnabled && industrySearchQuery.trim().length === 0
+                              ? 'Enter a query above to search'
+                              : 'Search industry',
+                    },
+                    listbox: { sx: { fontSize: 14 } },
+                    option: { sx: { fontSize: 14, textTransform: 'capitalize' } },
+                  }}
+                  loading={industriesLoading || isSmartSearching}
                   disabled={industriesLoading || !industries?.length}
+                  renderTags={() => null}
                 />
-                {industriesLoading && <FormHelperText>Loading...</FormHelperText>}
               </FormControl>
+
+              {/* Selected Industries Chips */}
+              {selectedIndustries.length > 0 && industries && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                  {selectedIndustries.map((industryId) => {
+                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    if (!industry) return null;
+                    return (
+                      <Box
+                        key={industryId}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-primary-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 13,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            color: 'var(--joy-palette-primary-700)',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {industry.value}
+                        </Typography>
+                        <Box
+                          sx={{
+                            fontSize: 12,
+                            p: 0,
+                            height: 8,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedIndustries((prev) => prev.filter((id) => id !== industryId));
+                          }}
+                        >
+                          <X size={14} />
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+
+              {/* Suggested Industries (from smart search) */}
+              {smartSearchEnabled && suggestedIndustries.length > 0 && (
+                <Box sx={{ mt: 1, mb: 2 }}>
+                  <Typography
+                    fontSize={15}
+                    sx={{ color: 'var(--joy-palette-text-secondary)', mb: 0.5 }}
+                  >
+                    Also:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {suggestedIndustries.map((suggestion) => (
+                      <Box
+                        key={suggestion.industry_id}
+                        onClick={() => handleAddSuggestedIndustry(suggestion.value)}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-neutral-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'var(--joy-palette-neutral-200)',
+                          },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            color: 'var(--joy-palette-text-primary)',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {suggestion.value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Box>
           )}
         </Box>
