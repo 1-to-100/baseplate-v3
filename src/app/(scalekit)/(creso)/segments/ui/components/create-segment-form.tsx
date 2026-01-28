@@ -927,7 +927,7 @@ export function CreateSegmentForm({
         </Box>
 
         {/* Company Size Accordion */}
-        <Box>
+        <Box sx={{ borderTop: '1px solid transparent' }}>
           <Box
             onClick={() => setCompanySizeAccordionOpen(!companySizeAccordionOpen)}
             sx={{
@@ -940,39 +940,145 @@ export function CreateSegmentForm({
                 : 'none',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               cursor: 'pointer',
+              position: 'relative',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Buildings
-                size={20}
-                color={
-                  selectedCompanySizes.length > 0
-                    ? 'var(--joy-palette-primary-500)'
-                    : 'var(--joy-palette-text-primary)'
-                }
-              />
-              <Typography
-                fontWeight={500}
-                fontSize={14}
-                sx={{
-                  color:
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Buildings
+                  size={20}
+                  color={
                     selectedCompanySizes.length > 0
                       ? 'var(--joy-palette-primary-500)'
-                      : 'var(--joy-palette-text-primary)',
-                }}
-              >
-                Company Size
-              </Typography>
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color:
+                      selectedCompanySizes.length > 0
+                        ? 'var(--joy-palette-primary-500)'
+                        : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Company Size
+                </Typography>
+              </Box>
+              {/* Selected company size chips when accordion is closed */}
+              {!companySizeAccordionOpen && selectedCompanySizes.length > 0 && companySizes && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  {selectedCompanySizes.map((id) => {
+                    const cs = companySizes.find((c) => c.company_size_id === id);
+                    if (!cs) return null;
+                    return (
+                      <Box
+                        key={id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12 }}>{cs.value}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Box>
-            {companySizeAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mt: !companySizeAccordionOpen && selectedCompanySizes.length > 0 ? 0 : 0,
+              }}
+            >
+              {/* Count badge when accordion is closed and selections exist */}
+              {!companySizeAccordionOpen && selectedCompanySizes.length > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'var(--joy-palette-background-level2)',
+                    borderRadius: '999px',
+                    px: 1,
+                    py: 0.25,
+                    height: 28,
+                    cursor: 'pointer',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedCompanySizes([]);
+                  }}
+                >
+                  <Typography
+                    fontWeight={500}
+                    fontSize={12}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    {selectedCompanySizes.length}
+                  </Typography>
+                  <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} color='var(--joy-palette-text-primary)' />
+                  </Box>
+                </Box>
+              )}
+              {companySizeAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
           </Box>
           {companySizeAccordionOpen && (
             <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+              {/* Selected company size chips on top of input */}
+              {selectedCompanySizes.length > 0 && companySizes && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                  {selectedCompanySizes.map((id) => {
+                    const cs = companySizes.find((c) => c.company_size_id === id);
+                    if (!cs) return null;
+                    return (
+                      <Box
+                        key={id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() =>
+                          setSelectedCompanySizes((prev) => prev.filter((x) => x !== id))
+                        }
+                      >
+                        <Typography sx={{ fontSize: 12 }}>{cs.value}</Typography>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <X size={14} />
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
               <FormControl size='sm'>
                 <Autocomplete
                   multiple
+                  disableCloseOnSelect
                   options={companySizes || []}
                   getOptionLabel={(option) => option.value}
                   value={(companySizes || []).filter((cs) =>
@@ -985,6 +1091,12 @@ export function CreateSegmentForm({
                   size='sm'
                   loading={companySizesLoading}
                   disabled={companySizesLoading || !companySizes?.length}
+                  renderTags={() => null}
+                  slotProps={{
+                    input: {
+                      placeholder: selectedCompanySizes.length > 0 ? '' : 'Select company sizes',
+                    },
+                  }}
                 />
                 {companySizesLoading && <FormHelperText>Loading...</FormHelperText>}
               </FormControl>
@@ -993,7 +1105,7 @@ export function CreateSegmentForm({
         </Box>
 
         {/* Industries Accordion */}
-        <Box>
+        <Box sx={{ borderTop: '1px solid transparent' }}>
           <Box
             onClick={() => setIndustryAccordionOpen(!industryAccordionOpen)}
             sx={{
@@ -1006,33 +1118,105 @@ export function CreateSegmentForm({
                 : 'none',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               cursor: 'pointer',
+              position: 'relative',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <FunnelSimple
-                size={20}
-                color={
-                  selectedIndustries.length > 0
-                    ? 'var(--joy-palette-primary-500)'
-                    : 'var(--joy-palette-text-primary)'
-                }
-              />
-              <Typography
-                fontWeight={500}
-                fontSize={14}
-                sx={{
-                  color:
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FunnelSimple
+                  size={20}
+                  color={
                     selectedIndustries.length > 0
                       ? 'var(--joy-palette-primary-500)'
-                      : 'var(--joy-palette-text-primary)',
-                }}
-              >
-                Industries
-              </Typography>
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color:
+                      selectedIndustries.length > 0
+                        ? 'var(--joy-palette-primary-500)'
+                        : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Industries
+                </Typography>
+              </Box>
+              {/* Selected industry chips when accordion is closed */}
+              {!industryAccordionOpen && selectedIndustries.length > 0 && industries && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  {selectedIndustries.map((industryId) => {
+                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    if (!industry) return null;
+                    return (
+                      <Box
+                        key={industryId}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12, textTransform: 'capitalize' }}>
+                          {industry.value}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Box>
-            {industryAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mt: !industryAccordionOpen && selectedIndustries.length > 0 ? 0 : 0,
+              }}
+            >
+              {/* Count badge when accordion is closed and selections exist */}
+              {!industryAccordionOpen && selectedIndustries.length > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'var(--joy-palette-background-level2)',
+                    borderRadius: '999px',
+                    px: 1,
+                    py: 0.25,
+                    height: 28,
+                    cursor: 'pointer',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedIndustries([]);
+                    setSuggestedIndustries([]);
+                  }}
+                >
+                  <Typography
+                    fontWeight={500}
+                    fontSize={12}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    {selectedIndustries.length}
+                  </Typography>
+                  <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} color='var(--joy-palette-text-primary)' />
+                  </Box>
+                </Box>
+              )}
+              {industryAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
           </Box>
           {industryAccordionOpen && (
             <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
