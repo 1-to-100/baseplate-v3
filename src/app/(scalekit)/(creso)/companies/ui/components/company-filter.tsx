@@ -98,6 +98,15 @@ export default function CompanyFilter({
     }
   }, [initialFilters?.industry, industries]);
 
+  const hasActiveFilters = () =>
+    Boolean(
+      selectedCountry ||
+      selectedState ||
+      selectedCompanySizes.length > 0 ||
+      selectedIndustries.length > 0 ||
+      selectedTechnographics.length > 0
+    );
+
   const handleApplyFilters = () => {
     const country = selectedCountry
       ? countries.find((c) => c.code === selectedCountry)?.name
@@ -450,15 +459,52 @@ export default function CompanyFilter({
         </Box>
       </Box>
 
-      <Box sx={{ p: 2, borderTop: '1px solid var(--joy-palette-divider)' }}>
-        <Stack spacing={2}>
-          <Button variant='solid' onClick={handleApplyFilters} fullWidth>
-            Apply Filters
-          </Button>
-          <Button variant='outlined' onClick={handleClearFilters} fullWidth>
-            Clear All
-          </Button>
-        </Stack>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 2 },
+          display: 'flex',
+          gap: 1,
+          justifyContent: 'end',
+          alignItems: 'center',
+          borderTop: '1px solid var(--joy-palette-divider)',
+          bgcolor: 'var(--Content-background)',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 10,
+          mt: 'auto',
+        }}
+      >
+        <Button
+          variant='outlined'
+          onClick={handleClearFilters}
+          sx={{
+            fontWeight: 500,
+            color: 'var(--joy-palette-text-primary) !important',
+            border: 'none',
+            '&:hover': {
+              opacity: 0.8,
+              bgcolor: 'transparent',
+              border: 'none',
+            },
+          }}
+        >
+          Clear filter
+        </Button>
+        <Button
+          variant='solid'
+          onClick={handleApplyFilters}
+          disabled={!hasActiveFilters()}
+          sx={{
+            fontWeight: 500,
+            py: { xs: 1, sm: 0.5 },
+            minHeight: 30,
+            height: 30,
+            px: 1.25,
+            width: 'fit-content',
+          }}
+        >
+          Apply
+        </Button>
       </Box>
     </Box>
   );
