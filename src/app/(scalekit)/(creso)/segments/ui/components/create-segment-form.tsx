@@ -1598,27 +1598,27 @@ export function CreateSegmentForm({
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
+        alignItems: shouldShowCompanies ? 'flex-start' : 'center',
+        justifyContent: shouldShowCompanies ? 'flex-start' : 'center',
         bgcolor: 'var(--joy-palette-background-surface)',
         overflow: 'hidden',
       }}
     >
       {!shouldShowCompanies ? (
-        // Empty state - no companies to show
-        <Box
-          sx={{
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            textAlign: 'center',
-          }}
-        >
-          <Typography level='h1' sx={{ mb: 2, fontSize: '2rem' }}>
+        // Empty state - no companies to show (styles match creso)
+        <Box sx={{ textAlign: 'center', maxWidth: 450 }}>
+          <Typography
+            fontWeight={600}
+            fontSize={24}
+            mb={0.5}
+            sx={{ color: 'var(--joy-palette-text-primary)' }}
+          >
             {isEditMode ? 'Update segment filters' : 'Setup filters to create new segment'}
           </Typography>
-          <Typography level='body-lg' sx={{ color: 'text.secondary', maxWidth: 600 }}>
+          <Typography
+            fontSize={14}
+            sx={{ color: 'var(--joy-palette-text-secondary)', lineHeight: 1.5 }}
+          >
             {isEditMode
               ? 'Modify the filters below to update your segment criteria.'
               : 'Narrow down your audience using filters and save them as a reusable segment.'}
