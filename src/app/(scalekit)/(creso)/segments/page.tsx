@@ -404,16 +404,25 @@ function SegmentTableRow({
         cursor: isProcessing ? 'default' : 'pointer',
       }}
     >
-      <td>
-        <Typography
-          level='body-sm'
-          sx={{
-            fontWeight: 300,
-            color: 'var(--joy-palette-text-secondary)',
-          }}
-        >
-          {segment.name}
-        </Typography>
+      <td style={{ maxWidth: 0, overflow: 'hidden' }}>
+        <Tooltip title={segment.name} placement='top-start' variant='soft'>
+          <Typography
+            level='body-sm'
+            component='span'
+            sx={{
+              fontWeight: 300,
+              color: 'var(--joy-palette-text-secondary)',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              wordBreak: 'break-word',
+            }}
+          >
+            {segment.name}
+          </Typography>
+        </Tooltip>
       </td>
       <td>
         <Typography level='body-sm'>
