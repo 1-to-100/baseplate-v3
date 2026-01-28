@@ -76,7 +76,15 @@ function StatusIndicator({ status }: { status?: ListStatus }) {
   if (!config.icon) return null;
 
   return (
-    <Tooltip title={config.text} placement='top'>
+    <Tooltip
+      title={config.text}
+      placement='top'
+      sx={{
+        background: '#DAD8FD',
+        color: '#3D37DD',
+        textTransform: 'capitalize',
+      }}
+    >
       <Box
         sx={{
           position: 'absolute',
