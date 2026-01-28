@@ -8,7 +8,6 @@ import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import Button from '@mui/joy/Button';
-import Input from '@mui/joy/Input';
 import IconButton from '@mui/joy/IconButton';
 import Chip from '@mui/joy/Chip';
 import Table from '@mui/joy/Table';
@@ -23,7 +22,6 @@ import MenuItem from '@mui/joy/MenuItem';
 import Dropdown from '@mui/joy/Dropdown';
 import MenuButton from '@mui/joy/MenuButton';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { MagnifyingGlass as SearchIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
 import { Check as CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
@@ -31,7 +29,6 @@ import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-
 import { Cards as CardsIcon } from '@phosphor-icons/react/dist/ssr/Cards';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-import Link from 'next/link';
 import { toast } from '@/components/core/toaster';
 import { getSegments, deleteSegment } from './lib/api/segments';
 import type { ListForDisplay } from './lib/types/list';
@@ -519,8 +516,6 @@ function EmptySegments() {
 export default function SegmentsPage(): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [segmentToDelete, setSegmentToDelete] = useState<ListForDisplay | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -531,15 +526,6 @@ export default function SegmentsPage(): React.JSX.Element {
     }
     return 'table';
   });
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setCurrentPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
 
   // Save view mode to localStorage
   useEffect(() => {
@@ -554,10 +540,9 @@ export default function SegmentsPage(): React.JSX.Element {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['segments', debouncedSearch, currentPage],
+    queryKey: ['segments', currentPage],
     queryFn: () =>
       getSegments({
-        search: debouncedSearch || undefined,
         page: currentPage,
         perPage: ITEMS_PER_PAGE,
       }),
@@ -637,26 +622,6 @@ export default function SegmentsPage(): React.JSX.Element {
             </Typography>
           </Stack>
           <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
-            {/* Search Input */}
-            <Input
-              placeholder='Search segments...'
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              startDecorator={<SearchIcon size={20} />}
-              endDecorator={
-                search && (
-                  <IconButton
-                    size='sm'
-                    variant='plain'
-                    onClick={() => setSearch('')}
-                    sx={{ minWidth: 0, p: 0.5 }}
-                  >
-                    <XIcon size={16} />
-                  </IconButton>
-                )
-              }
-              sx={{ width: { xs: '150px', sm: '250px' } }}
-            />
             {/* View Mode Toggle */}
             <Tabs
               value={viewMode}
