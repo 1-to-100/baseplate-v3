@@ -12,6 +12,7 @@ export * from './vocabulary-entries';
 export * from './context';
 export * from './visual_style_guides';
 export * from './logo_assets';
+export * from './logo_storage';
 export * from './palette_colors';
 export * from './typography_styles';
 export * from './options';

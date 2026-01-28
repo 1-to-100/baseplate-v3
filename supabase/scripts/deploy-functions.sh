@@ -55,6 +55,10 @@ echo "→ Deploying team-management..."
 npx supabase functions deploy team-management
 
 echo ""
+echo "→ Deploying generate-logo..."
+npx supabase functions deploy generate-logo
+
+echo ""
 echo "✅ All Edge Functions deployed successfully!"
 echo ""
 echo "📝 Next steps:"
