@@ -82,6 +82,7 @@ npx supabase start
 - **admin-operations** - System admin operations
 - **segments-ai** - AI-powered segment generation from natural language descriptions (requires `OPENAI_API_KEY`)
 - **segments-create** - Create new segments with filters
+- **segments-update** - Update existing segments (detects filter changes and re-triggers processing)
 - **segments-process** - Background processing for segment company search
 - **segments-search** - Search companies by segment filters
 

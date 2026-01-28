@@ -34,6 +34,7 @@ interface PageProps {
 }
 
 const ITEMS_PER_PAGE = 50;
+const POLLING_INTERVAL = 3000; // Poll every 3 seconds when processing
 
 export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Element {
   const router = useRouter();
@@ -47,11 +48,12 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     });
   }, [params]);
 
-  // Fetch segment data
+  // Fetch segment data with polling when processing
   const {
     data: segmentData,
     isLoading,
     error,
+    isFetching,
   } = useQuery({
     queryKey: ['segment', segmentId, currentPage],
     queryFn: () =>
@@ -60,11 +62,22 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
         perPage: ITEMS_PER_PAGE,
       }),
     enabled: !!segmentId,
+    // Poll when segment is processing
+    refetchInterval: (query) => {
+      const status = query.state.data?.segment?.status;
+      // Keep polling while status is 'new' or 'processing'
+      if (status === ListStatus.NEW || status === ListStatus.PROCESSING) {
+        return POLLING_INTERVAL;
+      }
+      return false; // Stop polling when completed or failed
+    },
   });
 
   const segment = segmentData?.segment;
   const companies = segmentData?.companies || [];
   const meta = segmentData?.meta;
+  const isProcessing =
+    segment?.status === ListStatus.NEW || segment?.status === ListStatus.PROCESSING;
 
   const filters = (segment?.filters || {}) as {
     country?: string;
@@ -196,12 +209,40 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                 spacing={2}
                 sx={{ alignItems: 'center', justifyContent: 'space-between' }}
               >
-                <Typography level='title-lg'>
-                  {meta?.total.toLocaleString() || 0} companies found
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography level='title-lg'>
+                    {isProcessing
+                      ? 'Processing...'
+                      : `${meta?.total.toLocaleString() || 0} companies found`}
+                  </Typography>
+                  {isProcessing && (
+                    <Chip
+                      size='sm'
+                      variant='soft'
+                      color='warning'
+                      startDecorator={
+                        <ArrowsCounterClockwiseIcon size={14} className='animate-spin' />
+                      }
+                    >
+                      Updating
+                    </Chip>
+                  )}
+                  {isFetching && !isProcessing && <CircularProgress size='sm' />}
+                </Box>
               </Stack>
 
-              {companies.length === 0 ? (
+              {isProcessing ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <CircularProgress size='lg' sx={{ mb: 2 }} />
+                  <Typography level='title-md' sx={{ mb: 1 }}>
+                    Processing segment...
+                  </Typography>
+                  <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                    We&apos;re searching for companies matching your filters. This may take a
+                    moment.
+                  </Typography>
+                </Box>
+              ) : companies.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 4 }}>
                   <Typography level='body-md' sx={{ color: 'text.secondary' }}>
                     No companies found in this segment.

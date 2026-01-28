@@ -568,13 +568,20 @@ export async function getSegmentCompanies(
 
 /**
  * Edit/Update a segment
+ * Calls the segments-update edge function which handles:
+ * - Updating segment name and filters
+ * - Detecting filter changes and re-triggering company processing
+ * - Clearing old companies when filters change
+ *
+ * @param listId - ID of the segment to update
+ * @param payload - Segment name and filters
+ * @returns Promise resolving to the updated segment
  */
 export async function editSegment(
   listId: string,
   payload: {
     name: string;
     filters: SegmentFilterDto;
-    companyIds?: string[];
   }
 ): Promise<List> {
   const supabase = createClient();
@@ -589,74 +596,38 @@ export async function editSegment(
     throw new Error('Not authenticated');
   }
 
-  // Get current customer ID
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
-
-  if (customerIdError || !customerId) {
-    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
-  }
-
-  // Validate name
-  const trimmedName = payload.name.trim();
-  if (trimmedName.length < 3 || trimmedName.length > 100) {
-    throw new Error('Segment name must be between 3 and 100 characters');
-  }
-
-  // Check name uniqueness (excluding current segment)
-  const { data: existingSegment, error: checkError } = await supabase
-    .from('lists')
-    .select('list_id')
-    .eq('customer_id', customerId)
-    .eq('list_type', 'segment')
-    .ilike('name', trimmedName)
-    .neq('list_id', listId)
-    .is('deleted_at', null)
-    .maybeSingle();
-
-  if (checkError) {
-    throw new Error(`Database error: ${checkError.message}`);
-  }
-
-  if (existingSegment) {
-    throw new Error('A segment with this title already exists. Please choose a different title.');
-  }
-
-  // Update segment
-  const { data: segment, error: updateError } = await supabase
-    .from('lists')
-    .update({
-      name: trimmedName,
+  // Call segments-update edge function
+  const { data, error } = await supabase.functions.invoke('segments-update', {
+    body: {
+      segment_id: listId,
+      name: payload.name,
       filters: payload.filters,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('list_id', listId)
-    .eq('customer_id', customerId)
-    .eq('list_type', 'segment')
-    .select()
-    .single();
+    },
+  });
 
-  if (updateError) {
-    throw new Error(`Failed to update segment: ${updateError.message}`);
-  }
+  if (error) {
+    // Extract error message from response
+    let errorMessage = 'Failed to update segment';
 
-  // If companyIds are provided, update list_companies
-  if (payload.companyIds && payload.companyIds.length > 0) {
-    // Delete existing companies for this segment
-    await supabase.from('list_companies').delete().eq('list_id', listId);
-
-    // Insert new companies
-    const listCompanyRecords = payload.companyIds.map((companyId) => ({
-      list_id: listId,
-      company_id: companyId,
-    }));
-
-    const { error: insertError } = await supabase.from('list_companies').insert(listCompanyRecords);
-
-    if (insertError) {
-      console.error('Failed to update segment companies:', insertError);
-      // Don't fail the whole operation, just log the error
+    // Check if error has context (raw Response object)
+    const errorObj = error as { context?: Response; error?: string; message?: string };
+    if (errorObj.context) {
+      try {
+        const clonedResponse = errorObj.context.clone();
+        const errorData = await clonedResponse.json();
+        if (errorData && typeof errorData === 'object') {
+          const data = errorData as { error?: string; message?: string };
+          errorMessage = data.error || data.message || errorMessage;
+        }
+      } catch {
+        errorMessage = errorObj.message || errorMessage;
+      }
+    } else {
+      errorMessage = errorObj.message || errorMessage;
     }
+
+    throw new Error(errorMessage);
   }
 
-  return segment as List;
+  return data as List;
 }
