@@ -276,7 +276,7 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleViewProfile = (company: CompanyItem) => {
-    router.push(paths.creso.companies.details(String(company.id)));
+    router.push(paths.creso.companies.details(company.company_id ?? String(company.id)));
     handleMenuClose();
   };
 
