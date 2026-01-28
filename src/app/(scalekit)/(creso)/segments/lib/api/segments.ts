@@ -254,6 +254,55 @@ export async function deleteSegment(segmentId: string): Promise<void> {
 }
 
 /**
+ * Remove a company from a segment (delete from list_companies)
+ */
+export async function removeCompanyFromSegment(
+  segmentId: string,
+  companyId: string
+): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+
+  if (customerIdError || !customerId) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  // Verify segment belongs to customer
+  const { data: segment, error: segmentError } = await supabase
+    .from('lists')
+    .select('list_id')
+    .eq('list_id', segmentId)
+    .eq('customer_id', customerId)
+    .eq('list_type', 'segment')
+    .is('deleted_at', null)
+    .single();
+
+  if (segmentError || !segment) {
+    throw new Error(`Segment not found: ${segmentError?.message ?? 'not available'}`);
+  }
+
+  const { error: deleteError } = await supabase
+    .from('list_companies')
+    .delete()
+    .eq('list_id', segmentId)
+    .eq('company_id', companyId);
+
+  if (deleteError) {
+    throw new Error(`Failed to remove company from segment: ${deleteError.message}`);
+  }
+}
+
+/**
  * Get segment by ID with companies
  */
 export async function getSegmentById(
