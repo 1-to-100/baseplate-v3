@@ -9,6 +9,7 @@ import type {
   GetCompaniesParams,
   GetCompaniesResponse,
   CompanyItemList,
+  UpdateCompanyPayload,
 } from '../types/company';
 
 /**
@@ -321,6 +322,66 @@ export async function getCompanyById(company_id: string): Promise<CompanyItem> {
     updated_at: company.updated_at || new Date().toISOString(),
     lists,
   };
+}
+
+/**
+ * Update company by company_id
+ */
+export async function updateCompany(
+  company_id: string,
+  payload: UpdateCompanyPayload
+): Promise<CompanyItem> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (payload.name !== undefined) updateData.display_name = payload.name;
+  if (payload.description !== undefined) updateData.description = payload.description;
+  if (payload.website !== undefined) updateData.website_url = payload.website;
+  if (payload.logo !== undefined) updateData.logo = payload.logo;
+  if (payload.country !== undefined) updateData.country = payload.country;
+  if (payload.region !== undefined) updateData.region = payload.region;
+  if (payload.address !== undefined) updateData.address = payload.address;
+  if (payload.postal_code !== undefined) updateData.postal_code = payload.postal_code;
+  if (payload.latitude !== undefined) updateData.latitude = payload.latitude;
+  if (payload.longitude !== undefined) updateData.longitude = payload.longitude;
+  if (payload.revenue !== undefined) updateData.revenue = payload.revenue;
+  if (payload.capitalization !== undefined) updateData.capitalization = payload.capitalization;
+  if (payload.currency_code !== undefined) updateData.currency_code = payload.currency_code;
+  if (payload.employees !== undefined) updateData.employees = payload.employees;
+  if (payload.siccodes !== undefined) updateData.siccodes = payload.siccodes;
+  if (payload.categories !== undefined) updateData.categories = payload.categories;
+  if (payload.technologies !== undefined) updateData.technologies = payload.technologies;
+  if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.social_links !== undefined) updateData.social_links = payload.social_links;
+
+  updateData.updated_at = new Date().toISOString();
+
+  const { data: company, error } = await supabase
+    .from('companies')
+    .update(updateData)
+    .eq('company_id', company_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update company: ${error.message}`);
+  }
+
+  if (!company) {
+    throw new Error('Company not found after update');
+  }
+
+  return getCompanyById(company_id);
 }
 
 /**

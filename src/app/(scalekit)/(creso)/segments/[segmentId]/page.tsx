@@ -240,7 +240,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
 
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
-      <Stack spacing={4}>
+      <Stack>
         {/* Header */}
         <Stack spacing={2}>
           <Stack
@@ -259,7 +259,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
               Edit
             </Button>
           </Stack>
-          <Breadcrumbs separator={<BreadcrumbsSeparator />}>
+          <Breadcrumbs sx={{ mb: 2 }} separator={<BreadcrumbsSeparator />}>
             <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
             <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
             <BreadcrumbsItem type='end'>{segment.name}</BreadcrumbsItem>
@@ -316,7 +316,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             spacing={2}
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pt: 1 }}>
               <Typography level='title-lg'>
                 {isProcessing
                   ? 'Processing...'
