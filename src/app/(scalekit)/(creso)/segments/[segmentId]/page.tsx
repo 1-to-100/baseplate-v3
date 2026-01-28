@@ -263,11 +263,14 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                     >
                       <thead>
                         <tr>
-                          <th style={{ width: 60 }}>Logo</th>
-                          <th>Company Name</th>
-                          <th style={{ width: 150 }}>Location</th>
-                          <th style={{ width: 120 }}>Employees</th>
-                          <th style={{ width: 200 }}>Industry</th>
+                          <th style={{ width: 60 }}></th>
+                          <th>Company name</th>
+                          <th style={{ width: 60 }}></th>
+                          <th>States/Provinces</th>
+                          <th>Employees</th>
+                          <th>Website</th>
+                          <th>Industry</th>
+                          <th>Technographics</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -285,7 +288,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                               <Avatar
                                 src={company.logo || undefined}
                                 alt={company.display_name || company.legal_name || 'Company'}
-                                sx={{ width: 40, height: 40 }}
+                                sx={{ width: 28, height: 28 }}
                               >
                                 {(company.display_name || company.legal_name || 'C')
                                   .charAt(0)
@@ -293,34 +296,67 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                               </Avatar>
                             </td>
                             <td>
-                              <Box>
-                                <Typography level='body-md' fontWeight={500}>
-                                  {company.display_name || company.legal_name || 'Unknown'}
-                                </Typography>
-                                {company.domain && (
-                                  <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                                    {company.domain}
-                                  </Typography>
-                                )}
-                              </Box>
+                              <Typography
+                                level='body-sm'
+                                sx={{
+                                  wordBreak: 'break-all',
+                                  color: 'var(--joy-palette-text-secondary)',
+                                  fontWeight: 300,
+                                }}
+                              >
+                                {company.display_name || company.legal_name || 'Unknown'}
+                              </Typography>
                             </td>
+                            <td>{/* New badge column - reserved for future use */}</td>
                             <td>
                               <Typography level='body-sm'>
-                                {[company.country, company.region].filter(Boolean).join(', ') ||
-                                  '-'}
+                                {[company.region, company.country].filter(Boolean).join(', ') ||
+                                  '—'}
                               </Typography>
                             </td>
                             <td>
                               <Typography level='body-sm'>
-                                {company.employees ? company.employees.toLocaleString() : '-'}
+                                {company.employees ? company.employees.toLocaleString() : '—'}
                               </Typography>
+                            </td>
+                            <td>
+                              {company.website_url ? (
+                                <Box
+                                  component='span'
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const url =
+                                      company.website_url!.startsWith('http://') ||
+                                      company.website_url!.startsWith('https://')
+                                        ? company.website_url!
+                                        : `https://${company.website_url}`;
+                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                  }}
+                                  sx={{
+                                    display: 'block',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    cursor: 'pointer',
+                                    color: 'var(--joy-palette-primary-500)',
+                                    textDecoration: 'underline',
+                                  }}
+                                >
+                                  {company.website_url}
+                                </Box>
+                              ) : (
+                                '—'
+                              )}
                             </td>
                             <td>
                               <Typography level='body-sm'>
                                 {company.categories && company.categories.length > 0
-                                  ? company.categories.slice(0, 2).join(', ')
-                                  : '-'}
+                                  ? company.categories[0]
+                                  : '—'}
                               </Typography>
+                            </td>
+                            <td>
+                              <Typography level='body-sm'>—</Typography>
                             </td>
                           </tr>
                         ))}
