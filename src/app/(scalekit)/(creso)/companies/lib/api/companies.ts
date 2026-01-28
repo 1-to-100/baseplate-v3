@@ -322,3 +322,78 @@ export async function getCompanyById(company_id: string): Promise<CompanyItem> {
     lists,
   };
 }
+
+/**
+ * Get diffbot JSON from company_metadata table
+ */
+export async function getCompanyDiffbotJson(companyId: string): Promise<Record<string, unknown>> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data: metadata, error } = await supabase
+    .from('company_metadata')
+    .select('diffbot_json')
+    .eq('company_id', companyId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch diffbot JSON: ${error.message}`);
+  }
+
+  if (!metadata || !metadata.diffbot_json) {
+    throw new Error('Diffbot JSON not found for this company');
+  }
+
+  return metadata.diffbot_json as Record<string, unknown>;
+}
+
+/**
+ * Get people/contacts for a company
+ * Currently stubbed - returns empty array
+ */
+export async function getCompanyPeople(
+  companyId: string,
+  options?: {
+    page?: number;
+    perPage?: number;
+    search?: string;
+  }
+): Promise<{
+  data: Array<{
+    id: number;
+    name: string;
+    titles?: string[];
+    emails?: string[];
+    phones?: string[];
+    image?: string | null;
+  }>;
+  meta: {
+    total: number;
+    page: number;
+    perPage: number;
+    lastPage: number;
+  };
+}> {
+  const page = options?.page || 1;
+  const perPage = options?.perPage || 25;
+
+  return {
+    data: [],
+    meta: {
+      total: 0,
+      page,
+      perPage,
+      lastPage: 1,
+    },
+  };
+}
