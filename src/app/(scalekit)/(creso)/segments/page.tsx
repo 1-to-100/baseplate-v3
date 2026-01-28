@@ -36,6 +36,12 @@ import DeleteItemModal from '@/components/dashboard/modals/DeleteItemModal';
 
 const ITEMS_PER_PAGE = 12;
 const VIEW_MODE_STORAGE_KEY = 'segments-view-mode';
+const SEGMENT_NAME_DISPLAY_MAX_LENGTH = 50;
+
+function truncateSegmentName(name: string, maxLength: number): string {
+  if (!name || name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength)}…`;
+}
 
 // Status indicator component with tooltip
 function StatusIndicator({ status }: { status?: ListStatus }) {
@@ -816,7 +822,7 @@ export default function SegmentsPage(): React.JSX.Element {
         }}
         onConfirm={confirmDelete}
         title='Delete segment'
-        description={`Are you sure you want to delete "${segmentToDelete?.name}"?`}
+        description={`Are you sure you want to delete "${truncateSegmentName(segmentToDelete?.name ?? '', SEGMENT_NAME_DISPLAY_MAX_LENGTH)}"?`}
       />
     </Box>
   );
