@@ -36,6 +36,8 @@ import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
 import { useCallback } from 'react';
 
+const DIFFBOT_COMPANIES_LIMIT = 5;
+
 interface CreateSegmentFormProps {
   segmentId?: string;
   initialSegmentData?: List;
@@ -110,7 +112,7 @@ export function CreateSegmentForm({
   const [companies, setCompanies] = React.useState<CompanyPreview[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [perPage] = React.useState(25);
+  const [perPage] = React.useState(DIFFBOT_COMPANIES_LIMIT);
   const [hasSearched, setHasSearched] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [formInitialized, setFormInitialized] = React.useState(false);
@@ -129,7 +131,7 @@ export function CreateSegmentForm({
   // Fetch segment data if segmentId is provided and initialSegmentData is not
   const { data: segmentData, isLoading: segmentLoading } = useQuery({
     queryKey: ['segment', segmentId, 'form'],
-    queryFn: () => getSegmentById(segmentId!, { page: 1, perPage: 1 }),
+    queryFn: () => getSegmentById(segmentId!, { page: 1, perPage: DIFFBOT_COMPANIES_LIMIT }),
     enabled: !!segmentId && !initialSegmentData,
   });
 
@@ -208,17 +210,49 @@ export function CreateSegmentForm({
     }
   }, [segment, industries, companySizes]);
 
+  // Initialize companies from existing segment data in edit mode
+  // This shows the existing companies until user applies new filters
+  React.useEffect(() => {
+    if (isEditMode && segmentData?.companies && segmentData.companies.length > 0 && !hasSearched) {
+      // Map segment companies to CompanyPreview format
+      const existingCompanies: CompanyPreview[] = segmentData.companies.map((c) => ({
+        id: c.company_id,
+        diffbotId: c.company_id, // Use company_id as fallback for diffbotId
+        name: c.display_name || c.legal_name || '',
+        fullName: c.display_name || c.legal_name || undefined,
+        logo: c.logo || undefined,
+        image: c.logo || undefined,
+        homepageUri: c.website_url || undefined,
+        location: c.region ? { city: { name: c.region } } : undefined,
+        nbEmployeesMin: c.employees || undefined,
+        nbEmployeesMax: c.employees || undefined,
+        categories: c.categories?.map((cat) => ({ name: cat })) || [],
+      }));
+      setCompanies(existingCompanies);
+      setTotalCount(segmentData.meta?.total || existingCompanies.length);
+      // Don't set hasSearched to true - this allows user to re-apply filters
+      // The existing companies will be shown until filters are applied
+    }
+  }, [isEditMode, segmentData, hasSearched]);
+
   const canSaveSegment = () => {
     return segmentName.trim().length >= 3;
   };
 
   const canSave = () => {
-    return (
-      segmentName.trim().length >= 3 &&
-      segmentName.trim().length <= 100 &&
-      hasSearched &&
-      companies.length > 0
-    );
+    // In edit mode, allow saving if segment name is valid and either:
+    // 1. User has searched and found companies, OR
+    // 2. Existing companies are loaded from the segment
+    const hasCompanies = companies.length > 0;
+    const nameIsValid = segmentName.trim().length >= 3 && segmentName.trim().length <= 100;
+
+    if (isEditMode) {
+      // In edit mode, can save if name is valid and has companies (from search or existing)
+      return nameIsValid && hasCompanies;
+    }
+
+    // In create mode, must have searched and found companies
+    return nameIsValid && hasSearched && hasCompanies;
   };
 
   const hasActiveFilters = () => {
@@ -331,36 +365,6 @@ export function CreateSegmentForm({
     applyFilters(newPage);
   };
 
-  // Auto-trigger search in edit mode after form is initialized
-  React.useEffect(() => {
-    if (
-      isEditMode &&
-      formInitialized &&
-      !hasSearched &&
-      (selectedCountry !== null ||
-        selectedState !== null ||
-        selectedCompanySizes.length > 0 ||
-        selectedIndustries.length > 0 ||
-        selectedTechnographics.length > 0)
-    ) {
-      // Small delay to ensure all state updates are complete
-      const timer = setTimeout(() => {
-        applyFilters(1);
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isEditMode,
-    formInitialized,
-    hasSearched,
-    selectedCountry,
-    selectedState,
-    selectedCompanySizes,
-    selectedIndustries,
-    selectedTechnographics,
-  ]);
-
   const handleSaveSegment = async () => {
     if (!canSave()) {
       if (segmentName.trim().length < 3) {
@@ -423,7 +427,7 @@ export function CreateSegmentForm({
         queryClient.invalidateQueries({ queryKey: ['segment', segmentId, 'form'] });
         queryClient.invalidateQueries({ queryKey: ['segments'] });
 
-        toast.success('Segment updated successfully!');
+        toast.success('Segment updated successfully.');
         router.push(paths.dashboard.segments.details(segmentId));
       } else {
         // Create new segment
@@ -889,6 +893,11 @@ export function CreateSegmentForm({
     </Box>
   );
 
+  // Determine if we should show companies
+  // In edit mode: show companies if we have any (from existing segment or from search)
+  // In create mode: show companies only after searching
+  const shouldShowCompanies = isEditMode ? companies.length > 0 : hasSearched;
+
   // Main Content Panel (Right Side)
   const mainContent = (
     <Box
@@ -900,8 +909,8 @@ export function CreateSegmentForm({
         overflow: 'hidden',
       }}
     >
-      {!hasSearched ? (
-        // Empty state - no search performed yet
+      {!shouldShowCompanies ? (
+        // Empty state - no companies to show
         <Box
           sx={{
             p: 3,
@@ -1106,6 +1115,17 @@ export function CreateSegmentForm({
       )}
     </Box>
   );
+
+  // Show loading state while segment data is being fetched in edit mode
+  if (isEditMode && segmentLoading) {
+    return (
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}
+      >
+        <CircularProgress size='lg' />
+      </Box>
+    );
+  }
 
   return (
     <Box>
