@@ -12,7 +12,6 @@ import { Breadcrumbs } from '@mui/joy';
 import { useActiveStyleGuide, useStyleGuide } from '@/app/(scalekit)/style-guide/lib/hooks';
 import { useUserInfo } from '@/hooks/use-user-info';
 import CircularProgress from '@mui/joy/CircularProgress';
-import { StyleGuideEditor } from '@/app/(scalekit)/style-guide/lib/components/style-guide-editor/style-guide-editor';
 import Alert from '@mui/joy/Alert';
 import Input from '@mui/joy/Input';
 import Button from '@mui/joy/Button';
@@ -24,8 +23,8 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/core/toaster';
 
 /**
- * Style Guide Editor Page
- * Primary authoring form for creating or editing a company's machine-readable style guide
+ * Style Guide Entry Page
+ * Handles redirecting to existing style guide or creating a new one
  */
 export default function StyleGuideEditorPage(): React.JSX.Element {
   const router = useRouter();
@@ -49,7 +48,6 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [hasTriggeredGeneration, setHasTriggeredGeneration] = React.useState(false);
   const [websiteUrl, setWebsiteUrl] = React.useState<string>('');
-  const [showUrlPrompt, setShowUrlPrompt] = React.useState(false);
   const [isCheckingUrl, setIsCheckingUrl] = React.useState(false);
 
   // Fetch customer data to get email_domain
@@ -111,6 +109,18 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
     fetchCustomerData();
   }, [customerId]);
 
+  const isLoading = isUserLoading || isLoadingActive || isLoadingSpecific;
+
+  // Determine which guide to use
+  const guideToEdit = styleGuideId ? specificGuide : activeGuide;
+
+  // Redirect to guide page if guide exists
+  React.useEffect(() => {
+    if (!isLoading && !isGenerating && guideToEdit?.style_guide_id) {
+      router.replace(`/style-guide/pages/written-style-guide/${guideToEdit.style_guide_id}`);
+    }
+  }, [isLoading, isGenerating, guideToEdit, router]);
+
   const handleGenerateStyleGuide = async () => {
     if (!websiteUrl) {
       toast.error('Please enter a website URL');
@@ -127,7 +137,6 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
 
     setHasTriggeredGeneration(true);
     setIsGenerating(true);
-    setShowUrlPrompt(false);
 
     try {
       console.log('Generating style guide for URL:', websiteUrl);
@@ -161,7 +170,7 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
       console.log('Style guide generated successfully:', data);
       toast.success('Style guide generated successfully!');
 
-      // Refetch the active guide
+      // Refetch the active guide - this will trigger redirect
       await refetchActiveGuide();
       setIsGenerating(false);
     } catch (err) {
@@ -171,25 +180,6 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
       setHasTriggeredGeneration(false);
     }
   };
-
-  const isLoading = isUserLoading || isLoadingActive || isLoadingSpecific;
-
-  // Determine which guide to edit
-  const guideToEdit = styleGuideId ? specificGuide : activeGuide;
-
-  // Show URL prompt when no style guide exists
-  React.useEffect(() => {
-    if (
-      !isLoading &&
-      !guideToEdit &&
-      customerId &&
-      !hasTriggeredGeneration &&
-      !isGenerating &&
-      !showUrlPrompt
-    ) {
-      setShowUrlPrompt(true);
-    }
-  }, [isLoading, guideToEdit, customerId, hasTriggeredGeneration, isGenerating, showUrlPrompt]);
 
   if (!isLoading && !customerId) {
     return (
@@ -203,29 +193,36 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
     );
   }
 
+  // Show loading while checking for existing guide or generating
+  if (isLoading || isGenerating) {
+    return (
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Stack spacing={3}>
         {/* Breadcrumbs */}
         <Breadcrumbs separator={<BreadcrumbsSeparator />}>
           <BreadcrumbsItem href='/style-guide/'>Style Guide</BreadcrumbsItem>
-          <Typography>Edit Style Guide</Typography>
+          <Typography>Create Style Guide</Typography>
         </Breadcrumbs>
 
         {/* Page Header */}
         <Stack spacing={1}>
-          <Typography level='h1'>Edit Style Guide</Typography>
+          <Typography level='h1'>Create Style Guide</Typography>
           <Typography level='body-md' color='neutral'>
-            Define brand personality, voice, vocabulary constraints, and the LLM prompt template
+            Generate your brand&apos;s style guide by analyzing your website
           </Typography>
         </Stack>
 
         {/* Main Content */}
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        ) : isGenerating ? (
+        {isGenerating ? (
           // Generating state - analyzing website
           <Card variant='outlined' sx={{ p: 6 }}>
             <Stack spacing={3} alignItems='center'>
@@ -267,12 +264,6 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
               <CircularProgress size='lg' />
             </Stack>
           </Card>
-        ) : guideToEdit && customerId && guideToEdit.style_guide_id ? (
-          <StyleGuideEditor
-            styleGuideId={guideToEdit.style_guide_id}
-            initialData={guideToEdit}
-            customerId={customerId}
-          />
         ) : (
           // Empty state - prompt for URL
           <Card variant='outlined' sx={{ p: 6 }}>
