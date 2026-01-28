@@ -40,7 +40,10 @@ import { type List, type AiGeneratedSegment } from '../../lib/types/list';
 import { AskAiSegment } from './ask-ai-segment';
 import type { CompanyPreview } from '../../lib/types/search';
 import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
+import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
+import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { paths } from '@/paths';
+import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Table from '@mui/joy/Table';
 import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -103,6 +106,7 @@ export function CreateSegmentForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState('');
+  const [titleTouched, setTitleTouched] = React.useState(false);
 
   // Accordion states
   const [geoAccordionOpen, setGeoAccordionOpen] = React.useState(false);
@@ -255,8 +259,10 @@ export function CreateSegmentForm({
     }
   }, [isEditMode, segmentData, hasSearched]);
 
+  const isTitleValid = () => segmentName.trim().length >= 3 && segmentName.trim().length <= 100;
+
   const canSaveSegment = () => {
-    return segmentName.trim().length >= 3;
+    return isTitleValid();
   };
 
   const canSave = () => {
@@ -264,15 +270,14 @@ export function CreateSegmentForm({
     // 1. User has searched and found companies, OR
     // 2. Existing companies are loaded from the segment
     const hasCompanies = companies.length > 0;
-    const nameIsValid = segmentName.trim().length >= 3 && segmentName.trim().length <= 100;
 
     if (isEditMode) {
       // In edit mode, can save if name is valid and has companies (from search or existing)
-      return nameIsValid && hasCompanies;
+      return isTitleValid() && hasCompanies;
     }
 
     // In create mode, must have searched and found companies
-    return nameIsValid && hasSearched && hasCompanies;
+    return isTitleValid() && hasSearched && hasCompanies;
   };
 
   const hasActiveFilters = () => {
@@ -1806,46 +1811,112 @@ export function CreateSegmentForm({
     );
   }
 
+  const breadcrumbs = (
+    <Breadcrumbs separator={<BreadcrumbsSeparator />}>
+      <BreadcrumbsItem href={paths.home} type='start' />
+      <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
+      <BreadcrumbsItem type='end'>
+        {isEditMode ? 'Edit segment' : 'Create new segment'}
+      </BreadcrumbsItem>
+    </Breadcrumbs>
+  );
+
   return (
     <Box>
-      {/* Top Action Bar */}
+      {/* Top Action Bar: title + buttons first (creso layout), then breadcrumbs, then rest */}
       <Stack spacing={2} sx={{ mb: 2 }}>
-        {/* Segment Name and Action Buttons */}
+        {/* Segment Name and Action Buttons - first */}
         <Box
           sx={{
             display: 'flex',
-            gap: 2,
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: 1,
           }}
         >
-          <FormControl sx={{ flex: 1 }}>
-            <Input
-              value={segmentName}
-              onChange={(e) => setSegmentName(e.target.value)}
-              placeholder='Enter segment name'
-              size='lg'
-            />
-          </FormControl>
-          <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-            <Button
-              variant='outlined'
-              color='neutral'
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant='solid'
-              color='primary'
-              onClick={handleSaveSegment}
-              disabled={!canSaveSegment() || isSubmitting}
-              loading={isSubmitting}
-            >
-              Create & Save
-            </Button>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <FormControl sx={{ flex: 1, minWidth: { md: 300, lg: 400 } }}>
+              <Input
+                value={segmentName}
+                onChange={(e) => setSegmentName(e.target.value)}
+                onBlur={() => setTitleTouched(true)}
+                placeholder='Title'
+                error={titleTouched && !isTitleValid()}
+                sx={{
+                  fontWeight: 600,
+                  fontSize: 30,
+                  color: segmentName ? '#111827' : '#D1D5DB',
+                  background: 'transparent',
+                  border:
+                    titleTouched && !isTitleValid()
+                      ? '1px solid var(--joy-palette-danger-500)'
+                      : 'none',
+                  borderRadius: 8,
+                  p: 0,
+                  pl: 1,
+                  ml: 0,
+                  minHeight: 45,
+                  '& input': {
+                    textAlign: 'left',
+                    fontSize: 30,
+                    fontWeight: 600,
+                    color: segmentName ? '#111827' : '#D1D5DB',
+                    '&::placeholder': {
+                      color: '#D1D5DB',
+                    },
+                  },
+                }}
+              />
+            </FormControl>
+            <Box sx={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+              <Button
+                variant='outlined'
+                color='neutral'
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant='solid'
+                color='primary'
+                onClick={handleSaveSegment}
+                disabled={!canSaveSegment() || isSubmitting}
+                loading={isSubmitting}
+              >
+                Create & Save
+              </Button>
+            </Box>
           </Box>
+          {/* Title validation messages */}
+          {titleTouched && segmentName.trim().length === 0 && (
+            <Typography fontSize={12} sx={{ color: 'var(--joy-palette-danger-500)', ml: 0 }}>
+              Please enter a title
+            </Typography>
+          )}
+          {titleTouched && segmentName.trim().length > 0 && !isTitleValid() && (
+            <Typography fontSize={12} sx={{ color: 'var(--joy-palette-danger-500)', ml: 0 }}>
+              {segmentName.trim().length < 3
+                ? 'Title must be at least 3 characters long'
+                : 'Title must be no more than 100 characters long'}
+            </Typography>
+          )}
+          {segmentName.trim().length > 0 && isTitleValid() && (
+            <Typography fontSize={12} sx={{ color: 'var(--joy-palette-success-500)', ml: 0 }}>
+              {`${segmentName.trim().length}/100 characters`}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Breadcrumbs - second */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {breadcrumbs}
         </Box>
 
         {/* AI Segment Generator - only show in create mode */}
