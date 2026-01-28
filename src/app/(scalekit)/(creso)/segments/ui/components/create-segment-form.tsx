@@ -46,6 +46,7 @@ import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
 import { useCallback } from 'react';
+import { PersonaWarningBanner } from '@/components/dashboard/banners/persona-warning-banner';
 
 const DIFFBOT_COMPANIES_LIMIT = 5;
 
@@ -134,6 +135,7 @@ export function CreateSegmentForm({
   const [hasSearched, setHasSearched] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [formInitialized, setFormInitialized] = React.useState(false);
+  const [personaWarningDismissed, setPersonaWarningDismissed] = React.useState(false);
 
   // Fetch options from database
   const { data: industries, isLoading: industriesLoading } = useQuery({
@@ -304,6 +306,7 @@ export function CreateSegmentForm({
     setIndustryAccordionOpen(false);
     setTechnographicsAccordionOpen(false);
     setPersonaAccordionOpen(false);
+    setPersonaWarningDismissed(false);
   }, []);
 
   const applyFilters = async (page: number = 1) => {
@@ -400,10 +403,6 @@ export function CreateSegmentForm({
     } finally {
       setIsSearching(false);
     }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    applyFilters(newPage);
   };
 
   const handleSaveSegment = async () => {
@@ -1438,20 +1437,46 @@ export function CreateSegmentForm({
         </Box>
       ) : (
         // Company preview table
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+          }}
+        >
           {/* Header with count */}
           <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
             <Box sx={{ flex: 1 }}>
               <Typography level='title-lg'>
-                {isSearching ? 'Searching...' : `Found ${totalCount.toLocaleString()} companies`}
+                {isSearching ? 'Searching...' : `${companies.length} companies found`}
               </Typography>
-              {totalCount > perPage && (
-                <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
-                </Typography>
-              )}
             </Box>
           </Box>
+
+          {/* Preview banner */}
+          {hasSearched && companies.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mx: 2,
+                mt: 2,
+                bgcolor: 'var(--joy-palette-warning-100)',
+                color: 'var(--joy-palette-text-secondary)',
+                border: '1px solid var(--joy-palette-warning-300)',
+                borderRadius: 10,
+                px: 2,
+                py: 0.75,
+                width: 'auto',
+              }}
+            >
+              <Typography fontSize={14} sx={{ lineHeight: 1.6, fontWeight: 300 }}>
+                This is a preview of {companies.length} companies — refine your filters or save the
+                segment to access the full list.
+              </Typography>
+            </Box>
+          )}
 
           {/* Table */}
           <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
@@ -1581,41 +1606,6 @@ export function CreateSegmentForm({
               </Table>
             )}
           </Box>
-
-          {/* Pagination */}
-          {totalCount > perPage && !isSearching && (
-            <Box
-              sx={{
-                p: 2,
-                borderTop: '1px solid var(--joy-palette-divider)',
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 1,
-              }}
-            >
-              <Button
-                variant='outlined'
-                size='sm'
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-              >
-                Previous
-              </Button>
-              <Box sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
-                <Typography level='body-sm'>
-                  Page {currentPage} of {Math.ceil(totalCount / perPage)}
-                </Typography>
-              </Box>
-              <Button
-                variant='outlined'
-                size='sm'
-                disabled={currentPage >= Math.ceil(totalCount / perPage)}
-                onClick={() => handlePageChange(currentPage + 1)}
-              >
-                Next
-              </Button>
-            </Box>
-          )}
         </Box>
       )}
     </Box>
@@ -1691,8 +1681,21 @@ export function CreateSegmentForm({
           borderTop: '1px solid var(--joy-palette-divider)',
           borderRadius: 2,
           overflow: 'hidden',
+          position: 'relative',
         }}
       >
+        {/* Persona warning banner */}
+        {hasSearched && selectedPersonas.length === 0 && !personaWarningDismissed && (
+          <PersonaWarningBanner
+            onDismiss={() => setPersonaWarningDismissed(true)}
+            message={
+              <>
+                People search was not performed because no persona is selected. Please create or
+                select a persona, and we will automatically find matching people in these companies.
+              </>
+            }
+          />
+        )}
         {filtersPanel}
         {mainContent}
       </Box>
