@@ -1536,16 +1536,22 @@ export function CreateSegmentForm({
         </Box>
       </Box>
 
-      {/* Apply Filters / Clear Filters Buttons */}
+      {/* Apply Filters / Clear Filters Buttons - attached to bottom (match creso) */}
       <Box
         sx={{
-          p: 2,
-          pl: 0,
-          borderTop: '1px solid var(--joy-palette-divider)',
+          p: { xs: 2, sm: 2 },
+          pt: { xs: 2.5, sm: 2.5 },
+          pb: { xs: 2.5, sm: 2.5 },
           display: 'flex',
+          gap: 1,
           justifyContent: 'flex-end',
           alignItems: 'center',
-          gap: 1,
+          borderTop: '1px solid var(--joy-palette-divider)',
+          bgcolor: 'var(--Content-background)',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 10,
+          mt: 'auto',
         }}
       >
         <Button
