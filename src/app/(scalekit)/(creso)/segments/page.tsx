@@ -17,10 +17,7 @@ import Tab from '@mui/joy/Tab';
 import Tooltip from '@mui/joy/Tooltip';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Alert from '@mui/joy/Alert';
-import Menu from '@mui/joy/Menu';
-import MenuItem from '@mui/joy/MenuItem';
-import Dropdown from '@mui/joy/Dropdown';
-import MenuButton from '@mui/joy/MenuButton';
+import { PopperMenu, MenuItem } from '@/components/core/popper-menu';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
@@ -129,7 +126,8 @@ function SegmentCard({
   onDelete: (segmentId: string) => void;
 }) {
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
 
   const filters = (segment.filters || {}) as {
     country?: string;
@@ -146,16 +144,18 @@ function SegmentCard({
     router.push(paths.dashboard.segments.details(segment.list_id));
   };
 
-  const handleMenuButtonClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setOpenPopover(true);
   };
 
   const handleMenuClose = () => {
-    setOpenMenu(false);
+    setAnchorEl(null);
+    setOpenPopover(false);
   };
 
-  const handleDelete = (event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDelete = () => {
     if (segment.status === ListStatus.PROCESSING) {
       toast.error('Cannot delete a segment that is currently being processed');
       handleMenuClose();
@@ -208,45 +208,33 @@ function SegmentCard({
           gap: 0.5,
         }}
       >
-        <Dropdown
-          open={openMenu}
-          onOpenChange={(
-            event: React.MouseEvent | React.KeyboardEvent | React.FocusEvent | null,
-            open: boolean
-          ) => setOpenMenu(open)}
+        <IconButton
+          size='sm'
+          sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+          onClick={handleMenuOpen}
         >
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: {
-                variant: 'plain',
-                size: 'sm',
-                sx: { minWidth: 0, p: 0.5, borderRadius: '50%' },
-              },
+          <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
+        </IconButton>
+        <PopperMenu
+          open={openPopover && Boolean(anchorEl)}
+          anchorEl={anchorEl}
+          onClose={handleMenuClose}
+          placement='bottom-start'
+          minWidth='120px'
+          style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+        >
+          <MenuItem
+            icon={<TrashIcon size={20} />}
+            danger
+            disabled={isProcessing}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              handleDelete();
             }}
-            onClick={handleMenuButtonClick}
           >
-            <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
-          </MenuButton>
-          <Menu
-            placement='bottom-start'
-            onClose={handleMenuClose}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MenuItem
-              color='danger'
-              onClick={handleDelete}
-              disabled={isProcessing}
-              sx={{
-                opacity: isProcessing ? 0.5 : 1,
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <TrashIcon size={20} />
-              Delete
-            </MenuItem>
-          </Menu>
-        </Dropdown>
+            Delete
+          </MenuItem>
+        </PopperMenu>
       </Box>
 
       {/* Status indicator */}
@@ -362,18 +350,21 @@ function SegmentTableRow({
   onDelete: (segmentId: string) => void;
 }) {
   const router = useRouter();
-  const [openMenu, setOpenMenu] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
 
-  const handleMenuButtonClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setOpenPopover(true);
   };
 
   const handleMenuClose = () => {
-    setOpenMenu(false);
+    setAnchorEl(null);
+    setOpenPopover(false);
   };
 
-  const handleDelete = (event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDelete = () => {
     if (segment.status === ListStatus.PROCESSING) {
       toast.error('Cannot delete a segment that is currently being processed');
       handleMenuClose();
@@ -438,45 +429,37 @@ function SegmentTableRow({
         <Typography level='body-sm'>{new Date(segment.updated_at).toLocaleDateString()}</Typography>
       </td>
       <td style={{ textAlign: 'right' }}>
-        <Dropdown
-          open={openMenu}
-          onOpenChange={(
-            event: React.MouseEvent | React.KeyboardEvent | React.FocusEvent | null,
-            open: boolean
-          ) => setOpenMenu(open)}
+        <IconButton
+          size='sm'
+          sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleMenuOpen(e);
+          }}
         >
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: {
-                variant: 'plain',
-                size: 'sm',
-                sx: { minWidth: 0, p: 0.5, borderRadius: '50%' },
-              },
+          <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
+        </IconButton>
+        <PopperMenu
+          open={openPopover && Boolean(anchorEl)}
+          anchorEl={anchorEl}
+          onClose={handleMenuClose}
+          placement='bottom-start'
+          minWidth='120px'
+          style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+        >
+          <MenuItem
+            icon={<TrashIcon size={20} />}
+            danger
+            disabled={isProcessing}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleDelete();
             }}
-            onClick={handleMenuButtonClick}
           >
-            <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
-          </MenuButton>
-          <Menu
-            placement='bottom-start'
-            onClose={handleMenuClose}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MenuItem
-              color='danger'
-              onClick={handleDelete}
-              disabled={isProcessing}
-              sx={{
-                opacity: isProcessing ? 0.5 : 1,
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-              }}
-            >
-              <TrashIcon size={20} />
-              Delete
-            </MenuItem>
-          </Menu>
-        </Dropdown>
+            Delete
+          </MenuItem>
+        </PopperMenu>
       </td>
     </tr>
   );
