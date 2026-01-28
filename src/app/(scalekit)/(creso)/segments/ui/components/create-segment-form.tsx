@@ -283,6 +283,29 @@ export function CreateSegmentForm({
     );
   };
 
+  const clearFilters = useCallback(() => {
+    setSelectedCountry(null);
+    setSelectedState(null);
+    setSelectedCompanySizes([]);
+    setSelectedIndustries([]);
+    setSelectedTechnographics([]);
+    setSelectedPersonas([]);
+    setSuggestedIndustries([]);
+    setSmartSearchEnabled(false);
+    setIndustrySearchQuery('');
+    setSmartSearchResults([]);
+    setHasSearched(false);
+    setSearchError(null);
+    setCurrentPage(1);
+    setTotalCount(0);
+    setCompanies([]);
+    setGeoAccordionOpen(false);
+    setCompanySizeAccordionOpen(false);
+    setIndustryAccordionOpen(false);
+    setTechnographicsAccordionOpen(false);
+    setPersonaAccordionOpen(false);
+  }, []);
+
   const applyFilters = async (page: number = 1) => {
     if (!hasActiveFilters()) {
       toast.error('Please select at least one filter to search for companies');
@@ -1325,18 +1348,51 @@ export function CreateSegmentForm({
         </Box>
       </Box>
 
-      {/* Apply Filters Button */}
-      <Box sx={{ p: 2, pl: 0, borderTop: '1px solid var(--joy-palette-divider)' }}>
+      {/* Apply Filters / Clear Filters Buttons */}
+      <Box
+        sx={{
+          p: 2,
+          pl: 0,
+          borderTop: '1px solid var(--joy-palette-divider)',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <Button
-          fullWidth
+          variant='outlined'
+          onClick={clearFilters}
+          disabled={isSearching || !hasActiveFilters()}
+          sx={{
+            fontWeight: 500,
+            color: 'var(--joy-palette-text-primary) !important',
+            border: 'none',
+            '&:hover': {
+              opacity: 0.8,
+              bgcolor: 'transparent',
+              border: 'none',
+            },
+          }}
+        >
+          Clear filter
+        </Button>
+        <Button
           variant='solid'
           color='primary'
           onClick={() => applyFilters(1)}
           disabled={isSearching || !hasActiveFilters()}
           loading={isSearching}
-          size='lg'
+          sx={{
+            fontWeight: 500,
+            py: { xs: 1, sm: 0.5 },
+            minHeight: 30,
+            height: 30,
+            px: 1.25,
+            width: 'fit-content',
+          }}
         >
-          {isSearching ? 'Searching...' : 'Apply Filters'}
+          {isSearching ? 'Searching...' : 'Show Preview'}
         </Button>
       </Box>
     </Box>
@@ -1613,13 +1669,7 @@ export function CreateSegmentForm({
               disabled={!canSaveSegment() || isSubmitting}
               loading={isSubmitting}
             >
-              {isSubmitting
-                ? isEditMode
-                  ? 'Updating...'
-                  : 'Saving...'
-                : isEditMode
-                  ? 'Update'
-                  : 'Save'}
+              Create & Save
             </Button>
           </Box>
         </Box>
