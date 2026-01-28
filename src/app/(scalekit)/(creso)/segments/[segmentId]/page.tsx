@@ -12,13 +12,19 @@ import Button from '@mui/joy/Button';
 import Alert from '@mui/joy/Alert';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Table from '@mui/joy/Table';
+import Checkbox from '@mui/joy/Checkbox';
 import Avatar from '@mui/joy/Avatar';
 import Chip from '@mui/joy/Chip';
+import IconButton from '@mui/joy/IconButton';
+import Menu from '@mui/joy/Menu';
+import MenuItem from '@mui/joy/MenuItem';
+import ListItemDecorator from '@mui/joy/ListItemDecorator';
+import ListItemContent from '@mui/joy/ListItemContent';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
-import { Check as CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
-import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsCounterClockwise';
+import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 
 import { paths } from '@/paths';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
@@ -40,6 +46,9 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
   const router = useRouter();
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [selectedRows, setSelectedRows] = React.useState<number[]>([]);
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
+  const [openMenuIndex, setOpenMenuIndex] = React.useState<number | null>(null);
 
   // Handle async params
   React.useEffect(() => {
@@ -78,6 +87,37 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
   const meta = segmentData?.meta;
   const isProcessing =
     segment?.status === ListStatus.NEW || segment?.status === ListStatus.PROCESSING;
+
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      setSelectedRows(companies.map((_, idx) => idx));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleSelectRow = (idx: number) => {
+    setSelectedRows((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, idx: number) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setMenuAnchorEl(event.currentTarget);
+    setOpenMenuIndex(idx);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setOpenMenuIndex(null);
+  };
+
+  // Reset selection when page changes
+  React.useEffect(() => {
+    setSelectedRows([]);
+  }, [currentPage]);
 
   const filters = (segment?.filters || {}) as {
     country?: string;
@@ -263,6 +303,17 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                     >
                       <thead>
                         <tr>
+                          <th style={{ width: '5%' }}>
+                            <Checkbox
+                              checked={
+                                companies.length > 0 && selectedRows.length === companies.length
+                              }
+                              indeterminate={
+                                selectedRows.length > 0 && selectedRows.length < companies.length
+                              }
+                              onChange={handleSelectAll}
+                            />
+                          </th>
                           <th style={{ width: 60 }}></th>
                           <th>Company name</th>
                           <th style={{ width: 60 }}></th>
@@ -271,19 +322,36 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                           <th>Website</th>
                           <th>Industry</th>
                           <th>Technographics</th>
+                          <th style={{ width: 60, textAlign: 'right' }}></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {companies.map((company) => (
+                        {companies.map((company, index) => (
                           <tr
                             key={company.company_id}
-                            onClick={() =>
+                            onClick={(e) => {
+                              const target = e.target as HTMLElement;
+                              const isCheckbox =
+                                target.closest('input[type="checkbox"]') ||
+                                target.closest('[role="checkbox"]') ||
+                                target.closest('.MuiCheckbox-root');
+                              const isMenuButton =
+                                target.closest('[data-menu-button]') ||
+                                target.closest('[data-menu-item]');
+                              if (isCheckbox || isMenuButton) return;
                               router.push(
                                 paths.creso.segments.companyDetails(segmentId!, company.company_id)
-                              )
-                            }
+                              );
+                            }}
                             style={{ cursor: 'pointer' }}
                           >
+                            <td>
+                              <Checkbox
+                                checked={selectedRows.includes(index)}
+                                onChange={() => handleSelectRow(index)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </td>
                             <td>
                               <Avatar
                                 src={company.logo || undefined}
@@ -358,11 +426,67 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                             <td>
                               <Typography level='body-sm'>—</Typography>
                             </td>
+                            <td
+                              style={{
+                                position: 'relative',
+                                textAlign: 'right',
+                              }}
+                            >
+                              <IconButton
+                                size='sm'
+                                variant='plain'
+                                color='neutral'
+                                sx={{
+                                  minWidth: 0,
+                                  p: 0.5,
+                                  borderRadius: '50%',
+                                }}
+                                data-menu-button
+                                onClick={(e) => handleMenuOpen(e, index)}
+                              >
+                                <DotsThreeVertical
+                                  weight='bold'
+                                  size={22}
+                                  color='var(--joy-palette-text-secondary)'
+                                />
+                              </IconButton>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </Table>
                   </Box>
+                  <Menu
+                    anchorEl={menuAnchorEl}
+                    open={openMenuIndex !== null && Boolean(menuAnchorEl)}
+                    onClose={handleMenuClose}
+                    placement='bottom-start'
+                    sx={{
+                      '--ListItem-fontSize': 'var(--joy-fontSize-sm)',
+                      '--ListItemDecorator-size': '1.5rem',
+                      minWidth: 200,
+                    }}
+                  >
+                    {openMenuIndex !== null && companies[openMenuIndex] && (
+                      <MenuItem
+                        data-menu-item
+                        onClick={() => {
+                          const company = companies[openMenuIndex];
+                          if (company) {
+                            handleMenuClose();
+                            router.push(
+                              paths.creso.segments.companyDetails(segmentId!, company.company_id)
+                            );
+                          }
+                        }}
+                      >
+                        <ListItemDecorator>
+                          <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                        </ListItemDecorator>
+                        <ListItemContent>View profile</ListItemContent>
+                      </MenuItem>
+                    )}
+                  </Menu>
                   {meta && meta.lastPage > 1 && (
                     <Pagination
                       totalPages={meta.lastPage}
