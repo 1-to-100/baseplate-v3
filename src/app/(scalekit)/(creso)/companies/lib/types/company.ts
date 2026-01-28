@@ -4,6 +4,7 @@
 
 export interface CompanyItem {
   id: number;
+  company_id?: string;
   name: string;
   type?: string;
   description?: string;

@@ -4,7 +4,12 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { CompanyItem, GetCompaniesParams, GetCompaniesResponse } from '../types/company';
+import type {
+  CompanyItem,
+  GetCompaniesParams,
+  GetCompaniesResponse,
+  CompanyItemList,
+} from '../types/company';
 
 /**
  * Get companies list with filters, pagination, and sorting
@@ -127,6 +132,7 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
 
     return {
       id: numericId,
+      company_id: company.company_id || undefined,
       name: company.display_name || company.legal_name || 'Unknown',
       type: company.type || undefined,
       description: company.description || undefined,
@@ -176,5 +182,143 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
       perPage: limit,
       total,
     },
+  };
+}
+
+/**
+ * Get company by company_id with scoring and lists
+ */
+export async function getCompanyById(company_id: string): Promise<CompanyItem> {
+  const supabase = createClient();
+
+  // Get authenticated user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  // Get current customer ID
+  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+
+  if (customerIdError || !customerId) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  // Fetch company
+  const { data: company, error: companyError } = await supabase
+    .from('companies')
+    .select('*')
+    .eq('company_id', company_id)
+    .single();
+
+  if (companyError || !company) {
+    throw new Error(`Company not found: ${companyError?.message ?? 'not available'}`);
+  }
+
+  // Fetch scoring data from customer_companies
+  const { data: customerCompany, error: scoringError } = await supabase
+    .from('customer_companies')
+    .select('*')
+    .eq('company_id', company_id)
+    .eq('customer_id', customerId)
+    .maybeSingle();
+
+  // Scoring error is not critical - company might not have scoring yet
+  if (scoringError && scoringError.code !== 'PGRST116') {
+    // PGRST116 is "not found" which is acceptable
+    console.warn('Failed to fetch scoring data:', scoringError);
+  }
+
+  // Fetch lists for this company
+  let lists: CompanyItemList[] | undefined = undefined;
+  try {
+    const { data: listCompanies, error: listsError } = await supabase
+      .from('list_companies')
+      .select(
+        `
+        list_id,
+        lists:list_id (
+          list_id,
+          name,
+          description
+        )
+      `
+      )
+      .eq('company_id', company_id);
+
+    if (!listsError && listCompanies) {
+      lists = listCompanies
+        .map((lc): CompanyItemList | null => {
+          const list = Array.isArray(lc.lists) ? lc.lists[0] : lc.lists;
+          if (!list) return null;
+          return {
+            id: parseInt(lc.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
+            name: list.name || 'Unknown',
+            description: list.description || undefined,
+            isAttached: true,
+          };
+        })
+        .filter((list): list is CompanyItemList => list !== null);
+    }
+  } catch (error) {
+    // Lists are optional, so we don't throw
+    console.warn('Failed to fetch lists:', error);
+  }
+
+  // Map company_id to numeric id (same logic as getCompanies)
+  const numericId =
+    parseInt(company.company_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0;
+
+  // Parse last_scoring_results from customer_companies
+  let last_scoring_results: CompanyItem['last_scoring_results'] = undefined;
+  if (customerCompany?.last_scoring_results) {
+    try {
+      const scoring = customerCompany.last_scoring_results as Record<string, unknown>;
+      if (typeof scoring === 'object' && scoring !== null) {
+        last_scoring_results = {
+          score: typeof scoring.score === 'number' ? scoring.score : 0,
+          short_description:
+            typeof scoring.short_description === 'string' ? scoring.short_description : '',
+          full_description:
+            typeof scoring.full_description === 'string' ? scoring.full_description : '',
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to parse scoring results:', error);
+    }
+  }
+
+  return {
+    id: numericId,
+    company_id: company.company_id,
+    name: company.display_name || company.legal_name || 'Unknown',
+    type: company.type || undefined,
+    description: company.description || undefined,
+    website: company.website_url || undefined,
+    homepageUri: company.website_url || undefined,
+    logo: company.logo || undefined,
+    country: company.country || undefined,
+    region: company.region || undefined,
+    address: company.address || undefined,
+    latitude: company.latitude || undefined,
+    longitude: company.longitude || undefined,
+    revenue: customerCompany?.revenue || undefined,
+    currency_code: undefined, // Not in companies table
+    employees: company.employees || customerCompany?.employees || undefined,
+    siccodes: company.siccodes || undefined,
+    categories: company.categories || customerCompany?.categories || undefined,
+    technologies: company.technologies || undefined,
+    phone: company.phone || undefined,
+    email: company.email || undefined,
+    last_scoring_results,
+    social_links: company.social_links || undefined,
+    fetched_at: company.fetched_at || undefined,
+    created_at: company.created_at || new Date().toISOString(),
+    updated_at: company.updated_at || new Date().toISOString(),
+    lists,
   };
 }
