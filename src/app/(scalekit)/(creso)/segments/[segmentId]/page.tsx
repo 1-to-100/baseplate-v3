@@ -2,12 +2,10 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
-import Card from '@mui/joy/Card';
-import CardContent from '@mui/joy/CardContent';
 import Button from '@mui/joy/Button';
 import Alert from '@mui/joy/Alert';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -25,12 +23,16 @@ import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/Arrow
 import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsCounterClockwise';
 import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { Minus as MinusIcon } from '@phosphor-icons/react/dist/ssr/Minus';
+import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 
 import { paths } from '@/paths';
+import CompanyDetailsPopover from '../../companies/ui/components/company-details-popover';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
-import { getSegmentById } from '../lib/api/segments';
+import { toast } from '@/components/core/toaster';
+import { getSegmentById, removeCompanyFromSegment } from '../lib/api/segments';
 import { ListStatus } from '../lib/types/list';
 
 interface PageProps {
@@ -44,11 +46,18 @@ const POLLING_INTERVAL = 3000; // Poll every 3 seconds when processing
 
 export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Element {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [selectedRows, setSelectedRows] = React.useState<number[]>([]);
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
   const [openMenuIndex, setOpenMenuIndex] = React.useState<number | null>(null);
+  const [isRemoving, setIsRemoving] = React.useState(false);
+  const [openCompanyPopoverIdx, setOpenCompanyPopoverIdx] = React.useState<number | null>(null);
+  const [companyPopoverAnchorEl, setCompanyPopoverAnchorEl] = React.useState<null | HTMLElement>(
+    null
+  );
 
   // Handle async params
   React.useEffect(() => {
@@ -114,10 +123,70 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     setOpenMenuIndex(null);
   };
 
+  const handleOpenCompanyPopover = (idx: number) => {
+    setCompanyPopoverAnchorEl(menuAnchorEl);
+    setOpenCompanyPopoverIdx(idx);
+    handleMenuClose();
+  };
+
+  const handleCloseCompanyPopover = () => {
+    setOpenCompanyPopoverIdx(null);
+    setCompanyPopoverAnchorEl(null);
+  };
+
+  const handleExcludeFromSegment = async (company: (typeof companies)[0]) => {
+    handleMenuClose();
+    if (!segmentId) return;
+    setIsRemoving(true);
+    try {
+      await removeCompanyFromSegment(segmentId, company.company_id);
+      toast.success('Company removed from segment');
+      await queryClient.invalidateQueries({ queryKey: ['segment', segmentId, currentPage] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove company from segment');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   // Reset selection when page changes
   React.useEffect(() => {
     setSelectedRows([]);
   }, [currentPage]);
+
+  // Close company popover on click outside or Escape
+  React.useEffect(() => {
+    if (openCompanyPopoverIdx === null) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const isClickOnPopover =
+        target.closest('[data-menu-item]') ||
+        target.closest('[data-menu-button]') ||
+        target.closest('[data-popover]') ||
+        target.closest('.MuiTabs-root') ||
+        target.closest('.MuiTab-root') ||
+        target.closest('.MuiTabList-root') ||
+        target.closest('.MuiTabPanel-root') ||
+        target.closest("[role='tab']") ||
+        target.closest("[role='tablist']") ||
+        target.closest("[role='tabpanel']");
+      if (!isClickOnPopover) {
+        handleCloseCompanyPopover();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') handleCloseCompanyPopover();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openCompanyPopoverIdx]);
 
   const filters = (segment?.filters || {}) as {
     country?: string;
@@ -241,265 +310,301 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
         </Box>
 
         {/* Companies Table */}
-        <Card>
-          <CardContent>
-            <Stack spacing={3}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography level='title-lg'>
-                    {isProcessing
-                      ? 'Processing...'
-                      : `${meta?.total.toLocaleString() || 0} companies found`}
-                  </Typography>
-                  {isProcessing && (
-                    <Chip
-                      size='sm'
-                      variant='soft'
-                      color='warning'
-                      startDecorator={
-                        <ArrowsCounterClockwiseIcon size={14} className='animate-spin' />
-                      }
-                    >
-                      Updating
-                    </Chip>
-                  )}
-                  {isFetching && !isProcessing && <CircularProgress size='sm' />}
-                </Box>
-              </Stack>
+        <Stack spacing={3}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography level='title-lg'>
+                {isProcessing
+                  ? 'Processing...'
+                  : `${meta?.total.toLocaleString() || 0} companies found`}
+              </Typography>
+              {isProcessing && (
+                <Chip
+                  size='sm'
+                  variant='soft'
+                  color='warning'
+                  startDecorator={<ArrowsCounterClockwiseIcon size={14} className='animate-spin' />}
+                >
+                  Updating
+                </Chip>
+              )}
+              {isFetching && !isProcessing && <CircularProgress size='sm' />}
+            </Box>
+          </Stack>
 
-              {isProcessing ? (
-                <Box sx={{ textAlign: 'center', py: 6 }}>
-                  <CircularProgress size='lg' sx={{ mb: 2 }} />
-                  <Typography level='title-md' sx={{ mb: 1 }}>
-                    Processing segment...
-                  </Typography>
-                  <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                    We&apos;re searching for companies matching your filters. This may take a
-                    moment.
-                  </Typography>
-                </Box>
-              ) : companies.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography level='body-md' sx={{ color: 'text.secondary' }}>
-                    No companies found in this segment.
-                  </Typography>
-                </Box>
-              ) : (
-                <>
-                  <Box sx={{ overflowX: 'auto' }}>
-                    <Table
-                      aria-label='companies table'
-                      sx={{
-                        width: '100%',
-                        '& thead th': {
-                          bgcolor: 'var(--joy-palette-background-level1)',
-                          fontWeight: '600',
-                        },
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th style={{ width: '5%' }}>
-                            <Checkbox
-                              checked={
-                                companies.length > 0 && selectedRows.length === companies.length
-                              }
-                              indeterminate={
-                                selectedRows.length > 0 && selectedRows.length < companies.length
-                              }
-                              onChange={handleSelectAll}
+          {isProcessing ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <CircularProgress size='lg' sx={{ mb: 2 }} />
+              <Typography level='title-md' sx={{ mb: 1 }}>
+                Processing segment...
+              </Typography>
+              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                We&apos;re searching for companies matching your filters. This may take a moment.
+              </Typography>
+            </Box>
+          ) : companies.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography level='body-md' sx={{ color: 'text.secondary' }}>
+                No companies found in this segment.
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Box sx={{ overflowX: 'auto' }}>
+                <Table
+                  aria-label='companies table'
+                  sx={{
+                    width: '100%',
+                    '& thead th': {
+                      bgcolor: 'var(--joy-palette-background-level1)',
+                      fontWeight: '600',
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th style={{ width: '5%' }}>
+                        <Checkbox
+                          checked={companies.length > 0 && selectedRows.length === companies.length}
+                          indeterminate={
+                            selectedRows.length > 0 && selectedRows.length < companies.length
+                          }
+                          onChange={handleSelectAll}
+                        />
+                      </th>
+                      <th style={{ width: 60 }}></th>
+                      <th>Company name</th>
+                      <th style={{ width: 60 }}></th>
+                      <th>States/Provinces</th>
+                      <th>Employees</th>
+                      <th>Website</th>
+                      <th>Industry</th>
+                      <th>Technographics</th>
+                      <th style={{ width: 60, textAlign: 'right' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {companies.map((company, index) => (
+                      <tr
+                        key={company.company_id}
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          const isCheckbox =
+                            target.closest('input[type="checkbox"]') ||
+                            target.closest('[role="checkbox"]') ||
+                            target.closest('.MuiCheckbox-root');
+                          const isMenuButton =
+                            target.closest('[data-menu-button]') ||
+                            target.closest('[data-menu-item]');
+                          if (isCheckbox || isMenuButton) return;
+                          router.push(
+                            paths.creso.segments.companyDetails(segmentId!, company.company_id)
+                          );
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td>
+                          <Checkbox
+                            checked={selectedRows.includes(index)}
+                            onChange={() => handleSelectRow(index)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td>
+                          <Avatar
+                            src={company.logo || undefined}
+                            alt={company.display_name || company.legal_name || 'Company'}
+                            sx={{ width: 28, height: 28 }}
+                          >
+                            {(company.display_name || company.legal_name || 'C')
+                              .charAt(0)
+                              .toUpperCase()}
+                          </Avatar>
+                        </td>
+                        <td>
+                          <Typography
+                            level='body-sm'
+                            sx={{
+                              wordBreak: 'break-all',
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                            }}
+                          >
+                            {company.display_name || company.legal_name || 'Unknown'}
+                          </Typography>
+                        </td>
+                        <td>{/* New badge column - reserved for future use */}</td>
+                        <td>
+                          <Typography level='body-sm'>
+                            {[company.region, company.country].filter(Boolean).join(', ') || '—'}
+                          </Typography>
+                        </td>
+                        <td>
+                          <Typography level='body-sm'>
+                            {company.employees ? company.employees.toLocaleString() : '—'}
+                          </Typography>
+                        </td>
+                        <td>
+                          {company.website_url ? (
+                            <Box
+                              component='span'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const url =
+                                  company.website_url!.startsWith('http://') ||
+                                  company.website_url!.startsWith('https://')
+                                    ? company.website_url!
+                                    : `https://${company.website_url}`;
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                              }}
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                cursor: 'pointer',
+                                color: 'var(--joy-palette-primary-500)',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              {company.website_url}
+                            </Box>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td>
+                          <Typography level='body-sm'>
+                            {company.categories && company.categories.length > 0
+                              ? company.categories[0]
+                              : '—'}
+                          </Typography>
+                        </td>
+                        <td>
+                          <Typography level='body-sm'>—</Typography>
+                        </td>
+                        <td
+                          style={{
+                            position: 'relative',
+                            textAlign: 'right',
+                          }}
+                        >
+                          <IconButton
+                            size='sm'
+                            variant='plain'
+                            color='neutral'
+                            sx={{
+                              minWidth: 0,
+                              p: 0.5,
+                              borderRadius: '50%',
+                            }}
+                            data-menu-button
+                            onClick={(e) => handleMenuOpen(e, index)}
+                          >
+                            <DotsThreeVertical
+                              weight='bold'
+                              size={22}
+                              color='var(--joy-palette-text-secondary)'
                             />
-                          </th>
-                          <th style={{ width: 60 }}></th>
-                          <th>Company name</th>
-                          <th style={{ width: 60 }}></th>
-                          <th>States/Provinces</th>
-                          <th>Employees</th>
-                          <th>Website</th>
-                          <th>Industry</th>
-                          <th>Technographics</th>
-                          <th style={{ width: 60, textAlign: 'right' }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {companies.map((company, index) => (
-                          <tr
-                            key={company.company_id}
-                            onClick={(e) => {
-                              const target = e.target as HTMLElement;
-                              const isCheckbox =
-                                target.closest('input[type="checkbox"]') ||
-                                target.closest('[role="checkbox"]') ||
-                                target.closest('.MuiCheckbox-root');
-                              const isMenuButton =
-                                target.closest('[data-menu-button]') ||
-                                target.closest('[data-menu-item]');
-                              if (isCheckbox || isMenuButton) return;
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Box>
+              <Menu
+                anchorEl={menuAnchorEl}
+                open={openMenuIndex !== null && Boolean(menuAnchorEl)}
+                onClose={handleMenuClose}
+                placement='bottom-start'
+                sx={{
+                  '--ListItem-fontSize': 'var(--joy-fontSize-sm)',
+                  '--ListItemDecorator-size': '1.5rem',
+                  minWidth: 200,
+                }}
+              >
+                {openMenuIndex !== null &&
+                  companies[openMenuIndex] &&
+                  (() => {
+                    const company = companies[openMenuIndex];
+                    return (
+                      <>
+                        <MenuItem
+                          data-menu-item
+                          onClick={() => {
+                            if (company && openMenuIndex !== null) {
+                              handleOpenCompanyPopover(openMenuIndex);
+                            }
+                          }}
+                        >
+                          <ListItemDecorator>
+                            <SelectionAllIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                          </ListItemDecorator>
+                          <ListItemContent>Quick preview</ListItemContent>
+                        </MenuItem>
+                        <MenuItem
+                          data-menu-item
+                          onClick={() => {
+                            if (company) {
+                              handleMenuClose();
                               router.push(
                                 paths.creso.segments.companyDetails(segmentId!, company.company_id)
                               );
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <td>
-                              <Checkbox
-                                checked={selectedRows.includes(index)}
-                                onChange={() => handleSelectRow(index)}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </td>
-                            <td>
-                              <Avatar
-                                src={company.logo || undefined}
-                                alt={company.display_name || company.legal_name || 'Company'}
-                                sx={{ width: 28, height: 28 }}
-                              >
-                                {(company.display_name || company.legal_name || 'C')
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </Avatar>
-                            </td>
-                            <td>
-                              <Typography
-                                level='body-sm'
-                                sx={{
-                                  wordBreak: 'break-all',
-                                  color: 'var(--joy-palette-text-secondary)',
-                                  fontWeight: 300,
-                                }}
-                              >
-                                {company.display_name || company.legal_name || 'Unknown'}
-                              </Typography>
-                            </td>
-                            <td>{/* New badge column - reserved for future use */}</td>
-                            <td>
-                              <Typography level='body-sm'>
-                                {[company.region, company.country].filter(Boolean).join(', ') ||
-                                  '—'}
-                              </Typography>
-                            </td>
-                            <td>
-                              <Typography level='body-sm'>
-                                {company.employees ? company.employees.toLocaleString() : '—'}
-                              </Typography>
-                            </td>
-                            <td>
-                              {company.website_url ? (
-                                <Box
-                                  component='span'
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const url =
-                                      company.website_url!.startsWith('http://') ||
-                                      company.website_url!.startsWith('https://')
-                                        ? company.website_url!
-                                        : `https://${company.website_url}`;
-                                    window.open(url, '_blank', 'noopener,noreferrer');
-                                  }}
-                                  sx={{
-                                    display: 'block',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    cursor: 'pointer',
-                                    color: 'var(--joy-palette-primary-500)',
-                                    textDecoration: 'underline',
-                                  }}
-                                >
-                                  {company.website_url}
-                                </Box>
-                              ) : (
-                                '—'
-                              )}
-                            </td>
-                            <td>
-                              <Typography level='body-sm'>
-                                {company.categories && company.categories.length > 0
-                                  ? company.categories[0]
-                                  : '—'}
-                              </Typography>
-                            </td>
-                            <td>
-                              <Typography level='body-sm'>—</Typography>
-                            </td>
-                            <td
-                              style={{
-                                position: 'relative',
-                                textAlign: 'right',
-                              }}
-                            >
-                              <IconButton
-                                size='sm'
-                                variant='plain'
-                                color='neutral'
-                                sx={{
-                                  minWidth: 0,
-                                  p: 0.5,
-                                  borderRadius: '50%',
-                                }}
-                                data-menu-button
-                                onClick={(e) => handleMenuOpen(e, index)}
-                              >
-                                <DotsThreeVertical
-                                  weight='bold'
-                                  size={22}
-                                  color='var(--joy-palette-text-secondary)'
-                                />
-                              </IconButton>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </Box>
-                  <Menu
-                    anchorEl={menuAnchorEl}
-                    open={openMenuIndex !== null && Boolean(menuAnchorEl)}
-                    onClose={handleMenuClose}
-                    placement='bottom-start'
-                    sx={{
-                      '--ListItem-fontSize': 'var(--joy-fontSize-sm)',
-                      '--ListItemDecorator-size': '1.5rem',
-                      minWidth: 200,
-                    }}
-                  >
-                    {openMenuIndex !== null && companies[openMenuIndex] && (
-                      <MenuItem
-                        data-menu-item
-                        onClick={() => {
-                          const company = companies[openMenuIndex];
-                          if (company) {
-                            handleMenuClose();
-                            router.push(
-                              paths.creso.segments.companyDetails(segmentId!, company.company_id)
-                            );
-                          }
-                        }}
-                      >
-                        <ListItemDecorator>
-                          <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
-                        </ListItemDecorator>
-                        <ListItemContent>View profile</ListItemContent>
-                      </MenuItem>
-                    )}
-                  </Menu>
-                  {meta && meta.lastPage > 1 && (
-                    <Pagination
-                      totalPages={meta.lastPage}
-                      currentPage={currentPage}
-                      onPageChange={setCurrentPage}
-                      disabled={isLoading}
-                    />
-                  )}
-                </>
+                            }
+                          }}
+                        >
+                          <ListItemDecorator>
+                            <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                          </ListItemDecorator>
+                          <ListItemContent>View profile</ListItemContent>
+                        </MenuItem>
+                        <MenuItem
+                          data-menu-item
+                          onClick={() => company && handleExcludeFromSegment(company)}
+                          disabled={isRemoving}
+                          sx={{ color: 'var(--joy-palette-danger-600)' }}
+                        >
+                          <ListItemDecorator>
+                            <MinusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                          </ListItemDecorator>
+                          <ListItemContent>Exclude from segment</ListItemContent>
+                        </MenuItem>
+                      </>
+                    );
+                  })()}
+              </Menu>
+              {openCompanyPopoverIdx !== null && companies[openCompanyPopoverIdx] && (
+                <CompanyDetailsPopover
+                  open={openCompanyPopoverIdx !== null}
+                  onClose={handleCloseCompanyPopover}
+                  anchorEl={companyPopoverAnchorEl}
+                  companyId={
+                    parseInt(
+                      companies[openCompanyPopoverIdx].company_id
+                        .replace(/-/g, '')
+                        .substring(0, 10),
+                      16
+                    ) || 0
+                  }
+                  company_id={companies[openCompanyPopoverIdx].company_id}
+                />
               )}
-            </Stack>
-          </CardContent>
-        </Card>
+              {meta && meta.lastPage > 1 && (
+                <Pagination
+                  totalPages={meta.lastPage}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
+                  disabled={isLoading}
+                />
+              )}
+            </>
+          )}
+        </Stack>
       </Stack>
     </Box>
   );
