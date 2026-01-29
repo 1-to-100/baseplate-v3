@@ -1,7 +1,6 @@
 'use client';
 
-import * as React from 'react';
-import { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
@@ -18,6 +17,7 @@ import {
   CaretDown,
   CaretUp,
   MapPin,
+  Building,
   Buildings,
   Code,
   Funnel as FunnelIcon,
@@ -27,6 +27,8 @@ import {
   Info,
 } from '@phosphor-icons/react/dist/ssr';
 import { toast } from '@/components/core/toaster';
+import { useDebounce } from '@/hooks/use-debounce';
+import { getCompanies } from '../../lib/api/companies';
 import {
   getIndustries,
   getCompanySizes,
@@ -36,6 +38,22 @@ import {
 import { countries, usStates, canadianProvinces } from '../../../segments/lib/constants/locations';
 import { technologies } from '../../../segments/lib/constants/technologies';
 import type { CompanyFilterFields } from '../../lib/types/company';
+
+// Suggested technographics for Smart search "Also:" section (reference: creso-ai)
+const SUGGESTED_TECHNOGRAPHICS = [
+  'Amazon EC2',
+  'Aurora',
+  'AWS',
+  'CRM platforms',
+  'FreshSales',
+  'HubSpot',
+  'Lambda',
+  'Pipedrive',
+  'RDS',
+  'S3',
+  'Salesforce',
+  'Zoho',
+];
 import { parseCompanySizeRange } from '../../lib/utils/company-size';
 
 interface CompanyFilterProps {
@@ -53,6 +71,10 @@ export default function CompanyFilter({
   initialFilters,
   onFiltersChange,
 }: CompanyFilterProps) {
+  const [companyNameAccordionOpen, setCompanyNameAccordionOpen] = React.useState(false);
+  const [companyNameSearch, setCompanyNameSearch] = React.useState(initialFilters?.name ?? '');
+  const debouncedCompanyName = useDebounce(companyNameSearch, 300);
+
   const [geoAccordionOpen, setGeoAccordionOpen] = React.useState(false);
   const [companySizeAccordionOpen, setCompanySizeAccordionOpen] = React.useState(false);
   const [industryAccordionOpen, setIndustryAccordionOpen] = React.useState(false);
@@ -69,6 +91,8 @@ export default function CompanyFilter({
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>(
     initialFilters?.technographic || []
   );
+  const [suggestedTechnographics, setSuggestedTechnographics] = React.useState<string[]>([]);
+  const [smartSearchTechnographics, setSmartSearchTechnographics] = React.useState(false);
 
   const [smartSearchEnabled, setSmartSearchEnabled] = React.useState(false);
   const [industrySearchQuery, setIndustrySearchQuery] = React.useState('');
@@ -86,6 +110,21 @@ export default function CompanyFilter({
     queryFn: getCompanySizes,
   });
 
+  const { data: companySearchData, isLoading: isCompaniesSearchLoading } = useQuery({
+    queryKey: ['companies-search', debouncedCompanyName],
+    queryFn: () => getCompanies({ search: debouncedCompanyName.trim(), limit: 50 }),
+    enabled: companyNameAccordionOpen && debouncedCompanyName.trim().length >= 2,
+  });
+
+  const companyOptions = useMemo(() => companySearchData?.data ?? [], [companySearchData]);
+
+  // Sync company name from initial filters
+  useEffect(() => {
+    if (initialFilters?.name !== undefined) {
+      setCompanyNameSearch(initialFilters.name);
+    }
+  }, [initialFilters?.name]);
+
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
     if (selectedCountry === 'USA') {
@@ -99,7 +138,7 @@ export default function CompanyFilter({
   const showLocationDropdown = locationOptions.length > 0;
 
   // Map company size values to IDs from initial filters
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialFilters?.companySize && companySizes) {
       const [min, max] = initialFilters.companySize;
       // Find company sizes that overlap with the selected range
@@ -116,7 +155,7 @@ export default function CompanyFilter({
   }, [initialFilters?.companySize, companySizes]);
 
   // Sync selected industries from initialFilters (match by industry value strings)
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialFilters?.industry && industries) {
       const industryIds = industries
         .filter((ind) => initialFilters.industry?.includes(ind.value))
@@ -150,7 +189,7 @@ export default function CompanyFilter({
     }
   }, [industrySearchQuery, industries]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!smartSearchEnabled) {
       setIndustrySearchQuery('');
       setSmartSearchResults([]);
@@ -170,16 +209,29 @@ export default function CompanyFilter({
     [industries, selectedIndustries]
   );
 
-  const hasActiveFilters = () =>
-    Boolean(
-      selectedCountry ||
-      selectedState ||
-      selectedCompanySizes.length > 0 ||
-      selectedIndustries.length > 0 ||
-      selectedTechnographics.length > 0
-    );
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(
+        (companyNameSearch && companyNameSearch.trim()) ||
+        selectedCountry ||
+        selectedState ||
+        selectedCompanySizes.length > 0 ||
+        selectedIndustries.length > 0 ||
+        selectedTechnographics.length > 0 ||
+        suggestedTechnographics.length > 0
+      ),
+    [
+      companyNameSearch,
+      selectedCountry,
+      selectedState,
+      selectedCompanySizes,
+      selectedIndustries,
+      selectedTechnographics,
+      suggestedTechnographics,
+    ]
+  );
 
-  const handleApplyFilters = () => {
+  const handleApplyFilters = useCallback(() => {
     const country = selectedCountry
       ? countries.find((c) => c.code === selectedCountry)?.name
       : null;
@@ -227,34 +279,49 @@ export default function CompanyFilter({
         : [];
 
     const filters: CompanyFilterFields = {
+      name: companyNameSearch?.trim() || undefined,
       country: country || null,
       region: region || null,
       companySize: companySizeRange,
       industry: industryValues.length > 0 ? industryValues : undefined,
-      technographic: selectedTechnographics.length > 0 ? selectedTechnographics : undefined,
+      technographic:
+        selectedTechnographics.length > 0 || suggestedTechnographics.length > 0
+          ? [...selectedTechnographics, ...suggestedTechnographics]
+          : undefined,
     };
 
     if (onFiltersChange) {
       onFiltersChange(filters);
     }
     onFilter(filters);
-  };
+  }, [
+    companyNameSearch,
+    selectedCountry,
+    selectedState,
+    industries,
+    selectedIndustries,
+    selectedTechnographics,
+    suggestedTechnographics,
+    onFiltersChange,
+    onFilter,
+  ]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
+    setCompanyNameSearch('');
     setSelectedCountry(null);
     setSelectedState(null);
     setSelectedCompanySizes([]);
     setSelectedIndustries([]);
     setSelectedTechnographics([]);
+    setSuggestedTechnographics([]);
+    setSmartSearchTechnographics(false);
     setSmartSearchEnabled(false);
     setIndustrySearchQuery('');
     setSmartSearchResults([]);
     setSuggestedIndustries([]);
-    if (onFiltersChange) {
-      onFiltersChange({});
-    }
-    onFilter({});
-  };
+    onFiltersChange?.({});
+    onFilter?.({});
+  }, [onFiltersChange, onFilter]);
 
   if (!open) return null;
 
@@ -346,8 +413,145 @@ export default function CompanyFilter({
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        {/* Countries Accordion */}
+        {/* Company name Accordion */}
         <Box sx={{ borderTop: '1px solid var(--joy-palette-divider)' }}>
+          <Box
+            onClick={() => setCompanyNameAccordionOpen(!companyNameAccordionOpen)}
+            sx={{
+              py: 2,
+              px: 2,
+              minHeight: 48,
+              pl: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              cursor: 'pointer',
+              position: 'relative',
+              borderBottom: !companyNameAccordionOpen
+                ? '1px solid var(--joy-palette-divider)'
+                : 'none',
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Building
+                  size={20}
+                  color={
+                    companyNameSearch?.trim()
+                      ? 'var(--joy-palette-primary-500)'
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color: companyNameSearch?.trim()
+                      ? 'var(--joy-palette-primary-500)'
+                      : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Company name
+                </Typography>
+              </Box>
+              {!companyNameAccordionOpen && companyNameSearch?.trim() && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      bgcolor: 'var(--joy-palette-background-level2)',
+                      borderRadius: 20,
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: 12,
+                      height: 22,
+                      gap: 0.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12 }}>{companyNameSearch.trim()}</Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {!companyNameAccordionOpen && companyNameSearch?.trim() && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'var(--joy-palette-background-level2)',
+                    borderRadius: '999px',
+                    px: 1,
+                    py: 0.25,
+                    height: 28,
+                    cursor: 'pointer',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCompanyNameSearch('');
+                  }}
+                >
+                  <Typography
+                    fontWeight={500}
+                    fontSize={12}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    1
+                  </Typography>
+                  <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} color='var(--joy-palette-text-primary)' />
+                  </Box>
+                </Box>
+              )}
+              {companyNameAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
+          </Box>
+          {companyNameAccordionOpen && (
+            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+              <FormControl size='sm'>
+                <Autocomplete
+                  placeholder='Enter company name'
+                  value={companyNameSearch}
+                  onChange={(_, newValue) => {
+                    if (typeof newValue === 'string') {
+                      setCompanyNameSearch(newValue);
+                    } else if (newValue && typeof newValue === 'object' && 'name' in newValue) {
+                      setCompanyNameSearch((newValue as { name: string }).name);
+                    }
+                  }}
+                  onInputChange={(_, newInputValue) => {
+                    setCompanyNameSearch(newInputValue);
+                  }}
+                  options={companyOptions}
+                  getOptionLabel={(option) => {
+                    if (typeof option === 'string') return option;
+                    return option.name ?? '';
+                  }}
+                  isOptionEqualToValue={(option, value) => {
+                    if (typeof option === 'string' && typeof value === 'string')
+                      return option === value;
+                    if (typeof option === 'object' && typeof value === 'string')
+                      return (option as { name?: string }).name === value;
+                    if (typeof option === 'object' && typeof value === 'object')
+                      return (option as { id?: number }).id === (value as { id?: number }).id;
+                    return false;
+                  }}
+                  loading={isCompaniesSearchLoading}
+                  freeSolo
+                  slotProps={{
+                    input: {
+                      placeholder: 'Enter company name',
+                    },
+                  }}
+                />
+              </FormControl>
+            </Box>
+          )}
+        </Box>
+
+        {/* Countries Accordion */}
+        <Box sx={{ borderBottom: '1px solid var(--joy-palette-divider)' }}>
           <Box
             onClick={() => setGeoAccordionOpen(!geoAccordionOpen)}
             sx={{
@@ -390,7 +594,6 @@ export default function CompanyFilter({
             <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               <Stack spacing={2}>
                 <FormControl size='sm'>
-                  <FormLabel>Country</FormLabel>
                   <Autocomplete
                     options={countries}
                     getOptionLabel={(option) => option.name}
@@ -399,19 +602,18 @@ export default function CompanyFilter({
                       setSelectedCountry(value?.code || null);
                       if (!value) setSelectedState(null);
                     }}
-                    placeholder='Select country'
+                    placeholder='Country'
                     size='sm'
                   />
                 </FormControl>
                 {showLocationDropdown && (
                   <FormControl size='sm'>
-                    <FormLabel>State/Province</FormLabel>
                     <Autocomplete
                       options={locationOptions}
                       getOptionLabel={(option) => option.name}
                       value={locationOptions.find((l) => l.code === selectedState) || null}
                       onChange={(_, value) => setSelectedState(value?.code || null)}
-                      placeholder={`Select ${selectedCountry === 'USA' ? 'state' : 'province'}`}
+                      placeholder={selectedCountry === 'USA' ? 'State' : 'Province'}
                       size='sm'
                     />
                   </FormControl>
@@ -466,7 +668,6 @@ export default function CompanyFilter({
           {companySizeAccordionOpen && (
             <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               <FormControl size='sm'>
-                <FormLabel>Employee Range</FormLabel>
                 <Autocomplete
                   multiple
                   options={companySizes || []}
@@ -627,9 +828,6 @@ export default function CompanyFilter({
 
               {smartSearchEnabled && (
                 <FormControl sx={{ mb: 2 }}>
-                  <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>
-                    Search Query
-                  </FormLabel>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                     <Input
                       value={industrySearchQuery}
@@ -657,7 +855,6 @@ export default function CompanyFilter({
               )}
 
               <FormControl sx={{ mb: 1 }}>
-                <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>Industry</FormLabel>
                 <Autocomplete
                   multiple
                   disableCloseOnSelect
@@ -791,7 +988,7 @@ export default function CompanyFilter({
           )}
         </Box>
 
-        {/* Technographics Accordion */}
+        {/* Technographics Accordion with Smart search */}
         <Box sx={{ borderBottom: '1px solid var(--joy-palette-divider)' }}>
           <Box
             onClick={() => setTechnographicsAccordionOpen(!technographicsAccordionOpen)}
@@ -800,54 +997,287 @@ export default function CompanyFilter({
               px: 2,
               minHeight: 48,
               pl: 0,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              cursor: 'pointer',
               borderBottom: !technographicsAccordionOpen
                 ? '1px solid var(--joy-palette-divider)'
                 : 'none',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              cursor: 'pointer',
+              position: 'relative',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Code
-                size={20}
-                color={
-                  selectedTechnographics.length > 0
-                    ? 'var(--joy-palette-primary-500)'
-                    : 'var(--joy-palette-text-primary)'
-                }
-              />
-              <Typography
-                fontWeight={500}
-                fontSize={14}
-                sx={{
-                  color:
-                    selectedTechnographics.length > 0
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Code
+                  size={20}
+                  color={
+                    selectedTechnographics.length > 0 || suggestedTechnographics.length > 0
                       ? 'var(--joy-palette-primary-500)'
-                      : 'var(--joy-palette-text-primary)',
-                }}
-              >
-                Technologies
-              </Typography>
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color:
+                      selectedTechnographics.length > 0 || suggestedTechnographics.length > 0
+                        ? 'var(--joy-palette-primary-500)'
+                        : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Technographics
+                </Typography>
+              </Box>
+              {!technographicsAccordionOpen &&
+                (selectedTechnographics.length > 0 || suggestedTechnographics.length > 0) && (
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                    {selectedTechnographics.map((tech) => (
+                      <Box
+                        key={tech}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-primary-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12, color: 'var(--joy-palette-primary-700)' }}>
+                          {tech}
+                        </Typography>
+                      </Box>
+                    ))}
+                    {suggestedTechnographics.map((tech) => (
+                      <Box
+                        key={tech}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12 }}>{tech}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
             </Box>
-            {technographicsAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {!technographicsAccordionOpen &&
+                (selectedTechnographics.length > 0 || suggestedTechnographics.length > 0) && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      bgcolor: 'var(--joy-palette-background-level2)',
+                      borderRadius: '999px',
+                      px: 1,
+                      py: 0.25,
+                      height: 28,
+                      cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTechnographics([]);
+                      setSuggestedTechnographics([]);
+                    }}
+                  >
+                    <Typography
+                      fontWeight={500}
+                      fontSize={12}
+                      sx={{ color: 'var(--joy-palette-text-primary)' }}
+                    >
+                      {selectedTechnographics.length + suggestedTechnographics.length}
+                    </Typography>
+                    <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                      <X size={14} color='var(--joy-palette-text-primary)' />
+                    </Box>
+                  </Box>
+                )}
+              {technographicsAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
           </Box>
           {technographicsAccordionOpen && (
-            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-              <FormControl size='sm'>
-                <FormLabel>Technologies</FormLabel>
+            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
+                <Switch
+                  checked={smartSearchTechnographics}
+                  onChange={() => setSmartSearchTechnographics((v) => !v)}
+                  sx={{ mr: 1 }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography
+                    fontWeight={300}
+                    fontSize={14}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    Smart search
+                  </Typography>
+                  <Tooltip
+                    title='Includes similar terms to help you find more relevant results.'
+                    placement='top'
+                    sx={{
+                      background: '#DAD8FD',
+                      color: '#3D37DD',
+                      maxWidth: 200,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
+                      <Info size={16} />
+                    </Box>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              <FormControl sx={{ mb: 1 }}>
+                <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>
+                  Technographics
+                </FormLabel>
                 <Autocomplete
                   multiple
+                  disableCloseOnSelect
                   options={technologies}
                   value={selectedTechnographics}
-                  onChange={(_, value) => {
-                    setSelectedTechnographics(value);
+                  onChange={(_, value) => setSelectedTechnographics(value)}
+                  sx={{ mb: 1, width: '100%', fontSize: 14 }}
+                  slotProps={{
+                    input: { placeholder: 'Search technographics' },
+                    listbox: { sx: { fontSize: 14 } },
+                    option: { sx: { fontSize: 14 } },
                   }}
-                  placeholder='Select technologies'
-                  size='sm'
+                  renderTags={() => null}
                 />
               </FormControl>
+
+              {(selectedTechnographics.length > 0 || suggestedTechnographics.length > 0) && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                  {selectedTechnographics.map((tech) => (
+                    <Box
+                      key={tech}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: 'var(--joy-palette-primary-100)',
+                        borderRadius: 20,
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: 13,
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          color: 'var(--joy-palette-primary-700)',
+                        }}
+                      >
+                        {tech}
+                      </Typography>
+                      <Box
+                        sx={{
+                          fontSize: 12,
+                          p: 0,
+                          height: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTechnographics((prev) => prev.filter((t) => t !== tech));
+                        }}
+                      >
+                        <X size={14} />
+                      </Box>
+                    </Box>
+                  ))}
+                  {suggestedTechnographics.map((tech) => (
+                    <Box
+                      key={tech}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        bgcolor: 'var(--joy-palette-background-level2)',
+                        borderRadius: 20,
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: 13,
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 13 }}>{tech}</Typography>
+                      <Box
+                        sx={{
+                          fontSize: 12,
+                          p: 0,
+                          height: 8,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSuggestedTechnographics((prev) => prev.filter((t) => t !== tech));
+                        }}
+                      >
+                        <X size={14} />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {smartSearchTechnographics && selectedTechnographics.length > 0 && (
+                <Box sx={{ mt: 1, mb: 2 }}>
+                  <Typography
+                    fontSize={15}
+                    sx={{ color: 'var(--joy-palette-text-secondary)', mb: 0.5 }}
+                  >
+                    Also:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {SUGGESTED_TECHNOGRAPHICS.filter(
+                      (tech) =>
+                        !selectedTechnographics.includes(tech) &&
+                        !suggestedTechnographics.includes(tech)
+                    ).map((tech) => (
+                      <Box
+                        key={tech}
+                        onClick={() => setSuggestedTechnographics((prev) => [...prev, tech])}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-neutral-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'var(--joy-palette-neutral-200)',
+                          },
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 13 }}>{tech}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Box>
           )}
         </Box>
@@ -887,7 +1317,7 @@ export default function CompanyFilter({
         <Button
           variant='solid'
           onClick={handleApplyFilters}
-          disabled={!hasActiveFilters()}
+          disabled={!hasActiveFilters}
           sx={{
             fontWeight: 500,
             py: { xs: 1, sm: 0.5 },
