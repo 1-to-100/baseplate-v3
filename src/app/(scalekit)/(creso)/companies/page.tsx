@@ -14,7 +14,6 @@ import Button from '@mui/joy/Button';
 import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { Popper } from '@mui/base/Popper';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import { SelectionAll } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
@@ -33,7 +32,6 @@ import type { CompanyItem, CompanyFilterFields } from './lib/types/company';
 import CompanyFilter from './ui/components/company-filter';
 import CompanyDetailsPopover from './ui/components/company-details-popover';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
-import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
 
 export default function Page(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -59,8 +57,6 @@ export default function Page(): React.JSX.Element {
   const [filterData, setFilterData] = useState<CompanyFilterFields>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyItem | null>(null);
-  const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false);
-  const [selectedCompaniesForList, setSelectedCompaniesForList] = useState<CompanyItem[]>([]);
   const { isImpersonating } = useImpersonation();
 
   const updatePageQueryParam = useCallback(
@@ -286,22 +282,6 @@ export default function Page(): React.JSX.Element {
     handleMenuClose();
   };
 
-  const handleAddToList = (company: CompanyItem) => {
-    setSelectedCompaniesForList([company]);
-    setIsAddToListModalOpen(true);
-    handleMenuClose();
-  };
-
-  const handleAddSelectedToList = () => {
-    if (selectedRows.length > 0) {
-      const selectedCompanies = companies.filter((company) =>
-        selectedRows.includes(company.id.toString())
-      );
-      setSelectedCompaniesForList(selectedCompanies);
-      setIsAddToListModalOpen(true);
-    }
-  };
-
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
 
@@ -432,24 +412,6 @@ export default function Page(): React.JSX.Element {
                 >
                   <TrashIcon fontSize='var(--Icon-fontSize)' />
                 </IconButton>
-                {!isSuperAdmin && !isCustomerSuccess && (
-                  <Button
-                    variant='outlined'
-                    onClick={handleAddSelectedToList}
-                    sx={{
-                      borderColor: 'var(--joy-palette-divider)',
-                      borderRadius: '50px',
-                      background: 'var(--joy-palette-background-mainBg)',
-                      color: 'var(--joy-palette-text-primary)',
-                      padding: { xs: '6px 6px', sm: '7px 7px' },
-                      fontSize: { xs: '12px', sm: '20px' },
-                      width: { xs: 'auto', sm: 'auto' },
-                      minWidth: { xs: 'auto', sm: 'auto' },
-                    }}
-                  >
-                    <PlusIcon />
-                  </Button>
-                )}
                 <IconButton
                   onClick={() => {
                     console.log('Export selected:', selectedRows);
@@ -539,24 +501,6 @@ export default function Page(): React.JSX.Element {
               >
                 <TrashIcon fontSize='var(--Icon-fontSize)' />
               </IconButton>
-              {!isSuperAdmin && (
-                <Button
-                  variant='outlined'
-                  onClick={handleAddSelectedToList}
-                  sx={{
-                    borderColor: 'var(--joy-palette-divider)',
-                    borderRadius: '50px',
-                    background: 'var(--joy-palette-background-mainBg)',
-                    color: 'var(--joy-palette-text-primary)',
-                    padding: { xs: '6px 6px', sm: '7px 7px' },
-                    fontSize: { xs: '12px', sm: '20px' },
-                    width: { xs: 'auto', sm: 'auto' },
-                    minWidth: { xs: '35px', sm: 'auto' },
-                  }}
-                >
-                  <PlusIcon />
-                </Button>
-              )}
               <IconButton
                 onClick={() => {
                   console.log('Export selected:', selectedRows);
@@ -1012,23 +956,6 @@ export default function Page(): React.JSX.Element {
                                         Edit
                                       </Box>
                                     )}
-                                    {!isSuperAdmin && !isCustomerSuccess && (
-                                      <Box
-                                        data-menu-item='true'
-                                        onMouseDown={(event) => {
-                                          event.preventDefault();
-                                          event.stopPropagation();
-                                          handleAddToList(company);
-                                        }}
-                                        sx={{
-                                          ...menuItemStyle,
-                                          gap: { xs: '10px', sm: '14px' },
-                                        }}
-                                      >
-                                        <PlusIcon fontSize='20px' />
-                                        Add to List
-                                      </Box>
-                                    )}
                                   </Popper>
                                 </td>
                               </tr>
@@ -1071,16 +998,6 @@ export default function Page(): React.JSX.Element {
             setEditingCompany(null);
           }}
           company={editingCompany}
-        />
-
-        {/* Add Company to List Modal */}
-        <AddCompanyToListModal
-          open={isAddToListModalOpen}
-          onClose={() => {
-            setIsAddToListModalOpen(false);
-            setSelectedCompaniesForList([]);
-          }}
-          companyIds={selectedCompaniesForList.map((company) => company.id)}
         />
       </Stack>
     </Box>

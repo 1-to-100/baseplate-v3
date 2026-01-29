@@ -52,6 +52,7 @@ export interface CompanyItemList {
 export interface CompanyFilterFields {
   name?: string;
   companySize?: [number, number];
+  /** Industry/category values (strings) – matched against companies.categories */
   industry?: string[];
   technographic?: string[];
   person?: number[];
@@ -78,6 +79,7 @@ export interface GetCompaniesParams {
   region?: string | string[];
   min_employees?: number;
   max_employees?: number;
+  /** Category/industry values (strings) – matched against companies.categories array */
   category?: string | string[];
   technology?: string | string[];
   // Legacy params for compatibility

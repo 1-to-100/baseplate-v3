@@ -28,6 +28,8 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
     throw new Error('Not authenticated');
   }
 
+  console.log('params', params);
+
   // Get current customer ID (if needed for filtering)
   const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
 
@@ -76,17 +78,15 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
     query = query.lte('employees', params.max_employees);
   }
 
-  // Apply category filter
+  // Industry filter: match on companies.categories (Title Case in DB).
+  // Capitalize first letter of each word so overlaps matches stored values (e.g. "Agricultural Organizations").
   if (params.category) {
-    if (Array.isArray(params.category)) {
-      if (params.category.length > 0) {
-        // For array filters, check if categories array contains any of the filter values
-        // Supabase doesn't support array overlap directly, so we use OR conditions
-        const categoryConditions = params.category.map((cat) => `categories.cs.{${cat}}`).join(',');
-        query = query.or(categoryConditions);
-      }
-    } else {
-      query = query.contains('categories', [params.category]);
+    const toTitleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
+    const categoryValues = (Array.isArray(params.category) ? params.category : [params.category])
+      .map((c) => toTitleCase(String(c).trim()))
+      .filter(Boolean);
+    if (categoryValues.length > 0) {
+      query = query.overlaps('categories', categoryValues);
     }
   }
 
