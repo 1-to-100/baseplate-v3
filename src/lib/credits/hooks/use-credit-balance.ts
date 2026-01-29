@@ -4,6 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { CreditBalance } from '../types';
 
+/**
+ * Fetches credit balance with period info.
+ * Returns balance, period_limit, period_used, period_remaining, etc.
+ */
 export function useCreditBalance() {
   return useQuery<CreditBalance | null>({
     queryKey: ['credit-balance'],
@@ -24,7 +28,13 @@ export function useCreditBalance() {
       const row = data[0];
       return {
         customer_id: row.customer_id,
-        balance: row.balance,
+        balance: row.balance ?? 0,
+        period_limit: row.period_limit ?? 0,
+        period_used: row.period_used ?? 0,
+        period_remaining: row.period_remaining ?? 0,
+        period_starts_at: row.period_starts_at,
+        period_ends_at: row.period_ends_at,
+        subscription_name: row.subscription_name,
         updated_at: row.updated_at,
       };
     },

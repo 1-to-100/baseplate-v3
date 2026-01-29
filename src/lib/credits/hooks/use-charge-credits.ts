@@ -18,7 +18,7 @@ export function useChargeCredits() {
   return useMutation({
     mutationFn: async (params: ChargeCreditsParams) => {
       const supabase = createClient();
-      const { error } = await supabase.rpc('charge_credits', {
+      const { data, error } = await supabase.rpc('charge_credits', {
         p_customer_id: params.customer_id,
         p_amount: params.amount,
         p_reason: params.reason,
@@ -29,9 +29,15 @@ export function useChargeCredits() {
       if (error) {
         throw error;
       }
+
+      const row = data?.[0];
+      if (row && row.success === false) {
+        throw new Error(row.error_message ?? 'Insufficient credits');
+      }
+
+      return row;
     },
     onSuccess: () => {
-      // Invalidate credit balance to refetch
       queryClient.invalidateQueries({ queryKey: ['credit-balance'] });
     },
   });
