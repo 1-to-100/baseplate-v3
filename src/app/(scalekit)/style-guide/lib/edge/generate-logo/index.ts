@@ -7,20 +7,14 @@ import {
   createSuccessResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
+import {
+  parseOpenAIImagesResponse,
+  type GeneratedLogo,
+  type GenerateLogoResponse,
+} from './schema.ts';
 
 // Configuration
 const OPENAI_IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1.5';
-
-// Response types
-interface GeneratedLogo {
-  id: string;
-  url: string;
-  revised_prompt?: string;
-}
-
-interface GenerateLogoResponse {
-  logos: GeneratedLogo[];
-}
 
 // Customer info interface
 interface CustomerInfo {
@@ -122,7 +116,10 @@ async function generateSingleLogo(
   }
 
   const data = await response.json();
-  const imageData = data.data?.[0];
+
+  // Validate OpenAI response with Zod schema
+  const validatedResponse = parseOpenAIImagesResponse(data);
+  const imageData = validatedResponse.data?.[0];
 
   // Handle both URL and base64 response formats
   let imageUrl: string;
