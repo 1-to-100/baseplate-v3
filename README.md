@@ -1,4 +1,4 @@
-# 📘 Baseplate Documentation
+# Baseplate V3
 
 This guide walks through setting up and running the **Baseplate**, a Next.js application with:
 
@@ -6,26 +6,11 @@ This guide walks through setting up and running the **Baseplate**, a Next.js app
 - **Supabase** for authentication, database, and Edge Functions
 - Docker-based deployment
 
----
-
-## ⚙️ Prerequisites
-
-Ensure you have the following installed:
-
-- Docker + Docker Compose
-- Git
-- Node.js (v22)
-- pnpm
-- Supabase CLI (for database migrations)
-- NVM (optional, for managing Node versions)
-
----
-
-## 🗂️ Project Structure
+## :file_folder: Project Structure
 
 ```
 .
-├── src/                # Next.js application source
+├── src/               # Next.js application source
 │   ├── app/           # App Router pages and routes
 │   ├── components/    # React components
 │   ├── lib/           # Utilities and helpers
@@ -56,95 +41,175 @@ Ensure you have the following installed:
 
 ```
 
----
+## :rocket: Getting Started
 
-## 🚀 Getting Started
+### Prerequisites
 
-### 1. Clone repository and set environment variables
+Ensure you have the following installed:
+
+- Docker + Docker Compose
+- Git
+- Node.js (v22)
+- pnpm
+- Supabase CLI (2.67.1 or higher)
+- NVM (optional, for managing Node versions)
+
+### Clone repository
 
 ```bash
 git clone https://github.com/1-to-100/baseplate-v3.git
 cd baseplate-v3
 ```
 
-Create a `.env` file in the root directory with the following variables:
-
-```bash
-# Public auth strategy (e.g., SUPABASE, AUTH0, etc.)
-NEXT_PUBLIC_AUTH_STRATEGY="SUPABASE"
-
-# URLs of your backend API and web app
-NEXT_PUBLIC_SITE_URL="http://localhost:3000"
-
-# Supabase public config
-NEXT_PUBLIC_SUPABASE_URL="https://<your_project_ref>.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="<your_supabase_anon_key>"
-```
-
-### 2. Configure Supabase
+### :gear: Configure Supabase
 
 This README assumes you have a Supabase project created. If not, create one first.
 
-#### 🌐 Connect App Frameworks
+Open Supabase and copy the following values from your project for setting the following environment variables:
 
 1. Go to **Project Settings**
 2. Copy the **Project ID** key and set `NEXT_PUBLIC_SUPABASE_URL` in your `.env` file
 3. Go to **Project Settings > API Keys > Legacy anon, service_role API keys**
 4. Copy the **anon public** and set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in your `.env` file
 
-#### 🗄️ Database Migrations
+**Note**: If you're running Supabase locally, you can get these values from the Supabase CLI:
 
-Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `supabase/migrations/`.
+```bash
+supabase start
+supabase status
+```
+
+### Set environment variables
+
+Next.js uses dotenv to load environment variables. You can use multiple .env files to load variables for different environments as detailed in the [NextJS load order docs](https://nextjs.org/docs/pages/guides/environment-variables#environment-variable-load-order).
+
+It's recommended to use multiple `.env` files if you want to switch between running the app against a local Supabase project and a remote Supabase project for production:
+
+- `.env.development` should be used for local development and will be automatically loaded when running locally based on `NODE_ENV` defaulting to `development`
+- `.env.production` should be used for connecting to a remote Supabase project and can be loaded by setting `NODE_ENV=production` when running the app
+
+Copy `.env.template` to create env files in the root directory with the variables you need.
+
+### 🗄️ Database Migrations
+
+Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `supabase/migrations/`. Scalekit features and application features have their own migrations under `src/app/(scalekit)/<feature-name>/lib/sql/` and `src/app/<feature-name>/lib/sql/`, respectively.
+
+Running the migrations is handled by the Supabase CLI, and it's only neccessary to run them against your remote production Supabase database when you have added new migrations. Migrations are automatically applied to local Supabase instances when you start Supabase locally with `supabase start`.
 
 **Prerequisites:**
 
 ```bash
-# Install Supabase CLI
-npm install -g supabase
-# Note: Mac may require you to install this with Homebrew: brew install supabase/tap/supabase
+# Either install the Supabase CLI and use the CLI directly (recommended)
+brew install supabase/tap/supabase
+supabase ...
 
+# or use npx to run all Supabase CLI commands, for example
+npx supabase ...
+```
+
+Login to Supabase and link to your project:
+
+```bash
 # Login to Supabase
 supabase login
 
 # Link to your project
-supabase link --project-ref your-project-ref
+supabase projects list
+supabase link --project-ref project-reference-id
 ```
 
-To apply migrations:
+#### Linking and applying migrations
+
+There are core database migrations that come from the Baseplate application that exist under `supabase/migrations/`. There are also feature-specific migrations that can live in either `src/app/(scalekit)/<name>/lib/sql/migrations/` or `src/app/(features)/<name>/lib/sql/migrations/`.
+
+Each feature will have an initial `0001_create.sql` migration for initial table creation, and a `0002_rls.sql` migration for RLS policies. Changes to tables or new migrations should follow the same pattern, e.g. `0003_add_x_column.sql`.
+
+There is a script to link all the feature migrations into the `supabase/migrations/` directory so Supabase can see them and apply them, and a lockfile is maintained to track already linked migrations. This script will have already likely been run and the links committed, however if you need to re-run it for new migrations, you can do so with:
 
 ```bash
-cd supabase
+# Dry run to see any changes that would be made
+pnpm supabase:link-migrations --dry-run
 
-npx supabase db push
+# Link the migrations
+pnpm supabase:link-migrations
 ```
 
-### 📦 Other Supabase Actions
-
-The `supabase/` directory contains scripts for managing migrations, Edge Functions, and admin setup.
-For more details see `supabase/README.md`.
-
-**/supabase/.env required for running bootstrap**
+Applying migrations:
 
 ```bash
-cd supabase
+# Apply migrations to a local Supabase instance (migrations are auto applied locally on start)
+supabase migrations up
 
-# Push database migrations
-npx supabase db push
-
-# Deploy Edge Functions
-./scripts/deploy-functions.sh
-
-# Create default system administrator
-npm install && npm run bootstrap
+# Apply new migrations to a remote Supabase instance
+# Run with caution, as this applies migrations to the linked Production database
+supabase db push --dry-run
+supabase db push
 ```
 
----
+### Supabase Edge Functions
 
-## 🔐 Setting up OAuth in Supabase
+Core Supabase Edge Functions for the Baseplate application exist by default under `supabase/functions/`.
+Scalekit features have their own edge functions under the app src tree at `src/app/(scalekit)/<name>/lib/edge/`.
+Application features have their own edge functions under the app src tree at `src/app/(features)/<name>/lib/edge/`.
+
+There is a script to wrap all feature Edge Functions into the `supabase/functions/` directory. This allows the Supabase CLI to deploy remotely and serve them locally, ands also allows feature specific functions to use shared libraries. When creating a new App from the Baseplate application, the wrapper should be run and the wrappers committed.
+
+```bash
+# Dry run to see any changes that would be made
+pnpm supabase:wrap-functions --dry-run
+
+# Wrap the edge functions
+pnpm supabase:wrap-functions
+```
+
+#### Deploying Edge Functions
+
+Due to edge functions existing in the app src tree, these commands need run from the _root_ of the project, and _not_ the Supabase directory.
+
+```bash
+# Serve edge functions locally
+supabase functions serve --workdir . --env-file .env.development
+
+# Deploy all edge functions to a remote Supabase instance
+supabase functions deploy --workdir .
+
+# Deploy a single edge function
+supabase functions deploy <function-name> --workdir .
+```
+
+## :computer: Running the Application
+
+With Docker:
+
+```bash
+docker compose up
+```
+
+Without Docker:
+
+```bash
+npm install -g pnpm
+pnpm install
+pnpm dev
+```
+
+The application will be available at: http://localhost:3000/
+
+## :test_tube: Testing
+
+E2E tests are located in the `testing/` directory using Playwright.
+
+```bash
+cd testing
+npm install
+npm test
+```
+
+## :lock: Configuring OAuth Providers in Supabase
 
 Supabase provides easy OAuth integration under **Authentication > Providers**.
 
-### 🌐 Configure URL Settings
+### :globe_with_meridians: Configure URL Settings
 
 Before setting up OAuth providers, you need to configure your site URL and redirect URLs:
 
@@ -159,7 +224,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 
 > **Important**: These URLs must match your application's domain and the redirect URLs you'll configure in your OAuth providers.
 
-### ✅ Google OAuth
+### Google OAuth
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Navigate to Projects -> Create a new project
@@ -187,7 +252,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 
 [Supabase Doc](https://supabase.com/docs/guides/auth/social-login/auth-google)
 
-### ✅ LinkedIn OAuth
+### LinkedIn OAuth
 
 1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
 2. Create an app
@@ -202,7 +267,7 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 
 [Supabase Doc](https://supabase.com/docs/guides/auth/social-login/auth-linkedin)
 
-### ✅ Microsoft OAuth
+### Microsoft OAuth
 
 1. Go to [Azure Portal](https://portal.azure.com/)
 2. Navigate to **Azure Active Directory > App Registrations**
@@ -219,80 +284,17 @@ Before setting up OAuth providers, you need to configure your site URL and redir
 
 [Supabase Doc](https://supabase.com/docs/guides/auth/social-login/auth-azure)
 
----
-
-## 🐳 Running with Docker
-
-```bash
-docker compose up
-```
-
-The application will be available at: http://localhost:3000
-
----
-
-## 🧪 Running Without Docker
-
-### 1. Install Node.js 22 using NVM
-
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-nvm install 22
-nvm use 22
-```
-
-### 2. Install pnpm
-
-```bash
-npm install -g pnpm
-```
-
-### 3. Install dependencies and start
-
-```bash
-pnpm install
-pnpm dev
-```
-
-The application will be available at: http://localhost:3000
-
-**Note:** Database migrations are managed via Supabase. See `supabase/README.md` for migration management.
-
----
-
-## 🧪 Testing
-
-E2E tests are located in the `testing/` directory using Playwright.
-
-```bash
-cd testing
-npm install
-npm test
-```
-
----
-
-## 📤 Custom SMTP for Supabase Emails
+## :email: Configuring Custom SMTP for Supabase Emails
 
 By default, Supabase sends transactional emails (e.g., sign-up confirmation, user invitations, password resets) using its built-in email service. If you prefer to use your own SMTP server (e.g., Gmail or a custom provider), you can enable and configure custom SMTP settings in your Supabase project.
 
-### 🛠️ Steps to Enable Custom SMTP
+1. Log in to your Supabase organization and open your project
 
-#### 1. Log in to your Supabase organization
+1. From the left sidebar, go to:  
+   **Authentication → Emails**  
+   Or directly to: **SMTP Settings**
 
-- Open your project
-
-#### 2. Access SMTP Settings
-
-- From the left sidebar, go to:  
-  **Authentication → Emails**  
-  Or directly to: **SMTP Settings**
-
-#### 3. Enable Custom SMTP
-
-- In the SMTP Settings section, toggle **Enable custom SMTP**
-
-#### 4. Fill in the SMTP Configuration Fields
+1. In the SMTP Settings section, toggle **Enable custom SMTP**
 
 Example configuration for Gmail:
 
@@ -304,9 +306,7 @@ Example configuration for Gmail:
 - **Username**: Your Gmail address or admin username
 - **Password**: An App Password (generated in the next step)
 
----
-
-### 🔑 Generating a Gmail App Password
+#### Generating a Gmail App Password
 
 To authenticate with Gmail’s SMTP, you need to create an App Password:
 
@@ -321,24 +321,3 @@ To authenticate with Gmail’s SMTP, you need to create an App Password:
    - Paste this password into the **Password** field in your Supabase SMTP settings
 
 Once saved, all transactional emails from Supabase will be sent using your configured SMTP server and custom domain.
-
----
-
-## 👤 Setting Up a Super User Account
-
-### Option 1: Manual Setup
-
-1. Login to the app (with user/pass or federated login)
-2. Logout - you should now have a record in the users table
-3. Go to Supabase Dashboard
-4. Navigate to: Database → Tables → Users → View In Table Editor
-5. Find your user and set `role_id = 1` (System Administrator role)
-6. Log back in to see full system management options
-
-### System Roles
-
-The application uses three system roles:
-
-- **System Administrator** (role_id: 1) - Full system access
-- **Customer Success** (role_id: 2) - Customer management access
-- **Customer Administrator** (role_id: 3) - Customer-specific admin access

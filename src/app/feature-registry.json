@@ -1,0 +1,31 @@
+{
+  "features": [
+    {
+      "slug": "strategy-forge",
+      "enabled": true,
+      "version": "1.0.0",
+      "path": "/(scalekit)/strategy-forge",
+      "displayName": "Strategy Forge",
+      "description": "Strategy management system for defining customer personas, market segments, company information, and customer journey stages to inform content and strategy decisions.",
+      "dependencies": []
+    },
+    {
+      "slug": "source-and-snap",
+      "enabled": true,
+      "version": "1.0.0",
+      "path": "/(scalekit)/source-and-snap",
+      "displayName": "Source and Snap",
+      "description": "Source and Snap management system for capturing and managing source and snap data.",
+      "dependencies": []
+    },
+    {
+      "slug": "style-guide",
+      "enabled": true,
+      "version": "1.0.0",
+      "path": "/(scalekit)/style-guide",
+      "displayName": "Style Guide",
+      "description": "Style guide management system for defining style guide content.",
+      "dependencies": ["source-and-snap"]
+    }
+  ]
+}
