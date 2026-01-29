@@ -84,7 +84,7 @@ export async function listFramingConcepts(
 
   const offset = (page - 1) * per_page;
   query = query.range(offset, offset + per_page - 1);
-  query = query.order('created_at', { ascending: false });
+  query = query.order('created_at', { ascending: true });
 
   const { data, error, count } = await query;
 

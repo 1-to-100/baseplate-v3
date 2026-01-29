@@ -1,7 +1,6 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from '@supabase/supabase-js';
+import { segmentsJsonSchema, type SegmentItem, type SegmentsResponse } from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -28,15 +27,6 @@ interface CustomerInfo {
   content_authoring_prompt?: string;
   created_at: string;
   updated_at: string;
-}
-
-interface Segment {
-  name: string;
-  description: string;
-}
-
-interface SegmentsResponse {
-  segments: Segment[];
 }
 
 // System prompt for segment generation
@@ -139,7 +129,7 @@ function validateSegmentsResponse(response: unknown): SegmentsResponse {
   }
 
   // Validate and filter segments
-  const segments: Segment[] = data.segments
+  const segments: SegmentItem[] = data.segments
     .filter(
       (item: unknown): item is { name: string; description: string } =>
         typeof item === 'object' &&
@@ -340,6 +330,9 @@ ${userPrompt}`;
           },
         },
       ],
+      text: {
+        format: segmentsJsonSchema,
+      },
     };
 
     console.log('Request payload model:', responsePayload.model);

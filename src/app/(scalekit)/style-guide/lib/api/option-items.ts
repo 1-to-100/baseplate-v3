@@ -83,6 +83,17 @@ type FormalityOptionItem = {
   updated_at: string | null;
 };
 
+type EmotionalToneOptionItem = {
+  emotional_tone_option_item_id: string;
+  name: string;
+  display_name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string | null;
+};
+
 type ComplianceRuleTypeOptionItem = {
   compliance_rule_type_option_item_id: string;
   name: string;
@@ -225,6 +236,25 @@ export async function getFormalityOptionItems(): Promise<FormalityOptionItem[]> 
   }
 
   return (data || []) as FormalityOptionItem[];
+}
+
+/**
+ * Get all active emotional tone option items
+ */
+export async function getEmotionalToneOptionItems(): Promise<EmotionalToneOptionItem[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('emotional_tone_option_items')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch emotional tone option items: ${error.message}`);
+  }
+
+  return (data || []) as EmotionalToneOptionItem[];
 }
 
 /**

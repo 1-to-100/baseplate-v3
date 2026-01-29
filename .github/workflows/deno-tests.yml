@@ -1,0 +1,66 @@
+name: Deno Edge Function Tests
+
+on:
+  push:
+    paths:
+      - 'src/**/edge/**'
+      - 'testing/unit/edge-functions/**'
+      - 'supabase/functions/_shared/**'
+      - 'supabase/functions/**'
+      - 'deno.json'
+  pull_request:
+    paths:
+      - 'src/**/edge/**'
+      - 'testing/unit/edge-functions/**'
+      - 'supabase/functions/_shared/**'
+      - 'supabase/functions/**'
+      - 'deno.json'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    env:
+      DENO_NO_PACKAGE_JSON: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/deno
+            ~/.deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('deno.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
+
+      - name: Type check edge functions
+        run: deno check 'src/**/edge/**/*.ts'
+
+      - name: Run all edge function tests
+        run: deno task test:edge
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: edge-function-test-results
+          path: test-results/edge-functions.xml
+          retention-days: 30
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Edge Function Tests
+          path: test-results/edge-functions.xml
+          reporter: java-junit
