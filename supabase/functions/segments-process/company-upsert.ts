@@ -46,13 +46,13 @@ function formatSqlValue(value: unknown): string {
 }
 
 /**
- * Extract categories from Diffbot organization
+ * Extract categories from Diffbot organization (stored as-is; filter uses view for matching).
  */
 function extractCategories(org: DiffbotOrganization): string[] {
   if (!org.categories || !Array.isArray(org.categories)) {
     return [];
   }
-  return org.categories.map((cat) => cat.name).filter(Boolean);
+  return org.categories.map((cat) => (cat.name || '').trim()).filter(Boolean);
 }
 
 /**

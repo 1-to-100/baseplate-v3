@@ -1,20 +1,41 @@
 'use client';
 
 import * as React from 'react';
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import Button from '@mui/joy/Button';
+import Input from '@mui/joy/Input';
 import FormControl from '@mui/joy/FormControl';
 import FormLabel from '@mui/joy/FormLabel';
 import Autocomplete from '@mui/joy/Autocomplete';
-import { CaretDown, CaretUp, MapPin, Buildings, Code } from '@phosphor-icons/react/dist/ssr';
-import { getIndustries, getCompanySizes } from '../../../segments/lib/api/options';
+import Switch from '@mui/joy/Switch';
+import Tooltip from '@mui/joy/Tooltip';
+import IconButton from '@mui/joy/IconButton';
+import {
+  CaretDown,
+  CaretUp,
+  MapPin,
+  Buildings,
+  Code,
+  Funnel as FunnelIcon,
+  FunnelSimple,
+  X,
+  Check,
+  Info,
+} from '@phosphor-icons/react/dist/ssr';
+import { toast } from '@/components/core/toaster';
+import {
+  getIndustries,
+  getCompanySizes,
+  smartSearchIndustries,
+  type SmartSearchIndustry,
+} from '../../../segments/lib/api/options';
 import { countries, usStates, canadianProvinces } from '../../../segments/lib/constants/locations';
 import { technologies } from '../../../segments/lib/constants/technologies';
 import type { CompanyFilterFields } from '../../lib/types/company';
-import type { OptionIndustry, OptionCompanySize } from '../../../segments/lib/types/company';
 import { parseCompanySizeRange } from '../../lib/utils/company-size';
 
 interface CompanyFilterProps {
@@ -48,6 +69,12 @@ export default function CompanyFilter({
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>(
     initialFilters?.technographic || []
   );
+
+  const [smartSearchEnabled, setSmartSearchEnabled] = React.useState(false);
+  const [industrySearchQuery, setIndustrySearchQuery] = React.useState('');
+  const [isSmartSearching, setIsSmartSearching] = React.useState(false);
+  const [smartSearchResults, setSmartSearchResults] = React.useState<SmartSearchIndustry[]>([]);
+  const [suggestedIndustries, setSuggestedIndustries] = React.useState<SmartSearchIndustry[]>([]);
 
   const { data: industries, isLoading: industriesLoading } = useQuery({
     queryKey: ['industries'],
@@ -88,7 +115,7 @@ export default function CompanyFilter({
     }
   }, [initialFilters?.companySize, companySizes]);
 
-  // Map industry names to IDs
+  // Sync selected industries from initialFilters (match by industry value strings)
   React.useEffect(() => {
     if (initialFilters?.industry && industries) {
       const industryIds = industries
@@ -97,6 +124,51 @@ export default function CompanyFilter({
       setSelectedIndustries(industryIds);
     }
   }, [initialFilters?.industry, industries]);
+
+  const handleSmartSearch = useCallback(async () => {
+    if (!industrySearchQuery.trim() || !industries) return;
+    setIsSmartSearching(true);
+    try {
+      const results = await smartSearchIndustries(industrySearchQuery.trim());
+      setSmartSearchResults(results);
+      if (results.length > 0) {
+        const top3 = results.slice(0, 3);
+        const top3Ids = top3
+          .map((r) => industries.find((ind) => ind.value === r.value)?.industry_id)
+          .filter((id): id is number => id !== undefined);
+        setSelectedIndustries((prev) => {
+          const newIds = top3Ids.filter((id) => !prev.includes(id));
+          return [...prev, ...newIds];
+        });
+        setSuggestedIndustries(results.slice(3));
+      }
+    } catch (error) {
+      console.error('Smart search failed:', error);
+      toast.error('Smart search failed. Please try again.');
+    } finally {
+      setIsSmartSearching(false);
+    }
+  }, [industrySearchQuery, industries]);
+
+  React.useEffect(() => {
+    if (!smartSearchEnabled) {
+      setIndustrySearchQuery('');
+      setSmartSearchResults([]);
+      setSuggestedIndustries([]);
+    }
+  }, [smartSearchEnabled]);
+
+  const handleAddSuggestedIndustry = useCallback(
+    (industryValue: string) => {
+      if (!industries) return;
+      const industry = industries.find((ind) => ind.value === industryValue);
+      if (industry && !selectedIndustries.includes(industry.industry_id)) {
+        setSelectedIndustries((prev) => [...prev, industry.industry_id]);
+        setSuggestedIndustries((prev) => prev.filter((s) => s.value !== industryValue));
+      }
+    },
+    [industries, selectedIndustries]
+  );
 
   const hasActiveFilters = () =>
     Boolean(
@@ -146,8 +218,8 @@ export default function CompanyFilter({
           })()
         : undefined;
 
-    // Get industry names from IDs
-    const industryNames =
+    // Get industry values (strings) from selected – these match companies.categories
+    const industryValues =
       industries && selectedIndustries.length > 0
         ? industries
             .filter((ind) => selectedIndustries.includes(ind.industry_id))
@@ -158,7 +230,7 @@ export default function CompanyFilter({
       country: country || null,
       region: region || null,
       companySize: companySizeRange,
-      industry: industryNames.length > 0 ? industryNames : undefined,
+      industry: industryValues.length > 0 ? industryValues : undefined,
       technographic: selectedTechnographics.length > 0 ? selectedTechnographics : undefined,
     };
 
@@ -174,6 +246,14 @@ export default function CompanyFilter({
     setSelectedCompanySizes([]);
     setSelectedIndustries([]);
     setSelectedTechnographics([]);
+    setSmartSearchEnabled(false);
+    setIndustrySearchQuery('');
+    setSmartSearchResults([]);
+    setSuggestedIndustries([]);
+    if (onFiltersChange) {
+      onFiltersChange({});
+    }
+    onFilter({});
   };
 
   if (!open) return null;
@@ -181,47 +261,105 @@ export default function CompanyFilter({
   return (
     <Box
       sx={{
-        position: { xs: 'fixed', sm: 'relative' },
-        top: { xs: 0, sm: 'auto' },
-        left: { xs: 0, sm: 'auto' },
-        right: { xs: 0, sm: 'auto' },
-        bottom: { xs: 0, sm: 'auto' },
-        width: { xs: '100%', sm: 320 },
-        bgcolor: 'var(--joy-palette-background-surface)',
+        width: { xs: '100%', sm: 340 },
+        bgcolor: 'var(--Content-background)',
         borderRight: { xs: 'none', sm: '1px solid var(--joy-palette-divider)' },
-        zIndex: { xs: 1300, sm: 'auto' },
+        borderBottom: {
+          xs: '1px solid var(--joy-palette-divider)',
+          sm: 'none',
+        },
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: { xs: '100vh', sm: 'auto' },
+        minHeight: { xs: 'auto', sm: '66vh' },
+        maxHeight: { xs: '100vh', sm: '66vh' },
+        boxShadow: { xs: '0px 4px 12px rgba(0, 0, 0, 0.1)', sm: 'none' },
+        flexShrink: 0,
+        zIndex: { xs: 1300, sm: 1 },
+        position: { xs: 'fixed', sm: 'static' },
+        top: { xs: 0, sm: 'auto' },
+        left: { xs: 0, sm: 'auto' },
+        height: { xs: '100vh', sm: '66vh' },
         overflow: 'hidden',
+        animation: 'slideInFromLeft 0.3s ease-out',
+        padding: { xs: '16px', sm: 0 },
+        '@keyframes slideInFromLeft': {
+          '0%': {
+            transform: 'translateX(-100%)',
+            opacity: 0,
+          },
+          '100%': {
+            transform: 'translateX(0)',
+            opacity: 1,
+          },
+        },
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-        <Stack
-          direction='row'
-          spacing={2}
-          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      <Box sx={{ p: { xs: 0, sm: 2 }, pl: { xs: 0, sm: 0 } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 0.5,
+          }}
         >
-          <Typography fontWeight={600} fontSize={16}>
+          <Typography
+            fontWeight={600}
+            fontSize={16}
+            sx={{
+              color: 'var(--joy-palette-text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <FunnelIcon size={20} color='var(--joy-palette-text-primary)' />
             Filters
           </Typography>
-          <Button variant='plain' size='sm' onClick={onClose}>
-            Close
+          <Button
+            variant='plain'
+            onClick={onClose}
+            sx={{
+              p: 0,
+              minWidth: 'auto',
+              color: 'var(--joy-palette-text-secondary)',
+              display: 'flex',
+              position: 'relative',
+              '&:hover': {
+                backgroundColor: 'var(--joy-palette-background-level1)',
+              },
+            }}
+          >
+            <X size={20} />
           </Button>
-        </Stack>
+        </Box>
+        <Typography
+          fontSize={12}
+          sx={{
+            color: 'var(--joy-palette-text-secondary)',
+            lineHeight: 1.5,
+            fontWeight: 400,
+          }}
+        >
+          Select filters or search for companies.
+        </Typography>
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
         {/* Countries Accordion */}
-        <Box sx={{ borderBottom: '1px solid var(--joy-palette-divider)' }}>
+        <Box sx={{ borderTop: '1px solid var(--joy-palette-divider)' }}>
           <Box
             onClick={() => setGeoAccordionOpen(!geoAccordionOpen)}
             sx={{
               py: 2,
+              px: 2,
+              minHeight: 48,
+              pl: 0,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               cursor: 'pointer',
+              borderBottom: !geoAccordionOpen ? '1px solid var(--joy-palette-divider)' : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -249,7 +387,7 @@ export default function CompanyFilter({
             {geoAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
           </Box>
           {geoAccordionOpen && (
-            <Box sx={{ pb: 2 }}>
+            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               <Stack spacing={2}>
                 <FormControl size='sm'>
                   <FormLabel>Country</FormLabel>
@@ -289,10 +427,16 @@ export default function CompanyFilter({
             onClick={() => setCompanySizeAccordionOpen(!companySizeAccordionOpen)}
             sx={{
               py: 2,
+              px: 2,
+              minHeight: 48,
+              pl: 0,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               cursor: 'pointer',
+              borderBottom: !companySizeAccordionOpen
+                ? '1px solid var(--joy-palette-divider)'
+                : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -320,7 +464,7 @@ export default function CompanyFilter({
             {companySizeAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
           </Box>
           {companySizeAccordionOpen && (
-            <Box sx={{ pb: 2 }}>
+            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               <FormControl size='sm'>
                 <FormLabel>Employee Range</FormLabel>
                 <Autocomplete
@@ -344,61 +488,305 @@ export default function CompanyFilter({
           )}
         </Box>
 
-        {/* Industry Accordion */}
+        {/* Industry Accordion with Smart Search */}
         <Box sx={{ borderBottom: '1px solid var(--joy-palette-divider)' }}>
           <Box
             onClick={() => setIndustryAccordionOpen(!industryAccordionOpen)}
             sx={{
               py: 2,
+              px: 2,
+              minHeight: 48,
+              pl: 0,
+              borderBottom: !industryAccordionOpen
+                ? '1px solid var(--joy-palette-divider)'
+                : 'none',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
+              alignItems: 'flex-start',
               cursor: 'pointer',
+              position: 'relative',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Buildings
-                size={20}
-                color={
-                  selectedIndustries.length > 0
-                    ? 'var(--joy-palette-primary-500)'
-                    : 'var(--joy-palette-text-primary)'
-                }
-              />
-              <Typography
-                fontWeight={500}
-                fontSize={14}
-                sx={{
-                  color:
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <FunnelSimple
+                  size={20}
+                  color={
                     selectedIndustries.length > 0
                       ? 'var(--joy-palette-primary-500)'
-                      : 'var(--joy-palette-text-primary)',
-                }}
-              >
-                Industry
-              </Typography>
+                      : 'var(--joy-palette-text-primary)'
+                  }
+                />
+                <Typography
+                  fontWeight={500}
+                  fontSize={14}
+                  sx={{
+                    color:
+                      selectedIndustries.length > 0
+                        ? 'var(--joy-palette-primary-500)'
+                        : 'var(--joy-palette-text-primary)',
+                  }}
+                >
+                  Industry
+                </Typography>
+              </Box>
+              {!industryAccordionOpen && selectedIndustries.length > 0 && industries && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                  {selectedIndustries.map((industryId) => {
+                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    if (!industry) return null;
+                    return (
+                      <Box
+                        key={industryId}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-background-level2)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 12,
+                          height: 22,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography sx={{ fontSize: 12, textTransform: 'capitalize' }}>
+                          {industry.value}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
             </Box>
-            {industryAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {!industryAccordionOpen && selectedIndustries.length > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    bgcolor: 'var(--joy-palette-background-level2)',
+                    borderRadius: '999px',
+                    px: 1,
+                    py: 0.25,
+                    height: 28,
+                    cursor: 'pointer',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedIndustries([]);
+                    setSuggestedIndustries([]);
+                  }}
+                >
+                  <Typography
+                    fontWeight={500}
+                    fontSize={12}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    {selectedIndustries.length}
+                  </Typography>
+                  <Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} color='var(--joy-palette-text-primary)' />
+                  </Box>
+                </Box>
+              )}
+              {industryAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
+            </Box>
           </Box>
           {industryAccordionOpen && (
-            <Box sx={{ pb: 2 }}>
-              <FormControl size='sm'>
-                <FormLabel>Industries</FormLabel>
+            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
+                <Switch
+                  checked={smartSearchEnabled}
+                  onChange={() => setSmartSearchEnabled((v) => !v)}
+                  sx={{ mr: 1 }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography
+                    fontWeight={300}
+                    fontSize={14}
+                    sx={{ color: 'var(--joy-palette-text-primary)' }}
+                  >
+                    Smart search
+                  </Typography>
+                  <Tooltip
+                    title='Includes similar terms to help you find more relevant results.'
+                    placement='top'
+                    sx={{
+                      background: '#DAD8FD',
+                      color: '#3D37DD',
+                      maxWidth: 200,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
+                      <Info size={16} />
+                    </Box>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {smartSearchEnabled && (
+                <FormControl sx={{ mb: 2 }}>
+                  <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>
+                    Search Query
+                  </FormLabel>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                    <Input
+                      value={industrySearchQuery}
+                      onChange={(e) => setIndustrySearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && industrySearchQuery.trim().length > 0) {
+                          e.preventDefault();
+                          handleSmartSearch();
+                        }
+                      }}
+                      placeholder="Enter search query (e.g., 'Health care')"
+                      sx={{ fontSize: 14, flex: 1 }}
+                      disabled={isSmartSearching}
+                    />
+                    <IconButton
+                      onClick={handleSmartSearch}
+                      disabled={isSmartSearching || industrySearchQuery.trim().length === 0}
+                      sx={{ minWidth: 40, height: 40 }}
+                      color='primary'
+                    >
+                      <Check size={20} />
+                    </IconButton>
+                  </Box>
+                </FormControl>
+              )}
+
+              <FormControl sx={{ mb: 1 }}>
+                <FormLabel sx={{ fontWeight: 500, fontSize: 14, mb: 0.5 }}>Industry</FormLabel>
                 <Autocomplete
                   multiple
+                  disableCloseOnSelect
                   options={industries || []}
                   getOptionLabel={(option) => option.value}
-                  value={
-                    industries?.filter((ind) => selectedIndustries.includes(ind.industry_id)) || []
-                  }
+                  value={(industries || []).filter((ind) =>
+                    selectedIndustries.includes(ind.industry_id)
+                  )}
                   onChange={(_, value) => {
                     setSelectedIndustries(value.map((v) => v.industry_id));
+                    if (value.length > 0) {
+                      setSuggestedIndustries((prev) =>
+                        prev.filter((item) => !value.some((v) => v.value === item.value))
+                      );
+                    }
                   }}
-                  placeholder='Select industries'
-                  size='sm'
-                  disabled={industriesLoading || !industries}
+                  sx={{ mb: 1, width: '100%', fontSize: 14 }}
+                  slotProps={{
+                    input: {
+                      placeholder:
+                        isSmartSearching && smartSearchEnabled
+                          ? 'Loading smart search results...'
+                          : isSmartSearching
+                            ? 'Loading industries...'
+                            : smartSearchEnabled && industrySearchQuery.trim().length === 0
+                              ? 'Enter a query above to search'
+                              : 'Search industry',
+                    },
+                    listbox: { sx: { fontSize: 14 } },
+                    option: { sx: { fontSize: 14, textTransform: 'capitalize' } },
+                  }}
+                  loading={industriesLoading || isSmartSearching}
+                  disabled={industriesLoading || !industries?.length}
+                  renderTags={() => null}
                 />
               </FormControl>
+
+              {selectedIndustries.length > 0 && industries && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                  {selectedIndustries.map((industryId) => {
+                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    if (!industry) return null;
+                    return (
+                      <Box
+                        key={industryId}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-primary-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 13,
+                          gap: 0.5,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            color: 'var(--joy-palette-primary-700)',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {industry.value}
+                        </Typography>
+                        <Box
+                          sx={{
+                            fontSize: 12,
+                            p: 0,
+                            height: 8,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedIndustries((prev) => prev.filter((id) => id !== industryId));
+                          }}
+                        >
+                          <X size={14} />
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+
+              {smartSearchEnabled && suggestedIndustries.length > 0 && (
+                <Box sx={{ mt: 1, mb: 2 }}>
+                  <Typography
+                    fontSize={15}
+                    sx={{ color: 'var(--joy-palette-text-secondary)', mb: 0.5 }}
+                  >
+                    Also:
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {suggestedIndustries.map((suggestion) => (
+                      <Box
+                        key={suggestion.industry_id}
+                        onClick={() => handleAddSuggestedIndustry(suggestion.value)}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          bgcolor: 'var(--joy-palette-neutral-100)',
+                          borderRadius: 20,
+                          px: 1.5,
+                          py: 0.5,
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'var(--joy-palette-neutral-200)',
+                          },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            color: 'var(--joy-palette-text-primary)',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {suggestion.value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Box>
           )}
         </Box>
@@ -409,10 +797,16 @@ export default function CompanyFilter({
             onClick={() => setTechnographicsAccordionOpen(!technographicsAccordionOpen)}
             sx={{
               py: 2,
+              px: 2,
+              minHeight: 48,
+              pl: 0,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               cursor: 'pointer',
+              borderBottom: !technographicsAccordionOpen
+                ? '1px solid var(--joy-palette-divider)'
+                : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -440,7 +834,7 @@ export default function CompanyFilter({
             {technographicsAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
           </Box>
           {technographicsAccordionOpen && (
-            <Box sx={{ pb: 2 }}>
+            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               <FormControl size='sm'>
                 <FormLabel>Technologies</FormLabel>
                 <Autocomplete
