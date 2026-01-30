@@ -54,6 +54,12 @@ export function NotificationsPopover({
 
   useInAppNotificationsChannel((payload) => {
     queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+    // Invalidate segments query when a segment notification comes in
+    if (payload.channel === 'segment') {
+      queryClient.invalidateQueries({ queryKey: ['segments'] });
+    }
+
     toast(
       <Stack direction='row' spacing={2} alignItems='flex-start'>
         <Stack direction='column' sx={{ marginLeft: '20px' }}>

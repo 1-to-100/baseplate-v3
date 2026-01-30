@@ -35,6 +35,20 @@ export const layoutConfig: LayoutConfig = {
           href: paths.dashboard.documentation.list,
           icon: 'documentation',
         },
+        {
+          key: 'segments',
+          title: 'Segments',
+          href: paths.dashboard.segments.list,
+          icon: 'grid-four',
+          matcher: { type: 'startsWith', href: paths.dashboard.segments.list },
+        },
+        {
+          key: 'companies',
+          title: 'Companies',
+          href: paths.dashboard.companies.list,
+          icon: 'buildings',
+          matcher: { type: 'startsWith', href: paths.dashboard.companies.list },
+        },
         { key: 'divider1', type: 'divider' },
         {
           key: 'role',
