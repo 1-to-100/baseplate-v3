@@ -1,29 +1,47 @@
 name: Deno Edge Function Tests
 
 on:
-  push:
-    paths:
-      - 'src/**/edge/**'
-      - 'testing/unit/edge-functions/**'
-      - 'supabase/functions/_shared/**'
-      - 'supabase/functions/**'
-      - 'deno.json'
-  pull_request:
-    paths:
-      - 'src/**/edge/**'
-      - 'testing/unit/edge-functions/**'
-      - 'supabase/functions/_shared/**'
-      - 'supabase/functions/**'
-      - 'deno.json'
+  workflow_call:
+    outputs:
+      has_edge_changes:
+        description: Whether edge function files were changed
+        value: ${{ jobs.test.outputs.has_changes }}
 
 jobs:
-  test:
+  check-changes:
+    name: Check for Edge Function Changes
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.filter.outputs.edge }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for edge function changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            edge:
+              - 'src/**/edge/**'
+              - 'testing/unit/edge-functions/**'
+              - 'supabase/functions/_shared/**'
+              - 'supabase/functions/**'
+              - 'deno.json'
+
+  test:
+    name: Run Deno Tests
+    needs: check-changes
+    if: needs.check-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ needs.check-changes.outputs.has_changes }}
     permissions:
       contents: read
       checks: write
     env:
       DENO_NO_PACKAGE_JSON: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,3 +82,12 @@ jobs:
           name: Edge Function Tests
           path: test-results/edge-functions.xml
           reporter: java-junit
+
+  skip:
+    name: Skip Deno Tests
+    needs: check-changes
+    if: needs.check-changes.outputs.has_changes != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No edge function changes
+        run: echo "No edge function changes detected, skipping tests"

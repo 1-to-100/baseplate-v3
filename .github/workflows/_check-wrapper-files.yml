@@ -1,13 +1,16 @@
-name: Check for Edge Function Wrappers
+name: Check Wrapper Files
 
 on:
-  pull_request:
-    paths:
-      - 'supabase/functions/**'
+  workflow_call:
+    inputs:
+      pr_number:
+        description: Pull request number
+        type: number
+        required: true
 
 jobs:
-  check-wrappers:
-    # Only run if NOT an application repo
+  check-wrapper-files:
+    name: Check Wrapper Files
     if: vars.APPLICATION_REPO != 'true'
     runs-on: ubuntu-latest
 
@@ -18,33 +21,26 @@ jobs:
       - name: Check for wrapper files
         id: check
         run: |
-          # Discover all feature functions from src/app/**/lib/edge/
           echo "Discovering feature functions from src/app..."
           FEATURE_FUNCTIONS=$(find src/app -type d -path "*/lib/edge/*" -exec basename {} \; 2>/dev/null | sort -u || true)
 
           echo "Feature functions found:"
           echo "$FEATURE_FUNCTIONS"
-          echo ""
 
-          # Get changed files in supabase/functions/
-          CHANGED_FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only | grep "^supabase/functions/" || true)
+          CHANGED_FILES=$(gh pr diff ${{ inputs.pr_number }} --name-only | grep "^supabase/functions/" || true)
 
           echo "Changed files in supabase/functions/:"
           echo "$CHANGED_FILES"
-          echo ""
 
           WRAPPER_FILES=""
 
           for file in $CHANGED_FILES; do
-            # Extract function name from path (supabase/functions/<name>/...)
             fn=$(echo "$file" | sed -n 's|supabase/functions/\([^/]*\)/.*|\1|p')
 
-            # Skip empty
             if [[ -z "$fn" ]]; then
               continue
             fi
 
-            # Check if this function name matches a feature function
             if echo "$FEATURE_FUNCTIONS" | grep -qx "$fn"; then
               WRAPPER_FILES="$WRAPPER_FILES- \`$file\` (wrapper for feature function \`$fn\`)\n"
             fi
@@ -52,7 +48,6 @@ jobs:
 
           if [[ -n "$WRAPPER_FILES" ]]; then
             echo "found=true" >> $GITHUB_OUTPUT
-            # Use a delimiter for multiline output
             echo "files<<EOF" >> $GITHUB_OUTPUT
             echo -e "$WRAPPER_FILES" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
@@ -87,7 +82,7 @@ jobs:
             2. Ensure your feature function source code in \`src/app/**/lib/edge/\` is committed instead`;
 
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ inputs.pr_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: body

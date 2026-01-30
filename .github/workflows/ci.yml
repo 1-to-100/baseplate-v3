@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: Deploy all edge functions
+        type: boolean
+        default: false
+
+jobs:
+  # ============================================
+  # Stage 1: Static Analysis (always runs first)
+  # ============================================
+  typecheck-lint:
+    name: Type Check & Lint
+    uses: ./.github/workflows/_typecheck-lint.yml
+
+  # ============================================
+  # Stage 2: Build & Test (after static analysis)
+  # ============================================
+  build:
+    name: Build
+    needs: typecheck-lint
+    uses: ./.github/workflows/_build.yml
+
+  deno-tests:
+    name: Deno Tests
+    needs: typecheck-lint
+    uses: ./.github/workflows/_deno-tests.yml
+
+  # ============================================
+  # Stage 3: Deploy (only on push to main branches)
+  # ============================================
+  deploy:
+    name: Deploy Edge Functions
+    needs: [build, deno-tests]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/_deploy-edge-functions.yml
+    with:
+      deploy_all: ${{ github.event.inputs.deploy_all == 'true' }}
+    secrets:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  # ============================================
+  # PR Checks
+  # ============================================
+  check-wrapper-files:
+    name: Check Wrapper Files
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/_check-wrapper-files.yml
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
