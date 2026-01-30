@@ -625,7 +625,7 @@ export function CreateSegmentForm({
     [industries, selectedIndustries]
   );
 
-  // Filters Panel (Left Side)
+  // Filters Panel (Left Side) — fixed height so it scrolls internally; page can scroll
   const filtersPanel = (
     <Box
       sx={{
@@ -635,8 +635,8 @@ export function CreateSegmentForm({
         borderRight: { xs: 'none', sm: '1px solid var(--joy-palette-divider)' },
         display: 'flex',
         flexDirection: 'column',
-        minHeight: { xs: 'auto', sm: '70vh' },
-        maxHeight: { xs: '100vh', sm: '70vh' },
+        minHeight: { xs: 'auto', sm: '64vh' },
+        maxHeight: { xs: '100vh', sm: '64vh' },
         overflow: 'hidden',
       }}
     >
@@ -1598,18 +1598,19 @@ export function CreateSegmentForm({
   // In create mode: show companies only after searching
   const shouldShowCompanies = isEditMode ? companies.length > 0 : hasSearched;
 
-  // Main Content Panel (Right Side)
+  // Main Content Panel (Right Side) — grows with table so page can scroll
   const mainContent = (
     <Box
       sx={{
         flex: 1,
         minWidth: 0,
+        minHeight: { xs: 'auto', sm: '64vh' },
         display: 'flex',
         flexDirection: 'column',
         alignItems: shouldShowCompanies ? 'flex-start' : 'center',
         justifyContent: shouldShowCompanies ? 'flex-start' : 'center',
         bgcolor: 'var(--joy-palette-background-surface)',
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
       {!shouldShowCompanies ? (
@@ -1633,15 +1634,15 @@ export function CreateSegmentForm({
           </Typography>
         </Box>
       ) : (
-        // Company preview table
+        // Company preview table — no fixed height so content grows and page scrolls
         <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
             width: '100%',
             minWidth: 0,
-            height: '100%',
-            overflow: 'hidden',
+            flex: 1,
+            overflow: 'visible',
           }}
         >
           {/* Header with count */}
@@ -1680,11 +1681,10 @@ export function CreateSegmentForm({
           {/* Table */}
           <Box
             sx={{
-              flex: 1,
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
+              overflow: 'visible',
               p: 2,
             }}
           >
@@ -1729,7 +1729,7 @@ export function CreateSegmentForm({
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0, flex: 1 }}>
+              <Box sx={{ overflowX: 'auto', overflowY: 'visible' }}>
                 <Table
                   sx={{
                     width: '100%',
@@ -2046,16 +2046,16 @@ export function CreateSegmentForm({
         />
       </Stack>
 
-      {/* Two Column Layout */}
+      {/* Two Column Layout — no minHeight/overflow so page can scroll */}
       <Box
         sx={{
           display: { xs: 'block', sm: 'flex' },
           width: '100%',
           minWidth: 0,
-          minHeight: '70vh',
+          minHeight: { xs: 'auto', sm: '64vh' },
           borderTop: '1px solid var(--joy-palette-divider)',
           borderRadius: 2,
-          overflow: 'hidden',
+          overflow: 'visible',
           position: 'relative',
         }}
       >
