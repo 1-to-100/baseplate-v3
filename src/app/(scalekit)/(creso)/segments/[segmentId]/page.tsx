@@ -353,7 +353,11 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             sx={{ alignItems: 'center', justifyContent: 'space-between' }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pt: 1 }}>
-              <Typography level='title-lg'>
+              <Typography
+                fontSize={18}
+                fontWeight={500}
+                sx={{ color: 'var(--joy-palette-text-primary)' }}
+              >
                 {isProcessing
                   ? 'Processing...'
                   : `${meta?.total.toLocaleString() || 0} companies found`}
@@ -375,16 +379,33 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
           {isProcessing ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
               <CircularProgress size='lg' sx={{ mb: 2 }} />
-              <Typography level='title-md' sx={{ mb: 1 }}>
+              <Typography
+                fontWeight={600}
+                fontSize={16}
+                sx={{ color: 'var(--joy-palette-text-primary)', mb: 1 }}
+              >
                 Processing segment...
               </Typography>
-              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+              <Typography
+                fontSize={14}
+                sx={{
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontWeight: 300,
+                  lineHeight: 1.5,
+                }}
+              >
                 We&apos;re searching for companies matching your filters. This may take a moment.
               </Typography>
             </Box>
           ) : companies.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography level='body-md' sx={{ color: 'text.secondary' }}>
+              <Typography
+                fontSize={14}
+                sx={{
+                  color: 'var(--joy-palette-text-secondary)',
+                  fontWeight: 300,
+                }}
+              >
                 No companies found in this segment.
               </Typography>
             </Box>
@@ -403,6 +424,10 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                   sx={{
                     width: '100%',
                     minWidth: 900,
+                    tableLayout: 'fixed',
+                    '& th, & td': {
+                      px: { xs: 1, sm: 2 },
+                    },
                     '& thead': {
                       position: 'sticky',
                       top: 0,
@@ -410,7 +435,12 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                     },
                     '& thead th': {
                       bgcolor: 'var(--joy-palette-background-level1)',
-                      fontWeight: '600',
+                      fontWeight: 500,
+                      color: 'var(--joy-palette-text-primary)',
+                    },
+                    '& tbody td': {
+                      color: 'var(--joy-palette-text-secondary)',
+                      fontWeight: 300,
                     },
                   }}
                 >
@@ -425,15 +455,15 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                           onChange={handleSelectAll}
                         />
                       </th>
-                      <th style={{ width: 60 }}></th>
+                      <th style={{ width: 80 }}></th>
                       <th>Company name</th>
-                      <th style={{ width: 60 }}></th>
+                      <th style={{ width: 80 }}></th>
                       <th>States/Provinces</th>
                       <th>Employees</th>
                       <th>Website</th>
                       <th>Industry</th>
                       <th>Technographics</th>
-                      <th style={{ width: 60, textAlign: 'right' }}></th>
+                      <th style={{ width: 80, textAlign: 'right' }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -476,11 +506,11 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                         </td>
                         <td>
                           <Typography
-                            level='body-sm'
                             sx={{
                               wordBreak: 'break-all',
                               color: 'var(--joy-palette-text-secondary)',
                               fontWeight: 300,
+                              fontSize: 14,
                             }}
                           >
                             {company.display_name || company.legal_name || 'Unknown'}
@@ -488,12 +518,24 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                         </td>
                         <td>{/* New badge column - reserved for future use */}</td>
                         <td>
-                          <Typography level='body-sm'>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
                             {[company.region, company.country].filter(Boolean).join(', ') || '—'}
                           </Typography>
                         </td>
                         <td>
-                          <Typography level='body-sm'>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
                             {company.employees ? company.employees.toLocaleString() : '—'}
                           </Typography>
                         </td>
@@ -527,14 +569,28 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                           )}
                         </td>
                         <td>
-                          <Typography level='body-sm'>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
                             {company.categories && company.categories.length > 0
                               ? company.categories[0]
                               : '—'}
                           </Typography>
                         </td>
                         <td>
-                          <Typography level='body-sm'>—</Typography>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
+                            —
+                          </Typography>
                         </td>
                         <td
                           style={{

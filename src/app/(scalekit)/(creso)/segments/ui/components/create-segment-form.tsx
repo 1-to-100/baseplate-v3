@@ -1648,7 +1648,11 @@ export function CreateSegmentForm({
           {/* Header with count */}
           <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
             <Box sx={{ flex: 1 }}>
-              <Typography level='title-lg'>
+              <Typography
+                fontSize={18}
+                fontWeight={500}
+                sx={{ color: 'var(--joy-palette-text-primary)' }}
+              >
                 {isSearching ? 'Searching...' : `${companies.length} companies found`}
               </Typography>
             </Box>
@@ -1671,7 +1675,14 @@ export function CreateSegmentForm({
                 width: 'auto',
               }}
             >
-              <Typography fontSize={14} sx={{ lineHeight: 1.6, fontWeight: 300 }}>
+              <Typography
+                fontSize={14}
+                sx={{
+                  color: 'var(--joy-palette-text-secondary)',
+                  lineHeight: 1.6,
+                  fontWeight: 300,
+                }}
+              >
                 This is a preview of {companies.length} companies — refine your filters or save the
                 segment to access the full list.
               </Typography>
@@ -1701,13 +1712,30 @@ export function CreateSegmentForm({
               </Box>
             ) : companies.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 8, px: 4 }}>
-                <Typography level='h4' sx={{ mb: 1 }}>
+                <Typography
+                  fontWeight={600}
+                  fontSize={16}
+                  sx={{ color: 'var(--joy-palette-text-primary)', mb: 1 }}
+                >
                   No companies found
                 </Typography>
-                <Typography level='body-md' sx={{ color: 'text.secondary', mb: 2 }}>
+                <Typography
+                  fontSize={14}
+                  sx={{
+                    color: 'var(--joy-palette-text-secondary)',
+                    fontWeight: 300,
+                    mb: 2,
+                  }}
+                >
                   No companies match your current filter criteria.
                 </Typography>
-                <Typography level='body-sm' sx={{ color: 'text.tertiary' }}>
+                <Typography
+                  fontSize={14}
+                  sx={{
+                    color: 'var(--joy-palette-text-secondary)',
+                    fontWeight: 300,
+                  }}
+                >
                   Try adjusting your filters:
                 </Typography>
                 <Box
@@ -1734,14 +1762,24 @@ export function CreateSegmentForm({
                   sx={{
                     width: '100%',
                     minWidth: 800,
+                    tableLayout: 'fixed',
+                    '& th, & td': {
+                      px: { xs: 1, sm: 2 },
+                    },
                     '& thead th': {
                       bgcolor: 'var(--joy-palette-background-level1)',
+                      fontWeight: 500,
+                      color: 'var(--joy-palette-text-primary)',
+                    },
+                    '& tbody td': {
+                      color: 'var(--joy-palette-text-secondary)',
+                      fontWeight: 300,
                     },
                   }}
                 >
                   <thead>
                     <tr>
-                      <th style={{ width: 60 }}>Logo</th>
+                      <th style={{ width: 80 }}>Logo</th>
                       <th>Company Name</th>
                       <th style={{ width: 200 }}>Location</th>
                       <th style={{ width: 120 }}>Employees</th>
@@ -1755,25 +1793,43 @@ export function CreateSegmentForm({
                           <Avatar
                             src={company.logo}
                             alt={company.name}
-                            sx={{ width: 40, height: 40 }}
+                            sx={{ width: 28, height: 28 }}
                           >
                             {company.name.charAt(0).toUpperCase()}
                           </Avatar>
                         </td>
                         <td>
                           <Box>
-                            <Typography level='body-md' fontWeight={500}>
+                            <Typography
+                              sx={{
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontWeight: 300,
+                                fontSize: 14,
+                              }}
+                            >
                               {company.fullName || company.name}
                             </Typography>
                             {company.type && (
-                              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                              <Typography
+                                sx={{
+                                  color: 'var(--joy-palette-text-secondary)',
+                                  fontWeight: 300,
+                                  fontSize: 12,
+                                }}
+                              >
                                 {company.type}
                               </Typography>
                             )}
                           </Box>
                         </td>
                         <td>
-                          <Typography level='body-sm'>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
                             {[
                               company.location?.city?.name,
                               company.location?.region?.name,
@@ -1784,7 +1840,13 @@ export function CreateSegmentForm({
                           </Typography>
                         </td>
                         <td>
-                          <Typography level='body-sm'>
+                          <Typography
+                            sx={{
+                              color: 'var(--joy-palette-text-secondary)',
+                              fontWeight: 300,
+                              fontSize: 14,
+                            }}
+                          >
                             {company.nbEmployees?.toLocaleString() ||
                               (company.nbEmployeesMin && company.nbEmployeesMax
                                 ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
@@ -1800,7 +1862,13 @@ export function CreateSegmentForm({
                                 </Chip>
                               ))
                             ) : (
-                              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                              <Typography
+                                sx={{
+                                  color: 'var(--joy-palette-text-secondary)',
+                                  fontWeight: 300,
+                                  fontSize: 14,
+                                }}
+                              >
                                 N/A
                               </Typography>
                             )}
