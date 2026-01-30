@@ -5,8 +5,21 @@ import {
   updateLogoAsset,
   deleteLogoAsset,
 } from '../api/logo_assets';
+import { getLogoPresetSignedUrls } from '../api/logo_storage';
 import { toast } from '@/components/core/toaster';
+import { createClient } from '@/lib/supabase/client';
 import type { LogoAsset, NewLogoAsset, UpdateLogoAsset } from '../types';
+
+// Types for logo generation
+export interface GeneratedLogo {
+  id: string;
+  url: string;
+  revised_prompt?: string;
+}
+
+interface GenerateLogoResponse {
+  logos: GeneratedLogo[];
+}
 
 export const logoAssetKeys = {
   all: ['logo-assets'] as const,
@@ -14,6 +27,7 @@ export const logoAssetKeys = {
   list: (guideId?: string) => [...logoAssetKeys.lists(), guideId] as const,
   details: () => [...logoAssetKeys.all, 'detail'] as const,
   detail: (id: string) => [...logoAssetKeys.details(), id] as const,
+  presets: (guideId: string) => [...logoAssetKeys.all, 'presets', guideId] as const,
 };
 
 export function useLogoAssets(visualStyleGuideId?: string) {
@@ -24,6 +38,25 @@ export function useLogoAssets(visualStyleGuideId?: string) {
       if (!result.ok) throw new Error(result.error);
       return result.data;
     },
+  });
+}
+
+/**
+ * Hook to fetch stored logo presets from Supabase storage
+ * Returns AI-generated logos that have been saved as presets for a visual style guide
+ */
+export function useLogoPresets(visualStyleGuideId: string) {
+  return useQuery({
+    queryKey: logoAssetKeys.presets(visualStyleGuideId),
+    queryFn: async (): Promise<GeneratedLogo[]> => {
+      const result = await getLogoPresetSignedUrls(visualStyleGuideId);
+      if (!result.ok) throw new Error(result.error);
+      return result.data.map((preset) => ({
+        id: preset.id,
+        url: preset.url,
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - presets don't change often
   });
 }
 
@@ -88,6 +121,112 @@ export function useDeleteLogoAsset() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete logo asset');
+    },
+  });
+}
+
+/**
+ * Hook to generate logos using AI (gpt-image-1.5)
+ * Calls the generate-logo edge function with user prompt and visual style guide context
+ */
+export function useGenerateLogo() {
+  return useMutation({
+    mutationFn: async (params: {
+      visualStyleGuideId: string;
+      prompt: string;
+    }): Promise<GeneratedLogo[]> => {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.functions.invoke<GenerateLogoResponse>(
+        'generate-logo',
+        {
+          body: {
+            visual_style_guide_id: params.visualStyleGuideId,
+            prompt: params.prompt,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate logos');
+      }
+
+      if (!data?.logos || data.logos.length === 0) {
+        throw new Error('No logos were generated');
+      }
+
+      return data.logos;
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to generate logos');
+    },
+  });
+}
+
+// Types for save-generated-logo edge function
+export interface PresetLogo {
+  id: string;
+  url: string;
+  storage_path: string;
+}
+
+interface SaveGeneratedLogoResponse {
+  storage_path: string;
+  signed_url: string;
+  logo_asset_id: string;
+  preset_logos?: PresetLogo[];
+}
+
+/**
+ * Hook to save a generated logo to Supabase storage
+ * Downloads the image server-side to avoid CORS issues with AI-generated image URLs
+ * Also stores all generated logos as presets for future selection
+ */
+export function useSaveGeneratedLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      visualStyleGuideId: string;
+      logoUrl: string;
+      logoTypeOptionId?: string;
+      logoTypeOptionIds?: string[]; // Array of logo type IDs to save to (if not provided, saves to all active types)
+      allLogoUrls?: string[]; // All generated logos to store as presets
+    }): Promise<SaveGeneratedLogoResponse> => {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.functions.invoke<SaveGeneratedLogoResponse>(
+        'save-generated-logo',
+        {
+          body: {
+            visual_style_guide_id: params.visualStyleGuideId,
+            logo_url: params.logoUrl,
+            logo_type_option_id: params.logoTypeOptionId,
+            logo_type_option_ids: params.logoTypeOptionIds,
+            all_logo_urls: params.allLogoUrls,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message || 'Failed to save generated logo');
+      }
+
+      if (!data) {
+        throw new Error('No response from save-generated-logo');
+      }
+
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: logoAssetKeys.list(variables.visualStyleGuideId) });
+      queryClient.invalidateQueries({ queryKey: logoAssetKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: logoAssetKeys.presets(variables.visualStyleGuideId),
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to save generated logo');
     },
   });
 }

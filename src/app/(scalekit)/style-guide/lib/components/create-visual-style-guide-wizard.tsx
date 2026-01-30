@@ -210,12 +210,15 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
         toast.warning(
           `Visual style guide created, but some extractions failed. Check the guide for details.`
         );
+        // Navigate with extraction failed flag
+        router.push(
+          `${paths.dashboard.visualOs.overview(visualStyleGuideId)}?extractionFailed=true`
+        );
       } else {
         toast.success('Visual style guide created and analyzed successfully!');
+        // Navigate to the created guide
+        router.push(paths.dashboard.visualOs.overview(visualStyleGuideId));
       }
-
-      // Navigate to the created guide
-      router.push(paths.dashboard.visualOs.overview(visualStyleGuideId));
     } catch (error) {
       console.error('Error in scan process:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to scan website');
@@ -282,27 +285,30 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
             for (const typographyOption of typographyOptions) {
               try {
                 await createTypographyStyle.mutateAsync({
-                  visual_style_guide_id: guideId,
-                  typography_style_option_id: typographyOption.typography_style_option_id,
-                  font_option_id: null,
-                  font_family: defaultFontFamily,
-                  font_fallbacks: null,
-                  font_size_px:
-                    method === 'default'
-                      ? getDefaultFontSize(String(typographyOption.programmatic_name || ''))
-                      : 16,
-                  line_height:
-                    method === 'default'
-                      ? getDefaultLineHeight(String(typographyOption.programmatic_name || ''))
-                      : null,
-                  font_weight:
-                    method === 'default'
-                      ? getDefaultFontWeight(String(typographyOption.programmatic_name || ''))
-                      : null,
-                  color: null,
-                  css_snippet: null,
-                  licensing_notes: null,
-                  created_by_user_id: null,
+                  input: {
+                    visual_style_guide_id: guideId,
+                    typography_style_option_id: typographyOption.typography_style_option_id,
+                    font_option_id: null,
+                    font_family: defaultFontFamily,
+                    font_fallbacks: null,
+                    font_size_px:
+                      method === 'default'
+                        ? getDefaultFontSize(String(typographyOption.programmatic_name || ''))
+                        : 16,
+                    line_height:
+                      method === 'default'
+                        ? getDefaultLineHeight(String(typographyOption.programmatic_name || ''))
+                        : null,
+                    font_weight:
+                      method === 'default'
+                        ? getDefaultFontWeight(String(typographyOption.programmatic_name || ''))
+                        : null,
+                    color: null,
+                    css_snippet: null,
+                    licensing_notes: null,
+                    created_by_user_id: null,
+                  },
+                  silent: true,
                 });
               } catch (error) {
                 console.warn(
