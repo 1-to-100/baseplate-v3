@@ -194,11 +194,80 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     employees?: string | string[];
     categories?: string[];
     technographics?: string[];
+    persona?: string;
   };
 
   const employeesDisplay = Array.isArray(filters.employees)
     ? filters.employees[0]
     : filters.employees;
+
+  const viewFilters = (
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        mb: 1,
+        maxWidth: '95%',
+        gap: 1,
+      }}
+    >
+      <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+        <span>Total:</span>{' '}
+        <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+          {isLoading ? '...' : (meta?.total ?? 0).toLocaleString()}
+        </span>
+      </Typography>
+      {filters.country && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Country:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {filters.country}
+          </span>
+        </Typography>
+      )}
+      {filters.location && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Location:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {filters.location}
+          </span>
+        </Typography>
+      )}
+      {employeesDisplay && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Company size:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {employeesDisplay}
+          </span>
+        </Typography>
+      )}
+      {filters.categories && filters.categories.length > 0 && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Industry:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {filters.categories.join(', ')}
+          </span>
+        </Typography>
+      )}
+      {filters.technographics && filters.technographics.length > 0 && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Technographics:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {filters.technographics.join(', ')}
+          </span>
+        </Typography>
+      )}
+      {filters.persona && (
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Persona:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {filters.persona}
+          </span>
+        </Typography>
+      )}
+    </Box>
+  );
 
   if (isLoading) {
     return (
@@ -266,47 +335,14 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
           </Breadcrumbs>
         </Stack>
 
-        {/* Segment Information Header Row */}
+        {/* Segment filters summary */}
         <Box
           sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 3,
-            alignItems: 'center',
             pb: 2,
             borderBottom: '1px solid var(--joy-palette-divider)',
           }}
         >
-          <Typography level='body-xs'>
-            Total:{' '}
-            <Box component='span' sx={{ fontWeight: 500, color: '#0B0D0E' }}>
-              {meta?.total.toLocaleString() || 0}
-            </Box>
-          </Typography>
-          {filters.country && (
-            <Typography level='body-xs'>
-              Country:{' '}
-              <Box component='span' sx={{ fontWeight: 500, color: '#0B0D0E' }}>
-                {filters.country}
-              </Box>
-            </Typography>
-          )}
-          {employeesDisplay && (
-            <Typography level='body-xs'>
-              Company size:{' '}
-              <Box component='span' sx={{ fontWeight: 500, color: '#0B0D0E' }}>
-                {employeesDisplay}
-              </Box>
-            </Typography>
-          )}
-          {filters.categories && filters.categories.length > 0 && (
-            <Typography level='body-xs'>
-              Industry:{' '}
-              <Box component='span' sx={{ fontWeight: 500, color: '#0B0D0E' }}>
-                {filters.categories.join(', ')}
-              </Box>
-            </Typography>
-          )}
+          {viewFilters}
         </Box>
 
         {/* Companies Table */}
