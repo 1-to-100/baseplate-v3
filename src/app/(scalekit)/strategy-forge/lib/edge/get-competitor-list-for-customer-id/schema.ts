@@ -6,8 +6,8 @@
  * 2. TypeScript types
  * 3. Runtime validation in tests
  */
-import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'npm:zod@3.24.1';
+import { zodToJsonSchema } from 'npm:zod-to-json-schema@3.24.1';
 
 // ============================================================================
 // Zod Schema Definition

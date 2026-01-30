@@ -6,7 +6,7 @@
  * 2. Runtime validation
  * 3. OpenAI Images API response format
  */
-import { z } from 'zod';
+import { z } from 'npm:zod@3.24.1';
 
 // ============================================================================
 // OpenAI Images API Response Schema

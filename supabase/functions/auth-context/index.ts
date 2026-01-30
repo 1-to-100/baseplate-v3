@@ -1,10 +1,10 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+/// <reference lib="deno.ns" />
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { authenticateRequest, isSystemAdmin, isCustomerSuccess } from '../_shared/auth.ts'
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
 

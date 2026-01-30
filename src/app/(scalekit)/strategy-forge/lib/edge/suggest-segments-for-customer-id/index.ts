@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 import { segmentsJsonSchema, type SegmentItem, type SegmentsResponse } from './schema.ts';
 
 // Request body interface

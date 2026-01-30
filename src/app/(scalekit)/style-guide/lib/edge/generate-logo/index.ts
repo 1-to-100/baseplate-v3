@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+/// <reference lib="deno.ns" />
 import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
 import { handleCors } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import {
@@ -143,7 +143,7 @@ async function generateSingleLogo(
   };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 

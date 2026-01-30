@@ -2,9 +2,10 @@
 /// <reference lib="dom" />
 
 // Import Supabase client
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 // Import Puppeteer for browser automation
-import puppeteer, { type HTTPRequest } from 'puppeteer';
+// Note: Using deno.land/x version as it's the Deno-specific port of Puppeteer
+import puppeteer, { type HTTPRequest } from 'https://deno.land/x/puppeteer@16.2.0/mod.ts';
 
 // CORS headers
 const corsHeaders = {

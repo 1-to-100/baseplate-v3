@@ -13,7 +13,7 @@
  * const validArray = generateMockArray(MySchema, 3);
  * ```
  */
-import { z } from 'zod';
+import { z } from 'npm:zod@3.24.1';
 
 // ============================================================================
 // Type Definitions
