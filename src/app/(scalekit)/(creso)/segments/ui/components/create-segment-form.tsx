@@ -630,6 +630,7 @@ export function CreateSegmentForm({
     <Box
       sx={{
         width: { xs: '100%', sm: 320 },
+        flexShrink: 0,
         bgcolor: 'var(--Content-background)',
         borderRight: { xs: 'none', sm: '1px solid var(--joy-palette-divider)' },
         display: 'flex',
@@ -1602,6 +1603,7 @@ export function CreateSegmentForm({
     <Box
       sx={{
         flex: 1,
+        minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
         alignItems: shouldShowCompanies ? 'flex-start' : 'center',
@@ -1636,6 +1638,8 @@ export function CreateSegmentForm({
           sx={{
             display: 'flex',
             flexDirection: 'column',
+            width: '100%',
+            minWidth: 0,
             height: '100%',
             overflow: 'hidden',
           }}
@@ -1674,7 +1678,16 @@ export function CreateSegmentForm({
           )}
 
           {/* Table */}
-          <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              p: 2,
+            }}
+          >
             {isSearching ? (
               <Box
                 sx={{
@@ -1716,89 +1729,93 @@ export function CreateSegmentForm({
                 </Box>
               </Box>
             ) : (
-              <Table
-                sx={{
-                  '& thead th': {
-                    bgcolor: 'var(--joy-palette-background-level1)',
-                  },
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th style={{ width: 60 }}>Logo</th>
-                    <th>Company Name</th>
-                    <th style={{ width: 200 }}>Location</th>
-                    <th style={{ width: 120 }}>Employees</th>
-                    <th style={{ width: 200 }}>Industry</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companies.map((company) => (
-                    <tr key={company.id}>
-                      <td>
-                        <Avatar
-                          src={company.logo}
-                          alt={company.name}
-                          sx={{ width: 40, height: 40 }}
-                        >
-                          {company.name.charAt(0).toUpperCase()}
-                        </Avatar>
-                      </td>
-                      <td>
-                        <Box>
-                          <Typography level='body-md' fontWeight={500}>
-                            {company.fullName || company.name}
-                          </Typography>
-                          {company.type && (
-                            <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                              {company.type}
-                            </Typography>
-                          )}
-                        </Box>
-                      </td>
-                      <td>
-                        <Typography level='body-sm'>
-                          {[
-                            company.location?.city?.name,
-                            company.location?.region?.name,
-                            company.location?.country?.name,
-                          ]
-                            .filter(Boolean)
-                            .join(', ') || 'N/A'}
-                        </Typography>
-                      </td>
-                      <td>
-                        <Typography level='body-sm'>
-                          {company.nbEmployees?.toLocaleString() ||
-                            (company.nbEmployeesMin && company.nbEmployeesMax
-                              ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
-                              : 'N/A')}
-                        </Typography>
-                      </td>
-                      <td>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {company.categories && company.categories.length > 0 ? (
-                            company.categories.slice(0, 2).map((cat, idx) => (
-                              <Chip key={idx} size='sm' variant='soft'>
-                                {cat.name}
-                              </Chip>
-                            ))
-                          ) : (
-                            <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                              N/A
-                            </Typography>
-                          )}
-                          {company.categories && company.categories.length > 2 && (
-                            <Chip size='sm' variant='soft'>
-                              +{company.categories.length - 2}
-                            </Chip>
-                          )}
-                        </Box>
-                      </td>
+              <Box sx={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0, flex: 1 }}>
+                <Table
+                  sx={{
+                    width: '100%',
+                    minWidth: 800,
+                    '& thead th': {
+                      bgcolor: 'var(--joy-palette-background-level1)',
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th style={{ width: 60 }}>Logo</th>
+                      <th>Company Name</th>
+                      <th style={{ width: 200 }}>Location</th>
+                      <th style={{ width: 120 }}>Employees</th>
+                      <th style={{ width: 200 }}>Industry</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
+                  </thead>
+                  <tbody>
+                    {companies.map((company) => (
+                      <tr key={company.id}>
+                        <td>
+                          <Avatar
+                            src={company.logo}
+                            alt={company.name}
+                            sx={{ width: 40, height: 40 }}
+                          >
+                            {company.name.charAt(0).toUpperCase()}
+                          </Avatar>
+                        </td>
+                        <td>
+                          <Box>
+                            <Typography level='body-md' fontWeight={500}>
+                              {company.fullName || company.name}
+                            </Typography>
+                            {company.type && (
+                              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                                {company.type}
+                              </Typography>
+                            )}
+                          </Box>
+                        </td>
+                        <td>
+                          <Typography level='body-sm'>
+                            {[
+                              company.location?.city?.name,
+                              company.location?.region?.name,
+                              company.location?.country?.name,
+                            ]
+                              .filter(Boolean)
+                              .join(', ') || 'N/A'}
+                          </Typography>
+                        </td>
+                        <td>
+                          <Typography level='body-sm'>
+                            {company.nbEmployees?.toLocaleString() ||
+                              (company.nbEmployeesMin && company.nbEmployeesMax
+                                ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
+                                : 'N/A')}
+                          </Typography>
+                        </td>
+                        <td>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {company.categories && company.categories.length > 0 ? (
+                              company.categories.slice(0, 2).map((cat, idx) => (
+                                <Chip key={idx} size='sm' variant='soft'>
+                                  {cat.name}
+                                </Chip>
+                              ))
+                            ) : (
+                              <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+                                N/A
+                              </Typography>
+                            )}
+                            {company.categories && company.categories.length > 2 && (
+                              <Chip size='sm' variant='soft'>
+                                +{company.categories.length - 2}
+                              </Chip>
+                            )}
+                          </Box>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Box>
             )}
           </Box>
         </Box>
@@ -1938,6 +1955,8 @@ export function CreateSegmentForm({
       <Box
         sx={{
           display: { xs: 'block', sm: 'flex' },
+          width: '100%',
+          minWidth: 0,
           minHeight: '70vh',
           borderTop: '1px solid var(--joy-palette-divider)',
           borderRadius: 2,
