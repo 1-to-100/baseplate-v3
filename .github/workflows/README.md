@@ -29,9 +29,9 @@ Files prefixed with `_` are reusable workflows called by the orchestrator. They 
 │                          │                                  │
 │                          ▼                                  │
 │  Stage 2: build ─────────┬─────────── deno-tests            │
-│           │              │            ├── Check changes     │
 │           │              │            ├── Deno type check   │
 │           │      (parallel)           └── Run tests         │
+│           │              │                                  │
 │           │              │                   │              │
 │           ▼              ▼                   ▼              │
 │  Stage 3: deploy (push to master/main only)                 │
@@ -47,7 +47,7 @@ Files prefixed with `_` are reusable workflows called by the orchestrator. They 
 | Event                      | Branches     | What Runs                                     |
 | -------------------------- | ------------ | --------------------------------------------- |
 | Push                       | master, main | Full pipeline including deploy                |
-| Pull Request               | master, main | Type check → Build + Deno tests (no deploy)   |
+| Pull Request               | any          | Type check → Build + Deno tests (no deploy)   |
 | Manual (workflow_dispatch) | any          | Full pipeline with optional `deploy_all` flag |
 
 ## Jobs
@@ -62,12 +62,7 @@ Builds the Next.js application. Runs after typecheck-lint passes.
 
 ### deno-tests
 
-Runs Deno edge function tests. Only executes if edge function files changed:
-
-- `src/**/edge/**`
-- `testing/unit/edge-functions/**`
-- `supabase/functions/**`
-- `deno.json`
+Runs Deno edge function tests. Executes type checking and all tests on every run.
 
 ### deploy
 
@@ -104,4 +99,4 @@ Recommended required status checks for master/main:
 
 - `Type Check & Lint`
 - `Build`
-- `Deno Tests` (if edge functions exist)
+- `Deno Tests`
