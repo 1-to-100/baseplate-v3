@@ -21,6 +21,10 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   const mimeMatch = header?.match(/data:([^;]+)/);
   const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
 
+  if (!base64Data) {
+    throw new Error('Invalid data URL format: expected "data:<mime>;base64,<data>"');
+  }
+
   const binaryString = atob(base64Data);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
