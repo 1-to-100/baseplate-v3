@@ -171,7 +171,9 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
         target.closest("[role='tab']") ||
         target.closest("[role='tablist']") ||
         target.closest("[role='tabpanel']");
-      if (!isClickOnPopover) {
+      // Don't close popover when user is interacting with a modal (e.g. Edit Company)
+      const isClickOnModal = target.closest('[role="dialog"]') || target.closest('.MuiModal-root');
+      if (!isClickOnPopover && !isClickOnModal) {
         handleCloseCompanyPopover();
       }
     };
