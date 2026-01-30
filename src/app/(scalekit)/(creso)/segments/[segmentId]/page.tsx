@@ -354,11 +354,22 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             </Box>
           ) : (
             <>
-              <Box sx={{ overflowX: 'auto' }}>
+              <Box
+                sx={{
+                  overflow: 'auto',
+                  maxHeight: 'calc(100vh - 360px)',
+                  minHeight: 200,
+                }}
+              >
                 <Table
                   aria-label='companies table'
                   sx={{
                     width: '100%',
+                    '& thead': {
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 1,
+                    },
                     '& thead th': {
                       bgcolor: 'var(--joy-palette-background-level1)',
                       fontWeight: '600',
