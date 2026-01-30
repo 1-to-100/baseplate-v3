@@ -1838,14 +1838,13 @@ export function CreateSegmentForm({
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
       <BreadcrumbsItem href={paths.home} type='start' />
       <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
-      {isEditMode && segmentId && segment && (
-        <BreadcrumbsItem href={paths.dashboard.segments.details(segmentId)}>
+      {isEditMode && segmentId && segment ? (
+        <BreadcrumbsItem type='end' href={paths.dashboard.segments.details(segmentId)}>
           {segment.name}
         </BreadcrumbsItem>
+      ) : (
+        <BreadcrumbsItem type='end'>Create new segment</BreadcrumbsItem>
       )}
-      <BreadcrumbsItem type='end'>
-        {isEditMode ? 'Edit segment' : 'Create new segment'}
-      </BreadcrumbsItem>
     </Breadcrumbs>
   );
 
