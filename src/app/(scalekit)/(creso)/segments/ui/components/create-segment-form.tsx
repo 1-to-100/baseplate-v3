@@ -1838,6 +1838,11 @@ export function CreateSegmentForm({
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
       <BreadcrumbsItem href={paths.home} type='start' />
       <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
+      {isEditMode && segmentId && segment && (
+        <BreadcrumbsItem href={paths.dashboard.segments.details(segmentId)}>
+          {segment.name}
+        </BreadcrumbsItem>
+      )}
       <BreadcrumbsItem type='end'>
         {isEditMode ? 'Edit segment' : 'Create new segment'}
       </BreadcrumbsItem>
@@ -1846,7 +1851,7 @@ export function CreateSegmentForm({
 
   return (
     <Box>
-      {/* Top Action Bar: title + buttons first (creso layout), then breadcrumbs, then rest */}
+      {/* Order: title, breadcrumbs, AI prompt, then content */}
       <Stack spacing={2} sx={{ mb: 2 }}>
         {/* Segment Name and Action Buttons - first */}
         <Box
@@ -1937,18 +1942,14 @@ export function CreateSegmentForm({
           )}
         </Box>
 
-        {/* Breadcrumbs - second */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {breadcrumbs}
         </Box>
 
-        {/* AI Segment Generator - only show in create mode */}
-        {!isEditMode && (
-          <AskAiSegment
-            onAiSegmentGenerated={handleAiSegmentGenerated}
-            disabled={isSubmitting || industriesLoading || companySizesLoading}
-          />
-        )}
+        <AskAiSegment
+          onAiSegmentGenerated={handleAiSegmentGenerated}
+          disabled={isSubmitting || industriesLoading || companySizesLoading}
+        />
       </Stack>
 
       {/* Two Column Layout */}
