@@ -1,6 +1,6 @@
 /// <reference lib="deno.ns" />
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import OpenAI from 'npm:openai@4.77.0';
 import {
   personaRecommendationJsonSchema,
   parsePersonaRecommendation,

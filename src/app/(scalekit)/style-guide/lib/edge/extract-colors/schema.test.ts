@@ -13,7 +13,7 @@
  * Run from repo root:
  *   deno test --allow-net --allow-env --allow-read src/app/(scalekit)/style-guide/lib/edge/extract-colors/
  */
-import { assertEquals, assertExists, assert } from '@std/assert';
+import { assertEquals, assertExists, assert } from 'jsr:@std/assert@1';
 import {
   ColorsResponseSchema,
   PaletteColorItemSchema,

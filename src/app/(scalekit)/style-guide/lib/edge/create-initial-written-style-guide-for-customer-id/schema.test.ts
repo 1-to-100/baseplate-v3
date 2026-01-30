@@ -3,7 +3,7 @@
  *
  * Run from this directory: deno task test
  */
-import { assertEquals, assertExists, assert } from '@std/assert';
+import { assertEquals, assertExists, assert } from 'jsr:@std/assert@1';
 import {
   StyleGuideResponseSchema,
   safeParseStyleGuideResponse,
