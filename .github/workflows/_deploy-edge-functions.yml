@@ -141,7 +141,7 @@ jobs:
         run: |
           for fn in ${{ steps.changed.outputs.functions }}; do
             echo "Deploying function: $fn"
-            supabase functions deploy "$fn" --import-map deno.json
+            supabase functions deploy "$fn"
           done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
