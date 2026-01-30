@@ -1781,8 +1781,9 @@ export function CreateSegmentForm({
                     <tr>
                       <th style={{ width: 80 }}>Logo</th>
                       <th>Company Name</th>
-                      <th style={{ width: 200 }}>Location</th>
+                      <th style={{ width: 200 }}>States/Provinces</th>
                       <th style={{ width: 120 }}>Employees</th>
+                      <th style={{ width: 180 }}>Website</th>
                       <th style={{ width: 200 }}>Industry</th>
                     </tr>
                   </thead>
@@ -1852,6 +1853,45 @@ export function CreateSegmentForm({
                                 ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
                                 : 'N/A')}
                           </Typography>
+                        </td>
+                        <td>
+                          {company.homepageUri ? (
+                            <Box
+                              component='span'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const url =
+                                  company.homepageUri!.startsWith('http://') ||
+                                  company.homepageUri!.startsWith('https://')
+                                    ? company.homepageUri!
+                                    : `https://${company.homepageUri}`;
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                              }}
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                cursor: 'pointer',
+                                color: 'var(--joy-palette-primary-500)',
+                                textDecoration: 'underline',
+                                fontSize: 14,
+                                fontWeight: 300,
+                              }}
+                            >
+                              {company.homepageUri}
+                            </Box>
+                          ) : (
+                            <Typography
+                              sx={{
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontWeight: 300,
+                                fontSize: 14,
+                              }}
+                            >
+                              N/A
+                            </Typography>
+                          )}
                         </td>
                         <td>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
