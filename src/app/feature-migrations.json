@@ -1,0 +1,23 @@
+{
+  "$schema": "./feature-migrations.schema.json",
+  "features": [
+    {
+      "slug": "strategy-forge",
+      "group": "scalekit",
+      "migrationsPath": "src/app/(scalekit)/strategy-forge/lib/sql",
+      "dependsOn": []
+    },
+    {
+      "slug": "source-and-snap",
+      "group": "scalekit",
+      "migrationsPath": "src/app/(scalekit)/source-and-snap/lib/sql",
+      "dependsOn": []
+    },
+    {
+      "slug": "style-guide",
+      "group": "scalekit",
+      "migrationsPath": "src/app/(scalekit)/style-guide/lib/sql",
+      "dependsOn": ["source-and-snap"]
+    }
+  ]
+}

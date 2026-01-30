@@ -14,6 +14,7 @@
     "type:check": "tsc --pretty --noEmit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o public/storybook-static",
+    "supabase:link-migrations": "node supabase/scripts/link-feature-migrations.mjs",
     "supabase:wrap-functions": "node supabase/scripts/wrap-feature-functions.mjs"
   },
   "dependencies": {
