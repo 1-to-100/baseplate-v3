@@ -350,9 +350,10 @@ export default function EditCompanyModal({
                   Industry
                 </Typography>
                 <Input
+                  disabled
                   placeholder='Enter industry'
                   value={formData.industry}
-                  onChange={(e) => handleInputChange('industry', e.target.value)}
+                  readOnly
                   slotProps={{ input: { maxLength: 255 } }}
                   sx={{
                     borderRadius: '6px',
