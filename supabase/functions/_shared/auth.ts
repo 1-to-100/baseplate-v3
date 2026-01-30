@@ -33,12 +33,17 @@ export async function authenticateRequest(req: Request): Promise<AuthenticatedUs
     throw new ApiError('User not found in database', 404)
   }
 
+  // Normalize role - Supabase may return array or single object
+  const role = Array.isArray(dbUser.role) 
+    ? (dbUser.role[0] ?? null) 
+    : (dbUser.role ?? null);
+
   return {
     id: user.id,
     email: user.email!,
     user_id: dbUser.user_id,
     customer_id: dbUser.customer_id,
-    role: dbUser.role as { name: string; is_system_role: boolean } | null
+    role: role as { name: string; is_system_role: boolean } | null
   }
 }
 

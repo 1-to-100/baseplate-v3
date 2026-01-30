@@ -159,7 +159,7 @@ async function handleInviteMultiple(user: any, body: any) {
   }
 
   // Check for duplicates
-  const uniqueEmails = [...new Set(emails)]
+  const uniqueEmails = [...new Set(emails)] as string[]
   if (uniqueEmails.length !== emails.length) {
     throw new ApiError('Duplicate emails in request', 400)
   }
