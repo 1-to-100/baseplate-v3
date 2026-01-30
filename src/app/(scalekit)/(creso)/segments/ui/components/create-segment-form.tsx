@@ -1848,6 +1848,98 @@ export function CreateSegmentForm({
     </Breadcrumbs>
   );
 
+  // Segment filters summary (edit mode) - same as segment details page
+  const editModeFilters = (segment?.filters || {}) as {
+    country?: string;
+    location?: string;
+    employees?: string | string[];
+    categories?: string[];
+    technographics?: string[];
+    persona?: string;
+    personas?: number[];
+  };
+  const editModeEmployeesDisplay = Array.isArray(editModeFilters.employees)
+    ? editModeFilters.employees[0]
+    : editModeFilters.employees;
+  const viewFilters =
+    isEditMode && segment ? (
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          mb: 1,
+          maxWidth: '95%',
+          gap: 1,
+        }}
+      >
+        <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+          <span>Total:</span>{' '}
+          <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+            {segmentLoading ? '...' : totalCount.toLocaleString()}
+          </span>
+        </Typography>
+        {editModeFilters.country && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Country:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeFilters.country}
+            </span>
+          </Typography>
+        )}
+        {editModeFilters.location && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Location:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeFilters.location}
+            </span>
+          </Typography>
+        )}
+        {editModeEmployeesDisplay && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Company size:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeEmployeesDisplay}
+            </span>
+          </Typography>
+        )}
+        {editModeFilters.categories && editModeFilters.categories.length > 0 && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Industry:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeFilters.categories.join(', ')}
+            </span>
+          </Typography>
+        )}
+        {editModeFilters.technographics && editModeFilters.technographics.length > 0 && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Technographics:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeFilters.technographics.join(', ')}
+            </span>
+          </Typography>
+        )}
+        {editModeFilters.persona && (
+          <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+            <span>Persona:</span>{' '}
+            <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+              {editModeFilters.persona}
+            </span>
+          </Typography>
+        )}
+        {editModeFilters.personas &&
+          editModeFilters.personas.length > 0 &&
+          !editModeFilters.persona && (
+            <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
+              <span>Personas:</span>{' '}
+              <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
+                {editModeFilters.personas.length} selected
+              </span>
+            </Typography>
+          )}
+      </Box>
+    ) : null;
+
   return (
     <Box>
       {/* Order: title, breadcrumbs, AI prompt, then content */}
@@ -1941,8 +2033,11 @@ export function CreateSegmentForm({
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {breadcrumbs}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {breadcrumbs}
+          </Box>
+          {viewFilters != null && <Box sx={{ pt: 0 }}>{viewFilters}</Box>}
         </Box>
 
         <AskAiSegment
