@@ -9,12 +9,13 @@ import Typography from '@mui/joy/Typography';
 
 import { toast } from '@/components/core/toaster';
 
-import { useCreditBalance, useChargeCredits } from '@/lib/credits';
+import { useCreditBalance, useChargeCredits, useResetCredits } from '@/lib/credits';
 import { paths } from '@/paths';
 
 export function CreditBalanceWidget(): React.JSX.Element | null {
   const { data: balance, isLoading } = useCreditBalance();
   const chargeCredits = useChargeCredits();
+  const resetCredits = useResetCredits();
 
   const handleCharge = () => {
     if (!balance?.customer_id) return;
@@ -34,6 +35,20 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
     );
   };
 
+  const handleReset = () => {
+    resetCredits.mutate(
+      { reason: 'Reset / new plan (test)', action_code: 'period_reset' },
+      {
+        onSuccess: () => {
+          toast.success('Credits reset');
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : 'Failed to reset credits');
+        },
+      }
+    );
+  };
+
   // Don't render if no balance data (user might not have credits set up yet)
   if (isLoading || !balance) {
     return null;
@@ -41,7 +56,7 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
 
   const periodUsed = balance.period_used;
   const periodLimit = balance.period_limit;
-  const isCharging = chargeCredits.isPending;
+  const isBusy = chargeCredits.isPending || resetCredits.isPending;
 
   return (
     <Stack spacing={1}>
@@ -77,14 +92,18 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
           </Typography>
         </Stack>
         <Stack direction='row' spacing={1}>
+          <Button size='sm' variant='soft' color='neutral' onClick={handleCharge} disabled={isBusy}>
+            Charge
+          </Button>
           <Button
             size='sm'
             variant='soft'
             color='neutral'
-            onClick={handleCharge}
-            disabled={isCharging}
+            onClick={handleReset}
+            disabled={isBusy}
+            title='Reset credits (new period / test)'
           >
-            Charge
+            Reset
           </Button>
           <Button
             component={RouterLink}
