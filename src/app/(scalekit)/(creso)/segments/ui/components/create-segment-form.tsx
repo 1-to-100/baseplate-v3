@@ -1781,10 +1781,10 @@ export function CreateSegmentForm({
                     <tr>
                       <th style={{ width: 80 }}>Logo</th>
                       <th>Company Name</th>
-                      <th style={{ width: 200 }}>States/Provinces</th>
-                      <th style={{ width: 120 }}>Employees</th>
-                      <th style={{ width: 180 }}>Website</th>
-                      <th style={{ width: 200 }}>Industry</th>
+                      <th>States/Provinces</th>
+                      <th>Employees</th>
+                      <th>Website</th>
+                      <th>Industry</th>
                     </tr>
                   </thead>
                   <tbody>
