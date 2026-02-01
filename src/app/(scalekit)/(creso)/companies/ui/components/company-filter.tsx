@@ -86,7 +86,7 @@ export default function CompanyFilter({
   const [selectedState, setSelectedState] = React.useState<string | null>(
     initialFilters?.region || null
   );
-  const [selectedCompanySizes, setSelectedCompanySizes] = React.useState<number[]>([]);
+  const [selectedCompanySize, setSelectedCompanySize] = React.useState<number | null>(null);
   const [selectedIndustries, setSelectedIndustries] = React.useState<number[]>([]);
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>(
     initialFilters?.technographic || []
@@ -110,10 +110,53 @@ export default function CompanyFilter({
     queryFn: getCompanySizes,
   });
 
+  // Derived from selected company size (single); updates when user selects/deselects size option
+  const companySizeRange = useMemo((): [number, number] | undefined => {
+    if (!companySizes || selectedCompanySize == null) return undefined;
+    const selected = companySizes.find((cs) => cs.company_size_id === selectedCompanySize);
+    if (!selected) return undefined;
+    const { min, max } = parseCompanySizeRange(selected.value);
+    if (max === null) return [min, 999999999];
+    return [min, max];
+  }, [companySizes, selectedCompanySize]);
+
+  // Build getCompanies params from current filter state so company-name search respects filters
+  const getCompaniesParams = useMemo(() => {
+    const categoryValues =
+      industries && selectedIndustries.length > 0
+        ? industries
+            .filter((ind) => selectedIndustries.includes(ind.industry_id))
+            .map((ind) => ind.value)
+        : undefined;
+
+    return {
+      search: debouncedCompanyName.trim(),
+      limit: 50,
+      ...(selectedCountry ? { country: selectedCountry } : {}),
+      ...(selectedState ? { region: selectedState } : {}),
+      ...(companySizeRange
+        ? { min_employees: companySizeRange[0], max_employees: companySizeRange[1] }
+        : {}),
+      ...(categoryValues?.length ? { category: categoryValues } : {}),
+      ...(selectedTechnographics.length > 0 ? { technology: selectedTechnographics } : {}),
+    };
+  }, [
+    debouncedCompanyName,
+    selectedCountry,
+    selectedState,
+    companySizeRange,
+    selectedIndustries,
+    industries,
+    selectedTechnographics,
+  ]);
+
   const { data: companySearchData, isLoading: isCompaniesSearchLoading } = useQuery({
-    queryKey: ['companies-search', debouncedCompanyName],
-    queryFn: () => getCompanies({ search: debouncedCompanyName.trim(), limit: 50 }),
-    enabled: companyNameAccordionOpen && debouncedCompanyName.trim().length >= 2,
+    queryKey: ['companies-search', getCompaniesParams],
+    queryFn: () => getCompanies(getCompaniesParams),
+    enabled:
+      companyNameAccordionOpen &&
+      debouncedCompanyName.trim().length >= 2 &&
+      !!getCompaniesParams.search,
   });
 
   const companyOptions = useMemo(() => companySearchData?.data ?? [], [companySearchData]);
@@ -137,20 +180,26 @@ export default function CompanyFilter({
 
   const showLocationDropdown = locationOptions.length > 0;
 
-  // Map company size values to IDs from initial filters
+  // Map company size from initial filters (exact range match); single select uses first match.
   useEffect(() => {
-    if (initialFilters?.companySize && companySizes) {
-      const [min, max] = initialFilters.companySize;
-      // Find company sizes that overlap with the selected range
-      const matchingSizes = companySizes.filter((cs) => {
-        const range = parseCompanySizeRange(cs.value);
-        const sizeMin = range.min;
-        const sizeMax = range.max ?? Infinity;
+    if (!companySizes || !initialFilters?.companySize) return;
 
-        // Check if ranges overlap
-        return sizeMin <= (max ?? Infinity) && sizeMax >= min;
-      });
-      setSelectedCompanySizes(matchingSizes.map((cs) => cs.company_size_id));
+    const [appliedMin, appliedMax] = initialFilters.companySize;
+    const minNum = Number(appliedMin);
+    const maxNum = appliedMax == null ? null : Number(appliedMax);
+    const appliedMaxVal = maxNum ?? Infinity;
+
+    const matchingSizes = companySizes.filter((cs) => {
+      const range = parseCompanySizeRange(cs.value);
+      if (appliedMaxVal >= 999999999) {
+        return range.min === minNum && range.max === null;
+      }
+      return range.min === minNum && maxNum !== null && range.max === maxNum;
+    });
+
+    const firstMatch = matchingSizes[0];
+    if (firstMatch) {
+      setSelectedCompanySize(firstMatch.company_size_id);
     }
   }, [initialFilters?.companySize, companySizes]);
 
@@ -215,7 +264,7 @@ export default function CompanyFilter({
         (companyNameSearch && companyNameSearch.trim()) ||
         selectedCountry ||
         selectedState ||
-        selectedCompanySizes.length > 0 ||
+        selectedCompanySize != null ||
         selectedIndustries.length > 0 ||
         selectedTechnographics.length > 0 ||
         suggestedTechnographics.length > 0
@@ -224,7 +273,7 @@ export default function CompanyFilter({
       companyNameSearch,
       selectedCountry,
       selectedState,
-      selectedCompanySizes,
+      selectedCompanySize,
       selectedIndustries,
       selectedTechnographics,
       suggestedTechnographics,
@@ -239,36 +288,6 @@ export default function CompanyFilter({
       selectedState && locationOptions.length > 0
         ? locationOptions.find((l) => l.code === selectedState)?.name
         : null;
-
-    // Get company size range from IDs by parsing the string values
-    const companySizeRange: [number, number] | undefined =
-      companySizes && selectedCompanySizes.length > 0
-        ? (() => {
-            const selectedSizeObjects = companySizes.filter((cs) =>
-              selectedCompanySizes.includes(cs.company_size_id)
-            );
-
-            if (selectedSizeObjects.length === 0) return undefined;
-
-            // Parse all selected sizes and find the overall min/max
-            const ranges = selectedSizeObjects.map((cs) => parseCompanySizeRange(cs.value));
-            const min = Math.min(...ranges.map((r) => r.min));
-            const max = Math.max(
-              ...ranges.map((r) => r.max ?? Infinity).filter((m) => m !== Infinity)
-            );
-
-            // If any range has no max (e.g., "10,001+"), we can't set an upper limit
-            // For now, we'll use a large number or handle it in the API
-            const hasUnboundedMax = ranges.some((r) => r.max === null);
-
-            if (hasUnboundedMax) {
-              // Return a range with a very large max, or handle it differently
-              return [min, 999999999] as [number, number];
-            }
-
-            return [min, max] as [number, number];
-          })()
-        : undefined;
 
     // Get industry values (strings) from selected – these match companies.categories
     const industryValues =
@@ -298,6 +317,7 @@ export default function CompanyFilter({
     companyNameSearch,
     selectedCountry,
     selectedState,
+    companySizeRange,
     industries,
     selectedIndustries,
     selectedTechnographics,
@@ -310,7 +330,7 @@ export default function CompanyFilter({
     setCompanyNameSearch('');
     setSelectedCountry(null);
     setSelectedState(null);
-    setSelectedCompanySizes([]);
+    setSelectedCompanySize(null);
     setSelectedIndustries([]);
     setSelectedTechnographics([]);
     setSuggestedTechnographics([]);
@@ -414,7 +434,14 @@ export default function CompanyFilter({
 
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
         {/* Company name Accordion */}
-        <Box sx={{ borderTop: '1px solid var(--joy-palette-divider)' }}>
+        <Box
+          sx={{
+            borderTop: '1px solid var(--joy-palette-divider)',
+            borderBottom: companyNameAccordionOpen
+              ? '1px solid var(--joy-palette-divider)'
+              : 'none',
+          }}
+        >
           <Box
             onClick={() => setCompanyNameAccordionOpen(!companyNameAccordionOpen)}
             sx={{
@@ -508,7 +535,7 @@ export default function CompanyFilter({
             </Box>
           </Box>
           {companyNameAccordionOpen && (
-            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Box sx={{ p: 2, pl: 0 }}>
               <FormControl size='sm'>
                 <Autocomplete
                   placeholder='Enter company name'
@@ -563,7 +590,6 @@ export default function CompanyFilter({
               justifyContent: 'space-between',
               alignItems: 'center',
               cursor: 'pointer',
-              borderBottom: !geoAccordionOpen ? '1px solid var(--joy-palette-divider)' : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -591,7 +617,7 @@ export default function CompanyFilter({
             {geoAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
           </Box>
           {geoAccordionOpen && (
-            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Box sx={{ pb: 2, px: 2, pl: 0 }}>
               <Stack spacing={2}>
                 <FormControl size='sm'>
                   <Autocomplete
@@ -636,16 +662,13 @@ export default function CompanyFilter({
               justifyContent: 'space-between',
               alignItems: 'center',
               cursor: 'pointer',
-              borderBottom: !companySizeAccordionOpen
-                ? '1px solid var(--joy-palette-divider)'
-                : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Buildings
                 size={20}
                 color={
-                  selectedCompanySizes.length > 0
+                  selectedCompanySize != null
                     ? 'var(--joy-palette-primary-500)'
                     : 'var(--joy-palette-text-primary)'
                 }
@@ -655,7 +678,7 @@ export default function CompanyFilter({
                 fontSize={14}
                 sx={{
                   color:
-                    selectedCompanySizes.length > 0
+                    selectedCompanySize != null
                       ? 'var(--joy-palette-primary-500)'
                       : 'var(--joy-palette-text-primary)',
                 }}
@@ -666,21 +689,57 @@ export default function CompanyFilter({
             {companySizeAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
           </Box>
           {companySizeAccordionOpen && (
-            <Box sx={{ pb: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Box sx={{ pb: 2, px: 2, pl: 0 }}>
+              {selectedCompanySize != null && companySizes && (
+                <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      bgcolor: 'var(--joy-palette-background-level2)',
+                      borderRadius: 20,
+                      pl: 1.5,
+                      pr: 2,
+                      py: 0.5,
+                      fontSize: 12,
+                      height: 28,
+                      gap: 0.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12 }}>
+                      {companySizes.find((cs) => cs.company_size_id === selectedCompanySize)
+                        ?.value ?? ''}
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        ml: 0.5,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCompanySize(null);
+                      }}
+                      role='button'
+                      aria-label='Remove company size'
+                    >
+                      <X size={14} color='var(--joy-palette-text-primary)' />
+                    </Box>
+                  </Box>
+                </Box>
+              )}
               <FormControl size='sm'>
                 <Autocomplete
-                  multiple
                   options={companySizes || []}
                   getOptionLabel={(option) => option.value}
                   value={
-                    companySizes?.filter((cs) =>
-                      selectedCompanySizes.includes(cs.company_size_id)
-                    ) || []
+                    companySizes?.find((cs) => cs.company_size_id === selectedCompanySize) ?? null
                   }
                   onChange={(_, value) => {
-                    setSelectedCompanySizes(value.map((v) => v.company_size_id));
+                    setSelectedCompanySize(value?.company_size_id ?? null);
                   }}
-                  placeholder='Select company sizes'
+                  placeholder='Select company size'
                   size='sm'
                   disabled={companySizesLoading || !companySizes}
                 />
@@ -698,9 +757,6 @@ export default function CompanyFilter({
               px: 2,
               minHeight: 48,
               pl: 0,
-              borderBottom: !industryAccordionOpen
-                ? '1px solid var(--joy-palette-divider)'
-                : 'none',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
@@ -795,7 +851,7 @@ export default function CompanyFilter({
             </Box>
           </Box>
           {industryAccordionOpen && (
-            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Box sx={{ p: 2, pl: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
                 <Switch
                   checked={smartSearchEnabled}
@@ -997,9 +1053,6 @@ export default function CompanyFilter({
               px: 2,
               minHeight: 48,
               pl: 0,
-              borderBottom: !technographicsAccordionOpen
-                ? '1px solid var(--joy-palette-divider)'
-                : 'none',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
@@ -1110,7 +1163,7 @@ export default function CompanyFilter({
             </Box>
           </Box>
           {technographicsAccordionOpen && (
-            <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
+            <Box sx={{ p: 2, pl: 0 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 1 }}>
                 <Switch
                   checked={smartSearchTechnographics}
