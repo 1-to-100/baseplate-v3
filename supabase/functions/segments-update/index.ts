@@ -157,30 +157,18 @@ Deno.serve(async (req) => {
       }
 
       // Trigger background processing (fire-and-forget)
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-      if (supabaseUrl && serviceRoleKey) {
-        fetch(`${supabaseUrl}/functions/v1/segments-process`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${serviceRoleKey}`,
-          },
-          body: JSON.stringify({
+      supabase.functions
+        .invoke('segments-process', {
+          body: {
             segment_id: segment.list_id,
             customer_id: user.customer_id,
-          }),
-        }).catch((error) => {
+          },
+        })
+        .catch((error) => {
           console.error('Failed to trigger segment processing:', error);
         });
 
-        console.log('Triggered segments-process for segment:', segment.list_id);
-      } else {
-        console.warn(
-          'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY, cannot trigger background processing'
-        );
-      }
+      console.log('Triggered segments-process for segment:', segment.list_id);
     }
 
     return new Response(JSON.stringify(segment as UpdateSegmentResponse), {

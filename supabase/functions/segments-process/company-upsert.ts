@@ -1,48 +1,14 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import type { DiffbotOrganization } from './types.ts';
 
-/**
- * Format SQL value for PostgreSQL
- */
-function formatSqlValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return 'NULL';
-  }
+/** Normalize diffbot_id for consistent map keys (DB vs Diffbot response may differ in whitespace). */
+function normalizeDiffbotId(id: string | null | undefined): string {
+  return id != null ? String(id).trim() : '';
+}
 
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return `ARRAY[]::text[]`;
-    }
-    const escapedValues = value.map((v) => {
-      const str = String(v).replace(/'/g, "''").replace(/\\/g, '\\\\');
-      return `'${str}'`;
-    });
-    return `ARRAY[${escapedValues.join(', ')}]`;
-  }
-
-  if (typeof value === 'object') {
-    try {
-      const jsonStr = JSON.stringify(value);
-      return `$json$${jsonStr}$json$::jsonb`;
-    } catch {
-      return 'NULL';
-    }
-  }
-
-  if (typeof value === 'string') {
-    const escaped = value.replace(/'/g, "''").replace(/\\/g, '\\\\');
-    return `'${escaped}'`;
-  }
-
-  if (typeof value === 'number') {
-    return String(value);
-  }
-
-  if (value instanceof Date) {
-    return `'${value.toISOString()}'`;
-  }
-
-  return 'NULL';
+/** Diffbot API returns entity ID in `id`; use id ?? diffbotId for compatibility. */
+function getOrgDiffbotId(org: DiffbotOrganization): string | null | undefined {
+  return org.id ?? org.diffbotId;
 }
 
 /**
@@ -74,27 +40,48 @@ function extractLocationData(org: DiffbotOrganization): {
   return { country, region, address };
 }
 
+export interface BulkUpsertCompaniesResult {
+  companyIds: string[];
+  companies: DiffbotOrganization[];
+}
+
 /**
- * Bulk upsert companies to the companies table
+ * Bulk upsert companies to the companies table.
+ * Only organizations with a non-empty diffbot_id are processed so companies
+ * remain unique by diffbot_id. Existing companies are updated; new ones inserted.
+ * Returns company IDs and the same filtered companies list for downstream use.
  */
 export async function bulkUpsertCompanies(
   supabase: SupabaseClient,
   companies: DiffbotOrganization[]
-): Promise<string[]> {
+): Promise<BulkUpsertCompaniesResult> {
   if (companies.length === 0) {
-    return [];
+    return { companyIds: [], companies: [] };
+  }
+
+  const validCompanies = companies.filter((org) => {
+    const did = getOrgDiffbotId(org);
+    return did != null && String(did).trim() !== '';
+  });
+  if (validCompanies.length === 0) {
+    return { companyIds: [], companies: [] };
+  }
+  if (validCompanies.length < companies.length) {
+    console.log(
+      `Skipping ${companies.length - validCompanies.length} companies without diffbot_id`
+    );
   }
 
   const now = new Date().toISOString();
-  
-  // Build records for upsert
-  const records = companies.map((org) => {
+  const diffbotIds = validCompanies.map((org) => getOrgDiffbotId(org)!);
+
+  const records = validCompanies.map((org) => {
     const categories = extractCategories(org);
     const { country, region, address } = extractLocationData(org);
     const employees = org.nbEmployees || org.nbEmployeesMin || org.nbEmployeesMax || null;
 
     return {
-      diffbot_id: org.diffbotId,
+      diffbot_id: getOrgDiffbotId(org),
       legal_name: org.name,
       display_name: org.fullName || org.name,
       domain: null,
@@ -122,39 +109,51 @@ export async function bulkUpsertCompanies(
     };
   });
 
-  // Use upsert with ON CONFLICT handling
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('companies')
     .upsert(records, {
       onConflict: 'diffbot_id',
       ignoreDuplicates: false,
-    })
-    .select('company_id, diffbot_id');
+    });
 
   if (error) {
     console.error('Error upserting companies:', error);
     throw new Error(`Failed to upsert companies: ${error.message}`);
   }
 
-  // If upsert didn't return data (shouldn't happen), fetch the IDs
-  if (!data || data.length === 0) {
-    const result = await supabase
-      .from('companies')
-      .select('company_id')
-      .in('diffbot_id', companies.map((c) => c.diffbotId));
+  const { data: existing, error: selectError } = await supabase
+    .from('companies')
+    .select('company_id, diffbot_id')
+    .in('diffbot_id', diffbotIds);
 
-    if (result.error) {
-      throw new Error(`Failed to fetch company IDs: ${result.error.message}`);
-    }
-
-    return result.data?.map((c) => c.company_id) || [];
+  if (selectError) {
+    throw new Error(`Failed to resolve company IDs: ${selectError.message}`);
   }
 
-  return data.map((c) => c.company_id);
+  const diffbotToId = new Map<string, string>();
+  existing?.forEach((row) => {
+    const key = normalizeDiffbotId(row.diffbot_id);
+    if (key) diffbotToId.set(key, row.company_id);
+  });
+
+  const companyIds = validCompanies
+    .map((org) => diffbotToId.get(normalizeDiffbotId(getOrgDiffbotId(org))))
+    .filter((id): id is string => id != null);
+
+  if (companyIds.length < validCompanies.length) {
+    console.log(
+      `Resolved ${companyIds.length}/${validCompanies.length} company IDs (${validCompanies.length - companyIds.length} missing from select)`
+    );
+  }
+
+  return { companyIds, companies: validCompanies };
 }
 
 /**
- * Bulk insert into list_companies junction table
+ * Bulk upsert into list_companies junction table.
+ * Creates a list_companies row for every company (new or already in companies table)
+ * so the segment shows all of them. Uses onConflict + ignoreDuplicates so we only
+ * skip when the (list_id, company_id) pair already exists (e.g. duplicate in batch).
  */
 export async function bulkInsertListCompanies(
   supabase: SupabaseClient,
@@ -165,23 +164,24 @@ export async function bulkInsertListCompanies(
     return 0;
   }
 
-  // Use array insert with ON CONFLICT DO NOTHING
   const records = companyIds.map((companyId) => ({
     list_id: listId,
     company_id: companyId,
   }));
 
-  const { error, count } = await supabase
+  const { error } = await supabase
     .from('list_companies')
-    .insert(records)
-    .select('id', { count: 'exact' });
+    .upsert(records, {
+      onConflict: 'company_id,list_id',
+      ignoreDuplicates: true,
+    });
 
-  if (error && !error.message.includes('duplicate')) {
-    console.error('Error inserting list_companies:', error);
+  if (error) {
+    console.error('Error upserting list_companies:', error);
     throw new Error(`Failed to insert list_companies: ${error.message}`);
   }
 
-  return count || 0;
+  return companyIds.length;
 }
 
 /**
@@ -204,7 +204,7 @@ export async function bulkInsertCustomerCompanies(
   const { data: companyMappings, error: mappingError } = await supabase
     .from('companies')
     .select('company_id, diffbot_id')
-    .in('diffbot_id', companies.map((c) => c.diffbotId));
+    .in('diffbot_id', companies.map((c) => getOrgDiffbotId(c)).filter(Boolean));
 
   if (mappingError) {
     console.error('Error fetching company mappings:', mappingError);
@@ -212,13 +212,14 @@ export async function bulkInsertCustomerCompanies(
   }
 
   companyMappings?.forEach((mapping) => {
-    diffbotIdToCompanyId.set(mapping.diffbot_id, mapping.company_id);
+    const key = normalizeDiffbotId(mapping.diffbot_id);
+    if (key) diffbotIdToCompanyId.set(key, mapping.company_id);
   });
 
   // Build records with denormalized data
   const records = companies
     .map((org) => {
-      const companyId = diffbotIdToCompanyId.get(org.diffbotId);
+      const companyId = diffbotIdToCompanyId.get(normalizeDiffbotId(getOrgDiffbotId(org)));
       if (!companyId) return null;
 
       const categories = extractCategories(org);

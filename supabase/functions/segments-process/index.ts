@@ -142,14 +142,21 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Bulk upsert companies to companies table
+      // Bulk upsert companies (unique by diffbot_id); only valid companies returned
       console.log(`Upserting ${companies.length} companies...`);
-      const companyIds = await bulkUpsertCompanies(supabase, companies);
+      const { companyIds, companies: validCompanies } = await bulkUpsertCompanies(
+        supabase,
+        companies
+      );
       console.log(`Upserted companies, got ${companyIds.length} IDs`);
 
-      // Bulk insert into list_companies junction table
+      // Create list_companies for every company (new and existing)
       console.log(`Linking companies to segment ${body.segment_id}...`);
-      const linkedCount = await bulkInsertListCompanies(supabase, body.segment_id, companyIds);
+      const linkedCount = await bulkInsertListCompanies(
+        supabase,
+        body.segment_id,
+        companyIds
+      );
       console.log(`Linked ${linkedCount} companies to segment`);
 
       // Bulk insert into customer_companies table
@@ -157,7 +164,7 @@ Deno.serve(async (req) => {
       const customerCompaniesCount = await bulkInsertCustomerCompanies(
         supabase,
         segment.customer_id,
-        companies,
+        validCompanies,
         companyIds
       );
       console.log(`Created ${customerCompaniesCount} customer_companies records`);
@@ -176,7 +183,7 @@ Deno.serve(async (req) => {
           segment.user_id,
           segment.name,
           segment.list_id,
-          companies.length
+          validCompanies.length
         );
       }
 
@@ -184,7 +191,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           message: 'Segment processed successfully',
           segment_id: body.segment_id,
-          companies_added: companies.length,
+          companies_added: validCompanies.length,
           total_available: totalCount,
         }),
         {
@@ -220,11 +227,10 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     if (error instanceof ApiError) {
-      return createErrorResponse(error.message, error.statusCode);
+      return createErrorResponse(error);
     }
 
     console.error('Unexpected error in segments-process:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    return createErrorResponse(errorMessage, 500);
+    return createErrorResponse(error);
   }
 });
