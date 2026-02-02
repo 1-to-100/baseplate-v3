@@ -42,6 +42,7 @@ import type { CompanyPreview } from '../../lib/types/search';
 import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
+import Pagination from '@/components/dashboard/layout/pagination';
 import { paths } from '@/paths';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Table from '@mui/joy/Table';
@@ -52,6 +53,8 @@ import { useCallback } from 'react';
 import { PersonaWarningBanner } from '@/components/dashboard/banners/persona-warning-banner';
 
 const DIFFBOT_COMPANIES_LIMIT = 5;
+
+const EDIT_SEGMENT_COMPANIES_LIMIT = 10;
 
 interface CreateSegmentFormProps {
   segmentId?: string;
@@ -135,7 +138,8 @@ export function CreateSegmentForm({
   const [companies, setCompanies] = React.useState<CompanyPreview[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [perPage] = React.useState(DIFFBOT_COMPANIES_LIMIT);
+  // Edit (update) segment form uses page size 10; create/preview uses DIFFBOT limit
+  const perPage = segmentId ? EDIT_SEGMENT_COMPANIES_LIMIT : DIFFBOT_COMPANIES_LIMIT;
   const [hasSearched, setHasSearched] = React.useState(false);
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [formInitialized, setFormInitialized] = React.useState(false);
@@ -152,15 +156,18 @@ export function CreateSegmentForm({
     queryFn: getCompanySizes,
   });
 
+  const isEditMode = !!segmentId;
+  // When showing segment companies (edit mode, no search), fetch the current page
+  const segmentCompaniesPage = isEditMode && !hasSearched ? currentPage : 1;
+
   // Fetch segment data if segmentId is provided and initialSegmentData is not
   const { data: segmentData, isLoading: segmentLoading } = useQuery({
-    queryKey: ['segment', segmentId, 'form'],
-    queryFn: () => getSegmentById(segmentId!, { page: 1, perPage: DIFFBOT_COMPANIES_LIMIT }),
+    queryKey: ['segment', segmentId, 'form', segmentCompaniesPage],
+    queryFn: () => getSegmentById(segmentId!, { page: segmentCompaniesPage, perPage }),
     enabled: !!segmentId && !initialSegmentData,
   });
 
   const segment = initialSegmentData || segmentData?.segment;
-  const isEditMode = !!segmentId;
 
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
@@ -234,14 +241,13 @@ export function CreateSegmentForm({
     }
   }, [segment, industries, companySizes]);
 
-  // Initialize companies from existing segment data in edit mode
+  // Initialize companies from existing segment data in edit mode (any page)
   // This shows the existing companies until user applies new filters
   React.useEffect(() => {
-    if (isEditMode && segmentData?.companies && segmentData.companies.length > 0 && !hasSearched) {
-      // Map segment companies to CompanyPreview format
-      const existingCompanies: CompanyPreview[] = segmentData.companies.map((c) => ({
+    if (isEditMode && segmentData && !hasSearched) {
+      const existingCompanies: CompanyPreview[] = (segmentData.companies || []).map((c) => ({
         id: c.company_id,
-        diffbotId: c.company_id, // Use company_id as fallback for diffbotId
+        diffbotId: c.company_id,
         name: c.display_name || c.legal_name || '',
         fullName: c.display_name || c.legal_name || undefined,
         logo: c.logo || undefined,
@@ -253,9 +259,7 @@ export function CreateSegmentForm({
         categories: c.categories?.map((cat) => ({ name: cat })) || [],
       }));
       setCompanies(existingCompanies);
-      setTotalCount(segmentData.meta?.total || existingCompanies.length);
-      // Don't set hasSearched to true - this allows user to re-apply filters
-      // The existing companies will be shown until filters are applied
+      setTotalCount(segmentData.meta?.total ?? 0);
     }
   }, [isEditMode, segmentData, hasSearched]);
 
@@ -313,6 +317,18 @@ export function CreateSegmentForm({
     setPersonaAccordionOpen(false);
     setPersonaWarningDismissed(false);
   }, []);
+
+  const lastPage = Math.max(1, Math.ceil(totalCount / perPage));
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (hasSearched) {
+        applyFilters(page);
+      } else {
+        setCurrentPage(page);
+      }
+    },
+    [hasSearched]
+  );
 
   const applyFilters = async (page: number = 1) => {
     if (!hasActiveFilters()) {
@@ -1653,7 +1669,11 @@ export function CreateSegmentForm({
                 fontWeight={500}
                 sx={{ color: 'var(--joy-palette-text-primary)' }}
               >
-                {isSearching ? 'Searching...' : `${companies.length} companies found`}
+                {isSearching
+                  ? 'Searching...'
+                  : totalCount > perPage
+                    ? `Showing ${(currentPage - 1) * perPage + 1}–${Math.min(currentPage * perPage, totalCount)} of ${totalCount} companies`
+                    : `${totalCount} companies found`}
               </Typography>
             </Box>
           </Box>
@@ -1757,131 +1777,74 @@ export function CreateSegmentForm({
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ overflowX: 'auto', overflowY: 'visible' }}>
-                <Table
-                  sx={{
-                    width: '100%',
-                    minWidth: 800,
-                    tableLayout: 'fixed',
-                    '& th, & td': {
-                      px: { xs: 1, sm: 2 },
-                    },
-                    '& thead th': {
-                      bgcolor: 'var(--joy-palette-background-level1)',
-                      fontWeight: 500,
-                      color: 'var(--joy-palette-text-primary)',
-                    },
-                    '& tbody td': {
-                      color: 'var(--joy-palette-text-secondary)',
-                      fontWeight: 300,
-                    },
-                  }}
-                >
-                  <thead>
-                    <tr>
-                      <th style={{ width: 80 }}>Logo</th>
-                      <th>Company Name</th>
-                      <th>States/Provinces</th>
-                      <th>Employees</th>
-                      <th>Website</th>
-                      <th>Industry</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {companies.map((company) => (
-                      <tr key={company.id}>
-                        <td>
-                          <Avatar
-                            src={company.logo}
-                            alt={company.name}
-                            sx={{ width: 28, height: 28 }}
-                          >
-                            {company.name.charAt(0).toUpperCase()}
-                          </Avatar>
-                        </td>
-                        <td>
-                          <Box>
-                            <Typography
-                              sx={{
-                                color: 'var(--joy-palette-text-secondary)',
-                                fontWeight: 300,
-                                fontSize: 14,
-                              }}
+              <>
+                <Box sx={{ overflowX: 'auto', overflowY: 'visible' }}>
+                  <Table
+                    sx={{
+                      width: '100%',
+                      minWidth: 800,
+                      tableLayout: 'fixed',
+                      '& th, & td': {
+                        px: { xs: 1, sm: 2 },
+                      },
+                      '& thead th': {
+                        bgcolor: 'var(--joy-palette-background-level1)',
+                        fontWeight: 500,
+                        color: 'var(--joy-palette-text-primary)',
+                      },
+                      '& tbody td': {
+                        color: 'var(--joy-palette-text-secondary)',
+                        fontWeight: 300,
+                      },
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th style={{ width: 80 }}>Logo</th>
+                        <th>Company Name</th>
+                        <th>States/Provinces</th>
+                        <th>Employees</th>
+                        <th>Website</th>
+                        <th>Industry</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companies.map((company) => (
+                        <tr key={company.id}>
+                          <td>
+                            <Avatar
+                              src={company.logo}
+                              alt={company.name}
+                              sx={{ width: 28, height: 28 }}
                             >
-                              {company.fullName || company.name}
-                            </Typography>
-                            {company.type && (
+                              {company.name.charAt(0).toUpperCase()}
+                            </Avatar>
+                          </td>
+                          <td>
+                            <Box>
                               <Typography
                                 sx={{
                                   color: 'var(--joy-palette-text-secondary)',
                                   fontWeight: 300,
-                                  fontSize: 12,
+                                  fontSize: 14,
                                 }}
                               >
-                                {company.type}
+                                {company.fullName || company.name}
                               </Typography>
-                            )}
-                          </Box>
-                        </td>
-                        <td>
-                          <Typography
-                            sx={{
-                              color: 'var(--joy-palette-text-secondary)',
-                              fontWeight: 300,
-                              fontSize: 14,
-                            }}
-                          >
-                            {[
-                              company.location?.city?.name,
-                              company.location?.region?.name,
-                              company.location?.country?.name,
-                            ]
-                              .filter(Boolean)
-                              .join(', ') || 'N/A'}
-                          </Typography>
-                        </td>
-                        <td>
-                          <Typography
-                            sx={{
-                              color: 'var(--joy-palette-text-secondary)',
-                              fontWeight: 300,
-                              fontSize: 14,
-                            }}
-                          >
-                            {company.nbEmployees?.toLocaleString() ||
-                              (company.nbEmployeesMin && company.nbEmployeesMax
-                                ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
-                                : 'N/A')}
-                          </Typography>
-                        </td>
-                        <td>
-                          {company.homepageUri ? (
-                            <Box
-                              component='span'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const url =
-                                  company.homepageUri!.startsWith('http://') ||
-                                  company.homepageUri!.startsWith('https://')
-                                    ? company.homepageUri!
-                                    : `https://${company.homepageUri}`;
-                                window.open(url, '_blank', 'noopener,noreferrer');
-                              }}
-                              sx={{
-                                display: 'block',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                cursor: 'pointer',
-                                color: 'var(--joy-palette-primary-500)',
-                                textDecoration: 'underline',
-                                fontSize: 14,
-                                fontWeight: 300,
-                              }}
-                            >
-                              {company.homepageUri}
+                              {company.type && (
+                                <Typography
+                                  sx={{
+                                    color: 'var(--joy-palette-text-secondary)',
+                                    fontWeight: 300,
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  {company.type}
+                                </Typography>
+                              )}
                             </Box>
-                          ) : (
+                          </td>
+                          <td>
                             <Typography
                               sx={{
                                 color: 'var(--joy-palette-text-secondary)',
@@ -1889,18 +1852,56 @@ export function CreateSegmentForm({
                                 fontSize: 14,
                               }}
                             >
-                              N/A
+                              {[
+                                company.location?.city?.name,
+                                company.location?.region?.name,
+                                company.location?.country?.name,
+                              ]
+                                .filter(Boolean)
+                                .join(', ') || 'N/A'}
                             </Typography>
-                          )}
-                        </td>
-                        <td>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {company.categories && company.categories.length > 0 ? (
-                              company.categories.slice(0, 2).map((cat, idx) => (
-                                <Chip key={idx} size='sm' variant='soft'>
-                                  {cat.name}
-                                </Chip>
-                              ))
+                          </td>
+                          <td>
+                            <Typography
+                              sx={{
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontWeight: 300,
+                                fontSize: 14,
+                              }}
+                            >
+                              {company.nbEmployees?.toLocaleString() ||
+                                (company.nbEmployeesMin && company.nbEmployeesMax
+                                  ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
+                                  : 'N/A')}
+                            </Typography>
+                          </td>
+                          <td>
+                            {company.homepageUri ? (
+                              <Box
+                                component='span'
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const url =
+                                    company.homepageUri!.startsWith('http://') ||
+                                    company.homepageUri!.startsWith('https://')
+                                      ? company.homepageUri!
+                                      : `https://${company.homepageUri}`;
+                                  window.open(url, '_blank', 'noopener,noreferrer');
+                                }}
+                                sx={{
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'pointer',
+                                  color: 'var(--joy-palette-primary-500)',
+                                  textDecoration: 'underline',
+                                  fontSize: 14,
+                                  fontWeight: 300,
+                                }}
+                              >
+                                {company.homepageUri}
+                              </Box>
                             ) : (
                               <Typography
                                 sx={{
@@ -1912,18 +1913,49 @@ export function CreateSegmentForm({
                                 N/A
                               </Typography>
                             )}
-                            {company.categories && company.categories.length > 2 && (
-                              <Chip size='sm' variant='soft'>
-                                +{company.categories.length - 2}
-                              </Chip>
-                            )}
-                          </Box>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Box>
+                          </td>
+                          <td>
+                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                              {company.categories && company.categories.length > 0 ? (
+                                company.categories.slice(0, 2).map((cat, idx) => (
+                                  <Chip key={idx} size='sm' variant='soft'>
+                                    {cat.name}
+                                  </Chip>
+                                ))
+                              ) : (
+                                <Typography
+                                  sx={{
+                                    color: 'var(--joy-palette-text-secondary)',
+                                    fontWeight: 300,
+                                    fontSize: 14,
+                                  }}
+                                >
+                                  N/A
+                                </Typography>
+                              )}
+                              {company.categories && company.categories.length > 2 && (
+                                <Chip size='sm' variant='soft'>
+                                  +{company.categories.length - 2}
+                                </Chip>
+                              )}
+                            </Box>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </Box>
+                {totalCount > 0 && lastPage > 1 && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                    <Pagination
+                      totalPages={lastPage}
+                      currentPage={currentPage}
+                      onPageChange={handlePageChange}
+                      disabled={isSearching}
+                    />
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Box>
