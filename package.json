@@ -15,7 +15,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o public/storybook-static",
     "supabase:link-migrations": "node supabase/scripts/link-feature-migrations.mjs",
-    "supabase:wrap-functions": "node supabase/scripts/wrap-feature-functions.mjs"
+    "supabase:wrap-functions": "node supabase/scripts/wrap-feature-functions.mjs",
+    "supabase:clean-wrappers": "node supabase/scripts/wrap-feature-functions.mjs --clean"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.7.0",
