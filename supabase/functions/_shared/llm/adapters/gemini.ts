@@ -22,7 +22,7 @@ let client: GoogleGenerativeAI | null = null;
  *
  * @example
  * ```typescript
- * import { providers, withLogging } from '../_shared/llm/index.ts';
+ * import { providers, withLogging } from '@shared/llm';
  *
  * const gemini = providers.gemini();
  * const model = gemini.getGenerativeModel({ model: 'gemini-1.5-pro' });

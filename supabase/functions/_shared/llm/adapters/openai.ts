@@ -22,7 +22,7 @@ let client: OpenAI | null = null;
  *
  * @example
  * ```typescript
- * import { providers, withLogging } from '../_shared/llm/index.ts';
+ * import { providers, withLogging } from '@shared/llm';
  *
  * const openai = providers.openai();
  *

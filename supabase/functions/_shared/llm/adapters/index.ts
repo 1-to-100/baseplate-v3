@@ -17,7 +17,7 @@ import { createGeminiAdapter } from './gemini.ts';
  *
  * @example
  * ```typescript
- * import { providers } from '../_shared/llm/index.ts';
+ * import { providers } from '@shared/llm';
  *
  * // OpenAI
  * const openai = providers.openai();

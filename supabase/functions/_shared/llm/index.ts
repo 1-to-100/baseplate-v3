@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { providers, LLMError, withLogging } from '../_shared/llm/index.ts';
+ * import { providers, LLMError, withLogging } from '@shared/llm';
  *
  * // Get native OpenAI client
  * const openai = providers.openai();

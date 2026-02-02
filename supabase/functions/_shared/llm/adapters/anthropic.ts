@@ -22,7 +22,7 @@ let client: Anthropic | null = null;
  *
  * @example
  * ```typescript
- * import { providers, withLogging } from '../_shared/llm/index.ts';
+ * import { providers, withLogging } from '@shared/llm';
  *
  * const anthropic = providers.anthropic();
  *

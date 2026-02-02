@@ -15,7 +15,7 @@ import { resetGeminiAdapter } from './adapters/gemini.ts';
  *
  * @example
  * ```typescript
- * import { resetAllAdapters } from '../_shared/llm/testing.ts';
+ * import { resetAllAdapters } from '@shared/llm/testing';
  *
  * afterEach(() => {
  *   resetAllAdapters();
