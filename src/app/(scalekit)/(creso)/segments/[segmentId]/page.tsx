@@ -415,18 +415,27 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             <>
               <Box
                 sx={{
-                  overflow: 'auto',
                   overflowX: 'auto',
+                  width: '100%',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: { xs: 'thin', sm: 'auto' },
+                  '&::-webkit-scrollbar': {
+                    height: { xs: '8px', sm: '12px' },
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'var(--joy-palette-divider)',
+                    borderRadius: '4px',
+                  },
+                  minWidth: 0,
                   maxHeight: 'calc(100vh - 360px)',
-                  minHeight: 200,
+                  overflowY: 'auto',
                 }}
               >
                 <Table
                   aria-label='companies table'
                   sx={{
                     width: '100%',
-                    minWidth: 900,
-                    tableLayout: 'fixed',
+                    minWidth: 1280,
                     '& th, & td': {
                       px: { xs: 1, sm: 2 },
                     },
@@ -448,7 +457,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                 >
                   <thead>
                     <tr>
-                      <th style={{ width: '5%' }}>
+                      <th style={{ width: 50, padding: '8px' }}>
                         <Checkbox
                           checked={companies.length > 0 && selectedRows.length === companies.length}
                           indeterminate={
@@ -457,15 +466,21 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                           onChange={handleSelectAll}
                         />
                       </th>
-                      <th style={{ width: 80 }}></th>
-                      <th>Company name</th>
-                      <th style={{ width: 80 }}></th>
-                      <th>States/Provinces</th>
-                      <th>Employees</th>
-                      <th>Website</th>
-                      <th>Industry</th>
-                      <th>Technographics</th>
-                      <th style={{ width: 80, textAlign: 'right' }}></th>
+                      <th style={{ width: 48 }}></th>
+                      <th style={{ width: 220, textAlign: 'left', padding: '8px' }}>
+                        Company name
+                      </th>
+                      <th style={{ width: 48 }}></th>
+                      <th style={{ width: 200, textAlign: 'left', padding: '8px' }}>
+                        States/Provinces
+                      </th>
+                      <th style={{ width: 100, textAlign: 'left', padding: '8px' }}>Employees</th>
+                      <th style={{ width: 200, textAlign: 'left', padding: '8px' }}>Website</th>
+                      <th style={{ width: 220, textAlign: 'left', padding: '8px' }}>Industry</th>
+                      <th style={{ width: 140, textAlign: 'left', padding: '8px' }}>
+                        Technographics
+                      </th>
+                      <th style={{ width: 80, textAlign: 'right', padding: '8px' }}></th>
                     </tr>
                   </thead>
                   <tbody>

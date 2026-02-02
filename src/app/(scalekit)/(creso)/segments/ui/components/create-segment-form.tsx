@@ -1782,7 +1782,7 @@ export function CreateSegmentForm({
                   <Table
                     sx={{
                       width: '100%',
-                      minWidth: 800,
+                      minWidth: 1100,
                       tableLayout: 'fixed',
                       '& th, & td': {
                         px: { xs: 1, sm: 2 },
@@ -1801,11 +1801,11 @@ export function CreateSegmentForm({
                     <thead>
                       <tr>
                         <th style={{ width: 80 }}>Logo</th>
-                        <th>Company Name</th>
-                        <th>States/Provinces</th>
-                        <th>Employees</th>
-                        <th>Website</th>
-                        <th>Industry</th>
+                        <th style={{ width: 200 }}>Company Name</th>
+                        <th style={{ width: 180 }}>States/Provinces</th>
+                        <th style={{ width: 100 }}>Employees</th>
+                        <th style={{ width: 180 }}>Website</th>
+                        <th style={{ width: 280 }}>Industry</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1914,7 +1914,7 @@ export function CreateSegmentForm({
                               </Typography>
                             )}
                           </td>
-                          <td>
+                          <td style={{ minWidth: 280 }}>
                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                               {company.categories && company.categories.length > 0 ? (
                                 company.categories.slice(0, 2).map((cat, idx) => (
