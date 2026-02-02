@@ -6,6 +6,10 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 import {
   parseOpenAIImagesResponse,
@@ -86,39 +90,23 @@ function buildEnhancedPrompt(
 /**
  * Generates a single logo using OpenAI image model
  */
-async function generateSingleLogo(
-  openaiKey: string,
-  prompt: string,
-  index: number
-): Promise<GeneratedLogo> {
-  const response = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${openaiKey}`,
-    },
-    body: JSON.stringify({
+async function generateSingleLogo(prompt: string, index: number): Promise<GeneratedLogo> {
+  // Get OpenAI client from provider adapters (handles credentials automatically)
+  const openai = providers.openai();
+
+  // Use Images API with logging wrapper
+  const response = await withLogging('openai', 'images.generate', OPENAI_IMAGE_MODEL, () =>
+    openai.images.generate({
       model: OPENAI_IMAGE_MODEL,
       prompt: prompt,
       n: 1,
       size: '1024x1024',
       quality: 'high',
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error(
-      `OpenAI image API error for logo ${index} (model: ${OPENAI_IMAGE_MODEL}):`,
-      errorData
-    );
-    throw new ApiError(`OpenAI image API error: ${JSON.stringify(errorData)}`, 500);
-  }
-
-  const data = await response.json();
+    })
+  );
 
   // Validate OpenAI response with Zod schema
-  const validatedResponse = parseOpenAIImagesResponse(data);
+  const validatedResponse = parseOpenAIImagesResponse(response);
   const imageData = validatedResponse.data?.[0];
 
   // Handle both URL and base64 response formats
@@ -129,9 +117,9 @@ async function generateSingleLogo(
     // Convert base64 to data URL
     imageUrl = `data:image/png;base64,${imageData.b64_json}`;
   } else {
-    console.error('Unexpected OpenAI response format:', JSON.stringify(data));
+    console.error('Unexpected OpenAI response format:', JSON.stringify(response));
     throw new ApiError(
-      'No image URL or base64 data in OpenAI response' + JSON.stringify(data),
+      'No image URL or base64 data in OpenAI response' + JSON.stringify(response),
       500
     );
   }
@@ -215,12 +203,6 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${paletteColors?.length || 0} palette colors`);
 
-    // Get OpenAI API key
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new ApiError('Missing OPENAI_API_KEY', 500);
-    }
-
     // Build enhanced prompt with company context
     const enhancedPrompt = buildEnhancedPrompt(
       prompt,
@@ -233,9 +215,7 @@ Deno.serve(async (req) => {
     // Generate 3 logos in parallel using OpenAI image model
     console.log(`Generating 3 logo variations with ${OPENAI_IMAGE_MODEL}...`);
 
-    const logoPromises = [0, 1, 2].map((index) =>
-      generateSingleLogo(openaiKey, enhancedPrompt, index)
-    );
+    const logoPromises = [0, 1, 2].map((index) => generateSingleLogo(enhancedPrompt, index));
 
     const logos = await Promise.all(logoPromises);
 

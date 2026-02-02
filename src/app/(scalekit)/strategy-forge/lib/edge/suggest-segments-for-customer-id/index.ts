@@ -1,5 +1,9 @@
 /// <reference lib="deno.ns" />
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { segmentsJsonSchema, type SegmentItem, type SegmentsResponse } from './schema.ts';
 
 // Request body interface
@@ -298,11 +302,8 @@ Deno.serve(async (req) => {
     console.log('System prompt length:', SYSTEM_PROMPT.length);
     console.log('User prompt length:', userPrompt.length);
 
-    // Get OpenAI API key
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new Error('Missing OPENAI_API_KEY');
-    }
+    // Get OpenAI client from provider adapters (handles credentials automatically)
+    const openai = providers.openai();
 
     // Call GPT-5 with Responses API and web_search tool
     console.log('Calling GPT-5 with web_search via Responses API...');
@@ -317,86 +318,40 @@ Deno.serve(async (req) => {
 
 ${userPrompt}`;
 
-    // Use Responses API with web_search tool
-    const responsePayload = {
-      model: 'gpt-5', // GPT-5 supports web_search
-      input: combinedPrompt, // Single combined prompt string
-      tools: [
-        {
-          type: 'web_search',
-          // Domain filtering - limit results to customer's domain only
-          filters: {
-            allowed_domains: [domain], // Allow-list of domains (max 20)
-          },
-        },
-      ],
-      text: {
-        format: segmentsJsonSchema,
-      },
-    };
-
-    console.log('Request payload model:', responsePayload.model);
     console.log('Input prompt length:', combinedPrompt.length);
 
-    // Call the Responses API endpoint directly
-    const apiResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiKey}`,
-        'OpenAI-Beta': 'responses=v1', // Required beta header for Responses API
-      },
-      body: JSON.stringify(responsePayload),
-    });
+    // Use Responses API with web_search tool (wrapped with logging)
+    const responseData = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+      openai.responses.create({
+        model: 'gpt-5',
+        input: combinedPrompt,
+        tools: [
+          {
+            type: 'web_search' as const,
+            search_context_size: 'medium' as const,
+          },
+        ],
+        text: {
+          format: {
+            type: 'json_schema' as const,
+            name: segmentsJsonSchema.name,
+            strict: segmentsJsonSchema.strict,
+            schema: segmentsJsonSchema.schema,
+          },
+        },
+      })
+    );
 
-    if (!apiResponse.ok) {
-      const errorData = await apiResponse.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
-    }
-
-    const responseData = await apiResponse.json();
     console.log('Responses API response received');
     console.log('Response status:', responseData.status);
 
-    // Extract content from Responses API format
-    const output = responseData.output || [];
-
-    // Find the message item in the output array
-    const messageItem = output.find((item: { type: string }) => item.type === 'message') as
-      | { type: string; content?: Array<{ type: string; text?: string }> }
-      | undefined;
-
-    if (!messageItem) {
-      console.error('No message item found in output:', responseData);
-      throw new Error('No message content in OpenAI response');
+    // Extract text using SDK's output_text helper
+    const responseContent = responseData.output_text;
+    if (!responseContent) {
+      console.error('No output_text in response:', responseData);
+      throw new Error('No text content in OpenAI response');
     }
-
-    // Extract text from the message content
-    const content = messageItem.content || [];
-    const textItem = content.find(
-      (item: { type: string; text?: string }) => item.type === 'output_text'
-    ) as { type: string; text?: string } | undefined;
-
-    if (!textItem || !textItem.text) {
-      console.error('No text content found in message:', messageItem);
-      throw new Error('No text in message content');
-    }
-
-    const responseContent = textItem.text;
     console.log('Response content length:', responseContent.length);
-
-    // Log web search calls
-    const webSearchCalls = output.filter(
-      (item: { type: string }) => item.type === 'web_search_call'
-    ) as Array<{
-      type: string;
-      action?: { query?: string; type?: string };
-    }>;
-    console.log(`✓ Web search performed: ${webSearchCalls.length} searches`);
-    webSearchCalls.forEach((call, idx: number) => {
-      console.log(`  Search ${idx + 1}: ${call.action?.query || call.action?.type || 'unknown'}`);
-    });
 
     // Parse the response
     let parsedResponse: unknown;
