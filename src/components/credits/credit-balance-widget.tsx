@@ -1,53 +1,16 @@
 'use client';
 
-import * as React from 'react';
-import RouterLink from 'next/link';
+import { useCreditBalance } from '@/lib/credits';
+import { paths } from '@/paths';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
-
-import { toast } from '@/components/core/toaster';
-
-import { useCreditBalance, useChargeCredits, useResetCredits } from '@/lib/credits';
-import { paths } from '@/paths';
+import RouterLink from 'next/link';
+import * as React from 'react';
 
 export function CreditBalanceWidget(): React.JSX.Element | null {
   const { data: balance, isLoading } = useCreditBalance();
-  const chargeCredits = useChargeCredits();
-  const resetCredits = useResetCredits();
-
-  const handleCharge = () => {
-    if (!balance?.customer_id) return;
-
-    chargeCredits.mutate(
-      {
-        customer_id: balance.customer_id,
-        amount: 10,
-        reason: 'Test charge',
-        action_code: 'test_charge',
-      },
-      {
-        onError: (err) => {
-          toast.error(err instanceof Error ? err.message : 'Failed to charge credits');
-        },
-      }
-    );
-  };
-
-  const handleReset = () => {
-    resetCredits.mutate(
-      { reason: 'Reset / new plan (test)', action_code: 'period_reset' },
-      {
-        onSuccess: () => {
-          toast.success('Credits reset');
-        },
-        onError: (err) => {
-          toast.error(err instanceof Error ? err.message : 'Failed to reset credits');
-        },
-      }
-    );
-  };
 
   // Don't render if no balance data (user might not have credits set up yet)
   if (isLoading || !balance) {
@@ -56,7 +19,6 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
 
   const periodUsed = balance.period_used;
   const periodLimit = balance.period_limit;
-  const isBusy = chargeCredits.isPending || resetCredits.isPending;
 
   return (
     <Stack spacing={1}>
@@ -92,19 +54,6 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
           </Typography>
         </Stack>
         <Stack direction='row' spacing={1}>
-          <Button size='sm' variant='soft' color='neutral' onClick={handleCharge} disabled={isBusy}>
-            Charge
-          </Button>
-          <Button
-            size='sm'
-            variant='soft'
-            color='neutral'
-            onClick={handleReset}
-            disabled={isBusy}
-            title='Reset credits (new period / test)'
-          >
-            Reset
-          </Button>
           <Button
             component={RouterLink}
             href={paths.dashboard.profile.billing}
