@@ -1,4 +1,4 @@
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface NotificationInput {
   customer_id: string;
@@ -64,20 +64,28 @@ export async function notifyProcessingCompleted(
   userId: string,
   segmentName: string,
   segmentId: string,
-  companyCount: number
+  companyCount: number,
+  note?: string
 ): Promise<void> {
+  let message = `Segment "${segmentName}" has been processed successfully. ${companyCount} ${
+    companyCount === 1 ? 'company' : 'companies'
+  } added.`;
+
+  if (note) {
+    message += ` ${note}`;
+  }
+
   await createNotification(supabase, {
     customer_id: customerId,
     user_id: userId,
     title: 'Segment Processed Successfully',
-    message: `Segment "${segmentName}" has been processed successfully. ${companyCount} ${
-      companyCount === 1 ? 'company' : 'companies'
-    } added.`,
+    message,
     metadata: {
       id: segmentId,
       name: segmentName,
       status: 'completed',
       company_count: companyCount,
+      note: note || null,
     },
   });
 }
