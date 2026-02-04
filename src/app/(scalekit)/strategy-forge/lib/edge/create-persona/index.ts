@@ -1,9 +1,11 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-
-// Import Supabase client
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import OpenAI from 'npm:openai@4.77.0';
+import {
+  personaRecommendationJsonSchema,
+  parsePersonaRecommendation,
+  type PersonaRecommendation,
+} from './schema.ts';
 
 // CORS headers
 const corsHeaders = {
@@ -259,119 +261,12 @@ Make the persona detailed and actionable for marketing and sales teams.
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'persona_recommendation',
-          strict: true,
-          schema: {
-            type: 'object',
-            properties: {
-              titles: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Array of job titles and variations',
-              },
-              experience_level: {
-                type: 'number',
-                description:
-                  'Years of experience (0-2: Entry, 2-5: Early career, 5-10: Mid-level, 10-15: Senior, 15-20: Executive, 20+: Veteran)',
-              },
-              job_responsibilities: {
-                type: 'string',
-                description:
-                  'Markdown formatted unordered list of responsibilities of the role in the context of the solution',
-              },
-              is_manager: {
-                type: 'boolean',
-                description: 'Whether this role typically manages others',
-              },
-              department: { type: 'string', description: 'Department name' },
-              pain_points_html: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of general job challenges',
-              },
-              goals_html: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of general job goals',
-              },
-              solution_relevant_pain_points_html: {
-                type: 'string',
-                description:
-                  'Markdown formatted unordered list of challenges the solution addresses',
-              },
-              solution_relevant_goals_html: {
-                type: 'string',
-                description:
-                  'Markdown formatted unordered list of goals the solution helps achieve',
-              },
-              current_solutions_html: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of current tools and processes',
-              },
-              switching_costs_html: {
-                type: 'string',
-                description:
-                  'Markdown formatted unordered list of costs of switching to the solution',
-              },
-              unsatisfied_with_html: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of current solution problems',
-              },
-              ideal_outcome_html: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of desired outcomes',
-              },
-              buying_behavior: {
-                type: 'string',
-                description: 'Markdown formatted unordered list of summary of purchasing habits',
-              },
-              digital_savviness: {
-                type: 'string',
-                enum: [
-                  'Digital Novice',
-                  'Basic User',
-                  'Digital Citizen',
-                  'Intermediate User',
-                  'Tech-Savvy',
-                  'Power User',
-                  'Digital Specialist',
-                  'Tech Expert',
-                  'Innovator',
-                  'Digital Thought Leader',
-                ],
-                description: 'Level of digital expertise',
-              },
-              is_decider: {
-                type: 'boolean',
-                description: 'Whether this role typically makes purchasing decisions',
-              },
-            },
-            required: [
-              'titles',
-              'experience_level',
-              'job_responsibilities',
-              'is_manager',
-              'department',
-              'pain_points_html',
-              'goals_html',
-              'solution_relevant_pain_points_html',
-              'solution_relevant_goals_html',
-              'current_solutions_html',
-              'switching_costs_html',
-              'unsatisfied_with_html',
-              'ideal_outcome_html',
-              'buying_behavior',
-              'digital_savviness',
-              'is_decider',
-            ],
-            additionalProperties: false,
-          },
-        },
-      },
+      response_format: personaRecommendationJsonSchema,
     });
 
-    const personaRecommendation = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    // Parse and validate response with Zod schema
+    const rawResponse = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    const personaRecommendation: PersonaRecommendation = parsePersonaRecommendation(rawResponse);
     console.log('Generated persona recommendation:', personaRecommendation);
 
     // Prepare persona data for database

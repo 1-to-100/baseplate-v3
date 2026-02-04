@@ -1,7 +1,10 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import OpenAI from 'https://esm.sh/openai@4';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  typographyJsonSchema,
+  safeParseTypographyResponse,
+  type TypographyResponse,
+} from './schema.ts';
 
 // Request body interface
 interface RequestBody {
@@ -31,19 +34,7 @@ interface FontOption {
   source: string;
 }
 
-interface TypographyStyleData {
-  typography_style_option_id: string;
-  font_option_id?: string;
-  font_family: string;
-  font_size_px: number;
-  line_height?: number;
-  font_weight?: string;
-  color?: string;
-}
-
-interface ExtractedFonts {
-  typography_styles: TypographyStyleData[];
-}
+// TypographyStyleItem and TypographyResponse types are imported from schema.ts
 
 // System prompt for typography extraction
 const SYSTEM_PROMPT = `You are an expert typography analyst and web design specialist. Your role is to analyze websites and extract accurate typography information including font families, sizes, weights, and usage patterns for different text elements.`;
@@ -126,43 +117,28 @@ Return your response as a JSON object with this EXACT structure:
 }
 
 /**
- * Validates the extracted typography response
+ * Validates the extracted typography response using Zod schema
  */
-function validateTypographyResponse(response: unknown, expectedCount: number): ExtractedFonts {
+function validateTypographyResponse(response: unknown, expectedCount: number): TypographyResponse {
   console.log('Validating typography response...');
 
-  let data: Record<string, unknown>;
-
+  // Handle array response (some APIs wrap response in array)
+  let data = response;
   if (Array.isArray(response)) {
     if (response.length === 0) throw new Error('Empty response array');
-    data = response[0] as Record<string, unknown>;
-  } else if (response && typeof response === 'object') {
-    data = response as Record<string, unknown>;
-  } else {
-    throw new Error('Invalid response format');
+    data = response[0];
   }
 
-  if (!Array.isArray(data.typography_styles)) {
-    throw new Error('typography_styles must be an array');
+  const result = safeParseTypographyResponse(data);
+
+  if (!result.success) {
+    console.error('Validation errors:', result.error.issues);
+    throw new Error(
+      `Invalid typography response: ${result.error.issues.map((i) => i.message).join(', ')}`
+    );
   }
 
-  const typographyStyles = (data.typography_styles as Array<Record<string, unknown>>)
-    .filter(
-      (item) =>
-        item &&
-        typeof item.typography_style_option_id === 'string' &&
-        typeof item.font_family === 'string' &&
-        typeof item.font_size_px === 'number'
-    )
-    .map((item) => ({
-      typography_style_option_id: item.typography_style_option_id,
-      font_option_id: typeof item.font_option_id === 'string' ? item.font_option_id : undefined,
-      font_family: item.font_family,
-      font_size_px: item.font_size_px,
-      line_height: typeof item.line_height === 'number' ? item.line_height : undefined,
-      font_weight: typeof item.font_weight === 'string' ? item.font_weight : undefined,
-      color: typeof item.color === 'string' ? item.color : undefined,
-    }));
+  const typographyStyles = result.data.typography_styles;
 
   console.log(
     `✓ Validated ${typographyStyles.length} typography styles (expected: ${expectedCount})`
@@ -178,7 +154,7 @@ function validateTypographyResponse(response: unknown, expectedCount: number): E
     );
   }
 
-  return { typography_styles: typographyStyles };
+  return result.data;
 }
 
 Deno.serve(async (req) => {
@@ -291,7 +267,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const screenshotUrl = signedUrlData.signedUrl;
+    let screenshotUrl = signedUrlData.signedUrl;
+
+    // If PUBLIC_SUPABASE_URL is set, swap the origin for external API access (e.g., OpenAI)
+    const publicUrl = Deno.env.get('PUBLIC_SUPABASE_URL');
+    if (publicUrl) {
+      const url = new URL(screenshotUrl);
+      const pub = new URL(publicUrl);
+      url.protocol = pub.protocol;
+      url.hostname = pub.hostname;
+      url.port = pub.port;
+      screenshotUrl = url.toString();
+    }
     console.log('Screenshot URL generated');
 
     // Get HTML and CSS content
@@ -396,6 +383,14 @@ Deno.serve(async (req) => {
           ],
         },
       ],
+      response_format: {
+        type: typographyJsonSchema.type,
+        json_schema: {
+          name: typographyJsonSchema.name,
+          strict: typographyJsonSchema.strict,
+          schema: typographyJsonSchema.schema,
+        },
+      },
     };
 
     const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {

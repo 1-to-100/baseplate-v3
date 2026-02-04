@@ -1,6 +1,6 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import { competitorsJsonSchema, parseCompetitorsResponse, type CompetitorItem } from './schema.ts';
 
 interface RequestBody {
   customer_id: string;
@@ -28,12 +28,6 @@ interface CustomerRow {
   customer_id: string;
   name: string;
   email_domain: string | null;
-}
-
-interface CompetitorSuggestion {
-  name: string;
-  website_url: string;
-  description: string;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -104,16 +98,16 @@ Return ONLY valid JSON (no markdown or commentary) with this shape:
 - Avoid duplicates, outdated companies, or made-up data.`;
 }
 
-async function callOpenAI(args: {
-  openaiKey: string;
-  prompt: string;
-}): Promise<CompetitorSuggestion[]> {
+async function callOpenAI(args: { openaiKey: string; prompt: string }): Promise<CompetitorItem[]> {
   const { openaiKey, prompt } = args;
 
   const payload = {
     model: 'gpt-5',
     input: prompt,
     reasoning: { effort: 'medium' as const },
+    text: {
+      format: competitorsJsonSchema,
+    },
   };
 
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -163,26 +157,14 @@ async function callOpenAI(args: {
     throw new Error('OpenAI response was not valid JSON');
   }
 
-  const competitors = (parsed as { competitors?: CompetitorSuggestion[] }).competitors;
-  if (!Array.isArray(competitors) || competitors.length === 0) {
+  // Validate response using the same Zod schema that defined the JSON schema
+  const validated = parseCompetitorsResponse(parsed);
+
+  if (validated.competitors.length === 0) {
     throw new Error('OpenAI response did not include competitor suggestions');
   }
 
-  return competitors.map((entry, index) => {
-    const name = entry?.name?.trim();
-    const websiteUrl = entry?.website_url?.trim();
-    const description = entry?.description?.trim();
-
-    if (!name || !websiteUrl || !description) {
-      throw new Error(`Competitor suggestion #${index + 1} is missing required fields`);
-    }
-
-    return {
-      name,
-      website_url: websiteUrl,
-      description,
-    };
-  });
+  return validated.competitors;
 }
 
 Deno.serve(async (req) => {
@@ -278,30 +260,30 @@ Deno.serve(async (req) => {
     }
 
     const { data: userRecord, error: userRecordError } = await supabase
-      .from<UserRecord>('users')
+      .from('users')
       .select('customer_id, user_id')
       .eq('auth_user_id', user.id)
-      .maybeSingle();
+      .maybeSingle<UserRecord>();
 
     if (userRecordError || !userRecord) {
       throw new Error('Failed to load Baseplate user record');
     }
 
     const { data: customerRow, error: customerError } = await supabase
-      .from<CustomerRow>('customers')
+      .from('customers')
       .select('customer_id, name, email_domain')
       .eq('customer_id', customerId)
-      .maybeSingle();
+      .maybeSingle<CustomerRow>();
 
     if (customerError || !customerRow) {
       throw new Error('Failed to load customer information');
     }
 
     const { data: customerInfoRow, error: customerInfoError } = await supabase
-      .from<CustomerInfoRow>('customer_info')
+      .from('customer_info')
       .select('*')
       .eq('customer_id', customerId)
-      .maybeSingle();
+      .maybeSingle<CustomerInfoRow>();
 
     if (customerInfoError || !customerInfoRow) {
       throw new Error('Failed to load customer profile');

@@ -1,6 +1,11 @@
 /// <reference lib="deno.ns" />
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  strategyResponseJsonSchema,
+  supplementalStrategyItemsJsonSchema,
+  safeParseSupplementalStrategyItems,
+  type StrategyItem,
+} from './schema.ts';
 
 interface RequestBody {
   customer_id: string;
@@ -31,11 +36,6 @@ interface CustomerInfoRow {
 interface CompanyStrategyRow {
   strategy_id: string;
   customer_id: string;
-}
-
-interface StrategyItem {
-  name: string;
-  description: string;
 }
 
 interface StrategyGenerationResult {
@@ -521,6 +521,9 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
     model: 'gpt-5',
     input: prompt,
     reasoning: { effort: 'low' },
+    text: {
+      format: supplementalStrategyItemsJsonSchema,
+    },
   };
 
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -565,40 +568,30 @@ Provide between 3 and 6 items. Do not include markdown, code fences, or any surr
   let parsed: unknown;
   try {
     parsed = JSON.parse(textItem.text);
-  } catch (error) {
+  } catch {
     console.error(`Failed to parse supplemental ${label} JSON:`, textItem.text);
     throw new Error(`OpenAI supplemental ${label} response was not valid JSON.`);
   }
 
-  if (!Array.isArray(parsed)) {
-    throw new Error(`OpenAI supplemental ${label} response was not an array.`);
+  // Validate with Zod schema
+  const result = safeParseSupplementalStrategyItems(parsed);
+
+  if (!result.success) {
+    console.error(`Supplemental ${label} validation failed:`, result.error.issues);
+    const errorMessages = result.error.issues
+      .map((issue: { message: string }) => issue.message)
+      .join(', ');
+    throw new Error(`OpenAI supplemental ${label} response failed validation: ${errorMessages}`);
   }
 
-  return parsed
-    .map((item, index) => {
-      if (!item || typeof item !== 'object') {
-        console.warn(`Supplemental ${label} item #${index + 1} is not an object.`);
-        return null;
-      }
+  const validatedItems = result.data;
+  console.log(`✓ Validated ${validatedItems.length} supplemental ${label} items with Zod`);
 
-      const { name, description } = item as Record<string, unknown>;
-
-      if (typeof name !== 'string' || !name.trim()) {
-        console.warn(`Supplemental ${label} item #${index + 1} missing name.`);
-        return null;
-      }
-
-      if (typeof description !== 'string' || !description.trim()) {
-        console.warn(`Supplemental ${label} item "${name}" missing description.`);
-        return null;
-      }
-
-      return {
-        name: name.trim(),
-        description: normalizeMultiline(description),
-      };
-    })
-    .filter((item): item is StrategyItem => Boolean(item));
+  // Apply normalization to descriptions
+  return validatedItems.map((item: StrategyItem) => ({
+    name: item.name.trim(),
+    description: normalizeMultiline(item.description),
+  }));
 }
 
 Deno.serve(async (req) => {
@@ -952,6 +945,9 @@ Deno.serve(async (req) => {
           filters: { allowed_domains: [domain] },
         },
       ],
+      text: {
+        format: strategyResponseJsonSchema,
+      },
     };
 
     const openAiResponse = await fetch('https://api.openai.com/v1/responses', {
@@ -1304,7 +1300,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : 'Unexpected error',
-        errorDetails: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+        errorDetails: Deno.env.get('NODE_ENV') === 'development' ? errorDetails : undefined,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

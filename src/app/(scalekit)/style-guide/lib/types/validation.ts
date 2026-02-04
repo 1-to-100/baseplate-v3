@@ -129,6 +129,20 @@ export const formalityOptionItemSchema = z.object({
 });
 
 /**
+ * Emotional Tone Option Item validation schema
+ */
+export const emotionalToneOptionItemSchema = z.object({
+  emotional_tone_option_item_id: uuidSchema,
+  name: z.string().min(1),
+  display_name: z.string().min(1),
+  description: z.string().nullable(),
+  sort_order: z.number().int().min(0),
+  is_active: z.boolean(),
+  created_at: timestampSchema,
+  updated_at: timestampSchema.nullable(),
+});
+
+/**
  * Compliance Rule Type Option Item validation schema
  */
 export const complianceRuleTypeOptionItemSchema = z.object({
@@ -151,6 +165,7 @@ export const styleGuideSchema = z.object({
   guide_name: z.string().min(1),
   brand_personality: z.string().nullable(),
   brand_voice: z.string().nullable(),
+  narrative_voice: z.string().nullable(),
   formality_option_item_id: uuidSchema.nullable(),
   sentence_length_option_item_id: uuidSchema.nullable(),
   pacing_option_item_id: uuidSchema.nullable(),
@@ -158,6 +173,7 @@ export const styleGuideSchema = z.object({
   storytelling_style_option_item_id: uuidSchema.nullable(),
   use_of_jargon_option_item_id: uuidSchema.nullable(),
   language_level_option_item_id: uuidSchema.nullable(),
+  emotional_tone_option_item_id: uuidSchema.nullable(),
   inclusivity_guidelines: z.string().nullable(),
   llm_prompt_template: z.string().nullable(),
   active: z.boolean(),
@@ -174,6 +190,7 @@ export const createStyleGuidePayloadSchema = z.object({
   guide_name: z.string().min(1),
   brand_personality: z.string().nullable().optional(),
   brand_voice: z.string().nullable().optional(),
+  narrative_voice: z.string().nullable().optional(),
   formality_option_item_id: uuidSchema.nullable().optional(),
   sentence_length_option_item_id: uuidSchema.nullable().optional(),
   pacing_option_item_id: uuidSchema.nullable().optional(),
@@ -181,6 +198,7 @@ export const createStyleGuidePayloadSchema = z.object({
   storytelling_style_option_item_id: uuidSchema.nullable().optional(),
   use_of_jargon_option_item_id: uuidSchema.nullable().optional(),
   language_level_option_item_id: uuidSchema.nullable().optional(),
+  emotional_tone_option_item_id: uuidSchema.nullable().optional(),
   inclusivity_guidelines: z.string().nullable().optional(),
   llm_prompt_template: z.string().nullable().optional(),
   active: z.boolean().optional(),
@@ -194,6 +212,7 @@ export const updateStyleGuidePayloadSchema = z.object({
   guide_name: z.string().min(1).optional(),
   brand_personality: z.string().nullable().optional(),
   brand_voice: z.string().nullable().optional(),
+  narrative_voice: z.string().nullable().optional(),
   formality_option_item_id: uuidSchema.nullable().optional(),
   sentence_length_option_item_id: uuidSchema.nullable().optional(),
   pacing_option_item_id: uuidSchema.nullable().optional(),
@@ -201,6 +220,7 @@ export const updateStyleGuidePayloadSchema = z.object({
   storytelling_style_option_item_id: uuidSchema.nullable().optional(),
   use_of_jargon_option_item_id: uuidSchema.nullable().optional(),
   language_level_option_item_id: uuidSchema.nullable().optional(),
+  emotional_tone_option_item_id: uuidSchema.nullable().optional(),
   inclusivity_guidelines: z.string().nullable().optional(),
   llm_prompt_template: z.string().nullable().optional(),
   active: z.boolean().optional(),

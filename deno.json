@@ -1,0 +1,6 @@
+{
+  "nodeModulesDir": "none",
+  "tasks": {
+    "test:edge": "deno test --allow-net --allow-env --allow-read --allow-sys --junit-path=./test-results/edge-functions.xml 'src/**/edge/**/*.test.ts' 'testing/unit/edge-functions/**/*.test.ts'"
+  }
+}

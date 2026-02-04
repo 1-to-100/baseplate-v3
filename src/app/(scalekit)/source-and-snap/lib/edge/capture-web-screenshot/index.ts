@@ -1,9 +1,11 @@
 /// <reference lib="deno.ns" />
+/// <reference lib="dom" />
 
 // Import Supabase client
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 // Import Puppeteer for browser automation
-import puppeteer from 'puppeteer';
+// Note: Using deno.land/x version as it's the Deno-specific port of Puppeteer
+import puppeteer, { type HTTPRequest } from 'https://deno.land/x/puppeteer@16.2.0/mod.ts';
 
 // CORS headers
 const corsHeaders = {
@@ -265,11 +267,11 @@ Deno.serve(async (req) => {
         }
       });
 
-      page.on('error', (error) => {
+      page.on('error', (error: Error) => {
         console.error('Page error:', error);
       });
 
-      page.on('pageerror', (error) => {
+      page.on('pageerror', (error: Error) => {
         console.error('Page error event:', error);
       });
     } catch (connectionError) {
@@ -295,7 +297,7 @@ Deno.serve(async (req) => {
       // Block tracking if requested
       if (captureRequest.block_tracking) {
         await page.setRequestInterception(true);
-        page.on('request', (request) => {
+        page.on('request', (request: HTTPRequest) => {
           const url = request.url();
           const resourceType = request.resourceType();
           if (
@@ -381,7 +383,7 @@ Deno.serve(async (req) => {
               // Re-setup request interception if needed
               if (captureRequest.block_tracking) {
                 await page.setRequestInterception(true);
-                page.on('request', (request) => {
+                page.on('request', (request: HTTPRequest) => {
                   const url = request.url();
                   const resourceType = request.resourceType();
                   if (
@@ -417,7 +419,7 @@ Deno.serve(async (req) => {
       const pageTitle = await page.title();
 
       // Wait a bit for any dynamic content
-      await page.waitForTimeout(2000);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Take screenshot
       const screenshot = (await page.screenshot({
@@ -633,7 +635,7 @@ Deno.serve(async (req) => {
 
       try {
         if (page && !page.isClosed()) {
-          await page.close().catch((err) => console.warn('Error closing page:', err));
+          await page.close().catch((err: unknown) => console.warn('Error closing page:', err));
         }
       } catch (pageError) {
         console.warn('Error closing page:', pageError);
@@ -641,9 +643,7 @@ Deno.serve(async (req) => {
 
       try {
         if (browser && browser.isConnected()) {
-          await browser
-            .disconnect()
-            .catch((err) => console.warn('Error disconnecting browser:', err));
+          browser.disconnect();
         }
       } catch (browserError) {
         console.warn('Error disconnecting browser:', browserError);

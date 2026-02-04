@@ -18,7 +18,7 @@ import Box from '@mui/joy/Box';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
 import VisualStyleGuideActivityTracker from './components/visual-style-guide-activity-tracker';
@@ -29,20 +29,28 @@ import VisualStyleGuideLogos from './components/visual-style-guide-logos';
 import VisualStyleGuideTypography from './components/visual-style-guide-typography';
 import { Plus } from '@phosphor-icons/react';
 
-function EmptyVisualStyleGuideState({ onEditMood }: { onEditMood: () => void }): React.JSX.Element {
+function EmptyVisualStyleGuideState({
+  onEditMood,
+  extractionFailed,
+}: {
+  onEditMood: () => void;
+  extractionFailed: boolean;
+}): React.JSX.Element {
   return (
     <Stack spacing={4}>
-      <Alert variant='soft' color='neutral' sx={{ alignItems: 'flex-start' }}>
-        <Stack spacing={0.5}>
-          <Typography level='title-sm'>
-            We couldn&apos;t detect or extract your fonts and colors.
-          </Typography>
-          <Typography level='body-sm' color='neutral'>
-            Default options have been applied that match your style, but you can edit and customize
-            them in Edit mode.
-          </Typography>
-        </Stack>
-      </Alert>
+      {extractionFailed && (
+        <Alert variant='soft' color='neutral' sx={{ alignItems: 'flex-start' }}>
+          <Stack spacing={0.5}>
+            <Typography level='title-sm'>
+              We couldn&apos;t detect or extract your fonts and colors.
+            </Typography>
+            <Typography level='body-sm' color='neutral'>
+              Default options have been applied that match your style, but you can edit and
+              customize them in Edit mode.
+            </Typography>
+          </Stack>
+        </Alert>
+      )}
 
       <Stack spacing={3} alignItems='center' textAlign='center' sx={{ py: 4 }}>
         <Box>
@@ -67,7 +75,9 @@ function EmptyVisualStyleGuideState({ onEditMood }: { onEditMood: () => void }):
 export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const guideId = params?.guideId as string;
+  const extractionFailed = searchParams.get('extractionFailed') === 'true';
 
   const [isEditableView, setIsEditableView] = React.useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
@@ -252,7 +262,10 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
               }}
             >
               {showEmptyState && !isEditableView ? (
-                <EmptyVisualStyleGuideState onEditMood={handleGoToEditMood} />
+                <EmptyVisualStyleGuideState
+                  onEditMood={handleGoToEditMood}
+                  extractionFailed={extractionFailed}
+                />
               ) : (
                 <Stack spacing={4.5}>
                   <VisualStyleGuideColors guideId={guideId} isEditable={isEditableView} />

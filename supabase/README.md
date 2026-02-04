@@ -40,6 +40,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 # For segments-ai edge function (AI-powered segment generation)
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL_SEGMENT=gpt-4o-mini  # Optional, defaults to gpt-4o-mini
+OPENAI_IMAGE_MODEL=gpt-image-1.5
 ```
 
 Get `SUPABASE_URL` from: **Supabase -> Project Settings**

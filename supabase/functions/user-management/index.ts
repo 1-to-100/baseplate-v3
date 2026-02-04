@@ -1,10 +1,10 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+/// <reference lib="deno.ns" />
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { authenticateRequest, isSystemAdmin } from '../_shared/auth.ts'
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
 
@@ -159,7 +159,7 @@ async function handleInviteMultiple(user: any, body: any) {
   }
 
   // Check for duplicates
-  const uniqueEmails = [...new Set(emails)]
+  const uniqueEmails = [...new Set(emails)] as string[]
   if (uniqueEmails.length !== emails.length) {
     throw new ApiError('Duplicate emails in request', 400)
   }
