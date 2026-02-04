@@ -33,7 +33,9 @@ export class DiffbotClient {
   }> {
     const size = options?.size || DIFFBOT_COMPANIES_LIMIT;
     const from = options?.from || 0;
-    const getClause = options?.getClause || 'id,name,fullName,type,logo,image,diffbotUri,location,nbActiveEmployeeEdges,nbEmployees,nbEmployeesMin,nbEmployeesMax,homepageUri,categories';
+    const getClause =
+      options?.getClause ||
+      'id,name,fullName,type,logo,image,diffbotUri,location,nbActiveEmployeeEdges,nbEmployees,nbEmployeesMin,nbEmployeesMax,homepageUri,categories';
 
     // Build DQL query string
     const queryString = `type:Organization ${query.join(' ')} get:${getClause}`;
@@ -46,7 +48,7 @@ export class DiffbotClient {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -69,9 +71,8 @@ export class DiffbotClient {
       const data: DiffbotOrganizationResponse = await response.json();
 
       // Extract total count from hits or searchInfo
-      const totalCount = typeof data.hits === 'number' 
-        ? data.hits 
-        : (data.searchInfo?.totalHits || 0);
+      const totalCount =
+        typeof data.hits === 'number' ? data.hits : data.searchInfo?.totalHits || 0;
 
       // Extract entities from response
       const organizations = (data.data || []).map((item) => item.entity);
@@ -92,7 +93,9 @@ export class DiffbotClient {
       }
 
       // Re-throw other errors
-      throw new Error(`Failed to search organizations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to search organizations: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }

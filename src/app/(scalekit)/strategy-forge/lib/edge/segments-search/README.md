@@ -54,10 +54,12 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/segments-
 **POST** `/functions/v1/segments-search`
 
 **Headers:**
+
 - `Authorization: Bearer <your-jwt-token>`
 - `Content-Type: application/json`
 
 **Body:**
+
 ```json
 {
   "filters": {
@@ -76,6 +78,7 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/segments-
 ### Response
 
 **Success (200):**
+
 ```json
 {
   "data": [
@@ -92,10 +95,7 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/segments-
         "region": { "name": "California" }
       },
       "nbEmployees": 1500,
-      "categories": [
-        { "name": "Software" },
-        { "name": "Technology" }
-      ],
+      "categories": [{ "name": "Software" }, { "name": "Technology" }],
       "homepageUri": "https://example.com"
     }
   ],
@@ -107,6 +107,7 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/segments-
 ```
 
 **Error (400, 409, 503):**
+
 ```json
 {
   "error": "Error message"
@@ -116,23 +117,28 @@ curl -i --location --request POST 'http://localhost:54321/functions/v1/segments-
 ## Filter Format
 
 ### Country
+
 - Example: `"United States"`, `"Canada"`, `"United Kingdom"`
 - Converted to DQL: `location.country.name:"United States"`
 
 ### Location (State/City)
+
 - Example: `"California"`, `"New York"`, `"Toronto"`
 - Converted to DQL: `location.city.name:"California"`
 
 ### Employees (Company Size)
+
 - Range format: `"1000-5000"` or `"10,000-50,000"`
 - Minimum with plus: `"10001+"` or `"10,001+"`
 - Converted to DQL: `nbEmployees>=1000 nbEmployees<=5000` or `nbEmployees>=10001`
 
 ### Categories (Industries)
+
 - Array of industry names: `["Software", "Technology", "Healthcare"]`
 - Converted to DQL: Multiple clauses (AND): `categories.name:"Software" categories.name:"Technology"`
 
 ### Technographics (Technologies)
+
 - Array of technology names: `["AWS", "Docker", "Kubernetes"]`
 - Converted to DQL: OR syntax: `technographics.technology.name:or("AWS", "Docker", "Kubernetes")`
 
@@ -170,18 +176,22 @@ Diffbot Knowledge Graph API
 ## Troubleshooting
 
 ### "DIFFBOT_API_TOKEN environment variable is required"
+
 - Make sure you've set the Diffbot API token: `supabase secrets set DIFFBOT_API_TOKEN=your_token`
 
 ### "Service temporarily unavailable"
+
 - Diffbot API might be down or rate-limited
 - Check Diffbot service status
 - Verify your API token is valid
 
 ### "No results found"
+
 - Try broadening your filter criteria
 - Check that filter values are correct (e.g., country names, industry names)
 - Some combinations of filters might be too restrictive
 
 ### CORS errors
+
 - The function uses shared CORS handlers from `_shared/cors.ts`
 - Make sure your frontend origin is allowed

@@ -124,6 +124,7 @@ npx supabase secrets set DIFFBOT_API_TOKEN=your_token_here
   - `filters` column should contain JSONB with your selections
 
 - Check `notifications` table:
+
   ```sql
   SELECT title, message, created_at
   FROM notifications
@@ -187,6 +188,7 @@ npx supabase secrets set DIFFBOT_API_TOKEN=your_token_here
    - Should show company details
 
 5. Check customer_companies table:
+
    ```sql
    SELECT cc.name, cc.employees, cc.country
    FROM customer_companies cc

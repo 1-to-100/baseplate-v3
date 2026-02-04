@@ -32,7 +32,7 @@ function extractLocationData(org: DiffbotOrganization): {
   const country = org.location?.country?.name || null;
   const region = org.location?.region?.name || null;
   const city = org.location?.city?.name || null;
-  
+
   // Combine city and region for address if available
   const addressParts = [city, region].filter(Boolean);
   const address = addressParts.length > 0 ? addressParts.join(', ') : null;
@@ -109,12 +109,10 @@ export async function bulkUpsertCompanies(
     };
   });
 
-  const { error } = await supabase
-    .from('companies')
-    .upsert(records, {
-      onConflict: 'diffbot_id',
-      ignoreDuplicates: false,
-    });
+  const { error } = await supabase.from('companies').upsert(records, {
+    onConflict: 'diffbot_id',
+    ignoreDuplicates: false,
+  });
 
   if (error) {
     console.error('Error upserting companies:', error);
@@ -250,12 +248,10 @@ export async function bulkInsertListCompanies(
     company_id: companyId,
   }));
 
-  const { error } = await supabase
-    .from('list_companies')
-    .upsert(records, {
-      onConflict: 'company_id,list_id',
-      ignoreDuplicates: true,
-    });
+  const { error } = await supabase.from('list_companies').upsert(records, {
+    onConflict: 'company_id,list_id',
+    ignoreDuplicates: true,
+  });
 
   if (error) {
     console.error('Error upserting list_companies:', error);
@@ -280,7 +276,7 @@ export async function bulkInsertCustomerCompanies(
 
   // Create a map of diffbot_id to company_id
   const diffbotIdToCompanyId = new Map<string, string>();
-  
+
   // Fetch the mapping
   const { data: companyMappings, error: mappingError } = await supabase
     .from('companies')

@@ -7,7 +7,7 @@ function extractEmployeesValue(employees: string | string[] | null | undefined):
   if (employees === null || employees === undefined) {
     return null;
   }
-  
+
   if (Array.isArray(employees)) {
     const firstElement = employees.length > 0 ? employees[0] : null;
     if (firstElement !== null && firstElement !== undefined && typeof firstElement === 'string') {
@@ -15,11 +15,11 @@ function extractEmployeesValue(employees: string | string[] | null | undefined):
     }
     return null;
   }
-  
+
   if (typeof employees === 'string') {
     return employees;
   }
-  
+
   return null;
 }
 
@@ -72,7 +72,7 @@ export class DqlAdapter {
       // Handle range format: "1000-5000" or "10,000-50,000" or "501-1000 employees"
       // Remove "employees" suffix if present
       const cleanValue = employeesValue.replace(/\s+employees?$/i, '');
-      
+
       if (cleanValue.includes('-')) {
         const parts = cleanValue.split('-');
         if (parts.length === 2) {
