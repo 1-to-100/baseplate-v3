@@ -5,6 +5,7 @@ import { DqlAdapter } from './dql-adapter.ts';
 import { DiffbotClient } from './diffbot-client.ts';
 import {
   bulkUpsertCompanies,
+  bulkUpsertCompanyMetadata,
   bulkInsertListCompanies,
   bulkInsertCustomerCompanies,
 } from './company-upsert.ts';
@@ -150,6 +151,16 @@ Deno.serve(async (req) => {
       );
       console.log(`Upserted companies, got ${companyIds.length} IDs`);
 
+      // Upsert company_metadata with full Diffbot payload (for company scoring)
+      const metadataResult = await bulkUpsertCompanyMetadata(
+        supabase,
+        companyIds,
+        validCompanies
+      );
+      console.log(
+        `Upserted company_metadata: ${metadataResult.updated} updated, ${metadataResult.inserted} inserted`
+      );
+
       // Create list_companies for every company (new and existing)
       console.log(`Linking companies to segment ${body.segment_id}...`);
       const linkedCount = await bulkInsertListCompanies(
@@ -185,6 +196,32 @@ Deno.serve(async (req) => {
           segment.list_id,
           validCompanies.length
         );
+      }
+
+      // Enqueue company scoring jobs and trigger worker (no pg_cron required)
+      if (companyIds.length > 0) {
+        const now = new Date().toISOString();
+        const queueRecords = companyIds.map((company_id) => ({
+          customer_id: segment.customer_id,
+          company_id,
+          status: 'pending',
+          updated_at: now,
+        }));
+        const { error: queueError } = await supabase
+          .from('company_scoring_queue')
+          .upsert(queueRecords, {
+            onConflict: 'customer_id,company_id',
+            ignoreDuplicates: false,
+          });
+        if (queueError) {
+          console.error('Failed to enqueue company scoring jobs:', queueError);
+        } else {
+          console.log(`Enqueued ${companyIds.length} company scoring jobs`);
+          // Trigger worker so queue is processed without pg_cron
+          supabase.functions
+            .invoke('company-scoring-worker', { body: {} })
+            .catch((err) => console.error('Failed to trigger company-scoring-worker', err));
+        }
       }
 
       return new Response(

@@ -160,3 +160,9 @@ verify_jwt = false
 
 [functions.industries-smart-search]
 verify_jwt = false
+
+[functions.company-scoring]
+verify_jwt = false
+
+[functions.company-scoring-worker]
+verify_jwt = false

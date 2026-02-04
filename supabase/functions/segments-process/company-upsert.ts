@@ -149,6 +149,87 @@ export async function bulkUpsertCompanies(
   return { companyIds, companies: validCompanies };
 }
 
+export interface BulkUpsertCompanyMetadataResult {
+  updated: number;
+  inserted: number;
+}
+
+/**
+ * Bulk upsert company_metadata with full Diffbot payload per company.
+ * No unique constraint on company_metadata(company_id): select existing by company_id,
+ * then update first match or insert. Required for company scoring (OpenAI uses diffbot_json).
+ */
+export async function bulkUpsertCompanyMetadata(
+  supabase: SupabaseClient,
+  companyIds: string[],
+  companies: DiffbotOrganization[]
+): Promise<BulkUpsertCompanyMetadataResult> {
+  if (companyIds.length === 0 || companies.length === 0 || companyIds.length !== companies.length) {
+    return { updated: 0, inserted: 0 };
+  }
+
+  const { data: existingRows, error: fetchError } = await supabase
+    .from('company_metadata')
+    .select('company_metadata_id, company_id')
+    .in('company_id', companyIds);
+
+  if (fetchError) {
+    console.error('Error fetching company_metadata:', fetchError);
+    throw new Error(`Failed to fetch company_metadata: ${fetchError.message}`);
+  }
+
+  const companyIdToMetaId = new Map<string, number>();
+  existingRows?.forEach((row) => {
+    if (!companyIdToMetaId.has(row.company_id)) {
+      companyIdToMetaId.set(row.company_id, row.company_metadata_id);
+    }
+  });
+
+  const now = new Date().toISOString();
+  const toUpdate: { company_metadata_id: number; diffbot_json: Record<string, unknown> }[] = [];
+  const toInsert: { company_id: string; diffbot_json: Record<string, unknown> }[] = [];
+
+  for (let i = 0; i < companyIds.length; i++) {
+    const companyId = companyIds[i];
+    const org = companies[i] as unknown as Record<string, unknown>;
+    const metaId = companyIdToMetaId.get(companyId);
+    if (metaId != null) {
+      toUpdate.push({ company_metadata_id: metaId, diffbot_json: org });
+    } else {
+      toInsert.push({ company_id: companyId, diffbot_json: org });
+    }
+  }
+
+  let updated = 0;
+  for (const row of toUpdate) {
+    const { error } = await supabase
+      .from('company_metadata')
+      .update({ diffbot_json: row.diffbot_json, updated_at: now })
+      .eq('company_metadata_id', row.company_metadata_id);
+    if (error) {
+      console.error('Error updating company_metadata:', error);
+      throw new Error(`Failed to update company_metadata: ${error.message}`);
+    }
+    updated++;
+  }
+
+  let inserted = 0;
+  if (toInsert.length > 0) {
+    const insertRecords = toInsert.map((r) => ({
+      company_id: r.company_id,
+      diffbot_json: r.diffbot_json,
+    }));
+    const { error } = await supabase.from('company_metadata').insert(insertRecords);
+    if (error) {
+      console.error('Error inserting company_metadata:', error);
+      throw new Error(`Failed to insert company_metadata: ${error.message}`);
+    }
+    inserted = toInsert.length;
+  }
+
+  return { updated, inserted };
+}
+
 /**
  * Bulk upsert into list_companies junction table.
  * Creates a list_companies row for every company (new or already in companies table)

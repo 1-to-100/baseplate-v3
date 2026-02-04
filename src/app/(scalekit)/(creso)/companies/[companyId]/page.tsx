@@ -9,7 +9,13 @@ import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
 import Chip from '@mui/joy/Chip';
 import { useQuery } from '@tanstack/react-query';
-import { getCompanyById, getCompanyDiffbotJson, getCompanyPeople } from '../lib/api/companies';
+import {
+  getCompanyWithScoring,
+  getCompanyLists,
+  buildCompanyItemFromScoring,
+  getCompanyDiffbotJson,
+  getCompanyPeople,
+} from '../lib/api/companies';
 import type { CompanyItem, CompanyItemList } from '../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -95,7 +101,13 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
     error: companyError,
   } = useQuery({
     queryKey: ['company', companyId],
-    queryFn: () => getCompanyById(companyId),
+    queryFn: async () => {
+      const [scoringResult, lists] = await Promise.all([
+        getCompanyWithScoring(companyId),
+        getCompanyLists(companyId),
+      ]);
+      return buildCompanyItemFromScoring(scoringResult.company, scoringResult.scoring, lists);
+    },
     enabled: !!companyId,
   });
 
