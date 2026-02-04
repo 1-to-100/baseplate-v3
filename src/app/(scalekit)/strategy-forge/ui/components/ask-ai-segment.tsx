@@ -9,7 +9,7 @@ import { RocketLaunch } from '@phosphor-icons/react/dist/ssr/RocketLaunch';
 import { PaperPlaneRight } from '@phosphor-icons/react/dist/ssr/PaperPlaneRight';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from '@/components/core/toaster';
-import { askAiSegment } from '../../lib/api/segments';
+import { askAiSegment } from '../../lib/api/segment-lists';
 import type { AiGeneratedSegment } from '../../lib/types/list';
 import { useCallback } from 'react';
 

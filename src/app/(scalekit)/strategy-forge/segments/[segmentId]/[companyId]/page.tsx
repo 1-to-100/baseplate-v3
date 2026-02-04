@@ -9,12 +9,12 @@ import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import CircularProgress from '@mui/joy/CircularProgress';
-import { getSegmentById, getSegmentCompanies } from '../../lib/api/segments';
+import { getSegmentById, getSegmentCompanies } from '../../../lib/api/segment-lists';
 import {
   getCompanyWithScoring,
   getCompanyDiffbotJson,
   getCompanyPeople,
-} from '../../lib/api/companies';
+} from '../../../lib/api/company-segment';
 import {
   CompanyDetailsHeader,
   FitScoreBox,
@@ -25,9 +25,9 @@ import {
   CompanyHeaderMenu,
   type CompanyDetailsData,
   type SimplePerson,
-} from '../../ui/components/company-details';
+} from '../../../ui/components/company-details';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
-import type { CompanyItem } from '../../../companies/lib/types/company';
+import type { CompanyItem } from '../../../lib/types/company';
 
 interface PageProps {
   params: Promise<{

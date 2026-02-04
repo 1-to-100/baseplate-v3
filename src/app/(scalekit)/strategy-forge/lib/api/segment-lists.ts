@@ -1,6 +1,6 @@
 /**
- * Segments API
- * Functions for segment operations (create, update, delete)
+ * Segment Lists API
+ * Functions for segment list operations (create, update, delete, get companies)
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -538,14 +538,6 @@ export async function getSegmentCompanies(
       { count: 'exact' }
     )
     .eq('list_id', listId);
-
-  // Apply search filter if provided
-  if (search && search.trim()) {
-    // Search in company names via the companies relation
-    // Note: Supabase doesn't support direct text search on relations easily,
-    // so we'll filter after fetching or use a different approach
-    // For now, we'll fetch all and filter client-side, or use a better approach
-  }
 
   // Apply pagination
   const from = (page - 1) * perPage;

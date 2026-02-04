@@ -15,8 +15,8 @@ import {
   buildCompanyItemFromScoring,
   getCompanyDiffbotJson,
   getCompanyPeople,
-} from '../lib/api/companies';
-import type { CompanyItem, CompanyItemList } from '../lib/types/company';
+} from '../../lib/api/companies';
+import type { CompanyItem, CompanyItemList } from '../../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';

@@ -11,11 +11,11 @@ import Stack from '@mui/joy/Stack';
 import Input from '@mui/joy/Input';
 import Button from '@mui/joy/Button';
 import FormHelperText from '@mui/joy/FormHelperText';
-import { updateCompany } from '@/app/(scalekit)/strategy-forge/companies/lib/api/companies';
+import { updateCompany } from '@/app/(scalekit)/strategy-forge/lib/api/companies';
 import type {
   CompanyItem,
   UpdateCompanyPayload,
-} from '@/app/(scalekit)/strategy-forge/companies/lib/types/company';
+} from '@/app/(scalekit)/strategy-forge/lib/types/company';
 import { toast } from '@/components/core/toaster';
 
 interface HttpError {

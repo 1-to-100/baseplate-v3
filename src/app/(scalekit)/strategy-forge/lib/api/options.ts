@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { OptionIndustry, OptionCompanySize } from '../types/company';
+import type { OptionIndustry, OptionCompanySize } from '../types/segment-company';
 
 /**
  * Smart search result for industries

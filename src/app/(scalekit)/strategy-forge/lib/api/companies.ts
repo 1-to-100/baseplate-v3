@@ -126,8 +126,6 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
   // Transform companies to CompanyItem format
   const transformedCompanies: CompanyItem[] = (companies || []).map((company) => {
     // Map company_id (string) to id (number) for compatibility
-    // Use a hash or numeric conversion - for now, we'll use a simple approach
-    // In production, you might want to add an integer id column or use a different mapping
     const numericId =
       parseInt(company.company_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0;
 
@@ -145,20 +143,20 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
       address: company.address || undefined,
       latitude: company.latitude || undefined,
       longitude: company.longitude || undefined,
-      revenue: undefined, // Not in companies table, would need to join customer_companies
-      currency_code: undefined, // Not in companies table
+      revenue: undefined,
+      currency_code: undefined,
       employees: company.employees || undefined,
       siccodes: company.siccodes || undefined,
       categories: company.categories || undefined,
       technologies: company.technologies || undefined,
       phone: company.phone || undefined,
       email: company.email || undefined,
-      last_scoring_results: undefined, // Would need to join customer_companies
+      last_scoring_results: undefined,
       social_links: company.social_links || undefined,
       fetched_at: company.fetched_at || undefined,
       created_at: company.created_at || new Date().toISOString(),
       updated_at: company.updated_at || new Date().toISOString(),
-      lists: undefined, // Would need separate query
+      lists: undefined,
     };
   });
 
@@ -216,8 +214,6 @@ function parseLastScoringResults(raw: unknown): CompanyItem['last_scoring_result
 
 /**
  * Get company by company_id from companies table and scoring data from customer_companies.
- * Uses get_accessible_customer_ids so scoring is shown when any accessible customer has scored
- * the company (e.g. Customer Success viewing a company under another customer).
  */
 export async function getCompanyWithScoring(company_id: string): Promise<CompanyWithScoringResult> {
   const supabase = createClient();

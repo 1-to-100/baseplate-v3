@@ -27,13 +27,13 @@ import { Minus as MinusIcon } from '@phosphor-icons/react/dist/ssr/Minus';
 import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 
 import { paths } from '@/paths';
-import CompanyDetailsPopover from '../../companies/ui/components/company-details-popover';
+import CompanyDetailsPopover from '../../ui/components/company-details-popover';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
-import { getSegmentById, removeCompanyFromSegment } from '../lib/api/segments';
-import { ListStatus } from '../lib/types/list';
+import { getSegmentById, removeCompanyFromSegment } from '../../lib/api/segment-lists';
+import { ListStatus } from '../../lib/types/list';
 
 interface PageProps {
   params: Promise<{

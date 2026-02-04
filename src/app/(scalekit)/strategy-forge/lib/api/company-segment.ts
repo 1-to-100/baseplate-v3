@@ -1,6 +1,6 @@
 /**
- * Companies API
- * Functions for company operations (get by ID, get with scoring, get diffbot JSON, get people)
+ * Company API (segment context)
+ * Company operations with optional segment scope (get by ID, with scoring, diffbot, people)
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -190,6 +190,7 @@ export async function getCompanyPeople(
     page?: number;
     perPage?: number;
     search?: string;
+    segmentId?: string;
   }
 ): Promise<{
   data: Array<{

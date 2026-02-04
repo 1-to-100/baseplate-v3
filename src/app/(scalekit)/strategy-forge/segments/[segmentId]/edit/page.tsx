@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Box from '@mui/joy/Box';
 import CircularProgress from '@mui/joy/CircularProgress';
-import { CreateSegmentForm } from '../../ui/components/create-segment-form';
+import { CreateSegmentForm } from '../../../ui/components/create-segment-form';
 
 interface PageProps {
   params: Promise<{

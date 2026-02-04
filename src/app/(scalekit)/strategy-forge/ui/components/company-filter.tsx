@@ -34,10 +34,11 @@ import {
   getCompanySizes,
   smartSearchIndustries,
   type SmartSearchIndustry,
-} from '../../../segments/lib/api/options';
-import { countries, usStates, canadianProvinces } from '../../../segments/lib/constants/locations';
-import { technologies } from '../../../segments/lib/constants/technologies';
+} from '../../lib/api/options';
+import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
+import { technologies } from '../../lib/constants/technologies';
 import type { CompanyFilterFields } from '../../lib/types/company';
+import { parseCompanySizeRange } from '../../lib/utils/company-size';
 
 // Suggested technographics for Smart search "Also:" section (reference: creso-ai)
 const SUGGESTED_TECHNOGRAPHICS = [
@@ -54,7 +55,6 @@ const SUGGESTED_TECHNOGRAPHICS = [
   'Salesforce',
   'Zoho',
 ];
-import { parseCompanySizeRange } from '../../lib/utils/company-size';
 
 interface CompanyFilterProps {
   open: boolean;

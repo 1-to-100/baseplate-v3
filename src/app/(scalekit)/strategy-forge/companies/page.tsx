@@ -26,11 +26,11 @@ import Pagination from '@/components/dashboard/layout/pagination';
 import { useGlobalSearch } from '@/hooks/use-global-search';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { useImpersonation } from '@/contexts/impersonation-context';
-import { getCompanies } from './lib/api/companies';
-import type { GetCompaniesParams } from './lib/types/company';
-import type { CompanyItem, CompanyFilterFields } from './lib/types/company';
-import CompanyFilter from './ui/components/company-filter';
-import CompanyDetailsPopover from './ui/components/company-details-popover';
+import { getCompanies } from '../lib/api/companies';
+import type { GetCompaniesParams } from '../lib/types/company';
+import type { CompanyItem, CompanyFilterFields } from '../lib/types/company';
+import CompanyFilter from '../ui/components/company-filter';
+import CompanyDetailsPopover from '../ui/components/company-details-popover';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 
 export default function Page(): React.JSX.Element {

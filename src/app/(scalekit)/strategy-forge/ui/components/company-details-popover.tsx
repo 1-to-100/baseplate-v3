@@ -80,7 +80,6 @@ export default function CompanyDetailsPopover({
     };
   }, [menuAnchorEl]);
 
-  // Reset modal states when popover closes
   useEffect(() => {
     if (!open) {
       setEditModalOpen(false);
@@ -103,7 +102,6 @@ export default function CompanyDetailsPopover({
   };
 
   const handleDelete = () => {
-    // TODO: Implement delete company functionality
     handleMenuClose();
   };
 
@@ -138,7 +136,6 @@ export default function CompanyDetailsPopover({
 
   const formatPhoneNumber = (phone?: string) => {
     if (!phone) return 'N/A';
-    // Mock phone formatting for demo
     return '+1 (875) 567 000';
   };
 
@@ -177,7 +174,6 @@ export default function CompanyDetailsPopover({
         }}
       >
         <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-          {/* Header */}
           <Stack
             direction='row'
             spacing={2}
@@ -201,7 +197,6 @@ export default function CompanyDetailsPopover({
             </Button>
           </Stack>
 
-          {/* Company Overview */}
           <Stack
             direction='column'
             spacing={{ xs: 1.5, sm: 2 }}
@@ -339,7 +334,6 @@ export default function CompanyDetailsPopover({
               </Stack>
             </Box>
 
-            {/* Fit Score */}
             {company?.last_scoring_results ? (
               <Box
                 sx={{
@@ -388,7 +382,6 @@ export default function CompanyDetailsPopover({
             )}
           </Stack>
 
-          {/* Menu */}
           <Popper
             open={Boolean(menuAnchorEl)}
             anchorEl={menuAnchorEl}
@@ -445,7 +438,6 @@ export default function CompanyDetailsPopover({
             </Box>
           </Popper>
 
-          {/* Details */}
           <Stack spacing={{ xs: 1, sm: 2 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Typography
@@ -611,7 +603,6 @@ export default function CompanyDetailsPopover({
               </Typography>
             </Stack>
 
-            {/* Lists Section */}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Typography
                 level='body-sm'
@@ -654,7 +645,6 @@ export default function CompanyDetailsPopover({
               </Stack>
             </Stack>
 
-            {/* Loading Indicator */}
             {companyLoading && (
               <Box
                 sx={{
@@ -684,14 +674,12 @@ export default function CompanyDetailsPopover({
         </Box>
       </Sheet>
 
-      {/* Edit Company Modal */}
       <EditCompanyModal
         open={editModalOpen}
         onClose={handleEditModalClose}
         company={company || null}
       />
 
-      {/* Add Company to List Modal */}
       <AddCompanyToListModal
         open={addToListModalOpen}
         onClose={handleAddToListModalClose}

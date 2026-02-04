@@ -32,14 +32,14 @@ import {
   smartSearchIndustries,
   type SmartSearchIndustry,
 } from '../../lib/api/options';
-import { createSegment, editSegment, getSegmentById } from '../../lib/api/segments';
+import { createSegment, editSegment, getSegmentById } from '../../lib/api/segment-lists';
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
 import { type List, type AiGeneratedSegment } from '../../lib/types/list';
 import { AskAiSegment } from './ask-ai-segment';
 import type { CompanyPreview } from '../../lib/types/search';
-import type { OptionIndustry, OptionCompanySize } from '../../lib/types/company';
+import type { OptionIndustry, OptionCompanySize } from '../../lib/types/segment-company';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
@@ -1945,7 +1945,7 @@ export function CreateSegmentForm({
                     </tbody>
                   </Table>
                 </Box>
-                {totalCount > 0 && lastPage > 1 && (
+                {isEditMode && totalCount > 0 && lastPage > 1 && (
                   <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
                     <Pagination
                       totalPages={lastPage}
