@@ -25,9 +25,9 @@ import {
   CompanyHeaderMenu,
   type CompanyDetailsData,
   type SimplePerson,
-} from '@/app/(scalekit)/(creso)/segments/ui/components/company-details';
+} from '../../ui/components/company-details';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
-import type { CompanyItem } from '@/app/(scalekit)/(creso)/companies/lib/types/company';
+import type { CompanyItem } from '../../../companies/lib/types/company';
 
 interface PageProps {
   params: Promise<{
@@ -378,8 +378,8 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   const breadcrumbs = (
     <Breadcrumbs separator={<BreadcrumbsSeparator />} sx={{ mb: 2 }}>
       <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
-      <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
-      <BreadcrumbsItem href={paths.dashboard.segments.details(segmentId!)}>
+      <BreadcrumbsItem href={paths.strategyForge.segments.list}>Segments</BreadcrumbsItem>
+      <BreadcrumbsItem href={paths.strategyForge.segments.details(segmentId!)}>
         {segment.name}
       </BreadcrumbsItem>
       <BreadcrumbsItem type='end'>{companyDetails.name.slice(0, 80)}</BreadcrumbsItem>

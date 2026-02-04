@@ -489,7 +489,7 @@ export function CreateSegmentForm({
         queryClient.invalidateQueries({ queryKey: ['segments'] });
 
         toast.success('Segment updated successfully.');
-        router.push(paths.dashboard.segments.details(segmentId));
+        router.push(paths.strategyForge.segments.details(segmentId));
       } else {
         // Create new segment
         await createSegment({
@@ -501,7 +501,7 @@ export function CreateSegmentForm({
         queryClient.invalidateQueries({ queryKey: ['segments'] });
 
         toast.success('Segment created! Processing companies in background...');
-        router.push(paths.dashboard.segments.list);
+        router.push(paths.strategyForge.segments.list);
       }
     } catch (error) {
       const errorMessage =
@@ -520,7 +520,7 @@ export function CreateSegmentForm({
     if (onCancel) {
       onCancel();
     } else {
-      router.push(paths.dashboard.segments.list);
+      router.push(paths.strategyForge.segments.list);
     }
   };
 
@@ -1977,9 +1977,9 @@ export function CreateSegmentForm({
   const breadcrumbs = (
     <Breadcrumbs separator={<BreadcrumbsSeparator />}>
       <BreadcrumbsItem href={paths.home} type='start' />
-      <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
+      <BreadcrumbsItem href={paths.strategyForge.segments.list}>Segments</BreadcrumbsItem>
       {isEditMode && segmentId && segment ? (
-        <BreadcrumbsItem type='end' href={paths.dashboard.segments.details(segmentId)}>
+        <BreadcrumbsItem type='end' href={paths.strategyForge.segments.details(segmentId)}>
           {segment.name}
         </BreadcrumbsItem>
       ) : (

@@ -158,6 +158,22 @@ export const paths = {
       edit: (companyId: string) => `/companies/${companyId}/edit`,
     },
   },
+  strategyForge: {
+    segments: {
+      list: '/strategy-forge/segments',
+      create: '/strategy-forge/segments/create',
+      details: (segmentId: string) => `/strategy-forge/segments/${segmentId}`,
+      edit: (segmentId: string) => `/strategy-forge/segments/${segmentId}/edit`,
+      companyDetails: (segmentId: string, companyId: string) =>
+        `/strategy-forge/segments/${segmentId}/${companyId}`,
+    },
+    companies: {
+      list: '/strategy-forge/companies',
+      create: '/strategy-forge/companies/create',
+      details: (companyId: string) => `/strategy-forge/companies/${companyId}`,
+      edit: (companyId: string) => `/strategy-forge/companies/${companyId}/edit`,
+    },
+  },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',
 } as const;

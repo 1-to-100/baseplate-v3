@@ -38,16 +38,16 @@ export const layoutConfig: LayoutConfig = {
         {
           key: 'segments',
           title: 'Segments',
-          href: paths.dashboard.segments.list,
+          href: paths.strategyForge.segments.list,
           icon: 'grid-four',
-          matcher: { type: 'startsWith', href: paths.dashboard.segments.list },
+          matcher: { type: 'startsWith', href: paths.strategyForge.segments.list },
         },
         {
           key: 'companies',
           title: 'Companies',
-          href: paths.dashboard.companies.list,
+          href: paths.strategyForge.companies.list,
           icon: 'buildings',
-          matcher: { type: 'startsWith', href: paths.dashboard.companies.list },
+          matcher: { type: 'startsWith', href: paths.strategyForge.companies.list },
         },
         { key: 'divider1', type: 'divider' },
         {

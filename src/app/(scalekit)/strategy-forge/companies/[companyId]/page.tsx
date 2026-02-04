@@ -292,7 +292,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   const breadcrumbs = (
     <Breadcrumbs separator={<BreadcrumbsSeparator />} sx={{ mb: 2 }}>
       <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
-      <BreadcrumbsItem href={paths.creso.companies.list}>Companies</BreadcrumbsItem>
+      <BreadcrumbsItem href={paths.strategyForge.companies.list}>Companies</BreadcrumbsItem>
       <BreadcrumbsItem type='end'>{company.name.slice(0, 80)}</BreadcrumbsItem>
     </Breadcrumbs>
   );

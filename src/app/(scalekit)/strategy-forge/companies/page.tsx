@@ -70,7 +70,9 @@ export default function Page(): React.JSX.Element {
       }
 
       const queryString = params.toString();
-      router.replace(`${paths.creso.companies.list}${queryString ? `?${queryString}` : ''}`);
+      router.replace(
+        `${paths.strategyForge.companies.list}${queryString ? `?${queryString}` : ''}`
+      );
     },
     [router, searchParams]
   );
@@ -272,7 +274,7 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleViewProfile = (company: CompanyItem) => {
-    router.push(paths.creso.companies.details(company.company_id ?? String(company.id)));
+    router.push(paths.strategyForge.companies.details(company.company_id ?? String(company.id)));
     handleMenuClose();
   };
 

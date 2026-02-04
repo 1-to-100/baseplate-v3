@@ -300,7 +300,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
           <Button
             variant='outlined'
             startDecorator={<ArrowLeftIcon size={20} />}
-            onClick={() => router.push(paths.dashboard.segments.list)}
+            onClick={() => router.push(paths.strategyForge.segments.list)}
           >
             Back to Segments
           </Button>
@@ -325,14 +325,14 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             <Button
               variant='solid'
               color='primary'
-              onClick={() => router.push(paths.dashboard.segments.edit(segment.list_id))}
+              onClick={() => router.push(paths.strategyForge.segments.edit(segment.list_id))}
             >
               Edit
             </Button>
           </Stack>
           <Breadcrumbs sx={{ mb: 2 }} separator={<BreadcrumbsSeparator />}>
             <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
-            <BreadcrumbsItem href={paths.dashboard.segments.list}>Segments</BreadcrumbsItem>
+            <BreadcrumbsItem href={paths.strategyForge.segments.list}>Segments</BreadcrumbsItem>
             <BreadcrumbsItem type='end'>{segment.name}</BreadcrumbsItem>
           </Breadcrumbs>
         </Stack>
@@ -498,7 +498,10 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                             target.closest('[data-menu-item]');
                           if (isCheckbox || isMenuButton) return;
                           router.push(
-                            paths.creso.segments.companyDetails(segmentId!, company.company_id)
+                            paths.strategyForge.segments.companyDetails(
+                              segmentId!,
+                              company.company_id
+                            )
                           );
                         }}
                         style={{ cursor: 'pointer' }}
@@ -675,7 +678,10 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                             if (company) {
                               handleMenuClose();
                               router.push(
-                                paths.creso.segments.companyDetails(segmentId!, company.company_id)
+                                paths.strategyForge.segments.companyDetails(
+                                  segmentId!,
+                                  company.company_id
+                                )
                               );
                             }
                           }}

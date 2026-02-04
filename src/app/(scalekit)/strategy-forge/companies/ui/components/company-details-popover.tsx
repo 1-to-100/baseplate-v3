@@ -122,8 +122,8 @@ export default function CompanyDetailsPopover({
 
   const handleViewProfile = (company: CompanyItem) => {
     const url = company.company_id
-      ? paths.creso.companies.details(company.company_id)
-      : paths.creso.companies.details(String(company.id));
+      ? paths.strategyForge.companies.details(company.company_id)
+      : paths.strategyForge.companies.details(String(company.id));
     router.push(url);
     onClose();
   };
