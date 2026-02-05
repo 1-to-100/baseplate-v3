@@ -433,7 +433,51 @@ export async function getCompanyById(company_id: string): Promise<CompanyItem> {
 }
 
 /**
- * Update company by company_id
+ * Resolve current customer id for customer-scoped updates (same pattern as getCompanyWithScoring).
+ */
+async function resolveCurrentCustomerId(
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
+  const [
+    { data: currentCustomerId, error: currentCustomerError },
+    { data: accessibleCustomerIdsRaw, error: accessibleError },
+  ] = await Promise.all([
+    supabase.rpc('current_customer_id'),
+    supabase.rpc('get_accessible_customer_ids'),
+  ]);
+
+  if (accessibleError || !accessibleCustomerIdsRaw?.length) {
+    const fallbackId =
+      !currentCustomerError && currentCustomerId != null && currentCustomerId !== ''
+        ? Array.isArray(currentCustomerId)
+          ? currentCustomerId[0]
+          : currentCustomerId
+        : null;
+    return fallbackId;
+  }
+  const raw = accessibleCustomerIdsRaw as unknown;
+  if (Array.isArray(raw) && raw.length > 0) {
+    const first = raw[0];
+    const customerIds =
+      typeof first === 'object' && first !== null && 'customer_id' in first
+        ? (raw as Array<{ customer_id: string }>).map((r) => r.customer_id)
+        : (raw as string[]);
+    return customerIds[0] ?? null;
+  }
+  const fallbackId =
+    currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : currentCustomerId
+      : null;
+  return fallbackId;
+}
+
+/**
+ * Update company by company_id.
+ * Global fields (name, description, website, etc.) are written to companies (system_admin only per RLS).
+ * Customer-scoped fields (revenue, employees, categories, country, region) are written to customer_companies
+ * so that non-admin users can update them and the UI (which reads from customer_companies) reflects the change.
  */
 export async function updateCompany(
   company_id: string,
@@ -450,6 +494,42 @@ export async function updateCompany(
     throw new Error('Not authenticated');
   }
 
+  const now = new Date().toISOString();
+
+  // Customer-scoped fields: update customer_companies so non-admin users can persist revenue etc.
+  const hasCustomerScopedFields =
+    payload.revenue !== undefined ||
+    payload.employees !== undefined ||
+    payload.categories !== undefined ||
+    payload.country !== undefined ||
+    payload.region !== undefined;
+
+  if (hasCustomerScopedFields) {
+    const customerId = await resolveCurrentCustomerId(supabase);
+    if (customerId) {
+      const customerUpdate: Record<string, unknown> = {
+        customer_id: customerId,
+        company_id,
+        updated_at: now,
+      };
+      if (payload.revenue !== undefined) customerUpdate.revenue = payload.revenue;
+      if (payload.employees !== undefined) customerUpdate.employees = payload.employees;
+      if (payload.categories !== undefined) customerUpdate.categories = payload.categories;
+      if (payload.country !== undefined) customerUpdate.country = payload.country;
+      if (payload.region !== undefined) customerUpdate.region = payload.region;
+
+      const { error: ccError } = await supabase.from('customer_companies').upsert(customerUpdate, {
+        onConflict: 'customer_id,company_id',
+        ignoreDuplicates: false,
+      });
+
+      if (ccError) {
+        throw new Error(`Failed to update company details: ${ccError.message}`);
+      }
+    }
+  }
+
+  // Global fields: update companies (RLS allows only system_admin; for others this may affect 0 rows)
   const updateData: Record<string, unknown> = {};
   if (payload.name !== undefined) updateData.display_name = payload.name;
   if (payload.description !== undefined) updateData.description = payload.description;
@@ -472,23 +552,21 @@ export async function updateCompany(
   if (payload.email !== undefined) updateData.email = payload.email;
   if (payload.social_links !== undefined) updateData.social_links = payload.social_links;
 
-  updateData.updated_at = new Date().toISOString();
+  updateData.updated_at = now;
 
   const { data: company, error } = await supabase
     .from('companies')
     .update(updateData)
     .eq('company_id', company_id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw new Error(`Failed to update company: ${error.message}`);
   }
 
-  if (!company) {
-    throw new Error('Company not found after update');
-  }
-
+  // Do not require a row from companies: RLS may allow only system_admin to update, so 0 rows is OK.
+  // Merged result from getCompanyById will still include customer_companies updates (e.g. revenue).
   return getCompanyById(company_id);
 }
 
