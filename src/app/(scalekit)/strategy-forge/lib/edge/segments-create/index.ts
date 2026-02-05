@@ -69,6 +69,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check minimum credits required for segment creation (5 credits to preview/create)
+    const MINIMUM_CREDITS_FOR_SEGMENT = 5;
+    const { data: creditCheck, error: creditError } = await supabase.rpc('check_credits', {
+      p_amount: MINIMUM_CREDITS_FOR_SEGMENT,
+      p_customer_id: user.customer_id,
+    });
+
+    if (creditError) {
+      console.error('Failed to check credits:', creditError);
+      throw new ApiError('Failed to verify credit balance', 500);
+    }
+
+    const creditResult = creditCheck?.[0];
+    if (!creditResult?.has_credits) {
+      console.log('Insufficient credits for segment creation:', {
+        customer_id: user.customer_id,
+        required: MINIMUM_CREDITS_FOR_SEGMENT,
+        available: creditResult?.current_balance ?? 0,
+      });
+      throw new ApiError(
+        `Insufficient credits. At least ${MINIMUM_CREDITS_FOR_SEGMENT} credits are required to create a segment. You have ${creditResult?.current_balance ?? 0} credits.`,
+        402,
+        'INSUFFICIENT_CREDITS'
+      );
+    }
+
+    console.log('Credit check passed:', {
+      customer_id: user.customer_id,
+      available: creditResult.current_balance,
+    });
+
     // Insert segment into lists table
     const { data: segment, error: insertError } = await supabase
       .from('lists')

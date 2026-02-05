@@ -109,6 +109,32 @@ Deno.serve(async (req) => {
         `Diffbot search completed for segment ${body.segment_id}: ${companies.length} companies found (total: ${totalCount})`
       );
 
+      // Charge credits for successful Diffbot lookup (1 credit per company)
+      if (companies.length > 0) {
+        const { data: chargeResult, error: chargeError } = await supabase.rpc('charge_credits', {
+          p_customer_id: segment.customer_id,
+          p_amount: companies.length,
+          p_reason: `Segment "${segment.name}": ${companies.length} companies from Diffbot`,
+          p_action_code: 'COMPANY_LOOKUP',
+          p_reference_id: segment.list_id,
+        });
+
+        if (chargeError) {
+          console.error('Failed to charge credits:', chargeError);
+          // Don't fail the segment processing if credit charging fails
+          // The segment is already created and Diffbot was called
+        } else {
+          const result = chargeResult?.[0];
+          if (result?.success) {
+            console.log(
+              `Charged ${companies.length} credits for segment ${body.segment_id}. New balance: ${result.new_balance}`
+            );
+          } else {
+            console.error('Credit charge failed:', result?.error_message);
+          }
+        }
+      }
+
       if (companies.length === 0) {
         // No companies found - mark as completed with 0 companies
         await supabase

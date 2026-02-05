@@ -6,9 +6,12 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
+import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 import { DiffbotClient } from './diffbot-client.ts';
 import { DqlAdapter } from './dql-adapter.ts';
 import { SearchByFiltersRequest, SearchByFiltersResponse, CompanyPreview } from './types.ts';
+
+const MINIMUM_CREDITS_FOR_SEGMENT = 5;
 
 export const DIFFBOT_COMPANIES_LIMIT = 5;
 
@@ -23,6 +26,36 @@ serve(async (req) => {
     // Only accept POST requests
     if (req.method !== 'POST') {
       throw new ApiError('Method not allowed', 405);
+    }
+
+    // Check minimum credits required for segment preview
+    if (!user.customer_id) {
+      throw new ApiError('User must belong to a customer', 403);
+    }
+
+    const supabase = createServiceClient();
+    const { data: creditCheck, error: creditError } = await supabase.rpc('check_credits', {
+      p_amount: MINIMUM_CREDITS_FOR_SEGMENT,
+      p_customer_id: user.customer_id,
+    });
+
+    if (creditError) {
+      console.error('Failed to check credits:', creditError);
+      throw new ApiError('Failed to verify credit balance', 500);
+    }
+
+    const creditResult = creditCheck?.[0];
+    if (!creditResult?.has_credits) {
+      console.log('Insufficient credits for segment preview:', {
+        customer_id: user.customer_id,
+        required: MINIMUM_CREDITS_FOR_SEGMENT,
+        available: creditResult?.current_balance ?? 0,
+      });
+      throw new ApiError(
+        `Insufficient credits. At least ${MINIMUM_CREDITS_FOR_SEGMENT} credits are required to preview a segment. You have ${creditResult?.current_balance ?? 0} credits.`,
+        402,
+        'INSUFFICIENT_CREDITS'
+      );
     }
 
     // Parse request body
