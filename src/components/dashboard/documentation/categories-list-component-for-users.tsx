@@ -388,7 +388,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
                   borderRadius: '8px',
                   border: '1px solid var(--joy-palette-divider)',
                   boxShadow: 'none',
-                  backgroundColor: 'var(--joy-palette-background-body)',
+                  backgroundColor: 'var(--joy-palette-background-surface)',
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: '210px',

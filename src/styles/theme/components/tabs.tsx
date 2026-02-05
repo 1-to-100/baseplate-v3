@@ -7,7 +7,7 @@ export const JoyTabs = {
       ...(ownerState.variant === 'custom' && {
         backgroundColor: 'transparent',
         '& .MuiTabList-root': {
-          backgroundColor: 'var(--joy-palette-background-mainBg)',
+          backgroundColor: 'var(--joy-palette-background-level1)',
           borderRadius: '20px',
           boxShadow: 'none',
           gap: '4px',
@@ -18,7 +18,7 @@ export const JoyTabs = {
           flex: '1 1 auto',
           '&:after': { display: 'none' },
           '&.Mui-selected': {
-            backgroundColor: 'var(--joy-palette-background-navActiveBg)',
+            backgroundColor: 'var(--joy-palette-background-surface)',
             boxShadow: 'var(--joy-shadow-sm)',
             color: 'var(--joy-palette-text-primary)',
             border: '1px solid var(--joy-palette-divider)',

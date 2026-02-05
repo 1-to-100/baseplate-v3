@@ -445,7 +445,7 @@ const Customer: React.FC = () => {
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
 
   const iconStyle = {
@@ -620,7 +620,7 @@ const Customer: React.FC = () => {
                   <IconButton
                     onClick={handleBulkDeactivate}
                     sx={{
-                      bgcolor: 'var(--joy-palette-background-mainBg)',
+                      bgcolor: 'var(--joy-palette-background-level1)',
                       color: '#636B74',
                       borderRadius: '50%',
                       width: 32,
@@ -650,7 +650,7 @@ const Customer: React.FC = () => {
                       color: 'var(--joy-palette-text-secondary)',
                       "&[aria-selected='true']": {
                         border: '1px solid var(--joy-palette-divider)',
-                        color: 'var(--joy-palette-background-primaryColor)',
+                        color: 'var(--joy-palette-primary-500)',
                         '& svg': { fill: 'url(#tab-gradient)' },
                       },
                     },

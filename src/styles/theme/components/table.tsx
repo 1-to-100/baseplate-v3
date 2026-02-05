@@ -17,7 +17,7 @@ export const JoyTable = {
       borderRadius: '8px',
       cursor: 'pointer',
       '& thead th': {
-        backgroundColor: 'var(--joy-palette-background-mainBg)',
+        backgroundColor: 'var(--joy-palette-background-level1)',
         alignItems: 'center',
         verticalAlign: 'middle',
         '&:first-of-type': { borderTopLeftRadius: '8px' },
@@ -28,11 +28,11 @@ export const JoyTable = {
         padding: '10px',
         alignItems: 'center',
         verticalAlign: 'middle',
-        color: 'var(--joy-palette-text-tableHeader)',
+        color: 'var(--joy-palette-text-tertiary)',
         fontWeight: 300,
       },
       '& tbody tr:hover': {
-        backgroundColor: 'var(--joy-palette-background-mainBg)',
+        backgroundColor: 'var(--joy-palette-background-level1)',
         cursor: 'pointer',
       },
     }),

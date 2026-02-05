@@ -96,24 +96,14 @@ export function NotificationsPopover({
             sx={{
               backgroundColor:
                 payload?.channel === 'info'
-                  ? colorScheme === 'dark'
-                    ? 'rgba(107, 114, 128, 0.2)'
-                    : '#EEEFF0'
+                  ? `var(--joy-palette-notification-info-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
                   : payload?.channel === 'article'
-                    ? colorScheme === 'dark'
-                      ? 'rgba(107, 114, 128, 0.2)'
-                      : '#EEEFF0'
+                    ? `var(--joy-palette-notification-article-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
                     : payload?.channel === 'warning'
-                      ? colorScheme === 'dark'
-                        ? 'rgba(183, 76, 6, 0.2)'
-                        : '#FFF8C5'
+                      ? `var(--joy-palette-notification-warning-bg, ${colorScheme === 'dark' ? 'rgba(183, 76, 6, 0.2)' : '#FFF8C5'})`
                       : payload?.channel === 'alert'
-                        ? colorScheme === 'dark'
-                          ? 'rgba(211, 35, 47, 0.2)'
-                          : '#FFE9E8'
-                        : colorScheme === 'dark'
-                          ? 'rgba(79, 70, 229, 0.2)'
-                          : '#4F46E5',
+                        ? `var(--joy-palette-notification-alert-bg, ${colorScheme === 'dark' ? 'rgba(211, 35, 47, 0.2)' : '#FFE9E8'})`
+                        : `var(--joy-palette-notification-feature-bg, ${colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.2)' : '#4F46E5'})`,
               borderRadius: '50%',
               p: 0.7,
             }}
@@ -125,24 +115,14 @@ export function NotificationsPopover({
               }}
               color={
                 payload?.channel === 'info'
-                  ? colorScheme === 'dark'
-                    ? '#D1D5DB'
-                    : '#6B7280'
+                  ? `var(--joy-palette-notification-info-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
                   : payload?.channel === 'article'
-                    ? colorScheme === 'dark'
-                      ? '#D1D5DB'
-                      : '#6B7280'
+                    ? `var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
                     : payload?.channel === 'warning'
-                      ? colorScheme === 'dark'
-                        ? '#FDBA74'
-                        : '#b74c06'
+                      ? `var(--joy-palette-notification-warning-icon, ${colorScheme === 'dark' ? '#FDBA74' : '#b74c06'})`
                       : payload?.channel === 'alert'
-                        ? colorScheme === 'dark'
-                          ? '#FCA5A5'
-                          : '#D3232F'
-                        : colorScheme === 'dark'
-                          ? '#818CF8'
-                          : '#4F46E5'
+                        ? `var(--joy-palette-notification-alert-icon, ${colorScheme === 'dark' ? '#FCA5A5' : '#D3232F'})`
+                        : `var(--joy-palette-notification-feature-icon, ${colorScheme === 'dark' ? '#818CF8' : '#4F46E5'})`
               }
             />
             <Article
@@ -150,7 +130,7 @@ export function NotificationsPopover({
               style={{
                 display: payload?.channel === 'article' ? 'block' : 'none',
               }}
-              color={colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'}
+              color={`var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`}
             />
           </Stack>
         ),
@@ -390,7 +370,7 @@ function NotificationContent({ notification }: NotificationContentProps): React.
         borderRadius: '8px',
         transition: 'background-color 0.2s ease',
         '&:hover': {
-          backgroundColor: 'var(--joy-palette-background-mainBg)',
+          backgroundColor: 'var(--joy-palette-background-level1)',
           cursor: 'pointer',
         },
         position: 'relative',
@@ -400,24 +380,14 @@ function NotificationContent({ notification }: NotificationContentProps): React.
         sx={{
           backgroundColor:
             notification?.channel === 'info'
-              ? colorScheme === 'dark'
-                ? 'rgba(107, 114, 128, 0.2)'
-                : '#EEEFF0'
+              ? `var(--joy-palette-notification-info-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
               : notification?.channel === 'article'
-                ? colorScheme === 'dark'
-                  ? 'rgba(107, 114, 128, 0.2)'
-                  : '#EEEFF0'
+                ? `var(--joy-palette-notification-article-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
                 : notification?.channel === 'warning'
-                  ? colorScheme === 'dark'
-                    ? 'rgba(183, 76, 6, 0.2)'
-                    : '#FFF8C5'
+                  ? `var(--joy-palette-notification-warning-bg, ${colorScheme === 'dark' ? 'rgba(183, 76, 6, 0.2)' : '#FFF8C5'})`
                   : notification?.channel === 'alert'
-                    ? colorScheme === 'dark'
-                      ? 'rgba(211, 35, 47, 0.2)'
-                      : '#FFE9E8'
-                    : colorScheme === 'dark'
-                      ? 'rgba(79, 70, 229, 0.2)'
-                      : '#4F46E5',
+                    ? `var(--joy-palette-notification-alert-bg, ${colorScheme === 'dark' ? 'rgba(211, 35, 47, 0.2)' : '#FFE9E8'})`
+                    : `var(--joy-palette-notification-feature-bg, ${colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.2)' : '#4F46E5'})`,
           borderRadius: '50%',
           p: 0.7,
         }}
@@ -429,24 +399,14 @@ function NotificationContent({ notification }: NotificationContentProps): React.
           }}
           color={
             notification?.channel === 'info'
-              ? colorScheme === 'dark'
-                ? '#D1D5DB'
-                : '#6B7280'
+              ? `var(--joy-palette-notification-info-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
               : notification?.channel === 'article'
-                ? colorScheme === 'dark'
-                  ? '#D1D5DB'
-                  : '#6B7280'
+                ? `var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
                 : notification?.channel === 'warning'
-                  ? colorScheme === 'dark'
-                    ? '#FDBA74'
-                    : '#b74c06'
+                  ? `var(--joy-palette-notification-warning-icon, ${colorScheme === 'dark' ? '#FDBA74' : '#b74c06'})`
                   : notification?.channel === 'alert'
-                    ? colorScheme === 'dark'
-                      ? '#FCA5A5'
-                      : '#D3232F'
-                    : colorScheme === 'dark'
-                      ? '#818CF8'
-                      : '#4F46E5'
+                    ? `var(--joy-palette-notification-alert-icon, ${colorScheme === 'dark' ? '#FCA5A5' : '#D3232F'})`
+                    : `var(--joy-palette-notification-feature-icon, ${colorScheme === 'dark' ? '#818CF8' : '#4F46E5'})`
           }
         />
         <Article
@@ -454,7 +414,7 @@ function NotificationContent({ notification }: NotificationContentProps): React.
           style={{
             display: notification?.channel === 'article' ? 'block' : 'none',
           }}
-          color={colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'}
+          color={`var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`}
         />
       </Stack>
       <Stack direction='column' flexGrow={1}>

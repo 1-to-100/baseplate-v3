@@ -38,7 +38,7 @@ export function SplitLayout({ children }: SplitLayoutProps): React.JSX.Element {
       >
         <Box
           sx={{
-            bgcolor: 'var(--joy-palette-background-body)',
+            bgcolor: 'var(--joy-palette-background-surface)',
             borderRadius: 'var(--joy-radius-xl)',
             color: 'var(--joy-palette-text-primary)',
             display: 'flex',
