@@ -81,6 +81,53 @@ export default function CompanyOverviewSection({
                 mb: 0.5,
               }}
             >
+              Industry
+            </Typography>
+            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
+              {company.categories && company.categories.length > 0
+                ? company.categories.join(', ')
+                : 'N/A'}
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: '300',
+                color: 'var(--joy-palette-text-secondary)',
+                mb: 0.5,
+              }}
+            >
+              Founded
+            </Typography>
+            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
+              N/A
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: '300',
+                color: 'var(--joy-palette-text-secondary)',
+                mb: 0.5,
+              }}
+            >
+              Revenue
+            </Typography>
+            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
+              {formatRevenue(company.revenue, company.currencyCode)}
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: '300',
+                color: 'var(--joy-palette-text-secondary)',
+                mb: 0.5,
+              }}
+            >
               Website
             </Typography>
             {company.website ? (
@@ -104,36 +151,6 @@ export default function CompanyOverviewSection({
                 N/A
               </Typography>
             )}
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              sx={{
-                fontSize: '14px',
-                fontWeight: '300',
-                color: 'var(--joy-palette-text-secondary)',
-                mb: 0.5,
-              }}
-            >
-              Employees
-            </Typography>
-            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
-              {company.employees ? company.employees.toLocaleString() : 'N/A'}
-            </Typography>
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              sx={{
-                fontSize: '14px',
-                fontWeight: '300',
-                color: 'var(--joy-palette-text-secondary)',
-                mb: 0.5,
-              }}
-            >
-              Revenue
-            </Typography>
-            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
-              {formatRevenue(company.revenue, company.currencyCode)}
-            </Typography>
           </Box>
         </Box>
         <Box sx={{ flex: 1, minWidth: 200 }}>
@@ -161,12 +178,10 @@ export default function CompanyOverviewSection({
                 mb: 0.5,
               }}
             >
-              Industries
+              Employees
             </Typography>
             <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
-              {company.categories && company.categories.length > 0
-                ? company.categories.join(', ')
-                : 'N/A'}
+              {company.employees ? company.employees.toLocaleString() : 'N/A'}
             </Typography>
           </Box>
           <Box sx={{ mb: 2 }}>
@@ -178,10 +193,25 @@ export default function CompanyOverviewSection({
                 mb: 0.5,
               }}
             >
-              Type
+              Company Type
             </Typography>
             <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
               {company.type || 'N/A'}
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography
+              sx={{
+                fontSize: '14px',
+                fontWeight: '300',
+                color: 'var(--joy-palette-text-secondary)',
+                mb: 0.5,
+              }}
+            >
+              Emails
+            </Typography>
+            <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
+              {company.email || 'N/A'}
             </Typography>
           </Box>
         </Box>

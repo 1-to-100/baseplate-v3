@@ -27,6 +27,7 @@ import {
   type SimplePerson,
 } from '../../../ui/components/company-details';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
+import { toast } from '@/components/core/toaster';
 import type { CompanyItem } from '../../../lib/types/company';
 
 interface PageProps {
@@ -272,14 +273,12 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   };
 
   const handleEdit = (personId: string) => {
-    // TODO: Implement edit person
-    console.log('Edit person', personId);
+    toast.info(`Edit action for person ${personId} is not implemented here.`);
     handleMenuClose();
   };
 
   const handleDeletePerson = (personId: string) => {
-    // TODO: Implement delete person
-    console.log('Delete person', personId);
+    toast.info(`Delete action for person ${personId} is not implemented here.`);
     handleMenuClose();
   };
 
@@ -324,6 +323,38 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [anchorEl]);
+
+  useEffect(() => {
+    if (segmentError) {
+      const err = segmentError as unknown as {
+        response?: { data?: { message?: string } };
+      } & { message?: string };
+      const errorMessage =
+        err?.response?.data?.message || err?.message || 'Failed to load segment.';
+      toast.error(errorMessage);
+    }
+  }, [segmentError]);
+
+  useEffect(() => {
+    if (companyError) {
+      const err = companyError as unknown as {
+        response?: { data?: { message?: string } };
+      } & { message?: string };
+      const errorMessage =
+        err?.response?.data?.message || err?.message || 'Failed to load company.';
+      toast.error(errorMessage);
+    }
+  }, [companyError]);
+
+  useEffect(() => {
+    if (peopleError) {
+      const err = peopleError as unknown as {
+        response?: { data?: { message?: string } };
+      } & { message?: string };
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load people.';
+      toast.error(errorMessage);
+    }
+  }, [peopleError]);
 
   if (segmentLoading || companyLoading) {
     return (
@@ -517,16 +548,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         </>
       )}
 
-      {/* Diffbot JSON Modal */}
-      <DebugJsonModal
-        open={isDebugModalOpen}
-        onClose={() => setIsDebugModalOpen(false)}
-        title='Diffbot JSON'
-        data={diffbotJson}
-        isLoading={diffbotLoading}
-        error={diffbotError as Error | null}
-      />
-
       {/* Edit Company Modal */}
       <EditCompanyModal
         open={isEditModalOpen}
@@ -539,6 +560,16 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
             queryKey: ['company', segmentId, companyId, 'with-scoring'],
           });
         }}
+      />
+
+      {/* Diffbot JSON Modal */}
+      <DebugJsonModal
+        open={isDebugModalOpen}
+        onClose={() => setIsDebugModalOpen(false)}
+        title='Diffbot JSON'
+        data={diffbotJson}
+        isLoading={diffbotLoading}
+        error={diffbotError as Error | null}
       />
     </Box>
   );
