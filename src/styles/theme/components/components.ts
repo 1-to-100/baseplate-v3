@@ -15,6 +15,8 @@ import { JoyTabs } from './tabs';
 import { JoyTextarea } from './textarea';
 import { JoyCheckbox } from './checkbox';
 
+// currently these are not being used in the project as of now as we are moving to configuring theme using json file. Earlier this was used to configure the theme.
+// Have to decide what to do with this.
 export const components = {
   JoyBreadcrumbs,
   JoyButton,
