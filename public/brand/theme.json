@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "name": "PlatePress",
+    "version": "1.0.0"
+  },
+  "colorSchemes": {
+    "light": {
+      "palette": {
+        "primary": {
+          "50": "#fefcf3",
+          "100": "#fbf7db",
+          "200": "#f8efb6",
+          "300": "#f3e586",
+          "400": "#edd74a",
+          "500": "#e7ca0d",
+          "600": "#d0b60c",
+          "700": "#ad980a",
+          "800": "#8b7908",
+          "900": "#685b06"
+        },
+        "neutral": {
+          "50": "#fefefe",
+          "100": "#fdfdfd",
+          "200": "#fbfbfb",
+          "300": "#f8f8f8",
+          "400": "#f4f4f4",
+          "500": "#f0f0f0",
+          "600": "#d8d8d8",
+          "700": "#b4b4b4",
+          "800": "#909090",
+          "900": "#6c6c6c"
+        },
+        "background": {
+          "body": "#f0f0f0"
+        },
+        "text": {
+          "primary": "#141011"
+        }
+      }
+    },
+    "dark": {
+      "palette": {
+        "primary": {
+          "50": "#fefcf3",
+          "100": "#fbf7db",
+          "200": "#f8efb6",
+          "300": "#f3e586",
+          "400": "#edd74a",
+          "500": "#e7ca0d",
+          "600": "#d0b60c",
+          "700": "#ad980a",
+          "800": "#8b7908",
+          "900": "#685b06"
+        },
+        "neutral": {
+          "50": "#fefefe",
+          "100": "#fdfdfd",
+          "200": "#fbfbfb",
+          "300": "#f8f8f8",
+          "400": "#f4f4f4",
+          "500": "#f0f0f0",
+          "600": "#d8d8d8",
+          "700": "#b4b4b4",
+          "800": "#909090",
+          "900": "#6c6c6c"
+        },
+        "background": {
+          "body": "#f0f0f0"
+        },
+        "text": {
+          "primary": "#141011"
+        }
+      }
+    }
+  },
+  "typography": {
+    "h1": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "h2": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "h3": {
+      "fontFamily": "Poppins, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "h4": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "title-lg": {
+      "fontFamily": "var(--joy-fontFamily-body)",
+      "fontSize": "1.125rem",
+      "fontWeight": 600,
+      "lineHeight": 1.4
+    },
+    "title-md": {
+      "fontFamily": "var(--joy-fontFamily-body)",
+      "fontSize": "1rem",
+      "fontWeight": 600,
+      "lineHeight": 1.45
+    },
+    "title-sm": {
+      "fontFamily": "var(--joy-fontFamily-body)",
+      "fontSize": "0.875rem",
+      "fontWeight": 600,
+      "lineHeight": 1.5
+    },
+    "body-lg": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "body-md": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "body-sm": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "body-xs": {
+      "fontFamily": "var(--joy-fontFamily-body)",
+      "fontSize": "0.625rem",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "caption": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "label": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "button": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "link": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "quote": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    },
+    "code": {
+      "fontFamily": "Raleway, sans-serif",
+      "fontSize": "16px",
+      "fontWeight": 400,
+      "lineHeight": 1.5
+    }
+  },
+  "fontFamily": {
+    "display": "Raleway, var(--joy-fontFamily-fallback)",
+    "body": "Poppins, var(--joy-fontFamily-fallback)",
+    "code": "Source Code Pro, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    "fallback": "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
+  }
+}

@@ -1,9 +1,9 @@
-import { createTheme } from './create-theme';
+// import { createTheme } from './create-theme';
 
-export const theme = createTheme({
-  primaryColor: 'crayolaBlue',
-  direction: 'ltr',
-});
+// export const theme = createTheme({
+//   primaryColor: 'crayolaBlue',
+//   direction: 'ltr',
+// });
 
-export * from './create-theme';
-export * from './types';
+// export * from './create-theme';
+// export * from './types';

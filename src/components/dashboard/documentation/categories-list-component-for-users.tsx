@@ -206,7 +206,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
   const iconStyle = {
     marginRight: '14px',
@@ -265,7 +265,7 @@ const CategoriesListComponentForUsers: React.FC<CategoriesListComponentForUsersP
               placeholder='Search in  knowledge base'
               sx={{
                 flex: 1,
-                backgroundColor: 'var(--joy-palette-background-mainBg)',
+                backgroundColor: 'var(--joy-palette-background-level1)',
                 borderRadius: '30px',
                 px: 2,
                 color: 'var(--joy-palette-text-secondary)',
