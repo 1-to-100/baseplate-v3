@@ -1,6 +1,8 @@
 /**
  * Companies API
- * Functions for fetching companies list with filters and pagination
+ * Functions for fetching companies list with filters and pagination.
+ * With customer context: companies are taken from customer_companies (for a specific customer).
+ * System admin: all companies from the companies table.
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -12,13 +14,137 @@ import type {
   UpdateCompanyPayload,
 } from '../types/company';
 
+/** Apply common filters to a companies query builder (used for both paths). */
+function applyCompaniesFilters<
+  T extends {
+    or: (x: string) => T;
+    in: (col: string, vals: string[]) => T;
+    eq: (col: string, val: string) => T;
+    gte: (col: string, val: number) => T;
+    lte: (col: string, val: number) => T;
+    overlaps: (col: string, vals: string[]) => T;
+    contains: (col: string, vals: string[]) => T;
+  },
+>(query: T, params: GetCompaniesParams): T {
+  let q = query;
+  const search = params.search || '';
+  if (search && search.trim()) {
+    q = q.or(
+      `display_name.ilike.%${search}%,legal_name.ilike.%${search}%,domain.ilike.%${search}%`
+    ) as T;
+  }
+  if (params.country) {
+    if (Array.isArray(params.country)) {
+      if (params.country.length > 0) q = q.in('country', params.country) as T;
+    } else {
+      q = q.eq('country', params.country) as T;
+    }
+  }
+  if (params.region) {
+    if (Array.isArray(params.region)) {
+      if (params.region.length > 0) q = q.in('region', params.region) as T;
+    } else {
+      q = q.eq('region', params.region) as T;
+    }
+  }
+  if (params.min_employees !== undefined) q = q.gte('employees', params.min_employees) as T;
+  if (params.max_employees !== undefined) q = q.lte('employees', params.max_employees) as T;
+  if (params.category) {
+    const toTitleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
+    const categoryValues = (Array.isArray(params.category) ? params.category : [params.category])
+      .map((c) => toTitleCase(String(c).trim()))
+      .filter(Boolean);
+    if (categoryValues.length > 0) q = q.overlaps('categories', categoryValues) as T;
+  }
+  if (params.technology) {
+    if (Array.isArray(params.technology)) {
+      if (params.technology.length > 0) {
+        const techConditions = params.technology
+          .map((tech) => `technologies.cs.{${tech}}`)
+          .join(',');
+        q = q.or(techConditions) as T;
+      }
+    } else {
+      q = q.contains('technologies', [params.technology]) as T;
+    }
+  }
+  return q;
+}
+
+/** Build CompanyItem from company row and optional customer_companies override. */
+function toCompanyItem(
+  company: Record<string, unknown>,
+  cc?: {
+    name?: string | null;
+    categories?: string[] | null;
+    revenue?: number | null;
+    country?: string | null;
+    region?: string | null;
+    employees?: number | null;
+    last_scoring_results?: unknown;
+  }
+): CompanyItem {
+  const numericId =
+    parseInt((company.company_id as string)?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0;
+  const baseName = (company.display_name || company.legal_name || 'Unknown') as string;
+  return {
+    id: numericId,
+    company_id: (company.company_id as string) || undefined,
+    name: cc?.name && cc.name.trim() ? cc.name : baseName,
+    type: company.type as string | undefined,
+    description: company.description as string | undefined,
+    website: company.website_url as string | undefined,
+    homepageUri: company.website_url as string | undefined,
+    logo: company.logo as string | undefined,
+    country: (cc?.country ?? company.country) as string | undefined,
+    region: (cc?.region ?? company.region) as string | undefined,
+    address: company.address as string | undefined,
+    latitude: company.latitude as number | undefined,
+    longitude: company.longitude as number | undefined,
+    revenue: cc?.revenue ?? (company.revenue as number | undefined),
+    currency_code: company.currency_code as string | undefined,
+    employees: (cc?.employees ?? company.employees) as number | undefined,
+    siccodes: company.siccodes as string[] | undefined,
+    categories: (cc?.categories?.length ? cc.categories : company.categories) as
+      | string[]
+      | undefined,
+    technologies: company.technologies as string[] | undefined,
+    phone: company.phone as string | undefined,
+    email: company.email as string | undefined,
+    last_scoring_results: cc?.last_scoring_results
+      ? parseLastScoringResultsForItem(cc.last_scoring_results)
+      : undefined,
+    social_links: company.social_links as CompanyItem['social_links'],
+    fetched_at: company.fetched_at as string | undefined,
+    created_at: (company.created_at || new Date().toISOString()) as string,
+    updated_at: (company.updated_at || new Date().toISOString()) as string,
+    lists: undefined,
+  };
+}
+
+function parseLastScoringResultsForItem(raw: unknown): CompanyItem['last_scoring_results'] {
+  if (!raw || typeof raw !== 'object') return undefined;
+  try {
+    const obj = raw as Record<string, unknown>;
+    return {
+      score: typeof obj.score === 'number' ? obj.score : 0,
+      short_description: typeof obj.short_description === 'string' ? obj.short_description : '',
+      full_description: typeof obj.full_description === 'string' ? obj.full_description : '',
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
- * Get companies list with filters, pagination, and sorting
+ * Get companies list with filters, pagination, and sorting.
+ * Effective customer is resolved from JWT app_metadata (context switcher) then current_customer_id() RPC.
+ * - With effective customer: companies from customer_companies for that customer (same for sysadmin and non-sysadmin).
+ * - System admin with no customer in context: all companies from companies table.
  */
 export async function getCompanies(params: GetCompaniesParams = {}): Promise<GetCompaniesResponse> {
   const supabase = createClient();
 
-  // Get authenticated user
   const {
     data: { user },
     error: authError,
@@ -28,157 +154,179 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
     throw new Error('Not authenticated');
   }
 
-  console.log('params', params);
+  const [
+    { data: session },
+    { data: isSystemAdmin },
+    { data: currentCustomerId, error: customerIdError },
+  ] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.rpc('is_system_admin'),
+    supabase.rpc('current_customer_id'),
+  ]);
 
-  // Get current customer ID (if needed for filtering)
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
-
-  if (customerIdError || !customerId) {
-    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
-  }
-
-  // Build query
-  let query = supabase.from('companies').select('*', { count: 'exact' });
-
-  // Apply search filter
-  const search = params.search || '';
-  if (search && search.trim()) {
-    query = query.or(
-      `display_name.ilike.%${search}%,legal_name.ilike.%${search}%,domain.ilike.%${search}%`
-    );
-  }
-
-  // Apply country filter
-  if (params.country) {
-    if (Array.isArray(params.country)) {
-      if (params.country.length > 0) {
-        query = query.in('country', params.country);
-      }
-    } else {
-      query = query.eq('country', params.country);
-    }
-  }
-
-  // Apply region filter
-  if (params.region) {
-    if (Array.isArray(params.region)) {
-      if (params.region.length > 0) {
-        query = query.in('region', params.region);
-      }
-    } else {
-      query = query.eq('region', params.region);
-    }
-  }
-
-  // Apply employee count filters
-  if (params.min_employees !== undefined) {
-    query = query.gte('employees', params.min_employees);
-  }
-  if (params.max_employees !== undefined) {
-    query = query.lte('employees', params.max_employees);
-  }
-
-  // Industry filter: match on companies.categories (Title Case in DB).
-  // Capitalize first letter of each word so overlaps matches stored values (e.g. "Agricultural Organizations").
-  if (params.category) {
-    const toTitleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
-    const categoryValues = (Array.isArray(params.category) ? params.category : [params.category])
-      .map((c) => toTitleCase(String(c).trim()))
-      .filter(Boolean);
-    if (categoryValues.length > 0) {
-      query = query.overlaps('categories', categoryValues);
-    }
-  }
-
-  // Apply technology filter (if technologies column exists)
-  if (params.technology) {
-    if (Array.isArray(params.technology)) {
-      if (params.technology.length > 0) {
-        const techConditions = params.technology
-          .map((tech) => `technologies.cs.{${tech}}`)
-          .join(',');
-        query = query.or(techConditions);
-      }
-    } else {
-      query = query.contains('technologies', [params.technology]);
-    }
-  }
-
-  // Apply sorting
-  const sortBy = params.sortBy || params.orderBy || 'created_at';
-  const sortOrder = params.sortOrder || params.orderDirection || 'desc';
-  query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-  // Apply pagination
   const page = params.page || 1;
   const limit = params.limit || params.perPage || 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
-  query = query.range(from, to);
+  const sortBy = params.sortBy || params.orderBy || 'created_at';
+  const sortOrder = params.sortOrder || params.orderDirection || 'desc';
+  const opts = { page, limit, from, to, sortBy, sortOrder };
 
-  // Execute query
+  // Effective customer: JWT app_metadata.customer_id first (set by context switcher), then current_customer_id() RPC
+  const sessionData = session?.session ?? null;
+  const jwtCustomerId = (sessionData?.user?.app_metadata as Record<string, unknown> | undefined)
+    ?.customer_id;
+  const fromJwt =
+    typeof jwtCustomerId === 'string' && jwtCustomerId.trim() ? jwtCustomerId.trim() : null;
+  const fromRpc =
+    !customerIdError && currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : (currentCustomerId as string)
+      : null;
+
+  const effectiveCustomerId = fromJwt ?? fromRpc;
+
+  if (effectiveCustomerId) {
+    return getCompaniesWithCustomerContext(supabase, params, effectiveCustomerId, opts);
+  }
+
+  if (!isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  // System admin with no customer selected: return all companies from companies table
+  let query = supabase.from('companies').select('*', { count: 'exact' });
+  query = applyCompaniesFilters(query, params);
+  query = query.order(opts.sortBy, { ascending: opts.sortOrder === 'asc' });
+  query = query.range(opts.from, opts.to);
+
   const { data: companies, error, count } = await query;
 
   if (error) {
     throw new Error(`Failed to fetch companies: ${error.message}`);
   }
 
-  // Transform companies to CompanyItem format
-  const transformedCompanies: CompanyItem[] = (companies || []).map((company) => {
-    // Map company_id (string) to id (number) for compatibility
-    const numericId =
-      parseInt(company.company_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0;
-
-    return {
-      id: numericId,
-      company_id: company.company_id || undefined,
-      name: company.display_name || company.legal_name || 'Unknown',
-      type: company.type || undefined,
-      description: company.description || undefined,
-      website: company.website_url || undefined,
-      homepageUri: company.website_url || undefined,
-      logo: company.logo || undefined,
-      country: company.country || undefined,
-      region: company.region || undefined,
-      address: company.address || undefined,
-      latitude: company.latitude || undefined,
-      longitude: company.longitude || undefined,
-      revenue: undefined,
-      currency_code: undefined,
-      employees: company.employees || undefined,
-      siccodes: company.siccodes || undefined,
-      categories: company.categories || undefined,
-      technologies: company.technologies || undefined,
-      phone: company.phone || undefined,
-      email: company.email || undefined,
-      last_scoring_results: undefined,
-      social_links: company.social_links || undefined,
-      fetched_at: company.fetched_at || undefined,
-      created_at: company.created_at || new Date().toISOString(),
-      updated_at: company.updated_at || new Date().toISOString(),
-      lists: undefined,
-    };
-  });
+  const transformedCompanies: CompanyItem[] = (companies || []).map((company) =>
+    toCompanyItem(company as Record<string, unknown>)
+  );
 
   const total = count || 0;
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / opts.limit);
 
   return {
     data: transformedCompanies,
     pagination: {
-      page,
-      perPage: limit,
+      page: opts.page,
+      perPage: opts.limit,
       total,
       totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1,
-      next: page < totalPages ? page + 1 : null,
-      prev: page > 1 ? page - 1 : null,
+      hasNext: opts.page < totalPages,
+      hasPrev: opts.page > 1,
+      next: opts.page < totalPages ? opts.page + 1 : null,
+      prev: opts.page > 1 ? opts.page - 1 : null,
     },
     meta: {
-      currentPage: page,
+      currentPage: opts.page,
       lastPage: totalPages,
-      perPage: limit,
+      perPage: opts.limit,
+      total,
+    },
+  };
+}
+
+/** Companies from customer_companies for the given customer (same for sysadmin with customer selected and non-sysadmin). */
+async function getCompaniesWithCustomerContext(
+  supabase: ReturnType<typeof createClient>,
+  params: GetCompaniesParams,
+  customerId: string,
+  opts: { page: number; limit: number; from: number; to: number; sortBy: string; sortOrder: string }
+): Promise<GetCompaniesResponse> {
+  const { data: ccRows, error: ccError } = await supabase
+    .from('customer_companies')
+    .select('company_id')
+    .eq('customer_id', customerId);
+
+  if (ccError) {
+    throw new Error(`Failed to fetch customer companies: ${ccError.message}`);
+  }
+
+  const companyIds = (ccRows || []).map((r) => r.company_id as string).filter(Boolean);
+  if (companyIds.length === 0) {
+    return {
+      data: [],
+      pagination: {
+        page: opts.page,
+        perPage: opts.limit,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+        next: null,
+        prev: null,
+      },
+      meta: {
+        currentPage: opts.page,
+        lastPage: 0,
+        perPage: opts.limit,
+        total: 0,
+      },
+    };
+  }
+
+  let query = supabase
+    .from('companies')
+    .select('*', { count: 'exact' })
+    .in('company_id', companyIds);
+  query = applyCompaniesFilters(query, params);
+  query = query.order(opts.sortBy, { ascending: opts.sortOrder === 'asc' });
+  query = query.range(opts.from, opts.to);
+
+  const { data: companies, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch companies: ${error.message}`);
+  }
+
+  const pageCompanyIds = (companies || []).map((c) => c.company_id as string);
+  let ccByCompany: Map<string, Record<string, unknown>> = new Map();
+  if (pageCompanyIds.length > 0) {
+    const { data: ccPage } = await supabase
+      .from('customer_companies')
+      .select(
+        'company_id, name, categories, revenue, country, region, employees, last_scoring_results'
+      )
+      .eq('customer_id', customerId)
+      .in('company_id', pageCompanyIds);
+    ccByCompany = new Map(
+      (ccPage || []).map((r) => [r.company_id as string, r as Record<string, unknown>])
+    );
+  }
+
+  const transformedCompanies: CompanyItem[] = (companies || []).map((company) => {
+    const cc = ccByCompany.get(company.company_id as string);
+    return toCompanyItem(company as Record<string, unknown>, cc);
+  });
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / opts.limit);
+
+  return {
+    data: transformedCompanies,
+    pagination: {
+      page: opts.page,
+      perPage: opts.limit,
+      total,
+      totalPages,
+      hasNext: opts.page < totalPages,
+      hasPrev: opts.page > 1,
+      next: opts.page < totalPages ? opts.page + 1 : null,
+      prev: opts.page > 1 ? opts.page - 1 : null,
+    },
+    meta: {
+      currentPage: opts.page,
+      lastPage: totalPages,
+      perPage: opts.limit,
       total,
     },
   };
