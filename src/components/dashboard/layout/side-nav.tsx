@@ -18,6 +18,7 @@ import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { Logo } from '@/components/core/logo';
 import { NoSsr } from '@/components/core/no-ssr';
 import { useUserInfo } from '@/hooks/use-user-info';
+import { CreditBalanceWidget } from '@/components/credits';
 import { ColorSchemeSwitch } from './color-scheme-switch';
 import { icons } from './nav-icons';
 import {
@@ -152,6 +153,9 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
             },
           }}
         >
+          <NoSsr>
+            <CreditBalanceWidget />
+          </NoSsr>
           <NoSsr>
             <ColorSchemeSwitch />
           </NoSsr>
