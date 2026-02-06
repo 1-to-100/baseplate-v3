@@ -6,7 +6,7 @@
 import { deepMerge } from '@/lib/helpers/object-helpers';
 import { logger } from '@/lib/default-logger';
 import type { ThemeConfig, AssetsConfig, BrandConfig } from './theme-config.ts';
-import { DEFAULT_THEME_CONFIG, DEFAULT_ASSETS_CONFIG } from './theme-config.ts';
+import { DEFAULT_THEME_CONFIG, DEFAULT_ASSETS_CONFIG } from './theme-config';
 
 let themeConfigCache: ThemeConfig | null = null;
 let assetsConfigCache: AssetsConfig | null = null;
