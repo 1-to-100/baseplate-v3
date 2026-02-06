@@ -10,6 +10,7 @@ import type { ColorSystemOptions } from '@mui/joy/styles/extendTheme';
 import type { ThemeConfig } from './theme-config';
 import { DEFAULT_THEME_CONFIG } from './theme-config';
 import { logger } from '@/lib/default-logger';
+import { createComponents } from './components/components';
 
 // Extend Joy UI types only for non-standard palette properties
 declare module '@mui/joy/styles' {
@@ -198,6 +199,7 @@ export function createThemeFromConfig(config: ThemeConfig): Theme {
       ...(typography && { typography }),
       ...(radius && { radius }),
       ...(shadow && { shadow }),
+      components: createComponents(config.components),
     });
   } catch (error) {
     logger.error('Failed to create theme from config', error);

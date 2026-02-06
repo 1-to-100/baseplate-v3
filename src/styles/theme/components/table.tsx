@@ -14,14 +14,14 @@ export const JoyTable = {
 
       minWidth: 800,
       border: '1px solid var(--joy-palette-divider)',
-      borderRadius: '8px',
+      borderRadius: 'var(--joy-radius-sm)',
       cursor: 'pointer',
       '& thead th': {
         backgroundColor: 'var(--joy-palette-background-level1)',
         alignItems: 'center',
         verticalAlign: 'middle',
-        '&:first-of-type': { borderTopLeftRadius: '8px' },
-        '&:last-of-type': { borderTopRightRadius: '8px' },
+        '&:first-of-type': { borderTopLeftRadius: 'var(--joy-radius-sm)' },
+        '&:last-of-type': { borderTopRightRadius: 'var(--joy-radius-sm)' },
         fontWeight: 600,
       },
       '& th, & td': {

@@ -1,5 +1,4 @@
 import type { Components, Theme } from '@mui/joy/styles';
-import { color } from 'framer-motion';
 
 export const JoyTabs = {
   styleOverrides: {
@@ -8,13 +7,13 @@ export const JoyTabs = {
         backgroundColor: 'transparent',
         '& .MuiTabList-root': {
           backgroundColor: 'var(--joy-palette-background-level1)',
-          borderRadius: '20px',
+          borderRadius: 'var(--joy-radius-xl)',
           boxShadow: 'none',
           gap: '4px',
           padding: '4px',
         },
         '& .MuiTab-root': {
-          borderRadius: '20px',
+          borderRadius: 'var(--joy-radius-xl)',
           flex: '1 1 auto',
           '&:after': { display: 'none' },
           '&.Mui-selected': {
