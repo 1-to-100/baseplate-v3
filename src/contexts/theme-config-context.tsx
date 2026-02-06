@@ -5,8 +5,8 @@
  */
 
 import * as React from 'react';
-import type { ThemeConfig, AssetsConfig } from '@/lib/theme/theme-config';
-import { DEFAULT_THEME_CONFIG, DEFAULT_ASSETS_CONFIG } from '@/lib/theme/theme-config';
+import type { ThemeConfig, AssetsConfig } from '@/styles/theme/theme-config';
+import { DEFAULT_THEME_CONFIG, DEFAULT_ASSETS_CONFIG } from '@/styles/theme/theme-config';
 
 export interface ThemeConfigContextValue {
   themeConfig: ThemeConfig;

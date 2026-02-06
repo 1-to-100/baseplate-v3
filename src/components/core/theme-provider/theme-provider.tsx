@@ -7,11 +7,11 @@ import Box from '@mui/joy/Box';
 import CircularProgress from '@mui/joy/CircularProgress';
 
 import { useSettings } from '@/hooks/use-settings';
-import { fetchBrandConfig, reloadBrandConfig } from '@/lib/theme/fetch-theme';
-import { createThemeFromConfig } from '@/lib/theme/create-theme-from-config';
+import { fetchBrandConfig, reloadBrandConfig } from '@/styles/theme/fetch-theme';
+import { createThemeFromConfig } from '@/styles/theme/create-theme-from-config';
 import { ThemeConfigProvider } from '@/contexts/theme-config-context';
-import type { ThemeConfig, AssetsConfig } from '@/lib/theme/theme-config';
-import { DEFAULT_THEME_CONFIG } from '@/lib/theme/theme-config';
+import type { ThemeConfig, AssetsConfig } from '@/styles/theme/theme-config';
+import { DEFAULT_THEME_CONFIG } from '@/styles/theme/theme-config';
 import { logger } from '@/lib/default-logger';
 import { EmotionCacheProvider } from './emotion-cache';
 import { Rtl } from './rtl';

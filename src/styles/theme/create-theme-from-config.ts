@@ -7,7 +7,7 @@
 import { extendTheme } from '@mui/joy/styles';
 import type { Theme } from '@mui/joy/styles';
 import type { ColorSystemOptions } from '@mui/joy/styles/extendTheme';
-import type { ThemeConfig } from './theme-config';
+import type { ThemeConfig } from './theme-config.ts';
 import { logger } from '@/lib/default-logger';
 
 // Extend Joy UI types only for non-standard palette properties
