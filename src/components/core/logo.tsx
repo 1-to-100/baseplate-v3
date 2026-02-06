@@ -43,7 +43,26 @@ export function Logo({
   const logoHeight = height ?? logoConfig?.height ?? 60;
   const logoWidth = width ?? logoConfig?.width ?? 60;
 
-  return <Image alt='logo' height={logoHeight} src={url} width={logoWidth} />;
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        height: logoHeight,
+        width: logoWidth,
+        position: 'relative',
+      }}
+    >
+      <Image
+        alt='logo'
+        src={url}
+        fill
+        style={{
+          objectFit: 'contain',
+        }}
+      />
+    </Box>
+  );
 }
 
 export interface DynamicLogoProps {

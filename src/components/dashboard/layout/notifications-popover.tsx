@@ -21,6 +21,48 @@ import { useColorScheme } from '@mui/joy/styles';
 import { toast } from '@/components/core/toaster';
 import { sanitizeNotificationHTML } from '@/lib/sanitize';
 
+// Helper function to get notification background color
+const getNotificationBgColor = (
+  channel: string | undefined,
+  colorScheme: 'light' | 'dark' | undefined
+): string => {
+  const isDark = colorScheme === 'dark';
+
+  switch (channel) {
+    case 'info':
+      return `var(--joy-palette-notification-info-bg, ${isDark ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`;
+    case 'article':
+      return `var(--joy-palette-notification-article-bg, ${isDark ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`;
+    case 'warning':
+      return `var(--joy-palette-notification-warning-bg, ${isDark ? 'rgba(183, 76, 6, 0.2)' : '#FFF8C5'})`;
+    case 'alert':
+      return `var(--joy-palette-notification-alert-bg, ${isDark ? 'rgba(211, 35, 47, 0.2)' : '#FFE9E8'})`;
+    default:
+      return `var(--joy-palette-notification-feature-bg, ${isDark ? 'rgba(79, 70, 229, 0.2)' : '#4F46E5'})`;
+  }
+};
+
+// Helper function to get notification icon color
+const getNotificationIconColor = (
+  channel: string | undefined,
+  colorScheme: 'light' | 'dark' | undefined
+): string => {
+  const isDark = colorScheme === 'dark';
+
+  switch (channel) {
+    case 'info':
+      return `var(--joy-palette-notification-info-icon, ${isDark ? '#D1D5DB' : '#6B7280'})`;
+    case 'article':
+      return `var(--joy-palette-notification-article-icon, ${isDark ? '#D1D5DB' : '#6B7280'})`;
+    case 'warning':
+      return `var(--joy-palette-notification-warning-icon, ${isDark ? '#FDBA74' : '#b74c06'})`;
+    case 'alert':
+      return `var(--joy-palette-notification-alert-icon, ${isDark ? '#FCA5A5' : '#D3232F'})`;
+    default:
+      return `var(--joy-palette-notification-feature-icon, ${isDark ? '#818CF8' : '#4F46E5'})`;
+  }
+};
+
 export interface NotificationsPopoverProps {
   anchorEl?: HTMLElement | null;
   onClose?: () => void;
@@ -94,16 +136,7 @@ export function NotificationsPopover({
         icon: (
           <Stack
             sx={{
-              backgroundColor:
-                payload?.channel === 'info'
-                  ? `var(--joy-palette-notification-info-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
-                  : payload?.channel === 'article'
-                    ? `var(--joy-palette-notification-article-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
-                    : payload?.channel === 'warning'
-                      ? `var(--joy-palette-notification-warning-bg, ${colorScheme === 'dark' ? 'rgba(183, 76, 6, 0.2)' : '#FFF8C5'})`
-                      : payload?.channel === 'alert'
-                        ? `var(--joy-palette-notification-alert-bg, ${colorScheme === 'dark' ? 'rgba(211, 35, 47, 0.2)' : '#FFE9E8'})`
-                        : `var(--joy-palette-notification-feature-bg, ${colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.2)' : '#4F46E5'})`,
+              backgroundColor: getNotificationBgColor(payload?.channel, colorScheme),
               borderRadius: '50%',
               p: 0.7,
             }}
@@ -113,24 +146,14 @@ export function NotificationsPopover({
               style={{
                 display: payload?.channel === 'article' ? 'none' : 'block',
               }}
-              color={
-                payload?.channel === 'info'
-                  ? `var(--joy-palette-notification-info-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
-                  : payload?.channel === 'article'
-                    ? `var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
-                    : payload?.channel === 'warning'
-                      ? `var(--joy-palette-notification-warning-icon, ${colorScheme === 'dark' ? '#FDBA74' : '#b74c06'})`
-                      : payload?.channel === 'alert'
-                        ? `var(--joy-palette-notification-alert-icon, ${colorScheme === 'dark' ? '#FCA5A5' : '#D3232F'})`
-                        : `var(--joy-palette-notification-feature-icon, ${colorScheme === 'dark' ? '#818CF8' : '#4F46E5'})`
-              }
+              color={getNotificationIconColor(payload?.channel, colorScheme)}
             />
             <Article
               size={24}
               style={{
                 display: payload?.channel === 'article' ? 'block' : 'none',
               }}
-              color={`var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`}
+              color={getNotificationIconColor('article', colorScheme)}
             />
           </Stack>
         ),
@@ -378,16 +401,7 @@ function NotificationContent({ notification }: NotificationContentProps): React.
     >
       <Stack
         sx={{
-          backgroundColor:
-            notification?.channel === 'info'
-              ? `var(--joy-palette-notification-info-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
-              : notification?.channel === 'article'
-                ? `var(--joy-palette-notification-article-bg, ${colorScheme === 'dark' ? 'rgba(107, 114, 128, 0.2)' : '#EEEFF0'})`
-                : notification?.channel === 'warning'
-                  ? `var(--joy-palette-notification-warning-bg, ${colorScheme === 'dark' ? 'rgba(183, 76, 6, 0.2)' : '#FFF8C5'})`
-                  : notification?.channel === 'alert'
-                    ? `var(--joy-palette-notification-alert-bg, ${colorScheme === 'dark' ? 'rgba(211, 35, 47, 0.2)' : '#FFE9E8'})`
-                    : `var(--joy-palette-notification-feature-bg, ${colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.2)' : '#4F46E5'})`,
+          backgroundColor: getNotificationBgColor(notification?.channel, colorScheme),
           borderRadius: '50%',
           p: 0.7,
         }}
@@ -397,24 +411,14 @@ function NotificationContent({ notification }: NotificationContentProps): React.
           style={{
             display: notification?.channel === 'article' ? 'none' : 'block',
           }}
-          color={
-            notification?.channel === 'info'
-              ? `var(--joy-palette-notification-info-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
-              : notification?.channel === 'article'
-                ? `var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`
-                : notification?.channel === 'warning'
-                  ? `var(--joy-palette-notification-warning-icon, ${colorScheme === 'dark' ? '#FDBA74' : '#b74c06'})`
-                  : notification?.channel === 'alert'
-                    ? `var(--joy-palette-notification-alert-icon, ${colorScheme === 'dark' ? '#FCA5A5' : '#D3232F'})`
-                    : `var(--joy-palette-notification-feature-icon, ${colorScheme === 'dark' ? '#818CF8' : '#4F46E5'})`
-          }
+          color={getNotificationIconColor(notification?.channel, colorScheme)}
         />
         <Article
           size={24}
           style={{
             display: notification?.channel === 'article' ? 'block' : 'none',
           }}
-          color={`var(--joy-palette-notification-article-icon, ${colorScheme === 'dark' ? '#D1D5DB' : '#6B7280'})`}
+          color={getNotificationIconColor('article', colorScheme)}
         />
       </Stack>
       <Stack direction='column' flexGrow={1}>

@@ -44,7 +44,7 @@ export function ColorSchemeSwitch(): React.JSX.Element {
           color: 'var(--joy-palette-neutral-400)',
           borderRadius: 'var(--joy-radius-xl)',
           '&.Mui-selected': {
-            bgcolor: 'var(--joy-palette-background-surface)',
+            bgcolor: 'var(--joy-palette-background-level2)',
             color: 'var(--joy-palette-text-primary)',
             border: '1px solid var(--joy-palette-divider)',
           },
