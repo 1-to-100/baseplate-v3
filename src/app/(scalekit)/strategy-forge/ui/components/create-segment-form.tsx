@@ -51,8 +51,10 @@ import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
 import { useCallback } from 'react';
 import { PersonaWarningBanner } from '@/components/dashboard/banners/persona-warning-banner';
+import { useCreditBalance } from '@/lib/credits';
 
 const DIFFBOT_COMPANIES_LIMIT = 5;
+const MIN_CREDITS_FOR_PREVIEW = 5;
 
 const EDIT_SEGMENT_COMPANIES_LIMIT = 10;
 
@@ -168,6 +170,10 @@ export function CreateSegmentForm({
   });
 
   const segment = initialSegmentData || segmentData?.segment;
+
+  const { data: creditBalance } = useCreditBalance();
+  const insufficientCredits =
+    creditBalance != null && creditBalance.balance < MIN_CREDITS_FOR_PREVIEW;
 
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
@@ -1588,23 +1594,33 @@ export function CreateSegmentForm({
         >
           Clear filter
         </Button>
-        <Button
-          variant='solid'
-          color='primary'
-          onClick={() => applyFilters(1)}
-          disabled={isSearching || !hasActiveFilters()}
-          loading={isSearching}
-          sx={{
-            fontWeight: 500,
-            py: { xs: 1, sm: 0.5 },
-            minHeight: 30,
-            height: 30,
-            px: 1.25,
-            width: 'fit-content',
-          }}
+        <Tooltip
+          title={
+            insufficientCredits
+              ? 'You need at least 5 credits to preview segment results.'
+              : undefined
+          }
         >
-          {isSearching ? 'Searching...' : 'Show Preview'}
-        </Button>
+          <span style={{ display: 'inline-flex' }}>
+            <Button
+              variant='solid'
+              color='primary'
+              onClick={() => applyFilters(1)}
+              disabled={isSearching || !hasActiveFilters() || insufficientCredits}
+              loading={isSearching}
+              sx={{
+                fontWeight: 500,
+                py: { xs: 1, sm: 0.5 },
+                minHeight: 30,
+                height: 30,
+                px: 1.25,
+                width: 'fit-content',
+              }}
+            >
+              {isSearching ? 'Searching...' : 'Show Preview'}
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
     </Box>
   );
@@ -2142,15 +2158,25 @@ export function CreateSegmentForm({
               >
                 Cancel
               </Button>
-              <Button
-                variant='solid'
-                color='primary'
-                onClick={handleSaveSegment}
-                disabled={!canSaveSegment() || isSubmitting}
-                loading={isSubmitting}
+              <Tooltip
+                title={
+                  insufficientCredits
+                    ? 'Segment cannot be saved without a preview. Please add credits to continue.'
+                    : undefined
+                }
               >
-                Create & Save
-              </Button>
+                <span style={{ display: 'inline-flex' }}>
+                  <Button
+                    variant='solid'
+                    color='primary'
+                    onClick={handleSaveSegment}
+                    disabled={!canSaveSegment() || isSubmitting || insufficientCredits}
+                    loading={isSubmitting}
+                  >
+                    Create & Save
+                  </Button>
+                </span>
+              </Tooltip>
             </Box>
           </Box>
           {/* Title validation messages */}
