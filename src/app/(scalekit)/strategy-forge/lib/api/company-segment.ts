@@ -37,8 +37,48 @@ export async function getCompanyById(companyId: string): Promise<Company> {
 }
 
 /**
+ * Resolve effective customer ID (JWT then RPC) and whether user is system admin.
+ * Used so system admin can view segment/company without a selected customer.
+ */
+async function resolveEffectiveCustomerAndAdmin(
+  supabase: ReturnType<typeof createClient>
+): Promise<{
+  effectiveCustomerId: string | null;
+  isSystemAdmin: boolean;
+  customerIdError: Error | null;
+}> {
+  const [
+    { data: session },
+    { data: isSystemAdmin },
+    { data: currentCustomerId, error: customerIdError },
+  ] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.rpc('is_system_admin'),
+    supabase.rpc('current_customer_id'),
+  ]);
+  const sessionData = session?.session ?? null;
+  const jwtCustomerId = (sessionData?.user?.app_metadata as Record<string, unknown> | undefined)
+    ?.customer_id;
+  const fromJwt =
+    typeof jwtCustomerId === 'string' && jwtCustomerId.trim() ? jwtCustomerId.trim() : null;
+  const fromRpc =
+    !customerIdError && currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : (currentCustomerId as string)
+      : null;
+  const effectiveCustomerId = fromJwt ?? fromRpc;
+  return {
+    effectiveCustomerId,
+    isSystemAdmin: !!isSystemAdmin,
+    customerIdError: customerIdError ? new Error(customerIdError.message) : null,
+  };
+}
+
+/**
  * Get company with scoring data from customer_companies table
- * If segmentId is provided, verifies the company belongs to the segment
+ * If segmentId is provided, verifies the company belongs to the segment.
+ * System admin with no customer selected can view company in segment (segment fetched without customer filter).
  */
 export async function getCompanyWithScoring(
   companyId: string,
@@ -59,31 +99,38 @@ export async function getCompanyWithScoring(
     throw new Error('Not authenticated');
   }
 
-  // Get current customer ID
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
-
-  if (customerIdError || !customerId) {
-    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
-  }
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerAndAdmin(supabase);
 
   // Fetch company via list_companies join if segmentId provided, otherwise direct
   let company: Company | null = null;
+  let scoringCustomerId: string;
 
   if (segmentId) {
-    // Fetch company through list_companies to ensure it belongs to segment
-    // Also verify segment belongs to customer
-    const { data: segment, error: segmentError } = await supabase
+    if (!effectiveCustomerId && !isSystemAdmin) {
+      throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+    }
+
+    // Fetch segment (system admin with no customer: no customer filter, RLS allows)
+    let segmentQuery = supabase
       .from('lists')
-      .select('list_id')
+      .select('list_id, customer_id')
       .eq('list_id', segmentId)
-      .eq('customer_id', customerId)
       .eq('list_type', 'segment')
-      .is('deleted_at', null)
-      .single();
+      .is('deleted_at', null);
+
+    if (effectiveCustomerId) {
+      segmentQuery = segmentQuery.eq('customer_id', effectiveCustomerId);
+    }
+
+    const { data: segment, error: segmentError } = await segmentQuery.single();
 
     if (segmentError || !segment) {
       throw new Error(`Segment not found: ${segmentError?.message ?? 'not available'}`);
     }
+
+    // For scoring use effective customer or, for system admin viewing any segment, the segment's owner
+    scoringCustomerId = effectiveCustomerId ?? (segment.customer_id as string);
 
     const { data: listCompany, error: listCompanyError } = await supabase
       .from('list_companies')
@@ -110,6 +157,11 @@ export async function getCompanyWithScoring(
       : listCompany.companies;
     company = companyData as Company;
   } else {
+    if (!effectiveCustomerId && !isSystemAdmin) {
+      throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+    }
+    scoringCustomerId = effectiveCustomerId!;
+
     // Direct fetch from companies table
     const { data: companyData, error: companyError } = await supabase
       .from('companies')
@@ -128,7 +180,7 @@ export async function getCompanyWithScoring(
     .from('customer_companies')
     .select('*')
     .eq('company_id', companyId)
-    .eq('customer_id', customerId)
+    .eq('customer_id', scoringCustomerId)
     .maybeSingle();
 
   // Scoring error is not critical - company might not have scoring yet

@@ -28,6 +28,7 @@ import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { toast } from '@/components/core/toaster';
 import { getSegments, deleteSegment } from '../lib/api/segment-lists';
+import { useCanEditSegments } from '../lib/hooks/useCanEditSegments';
 import type { ListForDisplay } from '../lib/types/list';
 import { ListStatus } from '../lib/types/list';
 import { paths } from '@/paths';
@@ -127,9 +128,11 @@ function StatusIndicator({ status }: { status?: ListStatus }) {
 function SegmentCard({
   segment,
   onDelete,
+  showActions,
 }: {
   segment: ListForDisplay;
   onDelete: (segmentId: string) => void;
+  showActions: boolean;
 }) {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -203,45 +206,47 @@ function SegmentCard({
         },
       }}
     >
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          zIndex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-        }}
-      >
-        <IconButton
-          size='sm'
-          sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
-          onClick={handleMenuOpen}
+      {showActions && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+          }}
         >
-          <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
-        </IconButton>
-        <PopperMenu
-          open={openPopover && Boolean(anchorEl)}
-          anchorEl={anchorEl}
-          onClose={handleMenuClose}
-          placement='bottom-start'
-          minWidth='120px'
-          style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
-        >
-          <MenuItem
-            icon={<TrashIcon size={20} />}
-            danger
-            disabled={isProcessing}
-            onMouseDown={(event) => {
-              event.preventDefault();
-              handleDelete();
-            }}
+          <IconButton
+            size='sm'
+            sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+            onClick={handleMenuOpen}
           >
-            Delete
-          </MenuItem>
-        </PopperMenu>
-      </Box>
+            <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
+          </IconButton>
+          <PopperMenu
+            open={openPopover && Boolean(anchorEl)}
+            anchorEl={anchorEl}
+            onClose={handleMenuClose}
+            placement='bottom-start'
+            minWidth='120px'
+            style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+          >
+            <MenuItem
+              icon={<TrashIcon size={20} />}
+              danger
+              disabled={isProcessing}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                handleDelete();
+              }}
+            >
+              Delete
+            </MenuItem>
+          </PopperMenu>
+        </Box>
+      )}
 
       {/* Status indicator */}
       {segment.status && <StatusIndicator status={segment.status} />}
@@ -351,9 +356,11 @@ function SegmentCard({
 function SegmentTableRow({
   segment,
   onDelete,
+  showActions,
 }: {
   segment: ListForDisplay;
   onDelete: (segmentId: string) => void;
+  showActions: boolean;
 }) {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -443,45 +450,49 @@ function SegmentTableRow({
       <td>
         <Typography level='body-sm'>{new Date(segment.updated_at).toLocaleDateString()}</Typography>
       </td>
-      <td style={{ textAlign: 'right' }}>
-        <IconButton
-          size='sm'
-          sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleMenuOpen(e);
-          }}
-        >
-          <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
-        </IconButton>
-        <PopperMenu
-          open={openPopover && Boolean(anchorEl)}
-          anchorEl={anchorEl}
-          onClose={handleMenuClose}
-          placement='bottom-start'
-          minWidth='120px'
-          style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
-        >
-          <MenuItem
-            icon={<TrashIcon size={20} />}
-            danger
-            disabled={isProcessing}
-            onMouseDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              handleDelete();
+      {showActions ? (
+        <td style={{ textAlign: 'right' }}>
+          <IconButton
+            size='sm'
+            sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMenuOpen(e);
             }}
           >
-            Delete
-          </MenuItem>
-        </PopperMenu>
-      </td>
+            <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
+          </IconButton>
+          <PopperMenu
+            open={openPopover && Boolean(anchorEl)}
+            anchorEl={anchorEl}
+            onClose={handleMenuClose}
+            placement='bottom-start'
+            minWidth='120px'
+            style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+          >
+            <MenuItem
+              icon={<TrashIcon size={20} />}
+              danger
+              disabled={isProcessing}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleDelete();
+              }}
+            >
+              Delete
+            </MenuItem>
+          </PopperMenu>
+        </td>
+      ) : (
+        <td style={{ width: '80px', textAlign: 'right' }} />
+      )}
     </tr>
   );
 }
 
 // Empty State Component
-function EmptySegments() {
+function EmptySegments({ canCreateSegment }: { canCreateSegment: boolean }) {
   const router = useRouter();
 
   return (
@@ -507,14 +518,16 @@ function EmptySegments() {
         <br />
         Once created, you can manage them here.
       </Typography>
-      <Button
-        onClick={() => router.push(paths.strategyForge.segments.create)}
-        variant='outlined'
-        startDecorator={<PlusIcon size={20} weight='bold' />}
-        sx={{ mt: 2, color: 'var(--joy-palette-text-secondary)' }}
-      >
-        Create segment
-      </Button>
+      {canCreateSegment && (
+        <Button
+          onClick={() => router.push(paths.strategyForge.segments.create)}
+          variant='outlined'
+          startDecorator={<PlusIcon size={20} weight='bold' />}
+          sx={{ mt: 2, color: 'var(--joy-palette-text-secondary)' }}
+        >
+          Create segment
+        </Button>
+      )}
     </Box>
   );
 }
@@ -522,6 +535,7 @@ function EmptySegments() {
 export default function SegmentsPage(): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canEditSegments } = useCanEditSegments();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [segmentToDelete, setSegmentToDelete] = useState<ListForDisplay | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -664,32 +678,34 @@ export default function SegmentsPage(): React.JSX.Element {
                 </Tab>
               </TabList>
             </Tabs>
-            {/* Create Button */}
-            <Button
-              variant='solid'
-              color='primary'
-              onClick={() => router.push(paths.strategyForge.segments.create)}
-              startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' />}
-              sx={{
-                width: { xs: 38, sm: 'auto' },
-                height: { xs: 38, sm: 'auto' },
-                minWidth: { xs: 38, sm: 'auto' },
-                py: { xs: 0, sm: 0.75 },
-                px: { xs: 0, sm: 1 },
-                '& .MuiButton-startDecorator': {
-                  margin: { xs: 0, sm: '0 8px 0 0' },
-                },
-              }}
-            >
-              <Box
-                component='span'
+            {/* Create Button - hidden for system admin and customer success */}
+            {canEditSegments && (
+              <Button
+                variant='solid'
+                color='primary'
+                onClick={() => router.push(paths.strategyForge.segments.create)}
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' />}
                 sx={{
-                  display: { xs: 'none', sm: 'inline' },
+                  width: { xs: 38, sm: 'auto' },
+                  height: { xs: 38, sm: 'auto' },
+                  minWidth: { xs: 38, sm: 'auto' },
+                  py: { xs: 0, sm: 0.75 },
+                  px: { xs: 0, sm: 1 },
+                  '& .MuiButton-startDecorator': {
+                    margin: { xs: 0, sm: '0 8px 0 0' },
+                  },
                 }}
               >
-                Create segment
-              </Box>
-            </Button>
+                <Box
+                  component='span'
+                  sx={{
+                    display: { xs: 'none', sm: 'inline' },
+                  }}
+                >
+                  Create segment
+                </Box>
+              </Button>
+            )}
           </Stack>
         </Stack>
 
@@ -727,6 +743,7 @@ export default function SegmentsPage(): React.JSX.Element {
                     key={segment.list_id}
                     segment={segment}
                     onDelete={handleDeleteClick}
+                    showActions={canEditSegments}
                   />
                 ))}
               </Box>
@@ -794,6 +811,7 @@ export default function SegmentsPage(): React.JSX.Element {
                           key={segment.list_id}
                           segment={segment}
                           onDelete={handleDeleteClick}
+                          showActions={canEditSegments}
                         />
                       ))}
                     </tbody>
@@ -811,7 +829,7 @@ export default function SegmentsPage(): React.JSX.Element {
             )}
           </>
         ) : (
-          <EmptySegments />
+          <EmptySegments canCreateSegment={canEditSegments} />
         )}
       </Stack>
       <DeleteItemModal

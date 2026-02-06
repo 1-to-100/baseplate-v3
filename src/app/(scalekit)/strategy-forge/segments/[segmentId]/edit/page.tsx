@@ -1,9 +1,12 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/joy/Box';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { CreateSegmentForm } from '../../../ui/components/create-segment-form';
+import { useCanEditSegments } from '../../../lib/hooks/useCanEditSegments';
+import { paths } from '@/paths';
 
 interface PageProps {
   params: Promise<{
@@ -12,6 +15,8 @@ interface PageProps {
 }
 
 export default function EditSegmentPage({ params }: PageProps): React.JSX.Element {
+  const router = useRouter();
+  const { canEditSegments, isLoading } = useCanEditSegments();
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
 
   // Handle async params
@@ -20,6 +25,12 @@ export default function EditSegmentPage({ params }: PageProps): React.JSX.Elemen
       setSegmentId(resolvedParams.segmentId);
     });
   }, [params]);
+
+  React.useEffect(() => {
+    if (!isLoading && !canEditSegments && segmentId) {
+      router.replace(paths.strategyForge.segments.details(segmentId));
+    }
+  }, [canEditSegments, isLoading, segmentId, router]);
 
   if (!segmentId) {
     return (
@@ -34,6 +45,21 @@ export default function EditSegmentPage({ params }: PageProps): React.JSX.Elemen
         >
           <CircularProgress size='md' />
         </Box>
+      </Box>
+    );
+  }
+
+  if (isLoading || !canEditSegments) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+        }}
+      >
+        <CircularProgress size='md' />
       </Box>
     );
   }

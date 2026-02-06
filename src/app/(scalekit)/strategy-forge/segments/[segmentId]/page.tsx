@@ -33,6 +33,7 @@ import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
 import { getSegmentById, removeCompanyFromSegment } from '../../lib/api/segment-lists';
+import { useCanEditSegments } from '../../lib/hooks/useCanEditSegments';
 import { ListStatus } from '../../lib/types/list';
 
 interface PageProps {
@@ -47,6 +48,7 @@ const POLLING_INTERVAL = 3000; // Poll every 3 seconds when processing
 export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canEditSegments } = useCanEditSegments();
 
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -322,13 +324,15 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             <Typography fontSize={{ xs: 'xl2', sm: 'xl3' }} level='h1'>
               {segment.name}
             </Typography>
-            <Button
-              variant='solid'
-              color='primary'
-              onClick={() => router.push(paths.strategyForge.segments.edit(segment.list_id))}
-            >
-              Edit
-            </Button>
+            {canEditSegments && (
+              <Button
+                variant='solid'
+                color='primary'
+                onClick={() => router.push(paths.strategyForge.segments.edit(segment.list_id))}
+              >
+                Edit
+              </Button>
+            )}
           </Stack>
           <Breadcrumbs sx={{ mb: 2 }} separator={<BreadcrumbsSeparator />}>
             <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
@@ -691,17 +695,19 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                           </ListItemDecorator>
                           <ListItemContent>View profile</ListItemContent>
                         </MenuItem>
-                        <MenuItem
-                          data-menu-item
-                          onClick={() => company && handleExcludeFromSegment(company)}
-                          disabled={isRemoving}
-                          sx={{ color: 'var(--joy-palette-danger-600)' }}
-                        >
-                          <ListItemDecorator>
-                            <MinusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
-                          </ListItemDecorator>
-                          <ListItemContent>Exclude from segment</ListItemContent>
-                        </MenuItem>
+                        {canEditSegments && (
+                          <MenuItem
+                            data-menu-item
+                            onClick={() => company && handleExcludeFromSegment(company)}
+                            disabled={isRemoving}
+                            sx={{ color: 'var(--joy-palette-danger-600)' }}
+                          >
+                            <ListItemDecorator>
+                              <MinusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                            </ListItemDecorator>
+                            <ListItemContent>Exclude from segment</ListItemContent>
+                          </MenuItem>
+                        )}
                       </>
                     );
                   })()}
