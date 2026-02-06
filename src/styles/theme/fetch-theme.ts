@@ -6,7 +6,12 @@
 import { deepMerge } from '@/lib/helpers/object-helpers';
 import { logger } from '@/lib/default-logger';
 import type { ThemeConfig, AssetsConfig, BrandConfig } from './theme-config.ts';
-import { DEFAULT_THEME_CONFIG, DEFAULT_ASSETS_CONFIG } from './theme-config';
+import {
+  DEFAULT_THEME_CONFIG,
+  DEFAULT_ASSETS_CONFIG,
+  themeConfigSchema,
+  assetsConfigSchema,
+} from './theme-config';
 
 let themeConfigCache: ThemeConfig | null = null;
 let assetsConfigCache: AssetsConfig | null = null;
@@ -25,9 +30,18 @@ async function fetchThemeConfig(): Promise<ThemeConfig> {
       throw new Error(`Failed to fetch theme.json: ${response.status}`);
     }
 
-    const config: ThemeConfig = await response.json();
-    logger.info('Theme configuration loaded successfully');
-    return config;
+    const raw = await response.json();
+    const result = themeConfigSchema.safeParse(raw);
+
+    if (!result.success) {
+      logger.error('Invalid theme.json, using default theme', {
+        errors: result.error.format(),
+      });
+      return DEFAULT_THEME_CONFIG;
+    }
+
+    logger.info('Theme configuration loaded and validated successfully');
+    return result.data;
   } catch (error) {
     logger.warn('Failed to load theme.json, using default theme', error);
     return DEFAULT_THEME_CONFIG;
@@ -47,9 +61,18 @@ async function fetchAssetsConfig(): Promise<AssetsConfig> {
       throw new Error(`Failed to fetch assets.json: ${response.status}`);
     }
 
-    const config: AssetsConfig = await response.json();
-    logger.info('Assets configuration loaded successfully');
-    return config;
+    const raw = await response.json();
+    const result = assetsConfigSchema.safeParse(raw);
+
+    if (!result.success) {
+      logger.error('Invalid assets.json, using default assets', {
+        errors: result.error.format(),
+      });
+      return DEFAULT_ASSETS_CONFIG;
+    }
+
+    logger.info('Assets configuration loaded and validated successfully');
+    return result.data;
   } catch (error) {
     logger.warn('Failed to load assets.json, using default assets', error);
     return DEFAULT_ASSETS_CONFIG;
