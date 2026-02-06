@@ -7,7 +7,8 @@
 import { extendTheme } from '@mui/joy/styles';
 import type { Theme } from '@mui/joy/styles';
 import type { ColorSystemOptions } from '@mui/joy/styles/extendTheme';
-import type { ThemeConfig } from './theme-config.ts';
+import type { ThemeConfig } from './theme-config';
+import { DEFAULT_THEME_CONFIG } from './theme-config';
 import { logger } from '@/lib/default-logger';
 
 // Extend Joy UI types only for non-standard palette properties
@@ -16,9 +17,6 @@ declare module '@mui/joy/styles' {
     950?: string;
   }
 }
-
-/** Fallback text color when theme does not define text (Joy UI neutral-700) */
-const FALLBACK_TEXT_PRIMARY = '#32383E';
 
 /**
  * Build palette.text so all text components use theme.json colors.
@@ -54,7 +52,9 @@ function convertColorSchemes(
     const lightScheme = config.colorSchemes.light;
     const textPalette =
       buildTextPalette(lightScheme.palette?.text) ??
-      buildTextPalette({ primary: FALLBACK_TEXT_PRIMARY });
+      buildTextPalette({
+        primary: DEFAULT_THEME_CONFIG.colorSchemes?.light?.palette?.text?.primary!,
+      });
     result.light = {
       palette: {
         ...(lightScheme.palette?.primary && { primary: lightScheme.palette.primary }),
@@ -75,7 +75,9 @@ function convertColorSchemes(
     const darkScheme = config.colorSchemes.dark;
     const textPalette =
       buildTextPalette(darkScheme.palette?.text) ??
-      buildTextPalette({ primary: FALLBACK_TEXT_PRIMARY });
+      buildTextPalette({
+        primary: DEFAULT_THEME_CONFIG.colorSchemes?.dark?.palette?.text?.primary!,
+      });
     result.dark = {
       palette: {
         ...(darkScheme.palette?.primary && { primary: darkScheme.palette.primary }),
