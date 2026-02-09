@@ -52,9 +52,9 @@ jobs:
   # ============================================
   # PR Checks
   # ============================================
-  check-wrapper-files:
-    name: Check Wrapper Files
+  check-feature-artifacts:
+    name: Check Feature Artifacts
     if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/_check-wrapper-files.yml
+    uses: ./.github/workflows/_check-feature-artifacts.yml
     with:
       pr_number: ${{ github.event.pull_request.number }}
