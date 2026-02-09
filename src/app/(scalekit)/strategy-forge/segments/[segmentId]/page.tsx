@@ -34,6 +34,7 @@ import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
 import { useGlobalSearch } from '@/hooks/use-global-search';
 import { getSegmentById, removeCompanyFromSegment } from '../../lib/api/segment-lists';
+import { toAbsoluteWebsiteUrl } from '../../lib/utils/website-url';
 import { useCanEditSegments } from '../../lib/hooks/useCanEditSegments';
 import { ListStatus } from '../../lib/types/list';
 
@@ -577,12 +578,11 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                               component='span'
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const url =
-                                  company.website_url!.startsWith('http://') ||
-                                  company.website_url!.startsWith('https://')
-                                    ? company.website_url!
-                                    : `https://${company.website_url}`;
-                                window.open(url, '_blank', 'noopener,noreferrer');
+                                window.open(
+                                  toAbsoluteWebsiteUrl(company.website_url!),
+                                  '_blank',
+                                  'noopener,noreferrer'
+                                );
                               }}
                               sx={{
                                 display: 'block',

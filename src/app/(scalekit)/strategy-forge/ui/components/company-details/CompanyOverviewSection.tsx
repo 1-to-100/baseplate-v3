@@ -7,6 +7,7 @@ import Link from '@mui/joy/Link';
 import IconButton from '@mui/joy/IconButton';
 import { Bug } from '@phosphor-icons/react/dist/ssr';
 import type { CompanyOverviewSectionProps } from './types';
+import { toAbsoluteWebsiteUrl } from '../../../lib/utils/website-url';
 
 const formatRevenue = (revenue?: number, currency?: string) => {
   if (!revenue) return 'N/A';
@@ -132,7 +133,7 @@ export default function CompanyOverviewSection({
             </Typography>
             {company.website ? (
               <Link
-                href={company.website}
+                href={toAbsoluteWebsiteUrl(company.website)}
                 target='_blank'
                 rel='noopener noreferrer'
                 sx={{
