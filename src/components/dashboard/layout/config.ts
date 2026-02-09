@@ -60,6 +60,12 @@ export const layoutConfig: LayoutConfig = {
           href: paths.dashboard.notificationManagement.list,
           icon: 'bell',
         },
+        {
+          key: 'llm-jobs',
+          title: 'Jobs',
+          href: paths.dashboard.llmJobs.list,
+          icon: 'robot',
+        },
         // { key: 'test', title: 'User Test', href: paths.dashboard.test.list, icon: 'help' },
         // { key: 'accounting', title: 'Accounting', href: paths.dashboard.crypto, icon: 'accounting' },
         // { key: 'help', title: 'Help Centre', href: paths.dashboard.crypto, icon: 'help' },
