@@ -920,6 +920,7 @@ Deno.serve(async (req) => {
           {
             type: 'web_search' as const,
             search_context_size: 'medium' as const,
+            filters: { allowed_domains: [domain] },
           },
         ],
         text: {
