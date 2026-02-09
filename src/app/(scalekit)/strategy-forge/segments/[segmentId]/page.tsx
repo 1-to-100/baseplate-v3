@@ -32,6 +32,7 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
+import { useGlobalSearch } from '@/hooks/use-global-search';
 import { getSegmentById, removeCompanyFromSegment } from '../../lib/api/segment-lists';
 import { useCanEditSegments } from '../../lib/hooks/useCanEditSegments';
 import { ListStatus } from '../../lib/types/list';
@@ -52,6 +53,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
 
   const [segmentId, setSegmentId] = React.useState<string | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const { debouncedSearchValue } = useGlobalSearch();
   const [selectedRows, setSelectedRows] = React.useState<number[]>([]);
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
   const [openMenuIndex, setOpenMenuIndex] = React.useState<number | null>(null);
@@ -68,6 +70,11 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     });
   }, [params]);
 
+  // Reset to first page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchValue]);
+
   // Fetch segment data with polling when processing
   const {
     data: segmentData,
@@ -75,11 +82,12 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     error,
     isFetching,
   } = useQuery({
-    queryKey: ['segment', segmentId, currentPage],
+    queryKey: ['segment', segmentId, currentPage, debouncedSearchValue],
     queryFn: () =>
       getSegmentById(segmentId!, {
         page: currentPage,
         perPage: ITEMS_PER_PAGE,
+        search: debouncedSearchValue || undefined,
       }),
     enabled: !!segmentId,
     // Poll when segment is processing
@@ -143,7 +151,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     try {
       await removeCompanyFromSegment(segmentId, company.company_id);
       toast.success('Company removed from segment');
-      await queryClient.invalidateQueries({ queryKey: ['segment', segmentId, currentPage] });
+      await queryClient.invalidateQueries({ queryKey: ['segment', segmentId] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to remove company from segment');
     } finally {
@@ -356,7 +364,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
-            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+            sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pt: 1 }}>
               <Typography

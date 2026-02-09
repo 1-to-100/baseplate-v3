@@ -377,6 +377,7 @@ export async function getSegmentById(
   options?: {
     page?: number;
     perPage?: number;
+    search?: string;
   }
 ): Promise<{
   segment: List;
@@ -436,68 +437,84 @@ export async function getSegmentById(
     throw new Error(`Segment not found: ${segmentError?.message ?? 'not available'}`);
   }
 
-  // Fetch companies count
-  const { count: totalCompanies, error: countError } = await supabase
-    .from('list_companies')
-    .select('*', { count: 'exact', head: true })
-    .eq('list_id', listId);
-
-  if (countError) {
-    throw new Error(`Failed to count companies: ${countError.message}`);
-  }
-
-  const total = totalCompanies || 0;
-
-  // Fetch companies with pagination
+  // Fetch companies with pagination (and optional search)
+  // Use the two-step query pattern (like companies page):
+  // 1. Get all company_ids from list_companies for this segment
+  // 2. Query companies table directly with search filter and pagination
   const page = options?.page || 1;
   const perPage = options?.perPage || 50;
+  const searchTerm = options?.search?.trim();
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
-  const { data: listCompanies, error: listCompaniesError } = await supabase
+  // Step 1: Get all company_ids for this segment
+  const { data: listCompanyRows, error: listCompaniesError } = await supabase
     .from('list_companies')
-    .select(
-      `
-      company_id,
-      companies:company_id (
-        company_id,
-        display_name,
-        legal_name,
-        logo,
-        country,
-        region,
-        employees,
-        categories,
-        website_url,
-        domain
-      )
-    `
-    )
-    .eq('list_id', listId)
-    .order('created_at', { ascending: false })
-    .range(from, to);
+    .select('company_id')
+    .eq('list_id', listId);
 
   if (listCompaniesError) {
-    throw new Error(`Failed to fetch companies: ${listCompaniesError.message}`);
+    throw new Error(`Failed to fetch segment companies: ${listCompaniesError.message}`);
   }
+
+  const companyIds = (listCompanyRows || []).map((r) => r.company_id).filter(Boolean);
+
+  // If no companies in segment, return empty
+  if (companyIds.length === 0) {
+    return {
+      segment: segment as List,
+      companies: [],
+      meta: {
+        total: 0,
+        page,
+        perPage,
+        lastPage: 0,
+      },
+    };
+  }
+
+  // Step 2: Query companies table with search filter and pagination
+  let companiesQuery = supabase
+    .from('companies')
+    .select(
+      'company_id, display_name, legal_name, logo, country, region, employees, categories, website_url, domain',
+      { count: 'exact' }
+    )
+    .in('company_id', companyIds);
+
+  // Apply search filter directly on companies table
+  if (searchTerm) {
+    companiesQuery = companiesQuery.or(
+      `display_name.ilike.%${searchTerm}%,legal_name.ilike.%${searchTerm}%`
+    );
+  }
+
+  const {
+    data: companiesData,
+    error: companiesError,
+    count,
+  } = await companiesQuery.order('display_name', { ascending: true }).range(from, to);
+
+  if (companiesError) {
+    throw new Error(`Failed to fetch companies: ${companiesError.message}`);
+  }
+
+  const total = count ?? 0;
 
   // Transform companies data
   const companies =
-    listCompanies?.map((lc) => {
-      const company = Array.isArray(lc.companies) ? lc.companies[0] : lc.companies;
-      return {
-        company_id: lc.company_id,
-        display_name: company?.display_name || null,
-        legal_name: company?.legal_name || null,
-        logo: company?.logo || null,
-        country: company?.country || null,
-        region: company?.region || null,
-        employees: company?.employees || null,
-        categories: company?.categories || null,
-        website_url: company?.website_url || null,
-        domain: company?.domain || null,
-      };
-    }) || [];
+    companiesData?.map((company) => ({
+      company_id: company.company_id,
+      display_name: company.display_name || null,
+      legal_name: company.legal_name || null,
+      logo: company.logo || null,
+      country: company.country || null,
+      region: company.region || null,
+      employees: company.employees || null,
+      categories: company.categories || null,
+      website_url: company.website_url || null,
+      domain: company.domain || null,
+    })) || [];
 
   const lastPage = Math.ceil(total / perPage);
 
