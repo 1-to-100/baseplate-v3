@@ -27,6 +27,7 @@ import { Cards as CardsIcon } from '@phosphor-icons/react/dist/ssr/Cards';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { toast } from '@/components/core/toaster';
+import { useGlobalSearch } from '@/hooks/use-global-search';
 import { getSegments, deleteSegment } from '../lib/api/segment-lists';
 import { useCanEditSegments } from '../lib/hooks/useCanEditSegments';
 import type { ListForDisplay } from '../lib/types/list';
@@ -539,6 +540,7 @@ export default function SegmentsPage(): React.JSX.Element {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [segmentToDelete, setSegmentToDelete] = useState<ListForDisplay | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const { debouncedSearchValue } = useGlobalSearch();
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -554,17 +556,23 @@ export default function SegmentsPage(): React.JSX.Element {
     }
   }, [viewMode]);
 
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchValue]);
+
   // Fetch segments
   const {
     data: segmentsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['segments', currentPage],
+    queryKey: ['segments', currentPage, debouncedSearchValue],
     queryFn: () =>
       getSegments({
         page: currentPage,
         perPage: ITEMS_PER_PAGE,
+        search: debouncedSearchValue || undefined,
       }),
     refetchOnWindowFocus: true,
   });
