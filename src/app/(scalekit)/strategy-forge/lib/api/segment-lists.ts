@@ -12,6 +12,23 @@ interface CreateSegmentInput {
 }
 
 /**
+ * Whether the current user can create, edit, and remove segments.
+ * System admin and customer success users can view but not modify segments.
+ */
+export async function getCanEditSegments(): Promise<{ canEditSegments: boolean }> {
+  const supabase = createClient();
+  const [{ data: isSystemAdmin }, { data: isCustomerSuccess }] = await Promise.all([
+    supabase.rpc('is_system_admin'),
+    supabase.rpc('is_customer_success'),
+  ]);
+  const systemAdmin = Boolean(isSystemAdmin);
+  const customerSuccess = Boolean(isCustomerSuccess);
+  return {
+    canEditSegments: !systemAdmin && !customerSuccess,
+  };
+}
+
+/**
  * Ask AI to generate segment filters from a natural language description
  * Calls the segments-ai edge function which uses OpenAI to generate filters
  *
@@ -120,7 +137,9 @@ export async function createSegment(input: CreateSegmentInput): Promise<List> {
 }
 
 /**
- * Get segments list with pagination and search
+ * Get segments list with pagination and search.
+ * - With effective customer (selected in context): segments for that customer.
+ * - System admin with no customer selected: all segments (RLS allows).
  */
 export async function getSegments(params?: {
   page?: number;
@@ -149,10 +168,10 @@ export async function getSegments(params?: {
     throw new Error('Not authenticated');
   }
 
-  // Get current customer ID
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
 
-  if (customerIdError || !customerId) {
+  if (!effectiveCustomerId && !isSystemAdmin) {
     throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
   }
 
@@ -160,9 +179,13 @@ export async function getSegments(params?: {
   let query = supabase
     .from('lists')
     .select('*', { count: 'exact' })
-    .eq('customer_id', customerId)
     .eq('list_type', 'segment')
     .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    query = query.eq('customer_id', effectiveCustomerId);
+  }
+  // System admin with no customer selected: no customer filter (RLS allows all for system admin)
 
   // Apply search filter (case-insensitive)
   if (params?.search && params.search.trim()) {
@@ -218,12 +241,47 @@ export async function getSegments(params?: {
 }
 
 /**
+ * Resolve effective customer ID (JWT then RPC). Returns null when no customer and not system admin.
+ */
+async function resolveEffectiveCustomerId(supabase: ReturnType<typeof createClient>): Promise<{
+  effectiveCustomerId: string | null;
+  isSystemAdmin: boolean;
+  customerIdError: Error | null;
+}> {
+  const [
+    { data: session },
+    { data: isSystemAdmin },
+    { data: currentCustomerId, error: customerIdError },
+  ] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.rpc('is_system_admin'),
+    supabase.rpc('current_customer_id'),
+  ]);
+  const sessionData = session?.session ?? null;
+  const jwtCustomerId = (sessionData?.user?.app_metadata as Record<string, unknown> | undefined)
+    ?.customer_id;
+  const fromJwt =
+    typeof jwtCustomerId === 'string' && jwtCustomerId.trim() ? jwtCustomerId.trim() : null;
+  const fromRpc =
+    !customerIdError && currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : (currentCustomerId as string)
+      : null;
+  const effectiveCustomerId = fromJwt ?? fromRpc;
+  return {
+    effectiveCustomerId,
+    isSystemAdmin: !!isSystemAdmin,
+    customerIdError: customerIdError ? new Error(customerIdError.message) : null,
+  };
+}
+
+/**
  * Delete a segment (soft delete)
  */
 export async function deleteSegment(segmentId: string): Promise<void> {
   const supabase = createClient();
 
-  // Get authenticated user
   const {
     data: { user },
     error: authError,
@@ -233,20 +291,25 @@ export async function deleteSegment(segmentId: string): Promise<void> {
     throw new Error('Not authenticated');
   }
 
-  // Get current customer ID
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
 
-  if (customerIdError || !customerId) {
+  if (!effectiveCustomerId && !isSystemAdmin) {
     throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
   }
 
-  // Verify segment belongs to customer and soft delete
-  const { error: deleteError } = await supabase
+  let updateQuery = supabase
     .from('lists')
     .update({ deleted_at: new Date().toISOString() })
     .eq('list_id', segmentId)
-    .eq('customer_id', customerId)
     .eq('list_type', 'segment');
+
+  if (effectiveCustomerId) {
+    updateQuery = updateQuery.eq('customer_id', effectiveCustomerId);
+  }
+  // System admin with no customer: no customer filter (RLS allows)
+
+  const { error: deleteError } = await updateQuery;
 
   if (deleteError) {
     throw new Error(`Failed to delete segment: ${deleteError.message}`);
@@ -271,21 +334,25 @@ export async function removeCompanyFromSegment(
     throw new Error('Not authenticated');
   }
 
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
 
-  if (customerIdError || !customerId) {
+  if (!effectiveCustomerId && !isSystemAdmin) {
     throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
   }
 
-  // Verify segment belongs to customer
-  const { data: segment, error: segmentError } = await supabase
+  let segmentQuery = supabase
     .from('lists')
     .select('list_id')
     .eq('list_id', segmentId)
-    .eq('customer_id', customerId)
     .eq('list_type', 'segment')
-    .is('deleted_at', null)
-    .single();
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    segmentQuery = segmentQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: segment, error: segmentError } = await segmentQuery.single();
 
   if (segmentError || !segment) {
     throw new Error(`Segment not found: ${segmentError?.message ?? 'not available'}`);
@@ -344,22 +411,26 @@ export async function getSegmentById(
     throw new Error('Not authenticated');
   }
 
-  // Get current customer ID
-  const { data: customerId, error: customerIdError } = await supabase.rpc('current_customer_id');
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
 
-  if (customerIdError || !customerId) {
+  if (!effectiveCustomerId && !isSystemAdmin) {
     throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
   }
 
-  // Fetch segment
-  const { data: segment, error: segmentError } = await supabase
+  // Fetch segment (system admin with no customer: no customer filter, RLS allows)
+  let segmentQuery = supabase
     .from('lists')
     .select('*')
     .eq('list_id', listId)
-    .eq('customer_id', customerId)
     .eq('list_type', 'segment')
-    .is('deleted_at', null)
-    .single();
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    segmentQuery = segmentQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: segment, error: segmentError } = await segmentQuery.single();
 
   if (segmentError || !segment) {
     throw new Error(`Segment not found: ${segmentError?.message ?? 'not available'}`);
