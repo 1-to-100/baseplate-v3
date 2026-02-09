@@ -146,6 +146,10 @@ export function CreateSegmentForm({
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [formInitialized, setFormInitialized] = React.useState(false);
   const [personaWarningDismissed, setPersonaWarningDismissed] = React.useState(false);
+  // Snapshot of filters at the time of last search (to detect filter changes)
+  const [lastSearchFiltersSnapshot, setLastSearchFiltersSnapshot] = React.useState<string | null>(
+    null
+  );
 
   // Fetch options from database
   const { data: industries, isLoading: industriesLoading } = useQuery({
@@ -174,6 +178,35 @@ export function CreateSegmentForm({
   const { data: creditBalance } = useCreditBalance();
   const insufficientCredits =
     creditBalance != null && creditBalance.balance < MIN_CREDITS_FOR_PREVIEW;
+
+  // Check if user has enough credits for the found companies (1 credit per company)
+  const insufficientCreditsForCompanies =
+    creditBalance != null && totalCount > 0 && creditBalance.balance < totalCount;
+
+  // Compute current filters snapshot to detect changes
+  const currentFiltersSnapshot = React.useMemo(
+    () =>
+      JSON.stringify({
+        selectedCountry,
+        selectedState,
+        selectedIndustries: [...selectedIndustries].sort(),
+        selectedCompanySizes: [...selectedCompanySizes].sort(),
+        selectedTechnographics: [...selectedTechnographics].sort(),
+        selectedPersonas: [...selectedPersonas].sort(),
+      }),
+    [
+      selectedCountry,
+      selectedState,
+      selectedIndustries,
+      selectedCompanySizes,
+      selectedTechnographics,
+      selectedPersonas,
+    ]
+  );
+
+  // Filters have changed since the last search (user can try a new search)
+  const filtersChangedSinceSearch =
+    lastSearchFiltersSnapshot === null || currentFiltersSnapshot !== lastSearchFiltersSnapshot;
 
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
@@ -322,6 +355,7 @@ export function CreateSegmentForm({
     setTechnographicsAccordionOpen(false);
     setPersonaAccordionOpen(false);
     setPersonaWarningDismissed(false);
+    setLastSearchFiltersSnapshot(null);
   }, []);
 
   const lastPage = Math.max(1, Math.ceil(totalCount / perPage));
@@ -394,6 +428,17 @@ export function CreateSegmentForm({
       setCompanies(response.data);
       setTotalCount(response.totalCount);
       setHasSearched(true);
+      // Save the filters snapshot to detect future changes
+      setLastSearchFiltersSnapshot(
+        JSON.stringify({
+          selectedCountry,
+          selectedState,
+          selectedIndustries: [...selectedIndustries].sort(),
+          selectedCompanySizes: [...selectedCompanySizes].sort(),
+          selectedTechnographics: [...selectedTechnographics].sort(),
+          selectedPersonas: [...selectedPersonas].sort(),
+        })
+      );
 
       if (response.data.length === 0) {
         toast.info('No companies found matching your filters. Try broadening your criteria.');
@@ -1598,7 +1643,9 @@ export function CreateSegmentForm({
           title={
             insufficientCredits
               ? 'You need at least 5 credits to preview segment results.'
-              : undefined
+              : insufficientCreditsForCompanies && !filtersChangedSinceSearch
+                ? 'You need at least 5 credits to preview segment results.'
+                : undefined
           }
         >
           <span style={{ display: 'inline-flex' }}>
@@ -1606,7 +1653,12 @@ export function CreateSegmentForm({
               variant='solid'
               color='primary'
               onClick={() => applyFilters(1)}
-              disabled={isSearching || !hasActiveFilters() || insufficientCredits}
+              disabled={
+                isSearching ||
+                !hasActiveFilters() ||
+                insufficientCredits ||
+                (insufficientCreditsForCompanies && !filtersChangedSinceSearch)
+              }
               loading={isSearching}
               sx={{
                 fontWeight: 500,
@@ -2160,7 +2212,7 @@ export function CreateSegmentForm({
               </Button>
               <Tooltip
                 title={
-                  insufficientCredits
+                  insufficientCredits || insufficientCreditsForCompanies
                     ? 'Segment cannot be saved without a preview. Please add credits to continue.'
                     : undefined
                 }
@@ -2170,7 +2222,12 @@ export function CreateSegmentForm({
                     variant='solid'
                     color='primary'
                     onClick={handleSaveSegment}
-                    disabled={!canSaveSegment() || isSubmitting || insufficientCredits}
+                    disabled={
+                      !canSaveSegment() ||
+                      isSubmitting ||
+                      insufficientCredits ||
+                      insufficientCreditsForCompanies
+                    }
                     loading={isSubmitting}
                   >
                     Create & Save
