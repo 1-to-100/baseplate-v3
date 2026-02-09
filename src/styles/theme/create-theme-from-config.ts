@@ -7,7 +7,7 @@
 import { extendTheme } from '@mui/joy/styles';
 import type { Theme } from '@mui/joy/styles';
 import type { ColorSystemOptions } from '@mui/joy/styles/extendTheme';
-import type { ThemeConfig } from './theme-config';
+import type { ThemeConfig, TypographyLevel } from './theme-config';
 import { DEFAULT_THEME_CONFIG } from './theme-config';
 import { logger } from '@/lib/default-logger';
 import { createComponents } from './components/components';
@@ -63,11 +63,12 @@ function convertColorSchemes(
 
   if (config.colorSchemes?.light) {
     const lightScheme = config.colorSchemes.light;
+    const defaultLightPrimary = DEFAULT_THEME_CONFIG.colorSchemes?.light?.palette?.text?.primary;
     const textPalette =
       buildTextPalette(lightScheme.palette?.text) ??
-      buildTextPalette({
-        primary: DEFAULT_THEME_CONFIG.colorSchemes?.light?.palette?.text?.primary!,
-      });
+      (defaultLightPrimary != null
+        ? buildTextPalette({ primary: defaultLightPrimary })
+        : undefined);
     result.light = {
       palette: {
         ...(lightScheme.palette?.primary && { primary: lightScheme.palette.primary }),
@@ -86,11 +87,10 @@ function convertColorSchemes(
 
   if (config.colorSchemes?.dark) {
     const darkScheme = config.colorSchemes.dark;
+    const defaultDarkPrimary = DEFAULT_THEME_CONFIG.colorSchemes?.dark?.palette?.text?.primary;
     const textPalette =
       buildTextPalette(darkScheme.palette?.text) ??
-      buildTextPalette({
-        primary: DEFAULT_THEME_CONFIG.colorSchemes?.dark?.palette?.text?.primary!,
-      });
+      (defaultDarkPrimary != null ? buildTextPalette({ primary: defaultDarkPrimary }) : undefined);
     result.dark = {
       palette: {
         ...(darkScheme.palette?.primary && { primary: darkScheme.palette.primary }),
@@ -130,7 +130,7 @@ function convertFontFamily(config: ThemeConfig) {
 function convertTypography(config: ThemeConfig) {
   if (!config.typography) return undefined;
 
-  const typography: Record<string, any> = {};
+  const typography: Record<string, TypographyLevel> = {};
 
   // Map typography levels
   const levels = [
