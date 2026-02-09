@@ -1452,7 +1452,7 @@ export function CreateSegmentForm({
           )}
         </Box>
 
-        {/* Technologies Accordion */}
+        {/* Technographics Accordion */}
         <Box>
           <Box
             onClick={() => setTechnographicsAccordionOpen(!technographicsAccordionOpen)}
@@ -1489,7 +1489,7 @@ export function CreateSegmentForm({
                       : 'var(--joy-palette-text-primary)',
                 }}
               >
-                Technologies
+                Technographics
               </Typography>
             </Box>
             {technographicsAccordionOpen ? <CaretUp size={16} /> : <CaretDown size={16} />}
