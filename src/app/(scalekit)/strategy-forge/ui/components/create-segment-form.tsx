@@ -1871,8 +1871,12 @@ export function CreateSegmentForm({
                             >
                               {company.nbEmployees?.toLocaleString() ||
                                 (company.nbEmployeesMin && company.nbEmployeesMax
-                                  ? `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
-                                  : 'N/A')}
+                                  ? company.nbEmployeesMin === company.nbEmployeesMax
+                                    ? company.nbEmployeesMin.toLocaleString()
+                                    : `${company.nbEmployeesMin.toLocaleString()}-${company.nbEmployeesMax.toLocaleString()}`
+                                  : company.nbEmployeesMin?.toLocaleString() ||
+                                    company.nbEmployeesMax?.toLocaleString() ||
+                                    'N/A')}
                             </Typography>
                           </td>
                           <td>
