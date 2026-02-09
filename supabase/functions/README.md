@@ -29,7 +29,7 @@ Dependencies are managed in the **root `deno.json`** file. All edge functions sh
     "zod": "npm:zod@3.24.1",
     "zod-to-json-schema": "npm:zod-to-json-schema@3.24.1",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.49.4",
-    "openai": "npm:openai@4.77.0",
+    "openai": "npm:openai@6.17.0",
     "puppeteer": "npm:puppeteer@23.11.1"
   }
 }
@@ -44,8 +44,93 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // index.ts
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 ```
+
+## LLM Provider Adapters
+
+Edge functions that call LLM APIs (OpenAI, Anthropic, Gemini) should use the centralized provider adapters instead of directly instantiating SDK clients.
+
+### Location
+
+```
+supabase/functions/_shared/llm/
+├── index.ts              # Main exports (providers, withLogging)
+├── adapters/             # Provider-specific adapters
+│   ├── openai.ts         # OpenAI SDK adapter
+│   ├── anthropic.ts      # Anthropic SDK adapter
+│   └── gemini.ts         # Google Gemini adapter
+├── credentials.ts        # Credential management
+├── errors.ts             # LLMError class with error normalization
+└── logging.ts            # Structured logging utilities
+```
+
+### Usage Pattern
+
+```typescript
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
+
+// Get OpenAI client (handles credentials automatically)
+const openai = providers.openai();
+
+// Chat Completions API
+const completion = await withLogging('openai', 'chat.completions.create', 'gpt-4o', () =>
+  openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: 'Hello!' }],
+  })
+);
+
+// Responses API (with web_search, reasoning, etc.)
+const response = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+  openai.responses.create({
+    model: 'gpt-5',
+    input: combinedPrompt,
+    tools: [{ type: 'web_search' as const, search_context_size: 'medium' as const }],
+    text: {
+      format: {
+        type: 'json_schema' as const,
+        name: myJsonSchema.name,
+        strict: myJsonSchema.strict,
+        schema: myJsonSchema.schema,
+      },
+    },
+  })
+);
+
+// Extract response text using SDK helper
+const text = response.output_text;
+
+// Images API
+const images = await withLogging('openai', 'images.generate', 'gpt-image-1.5', () =>
+  openai.images.generate({
+    model: 'gpt-image-1.5',
+    prompt: 'A logo for...',
+    n: 1,
+    size: '1024x1024',
+  })
+);
+```
+
+### Benefits
+
+1. **Centralized credentials** - No need to call `Deno.env.get('OPENAI_API_KEY')` in each function
+2. **Structured logging** - All LLM calls are logged with provider, operation, model, and latency
+3. **Error normalization** - Provider-specific errors are normalized to `LLMError` with consistent error codes
+4. **Singleton pattern** - SDK clients are reused across calls within the same function invocation
+5. **Type safety** - Full TypeScript types from the native SDKs
+
+### Environment Variables
+
+The adapters read credentials from environment variables:
+
+| Provider | Required | Optional |
+|----------|----------|----------|
+| OpenAI | `OPENAI_API_KEY` | `OPENAI_ORGANIZATION_ID` |
+| Anthropic | `ANTHROPIC_API_KEY` | - |
+| Gemini | `GOOGLE_API_KEY` | - |
 
 ## Wrapper Pattern
 
@@ -150,10 +235,38 @@ curl http://127.0.0.1:54321/functions/v1/{function-name}
 3. **Create the function** (`index.ts`):
    ```typescript
    import { createClient } from '@supabase/supabase-js';
+   import {
+     providers,
+     withLogging,
+   } from '../../../../../../../supabase/functions/_shared/llm/index.ts';
    import { myJsonSchema, parseMyResponse } from './schema.ts';
 
    Deno.serve(async (req) => {
-     // ... your function logic
+     // ... authentication and request parsing
+
+     // Get OpenAI client from provider adapters
+     const openai = providers.openai();
+
+     // Call LLM with logging
+     const response = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+       openai.responses.create({
+         model: 'gpt-5',
+         input: prompt,
+         text: {
+           format: {
+             type: 'json_schema' as const,
+             name: myJsonSchema.name,
+             strict: myJsonSchema.strict,
+             schema: myJsonSchema.schema,
+           },
+         },
+       })
+     );
+
+     // Parse response
+     const parsed = parseMyResponse(JSON.parse(response.output_text));
+
+     // ... return response
    });
    ```
 

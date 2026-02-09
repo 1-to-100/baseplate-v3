@@ -17,6 +17,69 @@ const SRC_DIR = path.join(REPO_ROOT, "src");
 const args = new Set(process.argv.slice(2));
 const force = args.has("--force");
 const dryRun = args.has("--dry-run");
+const clean = args.has("--clean");
+
+// Pattern to identify generated wrappers
+const WRAPPER_PATTERN = /^import "jsr:@supabase\/functions-js\/edge-runtime\.d\.ts";\nimport ".*";\n$/;
+
+// Clean up generated wrappers
+if (clean) {
+  let removed = 0;
+  let skipped = 0;
+
+  if (!fs.existsSync(SUPABASE_FUNCTIONS_DIR)) {
+    console.log("No functions directory found, nothing to clean.");
+    process.exit(0);
+  }
+
+  for (const entry of fs.readdirSync(SUPABASE_FUNCTIONS_DIR, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
+    const fnDir = path.join(SUPABASE_FUNCTIONS_DIR, entry.name);
+    const wrapperPath = path.join(fnDir, "index.ts");
+
+    // Check if this directory contains only our generated wrapper
+    if (!fs.existsSync(wrapperPath)) {
+      skipped += 1;
+      continue;
+    }
+
+    const contents = fs.readFileSync(wrapperPath, "utf8");
+    if (!WRAPPER_PATTERN.test(contents)) {
+      skipped += 1;
+      if (dryRun) {
+        console.log(`[dry-run] would skip ${entry.name} (not a generated wrapper)`);
+      }
+      continue;
+    }
+
+    // Check if directory contains only index.ts
+    const dirContents = fs.readdirSync(fnDir);
+    if (dirContents.length !== 1 || dirContents[0] !== "index.ts") {
+      skipped += 1;
+      if (dryRun) {
+        console.log(`[dry-run] would skip ${entry.name} (contains additional files)`);
+      }
+      continue;
+    }
+
+    if (dryRun) {
+      console.log(`[dry-run] would remove ${path.relative(REPO_ROOT, fnDir)}`);
+      removed += 1;
+    } else {
+      fs.rmSync(fnDir, { recursive: true });
+      console.log(`removed ${entry.name}`);
+      removed += 1;
+    }
+  }
+
+  if (dryRun) {
+    console.log(`\n[dry-run] Would remove ${removed} wrapper(s), skip ${skipped}.`);
+  } else {
+    console.log(`\nCleaned up ${removed} wrapper(s), skipped ${skipped}.`);
+  }
+  process.exit(0);
+}
 
 // globs without deps: walk ../src and find:
 // - edge_functions/<fn>/index.ts
