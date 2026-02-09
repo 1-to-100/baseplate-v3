@@ -162,6 +162,375 @@ VALUES
 ON CONFLICT (programmatic_name) DO NOTHING;
 
 
+-- =============================================================================
+-- SECTION 2: PRIMARY TABLE (CUSTOMER SCOPE)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS public.company_strategies (
+  strategy_id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id            uuid NOT NULL,
+  mission                text NOT NULL DEFAULT '',
+  mission_description    text,
+  vision                 text NOT NULL DEFAULT '',
+  vision_description     text,
+  publication_status_id  uuid NOT NULL,
+  owner_user_id          uuid,
+  is_published           boolean NOT NULL DEFAULT false,
+  effective_at           timestamptz,
+  created_at             timestamptz NOT NULL DEFAULT now(),
+  created_by_user_id     uuid,
+  updated_at             timestamptz NOT NULL DEFAULT now(),
+  updated_by_user_id     uuid,
+
+  CONSTRAINT company_strategies_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT company_strategies_publication_status_id_fkey
+    FOREIGN KEY (publication_status_id) REFERENCES public.option_publication_status(option_id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT company_strategies_owner_user_id_fkey
+    FOREIGN KEY (owner_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT company_strategies_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT company_strategies_updated_by_user_id_fkey
+    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT company_strategies_customer_unique UNIQUE (customer_id),
+  CONSTRAINT company_strategies_mission_length_ck CHECK (char_length(mission) <= 400),
+  CONSTRAINT company_strategies_vision_length_ck CHECK (char_length(vision) <= 800)
+);
+
+COMMENT ON TABLE public.company_strategies IS
+  'Canonical strategy workspace per customer, containing mission, vision, governance, and publication state.';
+
+
+-- =============================================================================
+-- SECTION 3: SECONDARY TABLES (CUSTOMER SCOPE)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS public.strategy_principles (
+  principle_id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategy_id          uuid NOT NULL,
+  name                 text NOT NULL DEFAULT '',
+  description          text,
+  order_index          integer NOT NULL DEFAULT 0,
+  is_active            boolean NOT NULL DEFAULT true,
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  created_by_user_id   uuid,
+  updated_at           timestamptz NOT NULL DEFAULT now(),
+  updated_by_user_id   uuid,
+
+  CONSTRAINT strategy_principles_strategy_id_fkey
+    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT strategy_principles_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT strategy_principles_updated_by_user_id_fkey
+    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT strategy_principles_name_length_ck CHECK (char_length(name) <= 120),
+  CONSTRAINT strategy_principles_order_index_ck CHECK (order_index >= 0)
+);
+
+COMMENT ON TABLE public.strategy_principles IS
+  'Ordered collection of strategic principles associated with a company strategy.';
+
+
+CREATE TABLE IF NOT EXISTS public.strategy_values (
+  value_id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategy_id          uuid NOT NULL,
+  name                 text NOT NULL DEFAULT '',
+  description          text,
+  order_index          integer NOT NULL DEFAULT 0,
+  is_active            boolean NOT NULL DEFAULT true,
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  created_by_user_id   uuid,
+  updated_at           timestamptz NOT NULL DEFAULT now(),
+  updated_by_user_id   uuid,
+
+  CONSTRAINT strategy_values_strategy_id_fkey
+    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT strategy_values_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT strategy_values_updated_by_user_id_fkey
+    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT strategy_values_name_length_ck CHECK (char_length(name) <= 120),
+  CONSTRAINT strategy_values_order_index_ck CHECK (order_index >= 0)
+);
+
+COMMENT ON TABLE public.strategy_values IS
+  'Ordered company values that shape operating norms for a strategy workspace.';
+
+
+CREATE TABLE IF NOT EXISTS public.competitors (
+  competitor_id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id          uuid NOT NULL,
+  name                 text NOT NULL DEFAULT '',
+  website_url          text,
+  category             text,
+  summary              text,
+  status_id            uuid NOT NULL,
+  source_id            uuid,
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  created_by_user_id   uuid,
+  updated_at           timestamptz NOT NULL DEFAULT now(),
+  updated_by_user_id   uuid,
+
+  CONSTRAINT competitors_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT competitors_status_id_fkey
+    FOREIGN KEY (status_id) REFERENCES public.option_competitor_status(option_id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT competitors_source_id_fkey
+    FOREIGN KEY (source_id) REFERENCES public.option_data_source(option_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT competitors_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT competitors_updated_by_user_id_fkey
+    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT competitors_name_length_ck CHECK (char_length(name) <= 255),
+  CONSTRAINT competitors_website_url_length_ck CHECK (website_url IS NULL OR char_length(website_url) <= 1024),
+  CONSTRAINT competitors_category_length_ck CHECK (category IS NULL OR char_length(category) <= 255)
+);
+
+COMMENT ON TABLE public.competitors IS
+  'Customer-scoped competitor register entries with status and source metadata.';
+
+
+CREATE TABLE IF NOT EXISTS public.competitor_signals (
+  signal_id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  competitor_id        uuid NOT NULL,
+  signal_type_id       uuid NOT NULL,
+  observed_at          timestamptz NOT NULL DEFAULT now(),
+  source_url           text,
+  note                 text,
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  created_by_user_id   uuid,
+  updated_at           timestamptz NOT NULL DEFAULT now(),
+  updated_by_user_id   uuid,
+
+  CONSTRAINT competitor_signals_competitor_id_fkey
+    FOREIGN KEY (competitor_id) REFERENCES public.competitors(competitor_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT competitor_signals_signal_type_id_fkey
+    FOREIGN KEY (signal_type_id) REFERENCES public.option_competitor_signal_type(option_id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT competitor_signals_created_by_user_id_fkey
+    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT competitor_signals_updated_by_user_id_fkey
+    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE SET NULL,
+
+  CONSTRAINT competitor_signals_source_url_length_ck CHECK (source_url IS NULL OR char_length(source_url) <= 2048)
+);
+
+COMMENT ON TABLE public.competitor_signals IS
+  'Events and observations tied to a competitor (pricing changes, launches, funding, etc.).';
+
+
+CREATE TABLE IF NOT EXISTS public.strategy_change_logs (
+  change_log_id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  strategy_id          uuid NOT NULL,
+  change_type_id       uuid NOT NULL,
+  changed_by_user_id   uuid NOT NULL,
+  changed_at           timestamptz NOT NULL DEFAULT now(),
+  summary              text NOT NULL,
+  justification        text,
+  meta                 jsonb,
+
+  CONSTRAINT strategy_change_logs_strategy_id_fkey
+    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT strategy_change_logs_change_type_id_fkey
+    FOREIGN KEY (change_type_id) REFERENCES public.option_strategy_change_type(option_id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT strategy_change_logs_changed_by_user_id_fkey
+    FOREIGN KEY (changed_by_user_id) REFERENCES public.users(user_id)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT strategy_change_logs_summary_length_ck CHECK (char_length(summary) BETWEEN 1 AND 240)
+);
+
+COMMENT ON TABLE public.strategy_change_logs IS
+  'Immutable audit trail of edits and publications performed within the strategy workspace.';
+
+
+-- =============================================================================
+-- SECTION 3B: ADDITIONAL STRATEGY FORGE TABLES (CUSTOMER SCOPE)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS public.personas (
+  persona_id                        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id                       uuid NOT NULL,
+  created_by                        uuid NOT NULL,
+  updated_by                        uuid NOT NULL,
+  name                              text NOT NULL,
+  titles                            text NOT NULL,
+  department                        text,
+  job_responsibilities              text,
+  is_manager                        boolean NOT NULL DEFAULT false,
+  experience_years                  text,
+  education_levels                  text,
+  pain_points_html                  text,
+  goals_html                        text,
+  solution_relevant_pain_points_html text,
+  solution_relevant_goals_html     text,
+  current_solutions_html            text,
+  switching_costs_html              text,
+  unsatisfied_with_html             text,
+  ideal_outcome_html                text,
+  buying_behavior                   text,
+  digital_savviness                 text,
+  is_decider                        boolean NOT NULL DEFAULT false,
+  created_at                        timestamptz NOT NULL DEFAULT now(),
+  updated_at                        timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT personas_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT personas_created_by_fkey
+    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT personas_updated_by_fkey
+    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT personas_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
+);
+
+COMMENT ON TABLE public.personas IS
+  'Customer personas for targeting and messaging';
+
+
+CREATE TABLE IF NOT EXISTS public.segments (
+  segment_id                        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id                       uuid NOT NULL,
+  name                              text NOT NULL,
+  description                       text NOT NULL,
+  code                              text,
+  external_id                       text,
+  created_by                        uuid,
+  updated_by                        uuid,
+  created_at                        timestamptz NOT NULL DEFAULT now(),
+  updated_at                        timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT segments_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT segments_created_by_fkey
+    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT segments_updated_by_fkey
+    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT segments_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
+);
+
+COMMENT ON TABLE public.segments IS
+  'Market segments or organizational groupings';
+
+
+-- Journey phase enum for customer journey stages
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'journey_phase_enum') THEN
+    CREATE TYPE public.journey_phase_enum AS ENUM (
+      'Marketing',
+      'Sales',
+      'Onboarding',
+      'Customer Success'
+    );
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.customer_journey_stages (
+  customer_journey_stage_id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  customer_id                       uuid NOT NULL,
+  journey_phase                     journey_phase_enum NOT NULL,
+  name                              text NOT NULL,
+  description                       text NOT NULL,
+  graduation_criteria               text NOT NULL,
+  order_index                       integer,
+  code                              text,
+  created_by                        uuid,
+  updated_by                        uuid,
+  created_at                        timestamptz NOT NULL DEFAULT now(),
+  updated_at                        timestamptz NOT NULL DEFAULT now(),
+
+  CONSTRAINT customer_journey_stages_customer_id_fkey
+    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT customer_journey_stages_created_by_fkey
+    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT customer_journey_stages_updated_by_fkey
+    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+    ON DELETE NO ACTION,
+
+  CONSTRAINT customer_journey_stages_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
+);
+
+COMMENT ON TABLE public.customer_journey_stages IS
+  'Customer journey stages across different phases';
+
+
+CREATE TABLE IF NOT EXISTS public.customer_journey_stages_singleton (
+  customer_journey_stage_singleton_id  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_phase                        journey_phase_enum NOT NULL,
+  name                                 text NOT NULL,
+  description                          text NOT NULL,
+  graduation_criteria                  text NOT NULL,
+  order_index                          integer NOT NULL,
+  code                                 text NOT NULL,
+
+  CONSTRAINT customer_journey_stages_singleton_name_ck CHECK (name IS NOT NULL AND length(name) > 0),
+  CONSTRAINT customer_journey_stages_singleton_code_ck CHECK (code IS NOT NULL AND length(code) > 0),
+  CONSTRAINT customer_journey_stages_singleton_unique_code UNIQUE (code),
+  CONSTRAINT customer_journey_stages_singleton_unique_phase_order UNIQUE (journey_phase, order_index)
+);
+
+COMMENT ON TABLE public.customer_journey_stages_singleton IS
+  'System-wide default templates for customer journey stages (editable by system admins only)';
+
+
 -- Default values for customer_journey_stages_singleton
 INSERT INTO public.customer_journey_stages_singleton (journey_phase, name, description, graduation_criteria, order_index, code)
 VALUES
@@ -552,375 +921,6 @@ Once offboarding activities are completed and access is fully removed, the accou
 
 After an account is Churned, Marketing may optionally maintain the relationship in a low-intensity nurture or alumni program, but for the purposes of the customer journey, the active lifecycle has ended.', 7, 'churned')
 ON CONFLICT (code) DO NOTHING;
-
-
--- =============================================================================
--- SECTION 2: PRIMARY TABLE (CUSTOMER SCOPE)
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS public.company_strategies (
-  strategy_id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id            uuid NOT NULL,
-  mission                text NOT NULL DEFAULT '',
-  mission_description    text,
-  vision                 text NOT NULL DEFAULT '',
-  vision_description     text,
-  publication_status_id  uuid NOT NULL,
-  owner_user_id          uuid,
-  is_published           boolean NOT NULL DEFAULT false,
-  effective_at           timestamptz,
-  created_at             timestamptz NOT NULL DEFAULT now(),
-  created_by_user_id     uuid,
-  updated_at             timestamptz NOT NULL DEFAULT now(),
-  updated_by_user_id     uuid,
-
-  CONSTRAINT company_strategies_customer_id_fkey
-    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT company_strategies_publication_status_id_fkey
-    FOREIGN KEY (publication_status_id) REFERENCES public.option_publication_status(option_id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT company_strategies_owner_user_id_fkey
-    FOREIGN KEY (owner_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT company_strategies_created_by_user_id_fkey
-    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT company_strategies_updated_by_user_id_fkey
-    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT company_strategies_customer_unique UNIQUE (customer_id),
-  CONSTRAINT company_strategies_mission_length_ck CHECK (char_length(mission) <= 400),
-  CONSTRAINT company_strategies_vision_length_ck CHECK (char_length(vision) <= 800)
-);
-
-COMMENT ON TABLE public.company_strategies IS
-  'Canonical strategy workspace per customer, containing mission, vision, governance, and publication state.';
-
-
--- =============================================================================
--- SECTION 3: SECONDARY TABLES (CUSTOMER SCOPE)
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS public.strategy_principles (
-  principle_id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  strategy_id          uuid NOT NULL,
-  name                 text NOT NULL DEFAULT '',
-  description          text,
-  order_index          integer NOT NULL DEFAULT 0,
-  is_active            boolean NOT NULL DEFAULT true,
-  created_at           timestamptz NOT NULL DEFAULT now(),
-  created_by_user_id   uuid,
-  updated_at           timestamptz NOT NULL DEFAULT now(),
-  updated_by_user_id   uuid,
-
-  CONSTRAINT strategy_principles_strategy_id_fkey
-    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT strategy_principles_created_by_user_id_fkey
-    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT strategy_principles_updated_by_user_id_fkey
-    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT strategy_principles_name_length_ck CHECK (char_length(name) <= 120),
-  CONSTRAINT strategy_principles_order_index_ck CHECK (order_index >= 0)
-);
-
-COMMENT ON TABLE public.strategy_principles IS
-  'Ordered collection of strategic principles associated with a company strategy.';
-
-
-CREATE TABLE IF NOT EXISTS public.strategy_values (
-  value_id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  strategy_id          uuid NOT NULL,
-  name                 text NOT NULL DEFAULT '',
-  description          text,
-  order_index          integer NOT NULL DEFAULT 0,
-  is_active            boolean NOT NULL DEFAULT true,
-  created_at           timestamptz NOT NULL DEFAULT now(),
-  created_by_user_id   uuid,
-  updated_at           timestamptz NOT NULL DEFAULT now(),
-  updated_by_user_id   uuid,
-
-  CONSTRAINT strategy_values_strategy_id_fkey
-    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT strategy_values_created_by_user_id_fkey
-    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT strategy_values_updated_by_user_id_fkey
-    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT strategy_values_name_length_ck CHECK (char_length(name) <= 120),
-  CONSTRAINT strategy_values_order_index_ck CHECK (order_index >= 0)
-);
-
-COMMENT ON TABLE public.strategy_values IS
-  'Ordered company values that shape operating norms for a strategy workspace.';
-
-
-CREATE TABLE IF NOT EXISTS public.competitors (
-  competitor_id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id          uuid NOT NULL,
-  name                 text NOT NULL DEFAULT '',
-  website_url          text,
-  category             text,
-  summary              text,
-  status_id            uuid NOT NULL,
-  source_id            uuid,
-  created_at           timestamptz NOT NULL DEFAULT now(),
-  created_by_user_id   uuid,
-  updated_at           timestamptz NOT NULL DEFAULT now(),
-  updated_by_user_id   uuid,
-
-  CONSTRAINT competitors_customer_id_fkey
-    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT competitors_status_id_fkey
-    FOREIGN KEY (status_id) REFERENCES public.option_competitor_status(option_id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT competitors_source_id_fkey
-    FOREIGN KEY (source_id) REFERENCES public.option_data_source(option_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT competitors_created_by_user_id_fkey
-    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT competitors_updated_by_user_id_fkey
-    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT competitors_name_length_ck CHECK (char_length(name) <= 255),
-  CONSTRAINT competitors_website_url_length_ck CHECK (website_url IS NULL OR char_length(website_url) <= 1024),
-  CONSTRAINT competitors_category_length_ck CHECK (category IS NULL OR char_length(category) <= 255)
-);
-
-COMMENT ON TABLE public.competitors IS
-  'Customer-scoped competitor register entries with status and source metadata.';
-
-
-CREATE TABLE IF NOT EXISTS public.competitor_signals (
-  signal_id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  competitor_id        uuid NOT NULL,
-  signal_type_id       uuid NOT NULL,
-  observed_at          timestamptz NOT NULL DEFAULT now(),
-  source_url           text,
-  note                 text,
-  created_at           timestamptz NOT NULL DEFAULT now(),
-  created_by_user_id   uuid,
-  updated_at           timestamptz NOT NULL DEFAULT now(),
-  updated_by_user_id   uuid,
-
-  CONSTRAINT competitor_signals_competitor_id_fkey
-    FOREIGN KEY (competitor_id) REFERENCES public.competitors(competitor_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT competitor_signals_signal_type_id_fkey
-    FOREIGN KEY (signal_type_id) REFERENCES public.option_competitor_signal_type(option_id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT competitor_signals_created_by_user_id_fkey
-    FOREIGN KEY (created_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT competitor_signals_updated_by_user_id_fkey
-    FOREIGN KEY (updated_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE SET NULL,
-
-  CONSTRAINT competitor_signals_source_url_length_ck CHECK (source_url IS NULL OR char_length(source_url) <= 2048)
-);
-
-COMMENT ON TABLE public.competitor_signals IS
-  'Events and observations tied to a competitor (pricing changes, launches, funding, etc.).';
-
-
-CREATE TABLE IF NOT EXISTS public.strategy_change_logs (
-  change_log_id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  strategy_id          uuid NOT NULL,
-  change_type_id       uuid NOT NULL,
-  changed_by_user_id   uuid NOT NULL,
-  changed_at           timestamptz NOT NULL DEFAULT now(),
-  summary              text NOT NULL,
-  justification        text,
-  meta                 jsonb,
-
-  CONSTRAINT strategy_change_logs_strategy_id_fkey
-    FOREIGN KEY (strategy_id) REFERENCES public.company_strategies(strategy_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT strategy_change_logs_change_type_id_fkey
-    FOREIGN KEY (change_type_id) REFERENCES public.option_strategy_change_type(option_id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT strategy_change_logs_changed_by_user_id_fkey
-    FOREIGN KEY (changed_by_user_id) REFERENCES public.users(user_id)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT strategy_change_logs_summary_length_ck CHECK (char_length(summary) BETWEEN 1 AND 240)
-);
-
-COMMENT ON TABLE public.strategy_change_logs IS
-  'Immutable audit trail of edits and publications performed within the strategy workspace.';
-
-
--- =============================================================================
--- SECTION 3B: ADDITIONAL STRATEGY FORGE TABLES (CUSTOMER SCOPE)
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS public.personas (
-  persona_id                        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id                       uuid NOT NULL,
-  created_by                        uuid NOT NULL,
-  updated_by                        uuid NOT NULL,
-  name                              text NOT NULL,
-  titles                            text NOT NULL,
-  department                        text,
-  job_responsibilities              text,
-  is_manager                        boolean NOT NULL DEFAULT false,
-  experience_years                  text,
-  education_levels                  text,
-  pain_points_html                  text,
-  goals_html                        text,
-  solution_relevant_pain_points_html text,
-  solution_relevant_goals_html     text,
-  current_solutions_html            text,
-  switching_costs_html              text,
-  unsatisfied_with_html             text,
-  ideal_outcome_html                text,
-  buying_behavior                   text,
-  digital_savviness                 text,
-  is_decider                        boolean NOT NULL DEFAULT false,
-  created_at                        timestamptz NOT NULL DEFAULT now(),
-  updated_at                        timestamptz NOT NULL DEFAULT now(),
-
-  CONSTRAINT personas_customer_id_fkey
-    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT personas_created_by_fkey
-    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT personas_updated_by_fkey
-    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT personas_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
-);
-
-COMMENT ON TABLE public.personas IS
-  'Customer personas for targeting and messaging';
-
-
-CREATE TABLE IF NOT EXISTS public.segments (
-  segment_id                        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id                       uuid NOT NULL,
-  name                              text NOT NULL,
-  description                       text NOT NULL,
-  code                              text,
-  external_id                       text,
-  created_by                        uuid,
-  updated_by                        uuid,
-  created_at                        timestamptz NOT NULL DEFAULT now(),
-  updated_at                        timestamptz NOT NULL DEFAULT now(),
-
-  CONSTRAINT segments_customer_id_fkey
-    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT segments_created_by_fkey
-    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT segments_updated_by_fkey
-    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT segments_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
-);
-
-COMMENT ON TABLE public.segments IS
-  'Market segments or organizational groupings';
-
-
--- Journey phase enum for customer journey stages
-DO $$ 
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'journey_phase_enum') THEN
-    CREATE TYPE public.journey_phase_enum AS ENUM (
-      'Marketing',
-      'Sales',
-      'Onboarding',
-      'Customer Success'
-    );
-  END IF;
-END $$;
-
-CREATE TABLE IF NOT EXISTS public.customer_journey_stages (
-  customer_journey_stage_id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id                       uuid NOT NULL,
-  journey_phase                     journey_phase_enum NOT NULL,
-  name                              text NOT NULL,
-  description                       text NOT NULL,
-  graduation_criteria               text NOT NULL,
-  order_index                       integer,
-  code                              text,
-  created_by                        uuid,
-  updated_by                        uuid,
-  created_at                        timestamptz NOT NULL DEFAULT now(),
-  updated_at                        timestamptz NOT NULL DEFAULT now(),
-
-  CONSTRAINT customer_journey_stages_customer_id_fkey
-    FOREIGN KEY (customer_id) REFERENCES public.customers(customer_id)
-    ON DELETE CASCADE,
-
-  CONSTRAINT customer_journey_stages_created_by_fkey
-    FOREIGN KEY (created_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT customer_journey_stages_updated_by_fkey
-    FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
-    ON DELETE NO ACTION,
-
-  CONSTRAINT customer_journey_stages_name_ck CHECK (name IS NOT NULL AND length(name) > 0)
-);
-
-COMMENT ON TABLE public.customer_journey_stages IS
-  'Customer journey stages across different phases';
-
-
-CREATE TABLE IF NOT EXISTS public.customer_journey_stages_singleton (
-  customer_journey_stage_singleton_id  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  journey_phase                        journey_phase_enum NOT NULL,
-  name                                 text NOT NULL,
-  description                          text NOT NULL,
-  graduation_criteria                  text NOT NULL,
-  order_index                          integer NOT NULL,
-  code                                 text NOT NULL,
-
-  CONSTRAINT customer_journey_stages_singleton_name_ck CHECK (name IS NOT NULL AND length(name) > 0),
-  CONSTRAINT customer_journey_stages_singleton_code_ck CHECK (code IS NOT NULL AND length(code) > 0),
-  CONSTRAINT customer_journey_stages_singleton_unique_code UNIQUE (code),
-  CONSTRAINT customer_journey_stages_singleton_unique_phase_order UNIQUE (journey_phase, order_index)
-);
-
-COMMENT ON TABLE public.customer_journey_stages_singleton IS
-  'System-wide default templates for customer journey stages (editable by system admins only)';
 
 
 CREATE TABLE IF NOT EXISTS public.customer_info (
