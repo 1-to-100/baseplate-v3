@@ -19,6 +19,18 @@ declare module '@mui/joy/styles' {
   }
 }
 
+declare module '@mui/joy/Table' {
+  interface TablePropsBorderAxisOverrides {
+    header: true;
+  }
+}
+
+declare module '@mui/joy/Tabs' {
+  interface TabsPropsVariantOverrides {
+    custom: true;
+  }
+}
+
 /**
  * Build palette.text so all text components use theme.json colors.
  * Uses primary for secondary/tertiary when not defined; fallback to neutral-700 when no text in config.
