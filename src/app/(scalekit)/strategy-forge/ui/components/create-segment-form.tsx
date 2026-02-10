@@ -1919,30 +1919,22 @@ export function CreateSegmentForm({
                             )}
                           </td>
                           <td style={{ minWidth: 280 }}>
-                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                              {company.categories && company.categories.length > 0 ? (
-                                company.categories.slice(0, 2).map((cat, idx) => (
-                                  <Chip key={idx} size='sm' variant='soft'>
-                                    {cat.name}
-                                  </Chip>
-                                ))
-                              ) : (
-                                <Typography
-                                  sx={{
-                                    color: 'var(--joy-palette-text-secondary)',
-                                    fontWeight: 300,
-                                    fontSize: 14,
-                                  }}
-                                >
-                                  N/A
-                                </Typography>
-                              )}
-                              {company.categories && company.categories.length > 2 && (
-                                <Chip size='sm' variant='soft'>
-                                  +{company.categories.length - 2}
-                                </Chip>
-                              )}
-                            </Box>
+                            <Typography
+                              sx={{
+                                color: 'var(--joy-palette-text-secondary)',
+                                fontWeight: 300,
+                                fontSize: 14,
+                              }}
+                            >
+                              {company.categories && company.categories.length > 0
+                                ? company.categories.length > 2
+                                  ? `${company.categories
+                                      .slice(0, 2)
+                                      .map((cat) => cat.name)
+                                      .join(', ')}, +${company.categories.length - 2}`
+                                  : company.categories.map((cat) => cat.name).join(', ')
+                                : 'N/A'}
+                            </Typography>
                           </td>
                         </tr>
                       ))}
