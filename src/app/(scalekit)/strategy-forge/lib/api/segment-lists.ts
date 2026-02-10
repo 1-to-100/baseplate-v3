@@ -1030,7 +1030,7 @@ export async function getSegmentById(
 
   // Fetch customer_companies overrides for the fetched companies (if we have a customer context)
   // This ensures edited fields (employees, categories, region, etc.) are reflected in the list
-  let customerCompaniesOverrides: Map<
+  const customerCompaniesOverrides: Map<
     string,
     {
       employees?: number | null;
