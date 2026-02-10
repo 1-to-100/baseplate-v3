@@ -33,7 +33,9 @@ jobs:
             ${{ runner.os }}-deno-
 
       - name: Type check edge functions
-        run: deno check 'src/**/edge/**/*.ts'
+        run: |
+          deno check 'src/**/edge/**/*.ts'
+          deno check 'supabase/functions/*/index.ts'
 
       - name: Create test results directory
         run: mkdir -p test-results

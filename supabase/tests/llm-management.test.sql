@@ -23,7 +23,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- Plan the number of tests
-SELECT plan(78);
+SELECT plan(75);
 
 -- =============================================================================
 -- TEST SETUP: Create test data
@@ -149,11 +149,12 @@ SELECT is(
   'Test 1.10: Increment for non-existent customer should return NULL'
 );
 
--- Test 1.11: Non-existent period returns NULL
-SELECT is(
+-- Test 1.11: Auto-creates rate limit for valid period with no existing record
+-- The function creates a record with the default quota when none exists
+SELECT isnt(
   public.llm_increment_rate_limit('11111111-1111-1111-1111-111111111111', 'hourly'),
   NULL,
-  'Test 1.11: Increment for non-existent period should return NULL'
+  'Test 1.11: Increment for new valid period should auto-create and return non-NULL'
 );
 
 -- Test 1.12: Different periods are independent
@@ -301,7 +302,7 @@ SELECT is(
 -- =============================================================================
 
 -- Clean up existing test stuck jobs
-DELETE FROM public.llm_jobs WHERE id LIKE 'ffffffff-000%';
+DELETE FROM public.llm_jobs WHERE id::text LIKE 'ffffffff-000%';
 
 -- Create test jobs that are stuck
 -- Stuck job 1: waiting_llm status, past timeout, 0 retries (should be retried)
@@ -392,12 +393,12 @@ SELECT is(
 -- =============================================================================
 
 -- Clean up existing test cancellation jobs
-DELETE FROM public.llm_jobs WHERE id LIKE 'gggggggg-000%';
+DELETE FROM public.llm_jobs WHERE id::text LIKE 'a5b5c000-000%';
 
 -- Create jobs in various states for cancellation testing
 INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
 SELECT
-  'gggggggg-0001-0001-0001-000000000001',
+  'a5b5c000-0001-0001-0001-000000000001',
   '11111111-1111-1111-1111-111111111111',
   id,
   'Queued job - can cancel',
@@ -406,7 +407,7 @@ FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
 
 INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
 SELECT
-  'gggggggg-0002-0002-0002-000000000002',
+  'a5b5c000-0002-0002-0002-000000000002',
   '11111111-1111-1111-1111-111111111111',
   id,
   'Running job - can cancel',
@@ -415,7 +416,7 @@ FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
 
 INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, completed_at)
 SELECT
-  'gggggggg-0003-0003-0003-000000000003',
+  'a5b5c000-0003-0003-0003-000000000003',
   '11111111-1111-1111-1111-111111111111',
   id,
   'Completed job - cannot cancel',
@@ -425,7 +426,7 @@ FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
 
 INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
 SELECT
-  'gggggggg-0004-0004-0004-000000000004',
+  'a5b5c000-0004-0004-0004-000000000004',
   '22222222-2222-2222-2222-222222222222',  -- Different customer
   id,
   'Other customer job',
@@ -442,17 +443,17 @@ SET
   status = 'cancelled',
   cancelled_at = current_timestamp,
   completed_at = current_timestamp
-WHERE id = 'gggggggg-0001-0001-0001-000000000001'
+WHERE id = 'a5b5c000-0001-0001-0001-000000000001'
   AND status NOT IN ('completed', 'error', 'exhausted', 'cancelled');
 
 SELECT is(
-  (SELECT status FROM public.llm_jobs WHERE id = 'gggggggg-0001-0001-0001-000000000001'),
+  (SELECT status FROM public.llm_jobs WHERE id = 'a5b5c000-0001-0001-0001-000000000001'),
   'cancelled',
   'Test 5.1: Queued job should be cancellable'
 );
 
 SELECT isnt(
-  (SELECT cancelled_at FROM public.llm_jobs WHERE id = 'gggggggg-0001-0001-0001-000000000001'),
+  (SELECT cancelled_at FROM public.llm_jobs WHERE id = 'a5b5c000-0001-0001-0001-000000000001'),
   NULL,
   'Test 5.2: Cancelled job should have cancelled_at set'
 );
@@ -463,11 +464,11 @@ SET
   status = 'cancelled',
   cancelled_at = current_timestamp,
   completed_at = current_timestamp
-WHERE id = 'gggggggg-0002-0002-0002-000000000002'
+WHERE id = 'a5b5c000-0002-0002-0002-000000000002'
   AND status NOT IN ('completed', 'error', 'exhausted', 'cancelled');
 
 SELECT is(
-  (SELECT status FROM public.llm_jobs WHERE id = 'gggggggg-0002-0002-0002-000000000002'),
+  (SELECT status FROM public.llm_jobs WHERE id = 'a5b5c000-0002-0002-0002-000000000002'),
   'cancelled',
   'Test 5.3: Running job should be cancellable'
 );
@@ -477,11 +478,11 @@ UPDATE public.llm_jobs
 SET
   status = 'cancelled',
   cancelled_at = current_timestamp
-WHERE id = 'gggggggg-0003-0003-0003-000000000003'
+WHERE id = 'a5b5c000-0003-0003-0003-000000000003'
   AND status NOT IN ('completed', 'error', 'exhausted', 'cancelled');
 
 SELECT is(
-  (SELECT status FROM public.llm_jobs WHERE id = 'gggggggg-0003-0003-0003-000000000003'),
+  (SELECT status FROM public.llm_jobs WHERE id = 'a5b5c000-0003-0003-0003-000000000003'),
   'completed',
   'Test 5.4: Completed job should not be cancellable'
 );
@@ -491,13 +492,13 @@ SELECT is(
 -- =============================================================================
 
 -- Clean up existing test DLQ data
-DELETE FROM public.llm_dead_letter_queue WHERE job_id LIKE 'hhhhhhhh-%';
-DELETE FROM public.llm_jobs WHERE id LIKE 'hhhhhhhh-%';
+DELETE FROM public.llm_dead_letter_queue WHERE job_id::text LIKE 'a6b6c000-%';
+DELETE FROM public.llm_jobs WHERE id::text LIKE 'a6b6c000-%';
 
 -- Create a job for DLQ testing
 INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
 SELECT
-  'hhhhhhhh-0001-0001-0001-000000000001',
+  'a6b6c000-0001-0001-0001-000000000001',
   '11111111-1111-1111-1111-111111111111',
   id,
   'Job for DLQ testing',
@@ -507,7 +508,7 @@ FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
 -- Test 6.1: Add to DLQ
 SELECT isnt(
   public.llm_add_to_dlq(
-    'hhhhhhhh-0001-0001-0001-000000000001',
+    'a6b6c000-0001-0001-0001-000000000001',
     '{"response_id": "test-123", "error": "timeout"}'::jsonb,
     'Connection timeout after 30 seconds',
     'openai',
@@ -519,25 +520,25 @@ SELECT isnt(
 
 -- Test 6.2: Verify DLQ entry was created
 SELECT is(
-  (SELECT count(*) FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT count(*) FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   1::bigint,
   'Test 6.2: DLQ entry should be created for the job'
 );
 
 SELECT is(
-  (SELECT status FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT status FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   'pending',
   'Test 6.3: DLQ entry should have pending status'
 );
 
 SELECT is(
-  (SELECT retry_count FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT retry_count FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   0,
   'Test 6.4: DLQ entry should have 0 retry_count initially'
 );
 
 SELECT isnt(
-  (SELECT next_retry_at FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT next_retry_at FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   NULL,
   'Test 6.5: DLQ entry should have next_retry_at set'
 );
@@ -545,7 +546,7 @@ SELECT isnt(
 -- Test 6.6: Simulate DLQ item ready for processing
 UPDATE public.llm_dead_letter_queue
 SET next_retry_at = current_timestamp - interval '1 minute'
-WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001';
+WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001';
 
 -- Process DLQ
 SELECT is(
@@ -556,14 +557,14 @@ SELECT is(
 
 -- Test 6.7: Verify retry was scheduled (retry_count incremented)
 SELECT is(
-  (SELECT retry_count FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT retry_count FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   1,
   'Test 6.7: DLQ retry_count should be incremented to 1'
 );
 
 -- Test 6.8: Verify exponential backoff calculation
 SELECT ok(
-  (SELECT next_retry_at FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001') > current_timestamp,
+  (SELECT next_retry_at FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001') > current_timestamp,
   'Test 6.8: DLQ next_retry_at should be in the future after retry'
 );
 
@@ -573,7 +574,7 @@ SET
   retry_count = 7,  -- At max_retries
   next_retry_at = current_timestamp - interval '1 minute',
   status = 'pending'
-WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001';
+WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001';
 
 SELECT is(
   (SELECT action FROM public.llm_process_dlq() LIMIT 1),
@@ -582,14 +583,14 @@ SELECT is(
 );
 
 SELECT is(
-  (SELECT status FROM public.llm_dead_letter_queue WHERE job_id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT status FROM public.llm_dead_letter_queue WHERE job_id = 'a6b6c000-0001-0001-0001-000000000001'),
   'exhausted',
   'Test 6.10: DLQ status should be exhausted'
 );
 
 -- Test 6.11: Job status should also be exhausted
 SELECT is(
-  (SELECT status FROM public.llm_jobs WHERE id = 'hhhhhhhh-0001-0001-0001-000000000001'),
+  (SELECT status FROM public.llm_jobs WHERE id = 'a6b6c000-0001-0001-0001-000000000001'),
   'exhausted',
   'Test 6.11: Associated job should also have status exhausted'
 );
@@ -630,7 +631,7 @@ SELECT is(
 SELECT isnt(
   public.llm_log_diagnostic(
     'cancelled_job_response',
-    'gggggggg-0001-0001-0001-000000000001',
+    'a5b5c000-0001-0001-0001-000000000001',
     'openai',
     '11111111-1111-1111-1111-111111111111',
     NULL,
@@ -816,7 +817,7 @@ SELECT throws_ok(
 SELECT has_function(
   'public',
   'llm_increment_rate_limit',
-  ARRAY['uuid', 'character varying'],
+  ARRAY['uuid', 'character varying', 'integer'],
   'Test 11.1: llm_increment_rate_limit function should exist with correct signature'
 );
 

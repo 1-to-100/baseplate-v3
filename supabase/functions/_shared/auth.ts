@@ -24,10 +24,28 @@ export interface AuthResult {
 }
 
 /**
- * Authenticates a request and returns user info with an RLS-enforced client.
+ * Authenticates a request and returns user info.
  *
- * The userClient is created with the user's JWT, ensuring all database
- * operations respect Row Level Security policies.
+ * @param req - The incoming request with Authorization header
+ * @returns AuthenticatedUser with id, email, customer_id, and role
+ * @throws ApiError if authentication fails
+ *
+ * @example
+ * ```typescript
+ * const user = await authenticateRequest(req);
+ * console.log(user.id, user.customer_id);
+ * ```
+ */
+export async function authenticateRequest(req: Request): Promise<AuthenticatedUser> {
+  const { user } = await _authenticate(req);
+  return user;
+}
+
+/**
+ * Authenticates a request and returns both user info and an RLS-enforced client.
+ *
+ * Use this when you need a Supabase client scoped to the user's JWT for
+ * RLS-enforced database operations.
  *
  * @param req - The incoming request with Authorization header
  * @returns AuthResult with user and RLS-enforced client
@@ -35,13 +53,17 @@ export interface AuthResult {
  *
  * @example
  * ```typescript
- * const { user, userClient } = await authenticateRequest(req);
+ * const { user, userClient } = await authenticateRequestWithClient(req);
  *
  * // Use userClient for RLS-enforced operations
  * const { data } = await userClient.from('jobs').select('*');
  * ```
  */
-export async function authenticateRequest(req: Request): Promise<AuthResult> {
+export async function authenticateRequestWithClient(req: Request): Promise<AuthResult> {
+  return _authenticate(req);
+}
+
+async function _authenticate(req: Request): Promise<AuthResult> {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
     throw new ApiError('Missing authorization header', 401);

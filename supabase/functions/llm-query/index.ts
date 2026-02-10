@@ -25,7 +25,7 @@
  */
 
 import { handleCors } from '../_shared/cors.ts';
-import { authenticateRequest, type AuthResult } from '../_shared/auth.ts';
+import { authenticateRequestWithClient, type AuthResult } from '../_shared/auth.ts';
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts';
 import { providers, LLMError, withLogging } from '../_shared/llm/index.ts';
 import type { LLMProvider } from '../_shared/llm/index.ts';
@@ -152,7 +152,7 @@ export interface HandlerDeps {
  * Default dependencies using real implementations.
  */
 const defaultDeps: HandlerDeps = {
-  authenticateRequest,
+  authenticateRequest: authenticateRequestWithClient,
   llmProviders: providers,
 };
 

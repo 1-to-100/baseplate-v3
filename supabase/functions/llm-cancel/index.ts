@@ -7,7 +7,7 @@
  */
 
 import { handleCors } from '../_shared/cors.ts'
-import { authenticateRequest, type AuthResult } from '../_shared/auth.ts'
+import { authenticateRequestWithClient, type AuthResult } from '../_shared/auth.ts'
 import { ApiError, createErrorResponse, createSuccessResponse } from '../_shared/errors.ts'
 import { notifyJobCancelled } from '../_shared/llm-notifications.ts'
 
@@ -36,7 +36,7 @@ export interface HandlerDeps {
  * Default dependencies using real implementations
  */
 const defaultDeps: HandlerDeps = {
-  authenticateRequest,
+  authenticateRequest: authenticateRequestWithClient,
 }
 
 // =============================================================================
