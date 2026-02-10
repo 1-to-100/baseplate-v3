@@ -144,13 +144,7 @@ export async function getLLMJobStats(hours?: number): Promise<LLMJobStats> {
     let maxOldestAge: number | null = null;
 
     (data as LLMJobStatRow[]).forEach((row) => {
-      const status = row.status as keyof Omit<
-        LLMJobStats,
-        'total' | 'avgDurationSeconds' | 'oldestJobAgeSeconds'
-      >;
-      if (status in stats && typeof stats[status] === 'number') {
-        (stats[status] as number) = row.count;
-      }
+      stats[row.status] = row.count;
       stats.total += row.count;
 
       if (row.avg_duration_seconds !== null) {

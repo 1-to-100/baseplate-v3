@@ -15,6 +15,7 @@ import {
   ListDashes as ListDashesIcon,
 } from '@phosphor-icons/react/dist/ssr';
 
+import { ACTIVE_STATUSES, ERROR_STATUSES } from '@/types/llm-jobs';
 import type { LLMJobStats, LLMJobStatus } from '@/types/llm-jobs';
 
 interface LLMJobsStatsProps {
@@ -76,6 +77,8 @@ function StatCard({
   return (
     <Card
       variant='soft'
+      data-testid={`stat-card-${title.toLowerCase()}`}
+      data-active={isActive ? 'true' : undefined}
       sx={{
         flex: 1,
         minWidth: { xs: '140px', sm: '160px' },
@@ -114,12 +117,14 @@ function StatCard({
   );
 }
 
-const STATUS_GROUPS: Record<string, LLMJobStatus[]> = {
+type StatCardName = 'Total' | 'Active' | 'Queued' | 'Completed' | 'Failed' | 'Cancelled';
+
+const STATUS_GROUPS: Record<StatCardName, LLMJobStatus[]> = {
   Total: [],
-  Active: ['queued', 'running', 'waiting_llm', 'retrying'],
+  Active: ACTIVE_STATUSES,
   Queued: ['queued'],
   Completed: ['completed'],
-  Failed: ['error', 'exhausted'],
+  Failed: ERROR_STATUSES,
   Cancelled: ['cancelled'],
 };
 
@@ -129,14 +134,12 @@ export function LLMJobsStats({
   activeStatuses = [],
   onStatusFilter,
 }: LLMJobsStatsProps): React.JSX.Element {
-  const activeCount =
-    (stats?.queued ?? 0) +
-    (stats?.running ?? 0) +
-    (stats?.waiting_llm ?? 0) +
-    (stats?.retrying ?? 0);
-  const failedCount = (stats?.error ?? 0) + (stats?.exhausted ?? 0);
+  const sumStatuses = (statuses: LLMJobStatus[]) =>
+    statuses.reduce((sum, s) => sum + (stats?.[s] ?? 0), 0);
+  const activeCount = sumStatuses(ACTIVE_STATUSES);
+  const failedCount = sumStatuses(ERROR_STATUSES);
 
-  const makeClickHandler = (cardName: string) => {
+  const makeClickHandler = (cardName: StatCardName) => {
     if (!onStatusFilter) return undefined;
     return () => {
       if (cardName === 'Total') {
@@ -156,7 +159,7 @@ export function LLMJobsStats({
     };
   };
 
-  const isCardActive = (cardName: string): boolean => {
+  const isCardActive = (cardName: StatCardName): boolean => {
     if (cardName === 'Total') return activeStatuses.length === 0;
     const targetStatuses = STATUS_GROUPS[cardName] ?? [];
     return targetStatuses.length > 0 && targetStatuses.every((s) => activeStatuses.includes(s));

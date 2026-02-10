@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import { expect, within } from 'storybook/test';
 import React from 'react';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
@@ -76,6 +77,11 @@ export const Running: Story = {
     status: 'running',
     showProgress: true,
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Processing')).toBeInTheDocument();
+    await expect(canvas.getAllByRole('progressbar')).toHaveLength(2);
+  },
 };
 
 export const WaitingLLM: Story = {
@@ -95,6 +101,11 @@ export const Retrying: Story = {
 export const Completed: Story = {
   args: {
     status: 'completed',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Complete')).toBeInTheDocument();
+    await expect(canvas.queryByRole('progressbar')).not.toBeInTheDocument();
   },
 };
 
@@ -120,12 +131,21 @@ export const Unknown: Story = {
   args: {
     status: null,
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Unknown')).toBeInTheDocument();
+  },
 };
 
 export const WithCustomLabel: Story = {
   args: {
     status: 'running',
     label: 'Generating Logo...',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Generating Logo...')).toBeInTheDocument();
+    await expect(canvas.queryByText('Processing')).not.toBeInTheDocument();
   },
 };
 

@@ -57,19 +57,11 @@ export interface LLMJobStatRow {
   oldest_job_age_seconds: number | null;
 }
 
-export interface LLMJobStats {
+export type LLMJobStats = Record<LLMJobStatus, number> & {
   total: number;
-  queued: number;
-  running: number;
-  waiting_llm: number;
-  retrying: number;
-  completed: number;
-  error: number;
-  exhausted: number;
-  cancelled: number;
   avgDurationSeconds: number | null;
   oldestJobAgeSeconds: number | null;
-}
+};
 
 export interface CancelJobResponse {
   cancelled: boolean;
@@ -80,7 +72,8 @@ export interface CancelJobResponse {
 // Status categories for filtering
 export const ACTIVE_STATUSES: LLMJobStatus[] = ['queued', 'running', 'waiting_llm', 'retrying'];
 export const TERMINAL_STATUSES: LLMJobStatus[] = ['completed', 'error', 'exhausted', 'cancelled'];
-export const FAILED_STATUSES: LLMJobStatus[] = ['error', 'exhausted', 'cancelled'];
+export const ERROR_STATUSES: LLMJobStatus[] = ['error', 'exhausted'];
+export const FAILED_STATUSES: LLMJobStatus[] = [...ERROR_STATUSES, 'cancelled'];
 export const CANCELLABLE_STATUSES: LLMJobStatus[] = [
   'queued',
   'running',
