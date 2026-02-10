@@ -96,6 +96,11 @@ export default function EditCompanyModal({
         queryKey: ['segment-companies'],
         exact: false,
       });
+      // Invalidate segment detail queries so main list refetches after edit from quick preview
+      queryClient.invalidateQueries({
+        queryKey: ['segment'],
+        exact: false,
+      });
 
       if (onSuccess && company) {
         onSuccess(company.id);

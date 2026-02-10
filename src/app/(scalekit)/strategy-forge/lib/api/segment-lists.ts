@@ -1028,20 +1028,55 @@ export async function getSegmentById(
 
   const total = count ?? 0;
 
-  // Transform companies data
+  // Fetch customer_companies overrides for the fetched companies (if we have a customer context)
+  // This ensures edited fields (employees, categories, region, etc.) are reflected in the list
+  let customerCompaniesOverrides: Map<
+    string,
+    {
+      employees?: number | null;
+      categories?: string[] | null;
+      country?: string | null;
+      region?: string | null;
+    }
+  > = new Map();
+
+  if (effectiveCustomerId && companiesData && companiesData.length > 0) {
+    const fetchedCompanyIds = companiesData.map((c) => c.company_id);
+    const { data: ccData } = await supabase
+      .from('customer_companies')
+      .select('company_id, employees, categories, country, region')
+      .eq('customer_id', effectiveCustomerId)
+      .in('company_id', fetchedCompanyIds);
+
+    if (ccData) {
+      for (const cc of ccData) {
+        customerCompaniesOverrides.set(cc.company_id, {
+          employees: cc.employees,
+          categories: cc.categories,
+          country: cc.country,
+          region: cc.region,
+        });
+      }
+    }
+  }
+
+  // Transform companies data, merging customer_companies overrides
   const companies =
-    companiesData?.map((company) => ({
-      company_id: company.company_id,
-      display_name: company.display_name || null,
-      legal_name: company.legal_name || null,
-      logo: company.logo || null,
-      country: company.country || null,
-      region: company.region || null,
-      employees: company.employees || null,
-      categories: company.categories || null,
-      website_url: company.website_url || null,
-      domain: company.domain || null,
-    })) || [];
+    companiesData?.map((company) => {
+      const overrides = customerCompaniesOverrides.get(company.company_id);
+      return {
+        company_id: company.company_id,
+        display_name: company.display_name || null,
+        legal_name: company.legal_name || null,
+        logo: company.logo || null,
+        country: overrides?.country ?? company.country ?? null,
+        region: overrides?.region ?? company.region ?? null,
+        employees: overrides?.employees ?? company.employees ?? null,
+        categories: overrides?.categories ?? company.categories ?? null,
+        website_url: company.website_url || null,
+        domain: company.domain || null,
+      };
+    }) || [];
 
   const lastPage = Math.ceil(total / perPage);
 
