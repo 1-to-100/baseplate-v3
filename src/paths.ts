@@ -173,6 +173,11 @@ export const paths = {
       details: (companyId: string) => `/strategy-forge/companies/${companyId}`,
       edit: (companyId: string) => `/strategy-forge/companies/${companyId}/edit`,
     },
+    lists: {
+      list: '/strategy-forge/lists',
+      details: (listId: string) => `/strategy-forge/lists/${listId}`,
+      edit: (listId: string) => `/strategy-forge/lists/${listId}/edit`,
+    },
   },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',

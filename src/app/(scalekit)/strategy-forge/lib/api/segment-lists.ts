@@ -4,7 +4,14 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
-import type { List, ListForDisplay, SegmentFilterDto, AiGeneratedSegment } from '../types/list';
+import {
+  type List,
+  type ListForDisplay,
+  type SegmentFilterDto,
+  type AiGeneratedSegment,
+  ListType,
+} from '../types/list';
+import { DEFAULT_LIST_SUBTYPE, ListSubtype } from '../constants/lists';
 
 interface CreateSegmentInput {
   name: string;
@@ -238,6 +245,526 @@ export async function getSegments(params?: {
       next: page < lastPage ? page + 1 : null,
     },
   };
+}
+
+/**
+ * Get all lists (any type: segment, territory, list) with pagination.
+ * Uses same customer/RLS rules as getSegments.
+ */
+export async function getLists(params?: {
+  page?: number;
+  perPage?: number;
+  search?: string;
+}): Promise<{
+  data: ListForDisplay[];
+  meta: {
+    total: number;
+    page: number;
+    perPage: number;
+    lastPage: number;
+    prev: number | null;
+    next: number | null;
+  };
+}> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  let query = supabase
+    .from('lists')
+    .select('*', { count: 'exact' })
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    query = query.eq('customer_id', effectiveCustomerId);
+  }
+
+  if (params?.search && params.search.trim()) {
+    query = query.ilike('name', `%${params.search.trim()}%`);
+  }
+
+  query = query.order('updated_at', { ascending: false });
+
+  const page = params?.page || 1;
+  const perPage = params?.perPage || 12;
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  query = query.range(from, to);
+
+  const { data: lists, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch lists: ${error.message}`);
+  }
+
+  const listsWithCounts = await Promise.all(
+    (lists || []).map(async (list) => {
+      const { count: companyCount } = await supabase
+        .from('list_companies')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', list.list_id);
+
+      return {
+        ...list,
+        company_count: companyCount || 0,
+      };
+    })
+  );
+
+  const total = count || 0;
+  const lastPage = Math.ceil(total / perPage);
+
+  return {
+    data: listsWithCounts as ListForDisplay[],
+    meta: {
+      total,
+      page,
+      perPage,
+      lastPage,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
+}
+
+/**
+ * Get a single list by ID (list_type 'list' only).
+ */
+export async function getListById(listId: string): Promise<List> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  let query = supabase
+    .from('lists')
+    .select('*')
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    query = query.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: list, error } = await query.single();
+
+  if (error || !list) {
+    throw new Error(`List not found: ${error?.message ?? 'not available'}`);
+  }
+
+  return list as List;
+}
+
+/**
+ * Get companies for a list (list_type 'list') with pagination and optional search.
+ */
+export async function getListCompanies(
+  listId: string,
+  page: number = 1,
+  perPage: number = 25,
+  search?: string
+): Promise<{
+  data: Array<{
+    id: string;
+    company_id: string;
+    display_name: string | null;
+    legal_name: string | null;
+    logo: string | null;
+    country: string | null;
+    region: string | null;
+    employees: number | null;
+    categories: string[] | null;
+    website_url: string | null;
+    domain: string | null;
+    homepageUri?: string | null;
+    fullName?: string | null;
+    name?: string | null;
+    location?: { city?: { name?: string } } | null;
+    isNew?: boolean;
+  }>;
+  meta: {
+    total: number;
+    lastPage: number;
+    currentPage: number;
+    perPage: number;
+    prev: number | null;
+    next: number | null;
+  };
+}> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  let listQuery = supabase
+    .from('lists')
+    .select('list_id')
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    listQuery = listQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: listRow, error: listError } = await listQuery.single();
+
+  if (listError || !listRow) {
+    throw new Error(`List not found: ${listError?.message ?? 'not available'}`);
+  }
+
+  let companiesQuery = supabase
+    .from('list_companies')
+    .select(
+      `
+      id,
+      company_id,
+      companies:company_id (
+        company_id,
+        display_name,
+        legal_name,
+        logo,
+        country,
+        region,
+        employees,
+        categories,
+        website_url,
+        domain
+      )
+    `,
+      { count: 'exact' }
+    )
+    .eq('list_id', listId);
+
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  companiesQuery = companiesQuery.order('created_at', { ascending: false }).range(from, to);
+
+  const { data: listCompanies, error: listCompaniesError, count } = await companiesQuery;
+
+  if (listCompaniesError) {
+    throw new Error(`Failed to fetch companies: ${listCompaniesError.message}`);
+  }
+
+  let companies =
+    listCompanies?.map((lc) => {
+      const company = Array.isArray(lc.companies) ? lc.companies[0] : lc.companies;
+      return {
+        id: lc.id,
+        company_id: lc.company_id,
+        display_name: company?.display_name || null,
+        legal_name: company?.legal_name || null,
+        logo: company?.logo || null,
+        country: company?.country || null,
+        region: company?.region || null,
+        employees: company?.employees || null,
+        categories: company?.categories || null,
+        website_url: company?.website_url || null,
+        domain: company?.domain || null,
+        homepageUri: company?.website_url || null,
+        fullName: company?.display_name || company?.legal_name || null,
+        name: company?.display_name || company?.legal_name || null,
+        location: company?.region ? { city: { name: company.region } } : null,
+        isNew: false,
+      };
+    }) || [];
+
+  const total = count ?? 0;
+
+  if (search && search.trim()) {
+    const searchLower = search.toLowerCase().trim();
+    companies = companies.filter((c) => {
+      const name = (c.display_name || c.legal_name || '').toLowerCase();
+      const domain = (c.domain || '').toLowerCase();
+      return name.includes(searchLower) || domain.includes(searchLower);
+    });
+  }
+  const lastPage = Math.ceil(total / perPage);
+
+  return {
+    data: companies,
+    meta: {
+      total,
+      lastPage,
+      currentPage: page,
+      perPage,
+      prev: page > 1 ? page - 1 : null,
+      next: page < lastPage ? page + 1 : null,
+    },
+  };
+}
+
+export interface AddCompaniesToListPayload {
+  companyIds: string[];
+}
+
+/**
+ * Add companies to a list by creating list_company assignments.
+ * Only allowed for list_type 'list' and subtype 'company'. Duplicates are skipped (unique on company_id, list_id).
+ */
+export async function addCompaniesToList(
+  listId: string,
+  payload: AddCompaniesToListPayload
+): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  const companyIds = (payload.companyIds ?? []).filter(
+    (id): id is string => typeof id === 'string' && id.length > 0
+  );
+  if (companyIds.length === 0) {
+    throw new Error('No valid company IDs provided');
+  }
+
+  let listQuery = supabase
+    .from('lists')
+    .select('list_id, list_type, subtype')
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    listQuery = listQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: listRow, error: listError } = await listQuery.single();
+
+  if (listError || !listRow) {
+    throw new Error(`List not found: ${listError?.message ?? 'not available'}`);
+  }
+
+  if ((listRow as { subtype?: string }).subtype !== ListSubtype.COMPANY) {
+    throw new Error('Only company lists can have companies added');
+  }
+
+  const records = companyIds.map((company_id) => ({
+    list_id: listId,
+    company_id,
+  }));
+
+  const { error: upsertError } = await supabase.from('list_companies').upsert(records, {
+    onConflict: 'company_id,list_id',
+    ignoreDuplicates: true,
+  });
+
+  if (upsertError) {
+    throw new Error(`Failed to add companies to list: ${upsertError.message}`);
+  }
+}
+
+/**
+ * Check which of the given company IDs are already in the list.
+ * Returns a record mapping company_id to true if in list, false otherwise.
+ */
+export async function checkCompaniesInList(
+  listId: string,
+  companyIds: string[]
+): Promise<Record<string, boolean>> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  const ids = companyIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
+  if (ids.length === 0) {
+    return {};
+  }
+
+  let listQuery = supabase
+    .from('lists')
+    .select('list_id')
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    listQuery = listQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: listRow, error: listError } = await listQuery.single();
+
+  if (listError || !listRow) {
+    throw new Error(`List not found: ${listError?.message ?? 'not available'}`);
+  }
+
+  const { data: rows, error: fetchError } = await supabase
+    .from('list_companies')
+    .select('company_id')
+    .eq('list_id', listId)
+    .in('company_id', ids);
+
+  if (fetchError) {
+    throw new Error(`Failed to check companies in list: ${fetchError.message}`);
+  }
+
+  const inList = new Set((rows ?? []).map((r) => r.company_id));
+  const result: Record<string, boolean> = {};
+  for (const id of ids) {
+    result[id] = inList.has(id);
+  }
+  return result;
+}
+
+export interface CreateListInput {
+  name: string;
+  subtype?: ListSubtype;
+  is_static?: boolean;
+  description?: string | null;
+}
+
+/**
+ * Create a new list with list_type 'list' (not segment or territory).
+ * Uses same customer/RLS rules as getLists.
+ */
+export async function createList(input: CreateListInput): Promise<List> {
+  const supabase = createClient();
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  const trimmedName = input.name.trim();
+  if (trimmedName.length < 3 || trimmedName.length > 100) {
+    throw new Error('List name must be between 3 and 100 characters');
+  }
+
+  // For system admin with no customer selected we cannot create (no customer_id to use)
+  const customerId = effectiveCustomerId;
+  if (!customerId) {
+    throw new Error('Cannot create list: no customer context. Select a customer first.');
+  }
+
+  const currentUser = await getCurrentUser(supabase);
+
+  if (!currentUser?.user_id) {
+    throw new Error('Cannot create list: no user context. Please login first.');
+  }
+
+  const { data: list, error: insertError } = await supabase
+    .from('lists')
+    .insert({
+      customer_id: customerId,
+      user_id: currentUser?.user_id,
+      list_type: ListType.LIST,
+      name: trimmedName,
+      description: input.description ?? null,
+      filters: {},
+      status: 'new',
+      subtype: input.subtype ?? DEFAULT_LIST_SUBTYPE,
+      is_static: input.is_static ?? false,
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    throw new Error(`Failed to create list: ${insertError.message}`);
+  }
+
+  return list as List;
+}
+
+/**
+ * Resolve current auth user to the application user (public.users row).
+ * Auth user id and DB user_id differ; lists.user_id must reference users.user_id.
+ */
+async function getCurrentUser(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ user_id: string }> {
+  const {
+    data: { user: authUser },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !authUser) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data: userRow, error: userRowError } = await supabase
+    .from('users')
+    .select('user_id')
+    .eq('auth_user_id', authUser.id)
+    .maybeSingle();
+
+  if (userRowError || !userRow?.user_id) {
+    throw new Error(
+      `Unable to resolve application user: ${userRowError?.message ?? 'user record not found in users table'}`
+    );
+  }
+
+  return userRow;
 }
 
 /**

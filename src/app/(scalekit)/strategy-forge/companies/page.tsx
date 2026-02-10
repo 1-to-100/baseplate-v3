@@ -20,6 +20,7 @@ import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { PencilSimple as PencilIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { UploadSimple as UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr/UploadSimple';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { Funnel as FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { paths } from '@/paths';
 import Pagination from '@/components/dashboard/layout/pagination';
@@ -32,6 +33,7 @@ import type { CompanyItem, CompanyFilterFields } from '../lib/types/company';
 import CompanyFilter from '../ui/components/company-filter';
 import CompanyDetailsPopover from '../ui/components/company-details-popover';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
+import { AddToListModal } from '../lib/components';
 
 export default function Page(): React.JSX.Element {
   const searchParams = useSearchParams();
@@ -57,6 +59,9 @@ export default function Page(): React.JSX.Element {
   const [filterData, setFilterData] = useState<CompanyFilterFields>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyItem | null>(null);
+  const [addToListModalOpen, setAddToListModalOpen] = useState(false);
+  const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
+  const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
   const { isImpersonating } = useImpersonation();
 
   const updatePageQueryParam = useCallback(
@@ -281,6 +286,14 @@ export default function Page(): React.JSX.Element {
   const handleEditCompany = (company: CompanyItem) => {
     setEditingCompany(company);
     setIsEditModalOpen(true);
+    handleMenuClose();
+  };
+
+  const handleAddToList = (company: CompanyItem) => {
+    if (!company.company_id) return;
+    setAddToListCompanyIds([company.company_id]);
+    setAddToListLabel(company.name || undefined);
+    setAddToListModalOpen(true);
     handleMenuClose();
   };
 
@@ -958,6 +971,21 @@ export default function Page(): React.JSX.Element {
                                         Edit
                                       </Box>
                                     )}
+                                    <Box
+                                      data-menu-item='true'
+                                      onMouseDown={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        handleAddToList(company);
+                                      }}
+                                      sx={{
+                                        ...menuItemStyle,
+                                        gap: { xs: '10px', sm: '14px' },
+                                      }}
+                                    >
+                                      <PlusIcon fontSize='20px' />
+                                      Add to list
+                                    </Box>
                                   </Popper>
                                 </td>
                               </tr>
@@ -1000,6 +1028,18 @@ export default function Page(): React.JSX.Element {
             setEditingCompany(null);
           }}
           company={editingCompany}
+        />
+
+        {/* Add to list modal */}
+        <AddToListModal
+          open={addToListModalOpen}
+          onClose={() => {
+            setAddToListModalOpen(false);
+            setAddToListCompanyIds([]);
+            setAddToListLabel(undefined);
+          }}
+          companyIds={addToListCompanyIds}
+          companyCountLabel={addToListLabel}
         />
       </Stack>
     </Box>

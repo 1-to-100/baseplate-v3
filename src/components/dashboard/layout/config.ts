@@ -49,6 +49,13 @@ export const layoutConfig: LayoutConfig = {
           icon: 'buildings',
           matcher: { type: 'startsWith', href: paths.strategyForge.companies.list },
         },
+        {
+          key: 'lists',
+          title: 'Lists',
+          href: paths.strategyForge.lists.list,
+          icon: 'list',
+          matcher: { type: 'startsWith', href: paths.strategyForge.lists.list },
+        },
         { key: 'divider1', type: 'divider' },
         {
           key: 'role',

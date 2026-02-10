@@ -27,6 +27,7 @@ import {
   type SimplePerson,
 } from '../../../ui/components/company-details';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
+import { AddToListModal } from '../../../lib/components';
 import { toast } from '@/components/core/toaster';
 import type { CompanyItem } from '../../../lib/types/company';
 
@@ -165,6 +166,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   const [currentPage, setCurrentPage] = useState(1);
   const [isDebugModalOpen, setIsDebugModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [addToListModalOpen, setAddToListModalOpen] = useState(false);
   const popperRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
 
@@ -471,7 +473,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
             anchorEl={anchorEl}
             open={Boolean(anchorEl) && popoverType === 'header'}
             onClose={handleMenuClose}
-            onAddToList={() => {}}
+            onAddToList={() => setAddToListModalOpen(true)}
             onExport={() => {}}
             showAddToList={true}
             showExport={true}
@@ -570,6 +572,14 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         data={diffbotJson}
         isLoading={diffbotLoading}
         error={diffbotError as Error | null}
+      />
+
+      {/* Add to list modal */}
+      <AddToListModal
+        open={addToListModalOpen}
+        onClose={() => setAddToListModalOpen(false)}
+        companyIds={companyId ? [companyId] : []}
+        companyCountLabel={companyDetails?.name}
       />
     </Box>
   );
