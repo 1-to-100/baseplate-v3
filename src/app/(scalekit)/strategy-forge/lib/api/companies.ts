@@ -342,6 +342,7 @@ export interface CompanyWithScoringResult {
     categories?: string[] | null;
     country?: string | null;
     region?: string | null;
+    email?: string | null;
   } | null;
 }
 
@@ -441,7 +442,9 @@ export async function getCompanyWithScoring(company_id: string): Promise<Company
 
   const { data: customerCompanies, error: scoringError } = await supabase
     .from('customer_companies')
-    .select('customer_id, last_scoring_results, revenue, employees, categories, country, region')
+    .select(
+      'customer_id, last_scoring_results, revenue, employees, categories, country, region, email'
+    )
     .eq('company_id', company_id)
     .in('customer_id', customerIds);
 
@@ -457,6 +460,7 @@ export async function getCompanyWithScoring(company_id: string): Promise<Company
     categories?: string[] | null;
     country?: string | null;
     region?: string | null;
+    email?: string | null;
   }>;
 
   const withScore = rows.filter((r) => parseLastScoringResults(r.last_scoring_results));
@@ -478,6 +482,7 @@ export async function getCompanyWithScoring(company_id: string): Promise<Company
         categories: bestRow.categories ?? undefined,
         country: bestRow.country ?? undefined,
         region: bestRow.region ?? undefined,
+        email: bestRow.email ?? undefined,
       }
     : null;
 
@@ -561,7 +566,7 @@ export function buildCompanyItemFromScoring(
     categories: (scoring?.categories ?? company.categories) as string[] | undefined,
     technologies: company.technologies as string[] | undefined,
     phone: company.phone as string | undefined,
-    email: company.email as string | undefined,
+    email: (scoring?.email ?? company.email) as string | undefined,
     last_scoring_results: scoring?.last_scoring_results ?? undefined,
     social_links: company.social_links as CompanyItem['social_links'] | undefined,
     fetched_at: company.fetched_at as string | undefined,
@@ -623,9 +628,11 @@ async function resolveCurrentCustomerId(
 
 /**
  * Update company by company_id.
- * Global fields (name, description, website, etc.) are written to companies (system_admin only per RLS).
- * Customer-scoped fields (revenue, employees, categories, country, region) are written to customer_companies
- * so that non-admin users can update them and the UI (which reads from customer_companies) reflects the change.
+ * Two writes by design:
+ * 1) customer_companies (upsert) – customer-scoped overrides (revenue, employees, categories, country, region)
+ *    so non-admin users can persist edits; UI reads these via getCompanyWithScoring.
+ * 2) companies (patch) – global fields (name, email, address, etc.); RLS often allows only system_admin.
+ * We then return getCompanyById() which merges both; no .select() on the PATCH to avoid 406 when RLS blocks SELECT.
  */
 export async function updateCompany(
   company_id: string,
@@ -644,13 +651,14 @@ export async function updateCompany(
 
   const now = new Date().toISOString();
 
-  // Customer-scoped fields: update customer_companies so non-admin users can persist revenue etc.
+  // Customer-scoped fields: update customer_companies so non-admin users can persist overrides.
   const hasCustomerScopedFields =
     payload.revenue !== undefined ||
     payload.employees !== undefined ||
     payload.categories !== undefined ||
     payload.country !== undefined ||
-    payload.region !== undefined;
+    payload.region !== undefined ||
+    'email' in payload;
 
   if (hasCustomerScopedFields) {
     const customerId = await resolveCurrentCustomerId(supabase);
@@ -665,6 +673,7 @@ export async function updateCompany(
       if (payload.categories !== undefined) customerUpdate.categories = payload.categories;
       if (payload.country !== undefined) customerUpdate.country = payload.country;
       if (payload.region !== undefined) customerUpdate.region = payload.region;
+      if ('email' in payload) customerUpdate.email = payload.email ?? null;
 
       const { error: ccError } = await supabase.from('customer_companies').upsert(customerUpdate, {
         onConflict: 'customer_id,company_id',
@@ -697,24 +706,23 @@ export async function updateCompany(
   if (payload.categories !== undefined) updateData.categories = payload.categories;
   if (payload.technologies !== undefined) updateData.technologies = payload.technologies;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
-  if (payload.email !== undefined) updateData.email = payload.email;
+  // Always apply email when present (string or empty string to clear)
+  if ('email' in payload) updateData.email = payload.email ?? null;
   if (payload.social_links !== undefined) updateData.social_links = payload.social_links;
 
   updateData.updated_at = now;
 
-  const { data: company, error } = await supabase
+  // Update without .select() to avoid 406 when RLS allows UPDATE but not SELECT (or 0 rows updated).
+  const { error } = await supabase
     .from('companies')
     .update(updateData)
-    .eq('company_id', company_id)
-    .select()
-    .maybeSingle();
+    .eq('company_id', company_id);
 
   if (error) {
     throw new Error(`Failed to update company: ${error.message}`);
   }
 
-  // Do not require a row from companies: RLS may allow only system_admin to update, so 0 rows is OK.
-  // Merged result from getCompanyById will still include customer_companies updates (e.g. revenue).
+  // Return merged company (companies + customer_companies); customer overrides already saved above.
   return getCompanyById(company_id);
 }
 
