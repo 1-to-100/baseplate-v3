@@ -109,8 +109,10 @@ begin
     and used < quota
   returning * into result;
 
-  -- If we got a result, we're done
-  if result is not null then
+  -- If we updated a row, we're done
+  -- Note: use FOUND instead of "result is not null" because composite
+  -- IS NOT NULL returns false when any field (e.g. reset_at) is NULL
+  if found then
     return result;
   end if;
 
@@ -124,12 +126,18 @@ begin
   where customer_id = p_customer_id
     and period = p_period;
 
-  if result is not null then
+  if found then
     -- Record exists but quota exceeded - return NULL to signal this
     return null;
   end if;
 
-  -- No record exists - create one with default quota
+  -- No record exists - verify customer exists before creating
+  perform 1 from public.customers where customer_id = p_customer_id;
+  if not found then
+    return null;
+  end if;
+
+  -- Customer exists, create rate limit with default quota
   -- Use ON CONFLICT to handle race condition where another request
   -- creates the record between our SELECT and INSERT
   insert into public.llm_rate_limits

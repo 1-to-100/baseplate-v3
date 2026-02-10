@@ -135,10 +135,10 @@ declare
 begin
   -- Process pending items ready for retry
   for item in
-    select * from public.llm_dead_letter_queue
-    where status = 'pending'
-      and next_retry_at <= current_timestamp
-    order by next_retry_at
+    select d.* from public.llm_dead_letter_queue d
+    where d.status = 'pending'
+      and d.next_retry_at <= current_timestamp
+    order by d.next_retry_at
     for update skip locked
     limit 10
   loop
