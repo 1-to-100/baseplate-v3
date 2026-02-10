@@ -11,6 +11,7 @@ import Button from '@mui/joy/Button';
 import Autocomplete from '@mui/joy/Autocomplete';
 import Box from '@mui/joy/Box';
 import Chip from '@mui/joy/Chip';
+import ChipDelete from '@mui/joy/ChipDelete';
 import CircularProgress from '@mui/joy/CircularProgress';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCompanies } from '../lib/api/companies';
@@ -73,10 +74,11 @@ export default function AddCompaniesToListModal({
   });
 
   const handleAddOption = useCallback((company: CompanyItem) => {
-    if (!company.company_id) return;
+    const companyId = company.company_id;
+    if (!companyId) return;
     setSelected((prev) => {
-      if (prev.some((s) => s.company_id === company.company_id)) return prev;
-      return [...prev, { company_id: company.company_id, name: company.name || '—' }];
+      if (prev.some((s) => s.company_id === companyId)) return prev;
+      return [...prev, { company_id: companyId, name: company.name || '—' }];
     });
   }, []);
 
@@ -185,7 +187,9 @@ export default function AddCompaniesToListModal({
                   <Chip
                     key={s.company_id}
                     size='sm'
-                    onDelete={() => handleRemoveSelected(s.company_id)}
+                    endDecorator={
+                      <ChipDelete onDelete={() => handleRemoveSelected(s.company_id)} />
+                    }
                     sx={{ maxWidth: '100%' }}
                   >
                     {s.name}
