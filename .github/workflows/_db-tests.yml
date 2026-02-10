@@ -30,13 +30,21 @@ jobs:
         id: db-tests
         continue-on-error: true
         run: |
-          supabase test db 2>&1 | tee test-results/tap-output.txt
+          DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          for f in supabase/tests/*.test.sql; do
+            psql "$DB_URL" -X -t -f "$f" 2>/dev/null
+          done | grep -E '^\s*(ok |not ok |1\.\.|#)' | sed 's/^ *//' > test-results/tap-output.txt
+
+          # Fail if any tests failed
+          if grep -q '^not ok' test-results/tap-output.txt; then
+            echo "::error::pgTAP tests have failures"
+            exit 1
+          fi
 
       - name: Convert TAP to JUnit XML
         if: always()
         run: |
           npx tap-junit --input test-results/tap-output.txt --output test-results --name db-tests || true
-          # tap-junit writes to test-results/db-tests.xml
 
       - name: Create fallback test report
         if: always() && steps.db-tests.outcome == 'failure'
