@@ -2213,7 +2213,7 @@ export function CreateSegmentForm({
               <Tooltip
                 title={
                   insufficientCredits || insufficientCreditsForCompanies
-                    ? 'Segment cannot be saved without a preview. Please add credits to continue.'
+                    ? 'You do not have enough credits to save segment. Please add credits to continue.'
                     : undefined
                 }
               >
