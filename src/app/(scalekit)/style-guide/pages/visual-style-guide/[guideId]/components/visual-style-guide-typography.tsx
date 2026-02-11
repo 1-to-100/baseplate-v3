@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from '@/components/core/toaster';
+import { useGoogleFont } from '@/hooks/use-google-font';
 import { Box, Button, Card, Grid, Option, Select } from '@mui/joy';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Input from '@mui/joy/Input';
@@ -10,7 +11,6 @@ import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import { Plus } from '@phosphor-icons/react';
 import * as React from 'react';
-
 import {
   useCreateTypographyStyle,
   useFontOptions,
@@ -66,9 +66,16 @@ const TYPOGRAPHY_PRESETS = [
 type TypographyPresetSelectorProps = {
   onSelectPreset: (fontFamily: string) => void;
   onAddCustom: () => void;
+  loadingPreset: string | null;
 };
 
-function TypographyPresetSelector({ onSelectPreset, onAddCustom }: TypographyPresetSelectorProps) {
+function TypographyPresetSelector({
+  onSelectPreset,
+  onAddCustom,
+  loadingPreset,
+}: TypographyPresetSelectorProps) {
+  const isLoading = loadingPreset !== null;
+
   return (
     <Box>
       <Stack
@@ -81,53 +88,80 @@ function TypographyPresetSelector({ onSelectPreset, onAddCustom }: TypographyPre
         <Typography level='body-sm' color='neutral'>
           Select from recommendation or add own typography
         </Typography>
-        <Button variant='plain' color='primary' startDecorator={<Plus />} onClick={onAddCustom}>
+        <Button
+          variant='plain'
+          color='primary'
+          startDecorator={<Plus />}
+          onClick={onAddCustom}
+          disabled={isLoading}
+        >
           Add Your Own
         </Button>
       </Stack>
 
       <Grid container spacing={2}>
-        {TYPOGRAPHY_PRESETS.map((preset) => (
-          <Grid key={preset.id} xs={12} sm={4}>
-            <Card
-              variant='soft'
-              onClick={() => onSelectPreset(preset.fontFamily)}
-              sx={{
-                cursor: 'pointer',
-                textAlign: 'center',
-                py: 2,
-                px: 1.5,
-                border: '2px solid transparent',
-                borderColor: 'neutral.outlinedBorder',
-                transition: 'border-color 0.15s ease',
-                '&:hover': {
-                  borderColor: 'primary.outlinedColor',
-                },
-              }}
-            >
-              <Stack>
-                <Typography
-                  level='title-md'
-                  sx={{
-                    fontFamily: `${preset.fontFamily}, sans-serif`,
-                    mb: 1,
-                  }}
-                >
-                  {preset.fontFamily}
-                </Typography>
-                <Typography
-                  level='body-sm'
-                  color='neutral'
-                  sx={{
-                    fontFamily: `${preset.fontFamily}, sans-serif`,
-                  }}
-                >
-                  {preset.sampleText}
-                </Typography>
-              </Stack>
-            </Card>
-          </Grid>
-        ))}
+        {TYPOGRAPHY_PRESETS.map((preset) => {
+          const isSelected = loadingPreset === preset.fontFamily;
+          const isDisabled = isLoading && !isSelected;
+
+          return (
+            <Grid key={preset.id} xs={12} sm={4}>
+              <Card
+                variant='soft'
+                onClick={() => !isLoading && onSelectPreset(preset.fontFamily)}
+                sx={{
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  textAlign: 'center',
+                  py: 2,
+                  px: 1.5,
+                  border: '2px solid transparent',
+                  borderColor: isSelected ? 'primary.outlinedColor' : 'neutral.outlinedBorder',
+                  transition: 'border-color 0.15s ease, opacity 0.15s ease',
+                  opacity: isDisabled ? 0.5 : 1,
+                  pointerEvents: isLoading ? 'none' : 'auto',
+                  '&:hover': {
+                    borderColor: isLoading ? undefined : 'primary.outlinedColor',
+                  },
+                }}
+              >
+                <Stack sx={{ position: 'relative', alignItems: 'center' }}>
+                  {isSelected && (
+                    <CircularProgress
+                      size='sm'
+                      sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
+                  <Typography
+                    level='title-md'
+                    sx={{
+                      fontFamily: `${preset.fontFamily}, sans-serif`,
+                      mb: 1,
+                      opacity: isSelected ? 0.3 : 1,
+                    }}
+                  >
+                    {preset.fontFamily}
+                  </Typography>
+                  <Typography
+                    level='body-sm'
+                    color='neutral'
+                    sx={{
+                      fontFamily: `${preset.fontFamily}, sans-serif`,
+                      opacity: isSelected ? 0.3 : 1,
+                    }}
+                  >
+                    {preset.sampleText}
+                  </Typography>
+                </Stack>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
     </Box>
   );
@@ -143,6 +177,7 @@ type TypographyEditItemProps = {
   option: TypographyStyleOption | undefined;
   fontOptions: FontOption[] | undefined;
   onUpdateTypography: (styleId: string, field: string, value: unknown) => Promise<void>;
+  onDropdownOpen?: () => void;
 };
 
 function TypographyEditItem({
@@ -150,6 +185,7 @@ function TypographyEditItem({
   option,
   fontOptions,
   onUpdateTypography,
+  onDropdownOpen,
 }: TypographyEditItemProps): React.JSX.Element {
   // Check if current font_family exists in fontOptions
   const currentFontFamily = String(style.font_family || '');
@@ -179,6 +215,11 @@ function TypographyEditItem({
               );
             }
           }}
+          onListboxOpenChange={(isOpen) => {
+            if (isOpen && onDropdownOpen) {
+              onDropdownOpen();
+            }
+          }}
           size='sm'
           aria-label={`Select font for ${String(option?.display_name || 'Unknown')}`}
         >
@@ -197,10 +238,10 @@ function TypographyEditItem({
           {fontOptions?.map((font) => (
             <Option
               key={String(font.font_option_id)}
-              value={String(font.programmatic_name || '')}
+              value={String(font.display_name || '')}
               sx={(theme) => ({
-                fontFamily: font.programmatic_name
-                  ? `${font.programmatic_name}, ${theme.fontFamily.body}`
+                fontFamily: font.display_name
+                  ? `"${font.display_name}", ${theme.fontFamily.body}`
                   : theme.fontFamily.body,
               })}
             >
@@ -281,23 +322,46 @@ export default function VisualStyleGuideTypography({
   guideId,
   isEditableView,
 }: VisualStyleGuideTypographyProps): React.JSX.Element {
+  const [loadingPreset, setLoadingPreset] = React.useState<string | null>(null);
+
   const { data: typographyStyles, isLoading: typographyLoading } = useTypographyStyles(guideId);
   const { data: typographyOptions } = useTypographyStyleOptions();
 
   const { data: fontOptions } = useFontOptions();
   const { data: colors, isLoading: colorsLoading } = usePaletteColors();
 
+  // Extract unique font families from saved typography styles (DB data)
+  const savedFontFamilies = React.useMemo(() => {
+    return (typographyStyles || [])
+      .map((style) => style.font_family)
+      .filter((font): font is string => Boolean(font));
+  }, [typographyStyles]);
+
+  // Load fonts from DB on mount and provide loadFont/loadFonts for new selections
+  const { loadFont, loadFonts } = useGoogleFont(savedFontFamilies);
+
+  // Handler to load all font options when dropdown opens
+  const handleFontDropdownOpen = React.useCallback(() => {
+    if (fontOptions && fontOptions.length > 0) {
+      const fontNames = fontOptions
+        .map((f) => f.display_name)
+        .filter((name): name is string => Boolean(name));
+      loadFonts(fontNames);
+    }
+  }, [fontOptions, loadFonts]);
+
   const foregroundAndBackgroundColors = React.useMemo(() => {
     return (colors || [])
       .filter(
         (c: PaletteColor) =>
-          String(c.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
-          String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND
+          String(c.style_guide_id || '') === String(guideId) &&
+          (String(c.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
+            String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND)
       )
       .sort(
         (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
       );
-  }, [colors]);
+  }, [colors, guideId]);
 
   // Merged list of colors and typography styles
   const mergedItems = React.useMemo(() => {
@@ -327,6 +391,12 @@ export default function VisualStyleGuideTypography({
   const handleUpdateTypography = React.useCallback(
     async (styleId: string, field: string, value: unknown) => {
       try {
+        // If updating font_family, try to load the font (silent failure - won't block DB update)
+        if (field === 'font_family' && typeof value === 'string') {
+          // Don't await - let font load in background, don't block DB update
+          loadFont(value);
+        }
+
         await updateTypography.mutateAsync({
           id: styleId,
           input: { [field]: value },
@@ -335,7 +405,7 @@ export default function VisualStyleGuideTypography({
         toast.error('Failed to update typography style');
       }
     },
-    [updateTypography]
+    [updateTypography, loadFont]
   );
 
   const handleUpdateColor = React.useCallback(
@@ -356,42 +426,70 @@ export default function VisualStyleGuideTypography({
 
   const handleSelectTypographyPreset = React.useCallback(
     async (fontFamily: string) => {
+      setLoadingPreset(fontFamily);
       try {
+        // Load the font from Google Fonts (silent failure - won't block DB update)
+        loadFont(fontFamily);
+
         // Update all typography styles with the selected font family
         if (typographyStyles && typographyStyles.length > 0) {
           await Promise.all(
             typographyStyles.map((style) =>
-              handleUpdateTypography(String(style.typography_style_id), 'font_family', fontFamily)
+              updateTypography.mutateAsync({
+                id: String(style.typography_style_id),
+                input: { font_family: fontFamily },
+                silent: true,
+              })
             )
           );
           toast.success(`Typography updated to ${fontFamily}`);
         } else if (typographyOptions && typographyOptions.length > 0) {
           // Create typography styles for each typography option with the selected font
-          for (const typographyOption of typographyOptions) {
-            await createTypographyStyle.mutateAsync({
-              visual_style_guide_id: guideId,
-              typography_style_option_id: typographyOption.typography_style_option_id,
-              font_option_id: null,
-              font_family: fontFamily,
-              font_fallbacks: null,
-              font_size_px: getDefaultFontSize(String(typographyOption.programmatic_name || '')),
-              line_height: getDefaultLineHeight(String(typographyOption.programmatic_name || '')),
-              font_weight: getDefaultFontWeight(String(typographyOption.programmatic_name || '')),
-              color: null,
-              css_snippet: null,
-              licensing_notes: null,
-              created_by_user_id: null,
-            });
-          }
+          await Promise.all(
+            typographyOptions.map((typographyOption) =>
+              createTypographyStyle.mutateAsync({
+                input: {
+                  visual_style_guide_id: guideId,
+                  typography_style_option_id: typographyOption.typography_style_option_id,
+                  font_option_id: null,
+                  font_family: fontFamily,
+                  font_fallbacks: null,
+                  font_size_px: getDefaultFontSize(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  line_height: getDefaultLineHeight(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  font_weight: getDefaultFontWeight(
+                    String(typographyOption.programmatic_name || '')
+                  ),
+                  color: null,
+                  css_snippet: null,
+                  licensing_notes: null,
+                  created_by_user_id: null,
+                },
+                silent: true,
+              })
+            )
+          );
           toast.success(`Typography styles created with ${fontFamily}`);
         } else {
           toast.error('No typography options available');
         }
       } catch (error) {
         toast.error('Failed to update typography');
+      } finally {
+        setLoadingPreset(null);
       }
     },
-    [typographyStyles, typographyOptions, guideId, handleUpdateTypography, createTypographyStyle]
+    [
+      typographyStyles,
+      typographyOptions,
+      guideId,
+      updateTypography,
+      createTypographyStyle,
+      loadFont,
+    ]
   );
 
   const handleAddCustomTypography = React.useCallback(() => {
@@ -415,6 +513,7 @@ export default function VisualStyleGuideTypography({
               <TypographyPresetSelector
                 onSelectPreset={handleSelectTypographyPreset}
                 onAddCustom={handleAddCustomTypography}
+                loadingPreset={loadingPreset}
               />
               <List sx={{ p: 0, gap: 2, mt: 2 }}>
                 {mergedItems.map((item) => {
@@ -447,6 +546,7 @@ export default function VisualStyleGuideTypography({
                         option={option}
                         fontOptions={fontOptions}
                         onUpdateTypography={handleUpdateTypography}
+                        onDropdownOpen={handleFontDropdownOpen}
                       />
                     );
                   }

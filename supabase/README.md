@@ -36,10 +36,14 @@ Create `.env` file:
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_IMAGE_MODEL=gpt-image-1.5
 ```
 
 Get `SUPABASE_URL` from: **Supabase -> Project Settings**
 Get `SUPABASE_SERVICE_ROLE_KEY` from: **Supabase -> Project Settings → API Keys -> Legacy anon, service_role API keys**
+Get `OPENAI_API_KEY` from: **OpenAI -> API Keys** (https://platform.openai.com/api-keys)
+`OPENAI_IMAGE_MODEL` defaults to `gpt-image-1.5` for image generation
 
 ## Common Commands
 

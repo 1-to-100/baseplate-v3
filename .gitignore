@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -45,3 +45,8 @@ next-env.d.ts
 
 *storybook.log
 storybook-static
+
+# Supabase Edge Functions - deno.lock generates with v5 format which is
+# incompatible with Supabase edge runtime (requires older format).
+# Versions are pinned in deno.json instead.
+supabase/functions/deno.lock

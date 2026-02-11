@@ -1,5 +1,9 @@
 /// <reference lib="deno.ns" />
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import {
   typographyJsonSchema,
   safeParseTypographyResponse,
@@ -348,67 +352,47 @@ Deno.serve(async (req) => {
     console.log('System prompt length:', SYSTEM_PROMPT.length);
     console.log('User prompt length:', userPrompt.length);
 
-    // Get OpenAI API key
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new Error('Missing OPENAI_API_KEY');
-    }
+    // Get OpenAI client from provider adapters (handles credentials automatically)
+    const openai = providers.openai();
 
-    // Call GPT-4o with image analysis
+    // Call GPT-4o with image analysis (wrapped with logging)
     console.log('Calling GPT-4o with image analysis...');
 
-    const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userPrompt}\n\nCRITICAL: Return ONLY valid JSON, no markdown or code blocks.`;
-
-    // Use GPT-4 Vision or GPT-4o with image input
-    const responsePayload = {
-      model: 'gpt-4o', // Using GPT-4o for vision capabilities
-      messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: userPrompt,
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: screenshotUrl,
+    const responseData = await withLogging('openai', 'chat.completions.create', 'gpt-4o', () =>
+      openai.chat.completions.create({
+        model: 'gpt-4o', // Using GPT-4o for vision capabilities
+        messages: [
+          {
+            role: 'system',
+            content: SYSTEM_PROMPT,
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: userPrompt,
               },
-            },
-          ],
+              {
+                type: 'image_url',
+                image_url: {
+                  url: screenshotUrl,
+                },
+              },
+            ],
+          },
+        ],
+        response_format: {
+          type: typographyJsonSchema.type,
+          json_schema: {
+            name: typographyJsonSchema.name,
+            strict: typographyJsonSchema.strict,
+            schema: typographyJsonSchema.schema,
+          },
         },
-      ],
-      response_format: {
-        type: typographyJsonSchema.type,
-        json_schema: {
-          name: typographyJsonSchema.name,
-          strict: typographyJsonSchema.strict,
-          schema: typographyJsonSchema.schema,
-        },
-      },
-    };
+      })
+    );
 
-    const apiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify(responsePayload),
-    });
-
-    if (!apiResponse.ok) {
-      const errorData = await apiResponse.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
-    }
-
-    const responseData = await apiResponse.json();
     console.log('Response received from GPT-4o');
 
     const responseContent = responseData.choices?.[0]?.message?.content;

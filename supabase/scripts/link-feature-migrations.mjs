@@ -280,11 +280,64 @@ function isCoreOrExternalTable(tableName) {
   return core.has(tableName);
 }
 
+async function cleanFeatureMigrations(dryRun) {
+  if (!(await fileExists(MIGRATIONS_DIR))) {
+    console.log("No migrations directory found, nothing to clean.");
+    return;
+  }
+
+  const entries = await fs.readdir(MIGRATIONS_DIR);
+  let removed = 0;
+  let skipped = 0;
+
+  for (const name of entries) {
+    // Match double-underscore convention: <14-digit-timestamp>__<slug>__<name>.sql
+    if (!/^\d{14}__[^_].*__.+\.sql$/.test(name)) {
+      skipped += 1;
+      continue;
+    }
+
+    const p = path.join(MIGRATIONS_DIR, name);
+    try {
+      const stat = await fs.lstat(p);
+      if (!stat.isSymbolicLink()) {
+        if (dryRun) {
+          console.log(`[dry-run] would skip ${name} (not a symlink)`);
+        }
+        skipped += 1;
+        continue;
+      }
+
+      if (dryRun) {
+        console.log(`[dry-run] would remove ${name}`);
+      } else {
+        await fs.unlink(p);
+        console.log(`removed ${name}`);
+      }
+      removed += 1;
+    } catch {
+      skipped += 1;
+    }
+  }
+
+  if (dryRun) {
+    console.log(`\n[dry-run] Would remove ${removed} migration symlink(s), skip ${skipped}.`);
+  } else {
+    console.log(`\nCleaned up ${removed} migration symlink(s), skipped ${skipped}.`);
+  }
+}
+
 async function main() {
   const args = new Set(process.argv.slice(2));
   const dryRun = args.has("--dry-run");
   const strict = args.has("--strict");
   const rebuildLock = args.has("--rebuild-lock");
+  const clean = args.has("--clean");
+
+  if (clean) {
+    await cleanFeatureMigrations(dryRun);
+    return;
+  }
 
   /** @type {{ features?: any[] } | null} */
   let manifest = null;

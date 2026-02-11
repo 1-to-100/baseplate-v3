@@ -1,6 +1,9 @@
 /// <reference lib="deno.ns" />
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import {
   personaRecommendationJsonSchema,
   parsePersonaRecommendation,
@@ -243,26 +246,20 @@ Make the persona detailed and actionable for marketing and sales teams.
 
     console.log('Generating persona with OpenAI...');
 
-    // Get OpenAI API key from environment
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY environment variable not set');
-    }
+    // Get OpenAI client from provider adapters (handles credentials automatically)
+    const openai = providers.openai();
 
-    // Create OpenAI client
-    const openaiClient = new OpenAI({
-      apiKey: openaiApiKey,
-    });
-
-    // Generate persona using OpenAI with structured output
-    const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-5',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: personaRecommendationJsonSchema,
-    });
+    // Generate persona using OpenAI with structured output (wrapped with logging)
+    const completion = await withLogging('openai', 'chat.completions.create', 'gpt-5', () =>
+      openai.chat.completions.create({
+        model: 'gpt-5',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        response_format: personaRecommendationJsonSchema,
+      })
+    );
 
     // Parse and validate response with Zod schema
     const rawResponse = JSON.parse(completion.choices[0]?.message?.content || '{}');

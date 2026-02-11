@@ -4,13 +4,19 @@ Shared testing utilities for Supabase Edge Functions using Deno.
 
 ## Overview
 
-All schema tests are **co-located** with their edge functions. This directory contains only shared testing utilities like the mock generator.
+This directory contains shared testing utilities and tests for Supabase Edge Functions. Schema tests are **co-located** with their edge functions, while shared utility tests live here.
 
 ## Directory Structure
 
 ```
-deno.json                              # Root config with shared dependencies
+deno.json                              # Root config with shared dependencies and test task
 testing/unit/edge-functions/
+├── llm/                               # LLM Provider Adapter tests
+│   ├── adapters.test.ts               # Adapter singleton and initialization tests
+│   ├── credentials.test.ts            # Credential validation tests
+│   ├── errors.test.ts                 # Error mapping and normalization tests
+│   ├── logging.test.ts                # Structured logging tests
+│   └── testing.test.ts                # Test utility tests
 ├── mock-generator.ts                  # Schema-driven mock data generator
 ├── mock-generator.test.ts             # Tests for the mock generator
 └── README.md                          # This file
@@ -19,6 +25,15 @@ src/app/(scalekit)/<app>/lib/edge/<function>/
 ├── index.ts                           # Edge function entry point
 ├── schema.ts                          # Zod schemas + JSON schema export
 └── schema.test.ts                     # Co-located tests
+
+supabase/functions/_shared/llm/        # LLM Provider Adapter source
+├── adapters/                          # Provider adapters (OpenAI, Anthropic, Gemini)
+├── credentials.ts                     # Credential management
+├── errors.ts                          # Error normalization
+├── logging.ts                         # Structured logging
+├── testing.ts                         # Test utilities (reset functions)
+├── types.ts                           # Type definitions
+└── index.ts                           # Public API
 ```
 
 ## Running Tests
@@ -33,6 +48,7 @@ deno task test:edge
 
 This single command runs:
 - All co-located schema tests (`src/**/edge/**/*.test.ts`)
+- LLM Provider Adapter tests (`testing/unit/edge-functions/llm/*.test.ts`)
 - Mock generator utility tests (`testing/unit/edge-functions/*.test.ts`)
 
 ## Mock Generator
@@ -135,14 +151,12 @@ Deno.test('Contract: schema has expected fields', () => {
 
 ## Continuous Integration
 
-Tests run automatically in GitHub Actions on:
-- Push to `src/**/edge/**`
-- Push to `testing/unit/edge-functions/**`
-- Push to `supabase/functions/**`
-- Push to `deno.json`
+Tests run automatically in GitHub Actions on every push and pull request.
 
 The CI workflow:
 1. Type-checks all edge function files
 2. Runs `deno task test:edge`
+3. Uploads JUnit test results as artifact
+4. Publishes test report
 
 See `.github/workflows/deno-tests.yml` for the full configuration.
