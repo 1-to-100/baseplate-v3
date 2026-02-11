@@ -46,7 +46,8 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
           item.key !== 'role' &&
           item.key !== 'customer' &&
           item.key !== 'system-users' &&
-          item.key !== 'notification-management'
+          item.key !== 'notification-management' &&
+          item.key !== 'llm-jobs'
         );
       }
 
@@ -56,7 +57,8 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
           item.key !== 'customer' &&
           item.key !== 'system-users' &&
           item.key !== 'notification-management' &&
-          item.key !== 'management'
+          item.key !== 'management' &&
+          item.key !== 'llm-jobs'
         );
       }
       return true;

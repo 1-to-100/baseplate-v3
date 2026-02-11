@@ -32,5 +32,7 @@ export type LLMErrorCode =
   | 'TIMEOUT'
   /** Webhook signature verification failed */
   | 'WEBHOOK_VERIFICATION_FAILED'
+  /** Provider does not support background/async mode */
+  | 'BACKGROUND_NOT_SUPPORTED'
   /** Unknown or unmapped error */
   | 'UNKNOWN';

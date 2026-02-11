@@ -28,6 +28,7 @@ import { UserGear as UserGearIcon } from '@phosphor-icons/react/dist/ssr/UserGea
 import { BagSimple as BagSimpleIcon } from '@phosphor-icons/react/dist/ssr/BagSimple';
 import { UserFocus as UserFocusIcon } from '@phosphor-icons/react/dist/ssr/UserFocus';
 import { UsersFour as UsersFourIcon } from '@phosphor-icons/react/dist/ssr/UsersFour';
+import { Robot as RobotIcon } from '@phosphor-icons/react/dist/ssr/Robot';
 
 export const icons = {
   'chart-pie': ChartPieIcon,
@@ -60,4 +61,5 @@ export const icons = {
   thermometer: ThermometerIcon,
   truck: TruckIcon,
   users: UsersIcon,
+  robot: RobotIcon,
 } as Record<string, Icon>;

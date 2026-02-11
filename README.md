@@ -96,10 +96,11 @@ Baseplate follows a **platform/application repo** model. The platform repo conta
 
 Feature-specific files (migration symlinks, edge function wrappers) are **generated** by scripts and use a **double-underscore naming convention** (`__feature-slug__`) to distinguish them from core files:
 
-| Artifact       | Core                           | Feature (generated)                            |
-| -------------- | ------------------------------ | ---------------------------------------------- |
-| Migrations     | `20260115182857_add_users.sql` | `20260206135642__style-guide__0001_create.sql` |
-| Edge Functions | `user-management/index.ts`     | `extract-logos/index.ts` (2-line wrapper)      |
+| Artifact           | Core                           | Feature (generated)                            |
+| ------------------ | ------------------------------ | ---------------------------------------------- |
+| Migrations         | `20260115182857_add_users.sql` | `20260206135642__style-guide__0001_create.sql` |
+| Edge Functions     | `user-management/index.ts`     | `extract-logos/index.ts` (2-line wrapper)      |
+| Processor Registry | —                              | `_shared/response-processors/registry.ts`      |
 
 **In the platform repo (baseplate)**, these generated files must not be committed — the source of truth lives in `src/app/(scalekit)/<feature>/lib/sql/` and `src/app/(scalekit)/<feature>/lib/edge/`. A CI check (`check-feature-artifacts`) enforces this on pull requests.
 
@@ -169,15 +170,28 @@ Core Supabase Edge Functions for the Baseplate application exist by default unde
 Scalekit features have their own edge functions under the app src tree at `src/app/(scalekit)/<name>/lib/edge/`.
 Application features have their own edge functions under the app src tree at `src/app/(features)/<name>/lib/edge/`.
 
-There is a script to wrap all feature Edge Functions into the `supabase/functions/` directory. This allows the Supabase CLI to deploy remotely and serve them locally, and also allows feature specific functions to use shared libraries. In the platform repo (baseplate) these wrappers should not be committed — they are for local development only. In application repos the wrappers should be committed as they are required for Supabase to deploy the functions. See [Platform vs Application Repos](#platform-vs-application-repos) for details.
+There is a script to wrap all feature Edge Functions into the `supabase/functions/` directory. This allows the Supabase CLI to deploy remotely and serve them locally, and also allows feature specific functions to use shared libraries. The same script also auto-generates the **response processor registry** (`supabase/functions/_shared/response-processors/registry.ts`) by discovering `response-processor.ts` files alongside edge functions. In the platform repo (baseplate) these generated files should not be committed — they are for local development only. In application repos they should be committed. See [Platform vs Application Repos](#platform-vs-application-repos) for details.
 
 ```bash
 # Dry run to see any changes that would be made
 pnpm supabase:wrap-functions --dry-run
 
-# Wrap the edge functions
+# Wrap the edge functions and generate the processor registry
 pnpm supabase:wrap-functions
 ```
+
+#### Response Processors
+
+Edge functions that need post-processing of LLM output can provide a response processor. Place a `response-processor.ts` file with a **default export** next to the edge function's `index.ts`:
+
+```
+src/app/(scalekit)/<feature>/lib/edge/<function-name>/
+  index.ts                 # Edge function (Deno.serve)
+  response-processor.ts    # Default-exported ResponseProcessor function
+  schema.ts                # Validation schema
+```
+
+When `pnpm supabase:wrap-functions` runs, any `response-processor.ts` found in a `lib/edge/` path is automatically registered in the generated registry under the parent directory name as the slug (e.g. `extract-colors`). The LLM worker uses this registry to run the appropriate processor after a job completes.
 
 #### Deploying Edge Functions
 

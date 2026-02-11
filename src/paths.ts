@@ -71,6 +71,10 @@ export const paths = {
       list: '/dashboard/system-users',
       details: (userId: string) => `/dashboard/system-users/${userId}`,
     },
+    llmJobs: {
+      list: '/dashboard/llm-jobs',
+      details: (jobId: string) => `/dashboard/llm-jobs/${jobId}`,
+    },
     tasks: '/dashboard/tasks',
     blank: '/dashboard/blank',
     customers: {
