@@ -30,7 +30,7 @@ import { useImpersonation } from '@/contexts/impersonation-context';
 import { getCompanies } from '../lib/api/companies';
 import type { GetCompaniesParams } from '../lib/types/company';
 import type { CompanyItem, CompanyFilterFields } from '../lib/types/company';
-import CompanyFilter from '../ui/components/company-filter';
+import { CompanyFilter } from '../lib/components';
 import CompanyDetailsPopover from '../ui/components/company-details-popover';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import { AddToListModal } from '../lib/components';

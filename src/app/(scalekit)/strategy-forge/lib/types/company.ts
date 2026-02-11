@@ -82,6 +82,8 @@ export interface GetCompaniesParams {
   /** Category/industry values (strings) – matched against companies.categories array */
   category?: string | string[];
   technology?: string | string[];
+  /** When set, results may be restricted to companies in this list (for static lists). */
+  listId?: string;
   // Legacy params for compatibility
   perPage?: number;
   orderBy?: string;

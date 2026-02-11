@@ -28,17 +28,17 @@ import {
 } from '@phosphor-icons/react/dist/ssr';
 import { toast } from '@/components/core/toaster';
 import { useDebounce } from '@/hooks/use-debounce';
-import { getCompanies } from '../../lib/api/companies';
+import { getCompanies } from '../api/companies';
 import {
   getIndustries,
   getCompanySizes,
   smartSearchIndustries,
   type SmartSearchIndustry,
-} from '../../lib/api/options';
-import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
-import { technologies } from '../../lib/constants/technologies';
-import type { CompanyFilterFields } from '../../lib/types/company';
-import { parseCompanySizeRange } from '../../lib/utils/company-size';
+} from '../api/options';
+import { countries, usStates, canadianProvinces } from '../constants/locations';
+import { technologies } from '../constants/technologies';
+import type { CompanyFilterFields } from '../types/company';
+import { parseCompanySizeRange } from '../utils/company-size';
 
 // Suggested technographics for Smart search "Also:" section (reference: creso-ai)
 const SUGGESTED_TECHNOGRAPHICS = [

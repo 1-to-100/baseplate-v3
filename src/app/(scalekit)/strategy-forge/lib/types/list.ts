@@ -73,10 +73,12 @@ export interface ListWithRelations extends List {
 
 /**
  * List type for display in segments list page
- * Extends List with company_count from list_companies join
+ * Extends List with company_count from list_companies join and optional owner display name.
  */
 export interface ListForDisplay extends List {
   company_count?: number;
+  /** Owner full name (from users table), when loaded by getLists. */
+  owner_name?: string | null;
 }
 
 // ============================================================================

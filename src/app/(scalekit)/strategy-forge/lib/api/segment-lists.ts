@@ -312,6 +312,24 @@ export async function getLists(params?: {
     throw new Error(`Failed to fetch lists: ${error.message}`);
   }
 
+  const userIds = [
+    ...new Set(
+      (lists || [])
+        .map((l) => l.user_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    ),
+  ];
+  let userMap = new Map<string, string | null>();
+  if (userIds.length > 0) {
+    const { data: usersData } = await supabase
+      .from('users')
+      .select('user_id, full_name')
+      .in('user_id', userIds);
+    userMap = new Map(
+      (usersData || []).map((u) => [u.user_id as string, (u.full_name as string) ?? null])
+    );
+  }
+
   const listsWithCounts = await Promise.all(
     (lists || []).map(async (list) => {
       const { count: companyCount } = await supabase
@@ -322,6 +340,7 @@ export async function getLists(params?: {
       return {
         ...list,
         company_count: companyCount || 0,
+        owner_name: list.user_id ? (userMap.get(list.user_id) ?? null) : null,
       };
     })
   );
@@ -379,6 +398,66 @@ export async function getListById(listId: string): Promise<List> {
 
   if (error || !list) {
     throw new Error(`List not found: ${error?.message ?? 'not available'}`);
+  }
+
+  return list as List;
+}
+
+/**
+ * Update a list (list_type 'list' only). Updates name and/or filters.
+ * Uses same RLS as getListById; list must belong to the customer (or system admin).
+ */
+export async function updateList(
+  listId: string,
+  payload: { name?: string; filters?: Record<string, unknown> }
+): Promise<List> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  const updatePayload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (payload.name !== undefined) {
+    const trimmed = payload.name.trim();
+    if (trimmed.length < 3 || trimmed.length > 100) {
+      throw new Error('List name must be between 3 and 100 characters');
+    }
+    updatePayload.name = trimmed;
+  }
+  if (payload.filters !== undefined) {
+    updatePayload.filters = payload.filters;
+  }
+
+  let query = supabase
+    .from('lists')
+    .update(updatePayload)
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST)
+    .is('deleted_at', null);
+
+  if (effectiveCustomerId) {
+    query = query.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { data: list, error } = await query.select().single();
+
+  if (error || !list) {
+    throw new Error(`Failed to update list: ${error?.message ?? 'not available'}`);
   }
 
   return list as List;
@@ -736,6 +815,65 @@ export async function createList(input: CreateListInput): Promise<List> {
   return list as List;
 }
 
+const DUPLICATE_COMPANY_IDS_PAGE_SIZE = 500;
+const ADD_COMPANIES_CHUNK_SIZE = 100;
+
+/**
+ * Duplicate a list (list_type 'list'): creates a copy with name + "_copy", same subtype, is_static, and filters.
+ * For static company lists, copies list_companies in chunks. Best-effort for company copy on failure.
+ */
+export async function duplicateList(listId: string): Promise<List> {
+  const list = await getListById(listId);
+
+  const baseName = list.name.trim();
+  let copyName = baseName.length > 0 ? `${baseName}_copy` : 'List copy';
+  if (copyName.length > 100) {
+    copyName = copyName.slice(0, 97) + '...';
+  }
+  if (copyName.length < 3) {
+    copyName = 'List copy';
+  }
+
+  const newList = await createList({
+    name: copyName,
+    subtype: list.subtype,
+    is_static: list.is_static,
+    description: list.description ?? null,
+  });
+
+  if (list.filters && typeof list.filters === 'object' && Object.keys(list.filters).length > 0) {
+    await updateList(newList.list_id, { filters: list.filters as Record<string, unknown> });
+  }
+
+  if (list.is_static && list.subtype === ListSubtype.COMPANY) {
+    const supabase = createClient();
+    const companyIds: string[] = [];
+    let offset = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const { data: rows, error } = await supabase
+        .from('list_companies')
+        .select('company_id')
+        .eq('list_id', listId)
+        .range(offset, offset + DUPLICATE_COMPANY_IDS_PAGE_SIZE - 1);
+
+      if (error) break;
+      if (!rows?.length) break;
+      companyIds.push(...rows.map((r: { company_id: string }) => r.company_id));
+      offset += rows.length;
+      hasMore = rows.length === DUPLICATE_COMPANY_IDS_PAGE_SIZE;
+    }
+    for (let i = 0; i < companyIds.length; i += ADD_COMPANIES_CHUNK_SIZE) {
+      const chunk = companyIds.slice(i, i + ADD_COMPANIES_CHUNK_SIZE);
+      if (chunk.length > 0) {
+        await addCompaniesToList(newList.list_id, { companyIds: chunk });
+      }
+    }
+  }
+
+  return newList;
+}
+
 /**
  * Resolve current auth user to the application user (public.users row).
  * Auth user id and DB user_id differ; lists.user_id must reference users.user_id.
@@ -840,6 +978,45 @@ export async function deleteSegment(segmentId: string): Promise<void> {
 
   if (deleteError) {
     throw new Error(`Failed to delete segment: ${deleteError.message}`);
+  }
+}
+
+/**
+ * Delete a list (soft delete, list_type 'list' only)
+ */
+export async function deleteList(listId: string): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  let updateQuery = supabase
+    .from('lists')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('list_id', listId)
+    .eq('list_type', ListType.LIST);
+
+  if (effectiveCustomerId) {
+    updateQuery = updateQuery.eq('customer_id', effectiveCustomerId);
+  }
+
+  const { error: deleteError } = await updateQuery;
+
+  if (deleteError) {
+    throw new Error(`Failed to delete list: ${deleteError.message}`);
   }
 }
 

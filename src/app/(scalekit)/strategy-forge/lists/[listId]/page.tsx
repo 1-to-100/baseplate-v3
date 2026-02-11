@@ -18,18 +18,20 @@ import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/Arrow
 import { ArrowsClockwise as ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { getListById, getListCompanies } from '../../lib/api/segment-lists';
+import { getCompanies } from '../../lib/api/companies';
+import type { GetCompaniesParams } from '../../lib/types/company';
+import type { CompanyItem } from '../../lib/types/company';
 import { ListSubtype } from '../../lib/types/list';
+import { hasListFilters, listFiltersToCompanyFilterFields } from '../../lib/utils/list-filters';
 import { paths } from '@/paths';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
 import { TypeListChip } from '../type-list-chip';
-import AddCompaniesToListModal from '../add-companies-to-list-modal';
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE = 10;
 
 interface PageProps {
   params: Promise<{ listId: string }>;
@@ -50,12 +52,40 @@ function formatDateDisplay(dateString: string | null | undefined): string {
   }
 }
 
+/** Map getCompanies result to the same shape as getListCompanies for the table. */
+function mapCompanyItemsToTableShape(items: CompanyItem[]): Array<{
+  id: string;
+  company_id: string;
+  display_name: string | null;
+  legal_name: string | null;
+  logo: string | null;
+  country: string | null;
+  region: string | null;
+  employees: number | null;
+  categories: string[] | null;
+  website_url: string | null;
+  domain?: string | null;
+}> {
+  return items.map((c) => ({
+    id: c.company_id ?? String(c.id),
+    company_id: c.company_id ?? '',
+    display_name: c.name ?? null,
+    legal_name: c.name ?? null,
+    logo: c.logo ?? null,
+    country: c.country ?? null,
+    region: c.region ?? null,
+    employees: c.employees ?? null,
+    categories: c.categories ?? null,
+    website_url: c.website ?? c.homepageUri ?? null,
+    domain: undefined,
+  }));
+}
+
 export default function ListDetailsPage({ params }: PageProps): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [listId, setListId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [addCompaniesModalOpen, setAddCompaniesModalOpen] = useState(false);
 
   useEffect(() => {
     params.then((resolved) => setListId(resolved.listId));
@@ -72,14 +102,56 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     enabled: !!listId,
   });
 
+  const useFilteredCompanies = list != null && hasListFilters(list.filters ?? undefined);
+
   const {
     data: companiesData,
     isLoading: companiesLoading,
     error: companiesError,
   } = useQuery({
-    queryKey: ['list-companies', listId, currentPage],
-    queryFn: () => getListCompanies(listId!, currentPage, ITEMS_PER_PAGE),
-    enabled: !!listId && list?.subtype === ListSubtype.COMPANY,
+    queryKey: [
+      'list-companies',
+      listId,
+      currentPage,
+      useFilteredCompanies,
+      list?.filters,
+      list?.is_static,
+    ],
+    queryFn: async () => {
+      if (!list || !listId) throw new Error('List required');
+      if (useFilteredCompanies) {
+        const filterParams = listFiltersToCompanyFilterFields(list.filters ?? undefined);
+        const params: GetCompaniesParams = {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          search: filterParams.name,
+          country: filterParams.country ?? undefined,
+          region: filterParams.region ?? undefined,
+          category: filterParams.industry,
+          technology: filterParams.technographic,
+        };
+        if (filterParams.companySize) {
+          const [min, max] = filterParams.companySize;
+          if (min != null && min > 0) params.min_employees = min;
+          if (max != null && max > 0) params.max_employees = max;
+        }
+        if (list.is_static) params.listId = listId;
+        const res = await getCompanies(params);
+        return {
+          data: mapCompanyItemsToTableShape(res.data),
+          meta: {
+            total: res.meta?.total ?? 0,
+            lastPage: res.meta?.lastPage ?? 1,
+            currentPage: res.meta?.currentPage ?? currentPage,
+            perPage: res.meta?.perPage ?? ITEMS_PER_PAGE,
+            prev: res.pagination?.prev ?? null,
+            next: res.pagination?.next ?? null,
+          },
+        };
+      }
+      return getListCompanies(listId, currentPage, ITEMS_PER_PAGE);
+    },
+    enabled: !!listId && list != null && list.subtype === ListSubtype.COMPANY,
   });
 
   const companies = companiesData?.data ?? [];
@@ -90,7 +162,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
   const handleRefresh = async () => {
     try {
       await refetchList();
-      await queryClient.invalidateQueries({ queryKey: ['list-companies', listId, currentPage] });
+      await queryClient.invalidateQueries({ queryKey: ['list-companies', listId] });
       toast.success('List refreshed');
     } catch {
       toast.error('Failed to refresh list');
@@ -187,24 +259,6 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
             >
               <ArrowsClockwiseIcon size={18} />
             </IconButton>
-            {list.subtype === ListSubtype.COMPANY && (
-              <Button
-                size='sm'
-                variant='outlined'
-                startDecorator={<PlusIcon size={16} />}
-                onClick={() => setAddCompaniesModalOpen(true)}
-                sx={{
-                  width: { xs: 38, sm: 'auto' },
-                  height: { xs: 38, sm: 'auto' },
-                  minWidth: { xs: 38, sm: 'auto' },
-                  '& .MuiButton-startDecorator': { margin: { xs: 0, sm: '0 8px 0 0' } },
-                }}
-              >
-                <Box component='span' sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                  Add companies
-                </Box>
-              </Button>
-            )}
             <Button
               size='sm'
               startDecorator={<PencilSimpleIcon size={16} />}
@@ -260,18 +314,31 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                     mb: 3,
                   }}
                 >
-                  <Typography
-                    sx={{
-                      fontSize: '18px',
-                      fontWeight: '500',
-                      color: 'var(--joy-palette-text-primary)',
-                    }}
-                  >
-                    {isCompanyList ? 'Companies' : 'People'} on list{' '}
-                    <span style={{ color: 'var(--joy-palette-primary-500)' }}>
-                      {isCompanyList ? (meta?.total ?? 0) : 0}
-                    </span>
-                  </Typography>
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontSize: '18px',
+                        fontWeight: '500',
+                        color: 'var(--joy-palette-text-primary)',
+                      }}
+                    >
+                      {isCompanyList ? 'Companies' : 'People'} on list{' '}
+                      <span style={{ color: 'var(--joy-palette-primary-500)' }}>
+                        {isCompanyList ? (meta?.total ?? 0) : 0}
+                      </span>
+                    </Typography>
+                    {isCompanyList && useFilteredCompanies && (
+                      <Typography
+                        level='body-sm'
+                        sx={{
+                          color: 'var(--joy-palette-text-tertiary)',
+                          mt: 0.5,
+                        }}
+                      >
+                        Showing filtered view
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
 
                 {!isCompanyList ? (
@@ -529,12 +596,6 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           </Box>
         </Box>
       </Stack>
-      <AddCompaniesToListModal
-        open={addCompaniesModalOpen}
-        onClose={() => setAddCompaniesModalOpen(false)}
-        listId={listId!}
-        listName={list.name}
-      />
     </Box>
   );
 }

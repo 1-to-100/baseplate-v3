@@ -71,6 +71,29 @@ function applyCompaniesFilters<
   return q;
 }
 
+/** Empty companies response with consistent shape. */
+function emptyCompaniesResponse(opts: { page: number; limit: number }): GetCompaniesResponse {
+  return {
+    data: [],
+    pagination: {
+      page: opts.page,
+      perPage: opts.limit,
+      total: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrev: false,
+      next: null,
+      prev: null,
+    },
+    meta: {
+      currentPage: opts.page,
+      lastPage: 0,
+      perPage: opts.limit,
+      total: 0,
+    },
+  };
+}
+
 /** Build CompanyItem from company row and optional customer_companies override. */
 function toCompanyItem(
   company: Record<string, unknown>,
@@ -187,6 +210,41 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
 
   const effectiveCustomerId = fromJwt ?? fromRpc;
 
+  // When listId is set, restrict to companies in that list if the list is static (same access as getListById).
+  let listCompanyIds: string[] | null = null;
+  if (params.listId) {
+    let listQuery = supabase
+      .from('lists')
+      .select('list_id, is_static')
+      .eq('list_id', params.listId)
+      .eq('list_type', 'list')
+      .is('deleted_at', null);
+    if (effectiveCustomerId) {
+      listQuery = listQuery.eq('customer_id', effectiveCustomerId);
+    }
+    const { data: listRow, error: listError } = await listQuery.maybeSingle();
+    if (!listError && listRow?.is_static === true) {
+      const { data: lcRows, error: lcError } = await supabase
+        .from('list_companies')
+        .select('company_id')
+        .eq('list_id', params.listId);
+      if (!lcError) {
+        listCompanyIds = (lcRows || []).map((r) => r.company_id as string).filter(Boolean);
+      }
+      if (listCompanyIds?.length === 0) {
+        return emptyCompaniesResponse(opts);
+      }
+    }
+  }
+
+  // Static list with companies: use list company ids as the restriction set.
+  if (listCompanyIds && listCompanyIds.length > 0) {
+    if (effectiveCustomerId) {
+      return getCompaniesFromIdSet(supabase, params, listCompanyIds, opts, effectiveCustomerId);
+    }
+    return getCompaniesFromIdSet(supabase, params, listCompanyIds, opts);
+  }
+
   if (effectiveCustomerId) {
     return getCompaniesWithCustomerContext(supabase, params, effectiveCustomerId, opts);
   }
@@ -210,6 +268,79 @@ export async function getCompanies(params: GetCompaniesParams = {}): Promise<Get
   const transformedCompanies: CompanyItem[] = (companies || []).map((company) =>
     toCompanyItem(company as Record<string, unknown>)
   );
+
+  const total = count || 0;
+  const totalPages = Math.ceil(total / opts.limit);
+
+  return {
+    data: transformedCompanies,
+    pagination: {
+      page: opts.page,
+      perPage: opts.limit,
+      total,
+      totalPages,
+      hasNext: opts.page < totalPages,
+      hasPrev: opts.page > 1,
+      next: opts.page < totalPages ? opts.page + 1 : null,
+      prev: opts.page > 1 ? opts.page - 1 : null,
+    },
+    meta: {
+      currentPage: opts.page,
+      lastPage: totalPages,
+      perPage: opts.limit,
+      total,
+    },
+  };
+}
+
+/** Query companies restricted to a set of company_ids, with optional customer_companies overlay. */
+async function getCompaniesFromIdSet(
+  supabase: ReturnType<typeof createClient>,
+  params: GetCompaniesParams,
+  companyIds: string[],
+  opts: {
+    page: number;
+    limit: number;
+    from: number;
+    to: number;
+    sortBy: string;
+    sortOrder: string;
+  },
+  customerId?: string
+): Promise<GetCompaniesResponse> {
+  let query = supabase
+    .from('companies')
+    .select('*', { count: 'exact' })
+    .in('company_id', companyIds);
+  query = applyCompaniesFilters(query, params);
+  query = query.order(opts.sortBy, { ascending: opts.sortOrder === 'asc' });
+  query = query.range(opts.from, opts.to);
+
+  const { data: companies, error, count } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch companies: ${error.message}`);
+  }
+
+  const pageCompanyIds = (companies || []).map((c) => c.company_id as string);
+  let ccByCompany: Map<string, Record<string, unknown>> = new Map();
+  if (customerId && pageCompanyIds.length > 0) {
+    const { data: ccPage } = await supabase
+      .from('customer_companies')
+      .select(
+        'company_id, name, categories, revenue, country, region, employees, last_scoring_results'
+      )
+      .eq('customer_id', customerId)
+      .in('company_id', pageCompanyIds);
+    ccByCompany = new Map(
+      (ccPage || []).map((r) => [r.company_id as string, r as Record<string, unknown>])
+    );
+  }
+
+  const transformedCompanies: CompanyItem[] = (companies || []).map((company) => {
+    const cc = ccByCompany.get(company.company_id as string);
+    return toCompanyItem(company as Record<string, unknown>, cc);
+  });
 
   const total = count || 0;
   const totalPages = Math.ceil(total / opts.limit);
