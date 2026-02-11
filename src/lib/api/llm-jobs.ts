@@ -134,6 +134,7 @@ export async function getLLMJobStats(hours?: number): Promise<LLMJobStats> {
     error: 0,
     exhausted: 0,
     cancelled: 0,
+    post_processing_failed: 0,
     avgDurationSeconds: null,
     oldestJobAgeSeconds: null,
   };

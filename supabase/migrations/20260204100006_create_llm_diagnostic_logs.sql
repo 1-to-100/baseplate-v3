@@ -79,6 +79,7 @@ create or replace function public.llm_log_diagnostic(
 returns uuid
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_log_id uuid;
@@ -132,6 +133,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 stable
 as $$
 begin
@@ -164,6 +166,7 @@ create or replace function public.llm_cleanup_diagnostic_logs(
 returns int
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   deleted_count int;

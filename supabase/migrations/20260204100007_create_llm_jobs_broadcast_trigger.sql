@@ -23,7 +23,13 @@ BEGIN
   v_customer_id := COALESCE(NEW.customer_id, OLD.customer_id);
 
   PERFORM realtime.send(
-    jsonb_build_object('type', TG_OP, 'table', TG_TABLE_NAME, 'schema', TG_TABLE_SCHEMA),
+    jsonb_build_object(
+      'type', TG_OP,
+      'table', TG_TABLE_NAME,
+      'schema', TG_TABLE_SCHEMA,
+      'id', COALESCE(NEW.id, OLD.id),
+      'status', CASE WHEN NEW IS NOT NULL THEN NEW.status ELSE NULL END
+    ),
     TG_OP,
     'llm-jobs:' || v_customer_id::text,
     true  -- private channel, requires authenticated subscription

@@ -71,8 +71,14 @@ export interface CancelJobResponse {
 
 // Status categories for filtering
 export const ACTIVE_STATUSES: LLMJobStatus[] = ['queued', 'running', 'waiting_llm', 'retrying'];
-export const TERMINAL_STATUSES: LLMJobStatus[] = ['completed', 'error', 'exhausted', 'cancelled'];
-export const ERROR_STATUSES: LLMJobStatus[] = ['error', 'exhausted'];
+export const TERMINAL_STATUSES: LLMJobStatus[] = [
+  'completed',
+  'error',
+  'exhausted',
+  'cancelled',
+  'post_processing_failed',
+];
+export const ERROR_STATUSES: LLMJobStatus[] = ['error', 'exhausted', 'post_processing_failed'];
 export const FAILED_STATUSES: LLMJobStatus[] = [...ERROR_STATUSES, 'cancelled'];
 export const CANCELLABLE_STATUSES: LLMJobStatus[] = [
   'queued',

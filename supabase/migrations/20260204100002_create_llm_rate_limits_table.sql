@@ -180,6 +180,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 stable
 as $$
 begin
@@ -211,6 +212,7 @@ create or replace function public.llm_reset_rate_limits(p_period varchar(20))
 returns int
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   reset_count int;

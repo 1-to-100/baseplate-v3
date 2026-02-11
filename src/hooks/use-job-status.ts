@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SupabaseClient, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -15,7 +15,8 @@ export type LLMJobStatus =
   | 'completed'
   | 'error'
   | 'exhausted'
-  | 'cancelled';
+  | 'cancelled'
+  | 'post_processing_failed';
 
 export interface LLMJob {
   id: string;
@@ -26,6 +27,9 @@ export interface LLMJob {
   input: Record<string, unknown>;
   system_prompt: string | null;
   feature_slug: string | null;
+  messages: unknown[] | null;
+  context: Record<string, unknown>;
+  api_method: 'chat' | 'responses';
   status: LLMJobStatus;
   llm_response_id: string | null;
   retry_count: number;
@@ -50,6 +54,8 @@ export interface LLMJobResult {
 }
 
 export interface UseJobStatusOptions {
+  /** Customer ID for realtime subscription (required for broadcast channel) */
+  customerId?: string;
   /** Whether to automatically fetch job on mount */
   enabled?: boolean;
   /** Callback when job status changes */
@@ -87,8 +93,19 @@ export interface UseJobStatusReturn {
 // Terminal Status Helpers
 // =============================================================================
 
-const TERMINAL_STATUSES: LLMJobStatus[] = ['completed', 'error', 'exhausted', 'cancelled'];
-const FAILED_STATUSES: LLMJobStatus[] = ['error', 'exhausted', 'cancelled'];
+const TERMINAL_STATUSES: LLMJobStatus[] = [
+  'completed',
+  'error',
+  'exhausted',
+  'cancelled',
+  'post_processing_failed',
+];
+const FAILED_STATUSES: LLMJobStatus[] = [
+  'error',
+  'exhausted',
+  'cancelled',
+  'post_processing_failed',
+];
 
 function isTerminalStatus(status: LLMJobStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
@@ -147,7 +164,7 @@ export function useJobStatus(
   jobId: string | null | undefined,
   options: UseJobStatusOptions = {}
 ): UseJobStatusReturn {
-  const { enabled = true, onStatusChange, onComplete, onError } = options;
+  const { customerId, enabled = true, onStatusChange, onComplete, onError } = options;
 
   const supabaseClient = useMemo<SupabaseClient>(() => createSupabaseClient(), []);
   const queryClient = useQueryClient();
@@ -174,34 +191,66 @@ export function useJobStatus(
     await queryRefetch();
   }, [queryRefetch]);
 
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!jobId || !enabled) return;
+  // Refetch handler for broadcast updates
+  const handleRealtimeUpdate = useCallback(() => {
+    queryClient.refetchQueries({ queryKey: ['llm-job', jobId] });
+  }, [queryClient, jobId]);
 
-    const channel = supabaseClient
-      .channel(`llm-job:${jobId}`)
-      .on<LLMJob>(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'llm_jobs',
-          filter: `id=eq.${jobId}`,
-        },
-        (payload: RealtimePostgresChangesPayload<LLMJob>) => {
-          const newJob = payload.new as LLMJob;
-          if (newJob) {
-            // Update query cache with new data
-            queryClient.setQueryData(['llm-job', jobId], newJob);
-          }
-        }
-      )
-      .subscribe();
+  // Subscribe to private broadcast channel for realtime updates
+  useEffect(() => {
+    if (!jobId || !enabled || !customerId) return;
+
+    const topic = `llm-jobs:${customerId}`;
+    let channel: ReturnType<SupabaseClient['channel']> | null = null;
+    let cancelled = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedUpdate = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        handleRealtimeUpdate();
+        debounceTimer = null;
+      }, 500);
+    };
+
+    async function setupChannel() {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (cancelled) return;
+
+      if (session?.access_token) {
+        supabaseClient.realtime.setAuth(session.access_token);
+      }
+
+      channel = supabaseClient
+        .channel(topic, { config: { private: true } })
+        .on('broadcast', { event: 'INSERT' }, ({ payload }) => {
+          if (payload?.id === jobId) debouncedUpdate();
+        })
+        .on('broadcast', { event: 'UPDATE' }, ({ payload }) => {
+          if (payload?.id === jobId) debouncedUpdate();
+        })
+        .subscribe();
+    }
+
+    setupChannel();
+
+    const {
+      data: { subscription: authSub },
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        supabaseClient.realtime.setAuth(session.access_token);
+      }
+    });
 
     return () => {
-      supabaseClient.removeChannel(channel);
+      cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      authSub.unsubscribe();
+      if (channel) supabaseClient.removeChannel(channel);
     };
-  }, [jobId, enabled, supabaseClient, queryClient]);
+  }, [jobId, enabled, customerId, supabaseClient, handleRealtimeUpdate]);
 
   // Handle status change callbacks
   useEffect(() => {

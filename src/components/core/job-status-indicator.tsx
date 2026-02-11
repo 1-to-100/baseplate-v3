@@ -87,6 +87,12 @@ const STATUS_CONFIG: Record<LLMJobStatus, StatusConfig> = {
     icon: WarningIcon,
     isLoading: false,
   },
+  post_processing_failed: {
+    label: 'Post-Processing Failed',
+    color: 'danger',
+    icon: WarningIcon,
+    isLoading: false,
+  },
   cancelled: {
     label: 'Cancelled',
     color: 'neutral',

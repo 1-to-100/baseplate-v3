@@ -55,6 +55,7 @@ create or replace function public.llm_record_webhook(
 returns boolean
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   inserted_id uuid;
@@ -86,6 +87,7 @@ create or replace function public.llm_cleanup_old_webhook_events(
 returns int
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   deleted_count int;

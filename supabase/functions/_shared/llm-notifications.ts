@@ -105,6 +105,8 @@ function truncate(str: string, maxLength: number): string {
  * Create a notification for an LLM job event.
  *
  * Non-blocking: logs errors but doesn't throw.
+ * After DB insert, broadcasts via realtime so the user sees a toast/badge update
+ * even if they're on a different page.
  *
  * @param supabase - Service client (bypasses RLS)
  * @param notificationType - Type of notification
@@ -117,13 +119,15 @@ export async function createLLMNotification(
 ): Promise<void> {
   try {
     const template = NOTIFICATION_TEMPLATES[notificationType];
+    const title = template.title;
+    const message = template.getMessage(input);
 
     const notificationData = {
       user_id: input.userId,
       customer_id: input.customerId,
       type: ['in_app'],
-      title: template.title,
-      message: template.getMessage(input),
+      title,
+      message,
       channel: 'llm',
       read_at: null,
       generated_by: 'llm-system',
@@ -138,12 +142,116 @@ export async function createLLMNotification(
 
     if (error) {
       console.error(`Failed to create LLM notification (${notificationType}):`, error.message);
-    } else {
-      console.log(`LLM notification created: ${notificationType} for job ${input.jobId}`);
+      return;
     }
+
+    console.log(`LLM notification created: ${notificationType} for job ${input.jobId}`);
+
+    // Broadcast via realtime (non-blocking) so user sees toast + badge update
+    broadcastNotification(supabase, input.userId, { title, message, channel: 'llm' }).catch(
+      (err) => console.error('Failed to broadcast notification:', err)
+    );
+    broadcastUnreadCount(supabase, input.userId).catch(
+      (err) => console.error('Failed to broadcast unread count:', err)
+    );
   } catch (error) {
     // Non-blocking - log but don't throw
     console.error(`Error creating LLM notification:`, error);
+  }
+}
+
+// =============================================================================
+// Realtime Broadcasting (Server-Side)
+// =============================================================================
+
+/**
+ * Broadcast a new notification event to the user's notification channel.
+ * Mirrors client-side sendInAppNotification() from src/lib/api/notifications.ts.
+ */
+async function broadcastNotification(
+  supabase: SupabaseClient,
+  userId: string,
+  payload: { title: string; message: string; channel: string }
+): Promise<void> {
+  const channelName = `main-notifications:${userId}`;
+  const channel = supabase.channel(channelName);
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Subscribe timeout for ${channelName}`));
+    }, 5000);
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') { clearTimeout(timeout); resolve(); }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to subscribe to ${channelName}: ${status}`));
+      }
+    });
+  });
+
+  try {
+    const sendResult = await channel.send({
+      type: 'broadcast',
+      event: 'new',
+      payload,
+    });
+
+    if (sendResult === 'error') {
+      console.error(`Failed to send broadcast to ${channelName}`);
+    }
+  } finally {
+    await channel.unsubscribe();
+  }
+}
+
+/**
+ * Broadcast updated unread count to the user's unread-notifications channel.
+ * Mirrors client-side sendUnreadCountNotification() from src/lib/api/notifications.ts.
+ */
+async function broadcastUnreadCount(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<void> {
+  // Query unread count
+  const { count, error: countError } = await supabase
+    .from('notifications')
+    .select('notification_id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('read_at', null);
+
+  if (countError) {
+    console.error('Failed to query unread count:', countError.message);
+    return;
+  }
+
+  const channelName = `unread-notifications:${userId}`;
+  const channel = supabase.channel(channelName);
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`Subscribe timeout for ${channelName}`));
+    }, 5000);
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') { clearTimeout(timeout); resolve(); }
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to subscribe to ${channelName}: ${status}`));
+      }
+    });
+  });
+
+  try {
+    const sendResult = await channel.send({
+      type: 'broadcast',
+      event: 'unread_count',
+      payload: { count: count || 0 },
+    });
+
+    if (sendResult === 'error') {
+      console.error(`Failed to send broadcast to ${channelName}`);
+    }
+  } finally {
+    await channel.unsubscribe();
   }
 }
 

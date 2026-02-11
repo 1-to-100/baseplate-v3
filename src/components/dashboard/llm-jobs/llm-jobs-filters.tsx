@@ -42,6 +42,7 @@ const ALL_STATUSES: { value: LLMJobStatus; label: string }[] = [
   { value: 'completed', label: 'Completed' },
   { value: 'error', label: 'Error' },
   { value: 'exhausted', label: 'Exhausted' },
+  { value: 'post_processing_failed', label: 'Post-Processing Failed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 

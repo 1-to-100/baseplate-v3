@@ -49,6 +49,9 @@ function createMockJob(overrides: Partial<{
   status: string;
   retry_count: number;
   created_at: string;
+  messages: unknown[] | null;
+  context: Record<string, unknown>;
+  api_method: "chat" | "responses";
 }> = {}) {
   return {
     id: "job-123",
@@ -62,6 +65,9 @@ function createMockJob(overrides: Partial<{
     status: "running",
     retry_count: 0,
     created_at: new Date().toISOString(),
+    messages: null,
+    context: {},
+    api_method: "chat" as const,
     ...overrides,
   };
 }
@@ -143,6 +149,7 @@ function createMockSupabaseClient(options: {
  */
 function createMockOpenAIClient(options: {
   response?: unknown;
+  responsesResponse?: unknown;
   shouldFail?: boolean;
   errorMessage?: string;
   shouldTimeout?: boolean;
@@ -163,6 +170,11 @@ function createMockOpenAIClient(options: {
         total_tokens: 15,
       },
     },
+    responsesResponse = {
+      id: "resp-responses-123",
+      output_text: "Hello from Responses API!",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    },
     shouldFail = false,
     errorMessage = "API error",
     shouldTimeout = false,
@@ -174,16 +186,23 @@ function createMockOpenAIClient(options: {
       completions: {
         create: async () => {
           if (shouldTimeout) {
-            // Timeout is retryable
             throw new LLMError("Request timed out", "TIMEOUT", "openai", 408, true);
           }
           if (shouldFail) {
-            // Use appropriate error code based on retryability
             const errorCode = isRetryable ? "PROVIDER_UNAVAILABLE" : "INVALID_REQUEST";
             throw new LLMError(errorMessage, errorCode, "openai", 500, isRetryable);
           }
           return response;
         },
+      },
+    },
+    responses: {
+      create: async () => {
+        if (shouldFail) {
+          const errorCode = isRetryable ? "PROVIDER_UNAVAILABLE" : "INVALID_REQUEST";
+          throw new LLMError(errorMessage, errorCode, "openai", 500, isRetryable);
+        }
+        return responsesResponse;
       },
     },
   };
@@ -287,12 +306,14 @@ function createMockLLMProviders(options: {
 function createMockDeps(options: {
   supabaseOptions?: Parameters<typeof createMockSupabaseClient>[0];
   llmProviderOptions?: Parameters<typeof createMockLLMProviders>[0];
+  getResponseProcessor?: HandlerDeps["getResponseProcessor"];
 } = {}): HandlerDeps {
-  const { supabaseOptions, llmProviderOptions } = options;
+  const { supabaseOptions, llmProviderOptions, getResponseProcessor } = options;
 
   return {
     createServiceClient: () => createMockSupabaseClient(supabaseOptions),
     llmProviders: createMockLLMProviders(llmProviderOptions),
+    ...(getResponseProcessor !== undefined && { getResponseProcessor }),
   };
 }
 
@@ -726,5 +747,318 @@ Deno.test("llm-worker: Provider Response Parsing", async (t) => {
     assertEquals(status, 200);
     assertEquals(body.processed, true);
     assertEquals(body.status, "exhausted");
+  });
+});
+
+// ============================================================================
+// Multimodal Messages Tests
+// ============================================================================
+
+Deno.test("llm-worker: Multimodal Messages", async (t) => {
+  await t.step("uses job.messages directly when set (skips prompt construction)", async () => {
+    const multimodalMessages = [
+      { role: "system", content: "You are a design analyst." },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Describe the colors in this image" },
+          { type: "image_url", image_url: { url: "https://example.com/img.png" } },
+        ],
+      },
+    ];
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({
+            messages: multimodalMessages,
+            prompt: "This prompt should be ignored",
+          }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+  });
+
+  await t.step("constructs messages from system_prompt + prompt when messages is null", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({
+            messages: null,
+            system_prompt: "You are helpful",
+            prompt: "Hello!",
+          }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+  });
+});
+
+// ============================================================================
+// Responses API Tests
+// ============================================================================
+
+Deno.test("llm-worker: Responses API Routing", async (t) => {
+  await t.step("api_method='responses' routes to OpenAI Responses API", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ api_method: "responses" }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+  });
+
+  await t.step("Responses API with no output_text returns exhausted", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ api_method: "responses", retry_count: 0 }),
+        },
+        provider: { data: createMockProvider({ slug: "openai", max_retries: 3 }) },
+      },
+      llmProviderOptions: {
+        openaiOptions: {
+          responsesResponse: {
+            id: "resp-empty",
+            output_text: null, // No output text
+            usage: { input_tokens: 10, output_tokens: 0 },
+          },
+        },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "exhausted");
+  });
+
+  await t.step("Responses API uses model from job.input when provided", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({
+            api_method: "responses",
+            input: { model: "gpt-5" },
+          }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+  });
+});
+
+// ============================================================================
+// Response Processor Tests
+// ============================================================================
+
+Deno.test("llm-worker: Response Processor Integration", async (t) => {
+  await t.step("processor success: runs processor then completes job", async () => {
+    let processorCalled = false;
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ feature_slug: "extract-colors" }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+      getResponseProcessor: (slug) => {
+        if (slug === "extract-colors") {
+          return async () => {
+            processorCalled = true;
+          };
+        }
+        return null;
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+    assertEquals(processorCalled, true);
+  });
+
+  await t.step("processor failure: sets post_processing_failed status", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ feature_slug: "extract-colors" }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+      getResponseProcessor: (slug) => {
+        if (slug === "extract-colors") {
+          return async () => {
+            throw new Error("Invalid JSON in colors response");
+          };
+        }
+        return null;
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "post_processing_failed");
+    assertStringIncludes(body.message as string, "Invalid JSON");
+  });
+
+  await t.step("no processor registered: completes normally for unknown slug", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ feature_slug: "unknown-feature" }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+      getResponseProcessor: () => null, // No processor found
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+  });
+
+  await t.step("null feature_slug: skips processor and completes normally", async () => {
+    let processorQueried = false;
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({ feature_slug: null }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+      getResponseProcessor: (slug) => {
+        processorQueried = true;
+        assertEquals(slug, null);
+        return null;
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+    assertEquals(processorQueried, true);
+  });
+});
+
+// ============================================================================
+// Backward Compatibility Tests
+// ============================================================================
+
+Deno.test("llm-worker: Backward Compatibility", async (t) => {
+  await t.step("job with default new fields works like before", async () => {
+    // Job with messages=null, api_method='chat', context={} — should behave exactly like pre-extension
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({
+            messages: null,
+            api_method: "chat",
+            context: {},
+            feature_slug: null,
+          }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
+    assertEquals(body.job_id, "job-123");
+  });
+
+  await t.step("chat with messages + input.response_format both passed", async () => {
+    const deps = createMockDeps({
+      supabaseOptions: {
+        claimJob: {
+          data: createMockJob({
+            messages: [
+              { role: "system", content: "You are helpful" },
+              { role: "user", content: "Hello" },
+            ],
+            input: { response_format: { type: "json_object" } },
+          }),
+        },
+        provider: { data: createMockProvider({ slug: "openai" }) },
+      },
+    });
+    const handler = createHandler(deps);
+    const request = createRequest();
+
+    const response = await handler(request);
+    const { status, body } = await parseJsonResponse(response);
+
+    assertEquals(status, 200);
+    assertEquals(body.processed, true);
+    assertEquals(body.status, "completed");
   });
 });

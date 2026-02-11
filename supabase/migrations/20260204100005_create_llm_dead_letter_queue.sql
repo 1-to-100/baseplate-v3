@@ -83,6 +83,7 @@ create or replace function public.llm_add_to_dlq(
 returns uuid
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_dlq_id uuid;
@@ -127,6 +128,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   item record;
@@ -223,6 +225,7 @@ create or replace function public.llm_resolve_dlq(p_dlq_id uuid)
 returns boolean
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_updated int;

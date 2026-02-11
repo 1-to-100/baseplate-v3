@@ -22,6 +22,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
   -- Process stuck jobs in waiting_llm state
@@ -86,6 +87,7 @@ create or replace function public.llm_cancel_job(p_job_id uuid)
 returns boolean
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_customer_id uuid;
@@ -154,6 +156,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 stable
 as $$
 begin

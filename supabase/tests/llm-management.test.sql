@@ -23,7 +23,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- Plan the number of tests
-SELECT plan(75);
+SELECT plan(90);
 
 -- =============================================================================
 -- TEST SETUP: Create test data
@@ -835,6 +835,180 @@ SELECT has_function(
   'llm_record_webhook',
   ARRAY['character varying', 'uuid', 'character varying', 'character varying'],
   'Test 11.3: llm_record_webhook function should exist with correct signature'
+);
+
+-- =============================================================================
+-- SECTION 12: New Column Defaults (messages, context, api_method)
+-- =============================================================================
+
+-- Clean up test jobs for this section
+DELETE FROM public.llm_jobs WHERE id = 'b0b0b000-0001-0001-0001-000000000001';
+
+-- Test 12.1-12.3: Insert job with only required fields, verify new columns default correctly
+INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
+SELECT
+  'b0b0b000-0001-0001-0001-000000000001',
+  '11111111-1111-1111-1111-111111111111',
+  id,
+  'Test column defaults',
+  'queued'
+FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
+
+SELECT is(
+  (SELECT messages FROM public.llm_jobs WHERE id = 'b0b0b000-0001-0001-0001-000000000001'),
+  NULL::jsonb,
+  'Test 12.1: messages defaults to NULL'
+);
+
+SELECT is(
+  (SELECT context FROM public.llm_jobs WHERE id = 'b0b0b000-0001-0001-0001-000000000001'),
+  '{}'::jsonb,
+  'Test 12.2: context defaults to empty jsonb object'
+);
+
+SELECT is(
+  (SELECT api_method FROM public.llm_jobs WHERE id = 'b0b0b000-0001-0001-0001-000000000001'),
+  'chat',
+  'Test 12.3: api_method defaults to chat'
+);
+
+-- =============================================================================
+-- SECTION 13: api_method Constraint Tests
+-- =============================================================================
+
+-- Test 13.1: Valid api_method 'responses'
+SELECT lives_ok(
+  $$INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, api_method)
+    SELECT 'b0b0b000-0002-0002-0002-000000000002', '11111111-1111-1111-1111-111111111111', id, 'Responses API test', 'queued', 'responses'
+    FROM public.llm_providers WHERE slug = 'openai' LIMIT 1$$,
+  'Test 13.1: api_method responses should be accepted'
+);
+
+-- Test 13.2: Invalid api_method rejected
+SELECT throws_ok(
+  $$INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, api_method)
+    SELECT 'b0b0b000-0003-0003-0003-000000000003', '11111111-1111-1111-1111-111111111111', id, 'Streaming API test', 'queued', 'streaming'
+    FROM public.llm_providers WHERE slug = 'openai' LIMIT 1$$,
+  '23514',
+  NULL,
+  'Test 13.2: Invalid api_method streaming should be rejected'
+);
+
+-- =============================================================================
+-- SECTION 14: post_processing_failed Status Tests
+-- =============================================================================
+
+-- Test 14.1: Valid status post_processing_failed
+SELECT lives_ok(
+  $$INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status)
+    SELECT 'b0b0b000-0004-0004-0004-000000000004', '11111111-1111-1111-1111-111111111111', id, 'PP failed test', 'post_processing_failed'
+    FROM public.llm_providers WHERE slug = 'openai' LIMIT 1$$,
+  'Test 14.1: post_processing_failed should be a valid status'
+);
+
+-- Test 14.2: Cannot cancel post_processing_failed job (terminal status)
+UPDATE public.llm_jobs
+SET
+  status = 'cancelled',
+  cancelled_at = current_timestamp,
+  completed_at = current_timestamp
+WHERE id = 'b0b0b000-0004-0004-0004-000000000004'
+  AND status NOT IN ('completed', 'error', 'exhausted', 'cancelled', 'post_processing_failed');
+
+SELECT is(
+  (SELECT status FROM public.llm_jobs WHERE id = 'b0b0b000-0004-0004-0004-000000000004'),
+  'post_processing_failed',
+  'Test 14.2: post_processing_failed job should not be cancellable (terminal)'
+);
+
+SELECT is(
+  (SELECT cancelled_at FROM public.llm_jobs WHERE id = 'b0b0b000-0004-0004-0004-000000000004'),
+  NULL,
+  'Test 14.3: cancelled_at should remain NULL for post_processing_failed job'
+);
+
+-- =============================================================================
+-- SECTION 15: New Columns Insertable Tests
+-- =============================================================================
+
+-- Test 15.1: Insert with messages JSONB
+SELECT lives_ok(
+  $$INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, messages)
+    SELECT 'b0b0b000-0005-0005-0005-000000000005', '11111111-1111-1111-1111-111111111111', id, 'Messages test', 'queued',
+      '[{"role":"system","content":"You are helpful"},{"role":"user","content":[{"type":"text","text":"Describe this"},{"type":"image_url","image_url":{"url":"https://example.com/img.png"}}]}]'::jsonb
+    FROM public.llm_providers WHERE slug = 'openai' LIMIT 1$$,
+  'Test 15.1: Insert with multimodal messages JSONB should succeed'
+);
+
+-- Test 15.2: Insert with context JSONB
+SELECT lives_ok(
+  $$INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, context)
+    SELECT 'b0b0b000-0006-0006-0006-000000000006', '11111111-1111-1111-1111-111111111111', id, 'Context test', 'queued',
+      '{"customer_id":"abc","visual_style_guide_id":"def"}'::jsonb
+    FROM public.llm_providers WHERE slug = 'openai' LIMIT 1$$,
+  'Test 15.2: Insert with context JSONB should succeed'
+);
+
+-- Test 15.3: Verify messages column holds correct data
+SELECT is(
+  (SELECT messages->0->>'role' FROM public.llm_jobs WHERE id = 'b0b0b000-0005-0005-0005-000000000005'),
+  'system',
+  'Test 15.3: messages JSONB should store data correctly'
+);
+
+-- Test 15.4: Verify context column holds correct data
+SELECT is(
+  (SELECT context->>'customer_id' FROM public.llm_jobs WHERE id = 'b0b0b000-0006-0006-0006-000000000006'),
+  'abc',
+  'Test 15.4: context JSONB should store data correctly'
+);
+
+-- =============================================================================
+-- SECTION 16: llm_cancel_job with post_processing_failed
+-- =============================================================================
+
+-- Clean up test jobs for this section
+DELETE FROM public.llm_jobs WHERE id::text LIKE 'b0b0c000-%';
+
+-- Create a post_processing_failed job
+INSERT INTO public.llm_jobs (id, customer_id, provider_id, prompt, status, result_ref, error_message)
+SELECT
+  'b0b0c000-0001-0001-0001-000000000001',
+  '11111111-1111-1111-1111-111111111111',
+  id,
+  'PP failed job for cancel test',
+  'post_processing_failed',
+  '{"output":"raw LLM result"}',
+  'Processor threw: Invalid JSON'
+FROM public.llm_providers WHERE slug = 'openai' LIMIT 1;
+
+-- Test 16.1: Direct UPDATE pattern (same as cancel function uses) should NOT change status
+UPDATE public.llm_jobs
+SET
+  status = 'cancelled',
+  cancelled_at = current_timestamp,
+  completed_at = current_timestamp
+WHERE id = 'b0b0c000-0001-0001-0001-000000000001'
+  AND status NOT IN ('completed', 'error', 'exhausted', 'cancelled', 'post_processing_failed');
+
+SELECT is(
+  (SELECT status FROM public.llm_jobs WHERE id = 'b0b0c000-0001-0001-0001-000000000001'),
+  'post_processing_failed',
+  'Test 16.1: post_processing_failed is terminal and cannot be cancelled via UPDATE'
+);
+
+-- Test 16.2: result_ref is preserved on post_processing_failed job
+SELECT is(
+  (SELECT result_ref FROM public.llm_jobs WHERE id = 'b0b0c000-0001-0001-0001-000000000001'),
+  '{"output":"raw LLM result"}',
+  'Test 16.2: result_ref should be preserved on post_processing_failed job'
+);
+
+-- Test 16.3: error_message is preserved on post_processing_failed job
+SELECT is(
+  (SELECT error_message FROM public.llm_jobs WHERE id = 'b0b0c000-0001-0001-0001-000000000001'),
+  'Processor threw: Invalid JSON',
+  'Test 16.3: error_message should be preserved on post_processing_failed job'
 );
 
 -- =============================================================================

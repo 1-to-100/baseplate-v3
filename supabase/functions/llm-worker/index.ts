@@ -24,8 +24,11 @@ import type { LLMProvider } from '../_shared/llm/index.ts';
 import {
   notifyJobStarted,
   notifyJobCompleted,
+  notifyJobFailed,
   notifyJobExhausted,
 } from '../_shared/llm-notifications.ts';
+import { getResponseProcessor as getResponseProcessorDefault } from '../_shared/response-processors/index.ts';
+import type { ResponseProcessor } from '../_shared/response-processors/index.ts';
 
 // =============================================================================
 // Types
@@ -46,6 +49,9 @@ interface LLMJob {
   status: string;
   retry_count: number;
   created_at: string;
+  messages: unknown[] | null;
+  context: Record<string, unknown>;
+  api_method: 'chat' | 'responses';
 }
 
 /**
@@ -108,6 +114,8 @@ export interface HandlerDeps {
   createServiceClient: () => SupabaseClient;
   /** LLM provider clients (optional, defaults to real SDKs) */
   llmProviders?: LLMProviders;
+  /** Response processor resolver (optional, defaults to registry) */
+  getResponseProcessor?: (slug: string | null | undefined) => ResponseProcessor | null;
 }
 
 /**
@@ -128,6 +136,7 @@ const defaultDeps: HandlerDeps = {
 export function createHandler(deps: HandlerDeps = defaultDeps) {
   // Use provided LLM providers or fall back to defaults
   const llmProviders = deps.llmProviders || providers;
+  const resolveProcessor = deps.getResponseProcessor || getResponseProcessorDefault;
 
   return async function handler(req: Request): Promise<Response> {
     // Handle CORS preflight
@@ -180,7 +189,40 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
       try {
         const result = await executeLLMCall(job, provider, llmProviders);
 
-        // 4. Update job as completed
+        // 4. Run response processor if registered for this feature
+        const processor = resolveProcessor(job.feature_slug);
+        if (processor) {
+          try {
+            // Enforce context.customer_id matches job.customer_id to prevent cross-tenant writes
+            const safeContext = { ...job.context, customer_id: job.customer_id };
+            await processor(supabase, result.output, safeContext);
+          } catch (ppError) {
+            const ppMessage = ppError instanceof Error ? ppError.message : 'Post-processing failed';
+            console.error(`Post-processing failed for job ${job.id}:`, ppMessage);
+            await updateJobPostProcessingFailed(supabase, job.id, result, ppMessage);
+
+            // Notify user of failure (non-blocking)
+            if (job.user_id) {
+              notifyJobFailed(supabase, {
+                jobId: job.id,
+                userId: job.user_id,
+                customerId: job.customer_id,
+                featureSlug: job.feature_slug,
+                errorMessage: ppMessage,
+              }).catch((err) => console.error('Failed to send post-processing failure notification:', err));
+            }
+
+            const response: WorkerResponse = {
+              processed: true,
+              job_id: job.id,
+              status: 'post_processing_failed',
+              message: ppMessage,
+            };
+            return createSuccessResponse(response);
+          }
+        }
+
+        // 5. Update job as completed
         await updateJobCompleted(supabase, job.id, result);
 
         // Notify job completed (non-blocking)
@@ -285,7 +327,7 @@ async function claimJob(supabase: SupabaseClient): Promise<LLMJob | null> {
     .order('created_at', { ascending: true })
     .limit(1)
     .select(
-      'id, customer_id, user_id, provider_id, prompt, input, system_prompt, feature_slug, status, retry_count, created_at'
+      'id, customer_id, user_id, provider_id, prompt, input, system_prompt, feature_slug, status, retry_count, created_at, messages, context, api_method'
     )
     .maybeSingle();
 
@@ -324,6 +366,9 @@ async function getProvider(supabase: SupabaseClient, providerId: string): Promis
 
 /**
  * Executes LLM call using native SDK based on provider.
+ * Supports two OpenAI API paths via job.api_method:
+ *   - 'chat' (default): Chat Completions API, with optional multimodal messages
+ *   - 'responses': Responses API (for tools like web_search)
  */
 async function executeLLMCall(
   job: LLMJob,
@@ -334,7 +379,10 @@ async function executeLLMCall(
 
   switch (providerSlug) {
     case 'openai':
-      return callOpenAI(job, provider, llmProviders);
+      if (job.api_method === 'responses') {
+        return callOpenAIResponses(job, provider, llmProviders);
+      }
+      return callOpenAIChat(job, provider, llmProviders);
     case 'anthropic':
       return callAnthropic(job, provider, llmProviders);
     case 'gemini':
@@ -345,24 +393,51 @@ async function executeLLMCall(
 }
 
 /**
- * Calls OpenAI using native SDK.
+ * Strips protected keys from job.input before spreading onto API calls.
+ * Prevents users from overriding critical parameters like model, messages, or input.
  */
-async function callOpenAI(job: LLMJob, provider: ProviderConfig, llmProviders: LLMProviders): Promise<LLMResult> {
+const PROTECTED_INPUT_KEYS = new Set([
+  'model', 'messages', 'input', 'stream',
+]);
+
+function sanitizeInputParams(input: unknown): Record<string, unknown> {
+  const raw = (input as Record<string, unknown>) || {};
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!PROTECTED_INPUT_KEYS.has(key)) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
+/**
+ * Calls OpenAI Chat Completions API.
+ * If job.messages is set, uses it directly (supports multimodal content parts).
+ * Otherwise constructs messages from prompt/system_prompt (existing behavior).
+ */
+async function callOpenAIChat(job: LLMJob, provider: ProviderConfig, llmProviders: LLMProviders): Promise<LLMResult> {
   const openai = llmProviders.openai();
   const model = (provider.config.model as string) || (provider.config.default_model as string) || 'gpt-4o';
 
-  const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
-
-  if (job.system_prompt) {
-    messages.push({ role: 'system', content: job.system_prompt });
+  // Use pre-built messages if available (multimodal), else construct from prompt
+  // deno-lint-ignore no-explicit-any
+  let messages: any[];
+  if (job.messages) {
+    messages = job.messages;
+  } else {
+    messages = [];
+    if (job.system_prompt) {
+      messages.push({ role: 'system', content: job.system_prompt });
+    }
+    messages.push({ role: 'user', content: job.prompt });
   }
-  messages.push({ role: 'user', content: job.prompt });
 
   const response = await withLogging('openai', 'chat.completions.create', model, async () => {
     return await openai.chat.completions.create({
       model,
       messages,
-      ...((job.input as Record<string, unknown>) || {}),
+      ...sanitizeInputParams(job.input),
     });
   });
 
@@ -382,6 +457,48 @@ async function callOpenAI(job: LLMJob, provider: ProviderConfig, llmProviders: L
       : undefined,
     model: response.model,
     response_id: response.id,
+  };
+}
+
+/**
+ * Calls OpenAI Responses API.
+ * Used for features that need tools (e.g. web_search for logos).
+ * job.input is spread onto the API call (tools, text format, model override, etc.)
+ */
+async function callOpenAIResponses(job: LLMJob, provider: ProviderConfig, llmProviders: LLMProviders): Promise<LLMResult> {
+  const openai = llmProviders.openai();
+  const safeParams = sanitizeInputParams(job.input);
+  const model = (provider.config.model as string) || (provider.config.default_model as string) || 'gpt-4o';
+
+  const response = await withLogging('openai', 'responses.create', model, async () => {
+    return await openai.responses.create({
+      model,
+      input: job.prompt,
+      ...safeParams,
+    });
+  });
+
+  // deno-lint-ignore no-explicit-any
+  const output = (response as any).output_text;
+  if (!output) {
+    throw new LLMError('No output_text in OpenAI Responses API response', 'INVALID_REQUEST', 'openai');
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const usage = (response as any).usage;
+
+  return {
+    output,
+    usage: usage
+      ? {
+          prompt_tokens: usage.input_tokens,
+          completion_tokens: usage.output_tokens,
+          total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
+        }
+      : undefined,
+    model,
+    // deno-lint-ignore no-explicit-any
+    response_id: (response as any).id,
   };
 }
 
@@ -505,6 +622,34 @@ async function updateJobForRetry(
   if (error) {
     console.error('Failed to update job for retry:', error);
     throw new ApiError('Failed to update job status', 500);
+  }
+}
+
+/**
+ * Updates job as post_processing_failed.
+ * LLM call succeeded but the response processor threw an error.
+ * Raw LLM output is preserved in result_ref so no tokens are wasted on retry.
+ */
+async function updateJobPostProcessingFailed(
+  supabase: SupabaseClient,
+  jobId: string,
+  result: LLMResult,
+  errorMessage: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('llm_jobs')
+    .update({
+      status: 'post_processing_failed',
+      result_ref: JSON.stringify(result),
+      llm_response_id: result.response_id || null,
+      error_message: errorMessage,
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', jobId);
+
+  if (error) {
+    console.error('Failed to update job as post_processing_failed:', error);
+    throw new ApiError('Failed to update job post-processing status', 500);
   }
 }
 
