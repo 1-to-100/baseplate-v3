@@ -95,7 +95,7 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
           height: '100%',
           pb: '197px',
           position: 'relative',
-          pt: '58px',
+          pt: '82px',
         }}
       >
         <Stack
@@ -115,6 +115,7 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
             >
               <Logo color='light' height={40} width={180} />
             </Box>
+            <Box sx={{ paddingY: '12px' }}></Box>
           </div>
           {/* <WorkspaceSwitch /> */}
         </Stack>
@@ -217,13 +218,6 @@ function renderNavGroups({
         }}
       >
         <ListItemContent>
-          {curr.title ? (
-            <Box sx={{ py: '12px' }}>
-              <Typography fontSize='16px' fontWeight='lg' textColor='common.black'>
-                {curr.title}
-              </Typography>
-            </Box>
-          ) : null}
           {renderNavItems({
             depth: 0,
             pathname,
