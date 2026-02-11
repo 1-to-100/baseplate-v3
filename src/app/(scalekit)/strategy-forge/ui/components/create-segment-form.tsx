@@ -19,6 +19,8 @@ import { Code } from '@phosphor-icons/react/dist/ssr/Code';
 import { Users } from '@phosphor-icons/react/dist/ssr/Users';
 import { CaretDown } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { CaretUp } from '@phosphor-icons/react/dist/ssr/CaretUp';
+import { ArrowsIn } from '@phosphor-icons/react/dist/ssr/ArrowsIn';
+import { ArrowsOut } from '@phosphor-icons/react/dist/ssr/ArrowsOut';
 import Switch from '@mui/joy/Switch';
 import Tooltip from '@mui/joy/Tooltip';
 import IconButton from '@mui/joy/IconButton';
@@ -144,6 +146,12 @@ export function CreateSegmentForm({
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [formInitialized, setFormInitialized] = React.useState(false);
   const [personaWarningDismissed, setPersonaWarningDismissed] = React.useState(false);
+  const [isExpandedView, setIsExpandedView] = React.useState(false);
+
+  // Reset expanded view when switching between create and edit (or between segments)
+  React.useEffect(() => {
+    setIsExpandedView(false);
+  }, [segmentId]);
 
   // Fetch options from database
   const { data: industries, isLoading: industriesLoading } = useQuery({
@@ -649,7 +657,7 @@ export function CreateSegmentForm({
         flexShrink: 0,
         bgcolor: 'var(--Content-background)',
         borderRight: { xs: 'none', sm: '1px solid var(--joy-palette-divider)' },
-        display: 'flex',
+        display: isExpandedView ? 'none' : 'flex',
         flexDirection: 'column',
         minHeight: { xs: 'auto', sm: '64vh' },
         maxHeight: { xs: '100vh', sm: '64vh' },
@@ -1627,6 +1635,7 @@ export function CreateSegmentForm({
         justifyContent: shouldShowCompanies ? 'flex-start' : 'center',
         bgcolor: 'var(--joy-palette-background-surface)',
         overflow: 'visible',
+        pl: { xs: 0, sm: isExpandedView ? 0 : 2 },
       }}
     >
       {!shouldShowCompanies ? (
@@ -1661,21 +1670,45 @@ export function CreateSegmentForm({
             overflow: 'visible',
           }}
         >
-          {/* Header with count */}
-          <Box sx={{ p: 2, borderBottom: '1px solid var(--joy-palette-divider)' }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                fontSize={18}
-                fontWeight={500}
-                sx={{ color: 'var(--joy-palette-text-primary)' }}
-              >
-                {isSearching
-                  ? 'Searching...'
-                  : totalCount > perPage
-                    ? `Showing ${(currentPage - 1) * perPage + 1}–${Math.min(currentPage * perPage, totalCount)} of ${totalCount} companies`
-                    : `${totalCount} companies found`}
-              </Typography>
-            </Box>
+          {/* Header with count and expand/collapse (edit mode only) */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid var(--joy-palette-divider)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography
+              fontSize={18}
+              fontWeight={500}
+              sx={{ color: 'var(--joy-palette-text-primary)' }}
+            >
+              {isSearching
+                ? 'Searching...'
+                : totalCount > perPage
+                  ? `Showing ${(currentPage - 1) * perPage + 1}–${Math.min(currentPage * perPage, totalCount)} of ${totalCount} companies`
+                  : `${totalCount} companies found`}
+            </Typography>
+            <Button
+              variant='plain'
+              onClick={() => setIsExpandedView(!isExpandedView)}
+              sx={{
+                fontWeight: 500,
+                fontSize: 14,
+                px: 2,
+                py: 1,
+                borderRadius: 2,
+              }}
+              startDecorator={
+                isExpandedView ? (
+                  <ArrowsIn size={22} color='var(--joy-palette-text-primary)' />
+                ) : (
+                  <ArrowsOut size={22} color='var(--joy-palette-text-primary)' />
+                )
+              }
+            />
           </Box>
 
           {/* Preview banner */}
@@ -2207,7 +2240,19 @@ export function CreateSegmentForm({
             }
           />
         )}
-        {filtersPanel}
+        <Box
+          sx={{
+            display: {
+              xs: isExpandedView ? 'none' : 'block',
+              sm: 'block',
+            },
+            width: { xs: '100%', sm: isExpandedView ? 0 : 320 },
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {filtersPanel}
+        </Box>
         {mainContent}
       </Box>
     </Box>
