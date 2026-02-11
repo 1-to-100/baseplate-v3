@@ -32,6 +32,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deno-
 
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+
+      - name: Generate feature artifacts
+        run: node supabase/scripts/wrap-feature-functions.mjs
+
       - name: Type check edge functions
         run: |
           deno check 'src/**/edge/**/*.ts'
