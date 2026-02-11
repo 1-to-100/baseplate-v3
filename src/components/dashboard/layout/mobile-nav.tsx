@@ -28,16 +28,61 @@ import { icons } from './nav-icons';
 import { WorkspaceSwitch } from './workspace-switch';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { CustomerSelect } from './customer-select';
-import {
-  isSystemAdministrator,
-  isCustomerSuccess,
-  isCustomerAdminOrManager,
-} from '@/lib/user-utils';
+import { isSystemAdministrator, hasRole } from '@/lib/user-utils';
 
 export interface MobileNavProps {
   items: NavItemConfig[];
   onClose?: () => void;
   open: boolean;
+}
+
+/**
+ * Permission-based nav item filter (ported from 1to100-app-v3).
+ *
+ * Evaluation order:
+ *   1. `show` callback — dynamic, arbitrary visibility logic.
+ *   2. `permissions` array — checked against the user's current role.
+ *      System Administrators always pass.
+ *   3. If neither field is present the item is visible to everyone.
+ *
+ * Legacy key-based filtering has been removed; all restricted items
+ * should declare an explicit `permissions` array in config.ts.
+ */
+function filterNavItem(
+  item: NavItemConfig,
+  userInfo: ReturnType<typeof useUserInfo>['userInfo']
+): boolean {
+  // Dynamic show callback
+  if (item.show && !item.show(userInfo)) {
+    return false;
+  }
+
+  // Permission-based filtering
+  if ('permissions' in item && item.permissions) {
+    const permissions = item.permissions as string[];
+    // System admin always has full access
+    if (isSystemAdministrator(userInfo)) {
+      return true;
+    }
+    // Check if user's current role is in the allowed list
+    return permissions.some((role) => hasRole(userInfo, role));
+  }
+
+  return true;
+}
+
+function filterNavItems(
+  items: NavItemConfig[] | undefined,
+  userInfo: ReturnType<typeof useUserInfo>['userInfo']
+): NavItemConfig[] | undefined {
+  if (!items) return undefined;
+
+  return items
+    .filter((item) => filterNavItem(item, userInfo))
+    .map((item) => ({
+      ...item,
+      items: filterNavItems(item.items, userInfo),
+    }));
 }
 
 export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.Element {
@@ -47,31 +92,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
 
   const filteredItems = items.map((group) => ({
     ...group,
-    items: group.items?.filter((item) => {
-      if (isCustomerSuccess(userInfo)) {
-        return item.key !== 'role' && item.key !== 'system-users';
-      }
-
-      if (isCustomerAdminOrManager(userInfo)) {
-        return (
-          item.key !== 'role' &&
-          item.key !== 'customer' &&
-          item.key !== 'system-users' &&
-          item.key !== 'notification-management'
-        );
-      }
-
-      if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
-        return (
-          item.key !== 'role' &&
-          item.key !== 'customer' &&
-          item.key !== 'system-users' &&
-          item.key !== 'notification-management' &&
-          item.key !== 'management'
-        );
-      }
-      return true;
-    }),
+    items: filterNavItems(group.items, userInfo),
   }));
 
   return (
@@ -285,13 +306,10 @@ function NavItem({
   const isBranch = Boolean(children && !href);
   const isLeaf = Boolean(!children && href);
   const showChildren = Boolean(children && open);
-  const { userInfo } = useUserInfo();
 
+  // Divider visibility is now controlled via the `permissions` field in
+  // config.ts and filtered by filterNavItem — no hardcoded role check needed.
   if (type === 'divider') {
-    const shouldShowDivider = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
-    if (!shouldShowDivider) {
-      return <></>;
-    }
     return (
       <ListItem
         data-depth={depth}
