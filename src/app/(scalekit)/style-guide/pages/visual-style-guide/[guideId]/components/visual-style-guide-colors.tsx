@@ -28,8 +28,9 @@ import ModalDialog from '@mui/joy/ModalDialog';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import Stack from '@mui/joy/Stack';
+import Tooltip from '@mui/joy/Tooltip';
 import Typography from '@mui/joy/Typography';
-import { Plus } from '@phosphor-icons/react';
+import { Info, Plus } from '@phosphor-icons/react';
 import * as React from 'react';
 
 type ColorDraft = {
@@ -316,10 +317,16 @@ function ColorPalettePresetSelector({
 export type ColorEditItemProps = {
   color: PaletteColor;
   colorLabel: string;
+  colorDescription?: string;
   onUpdateColor: (color: PaletteColor, field: string, value: unknown) => void;
 };
 
-export function ColorEditItem({ color, colorLabel, onUpdateColor }: ColorEditItemProps) {
+export function ColorEditItem({
+  color,
+  colorLabel,
+  colorDescription,
+  onUpdateColor,
+}: ColorEditItemProps) {
   return (
     <ListItem
       sx={{
@@ -330,7 +337,14 @@ export function ColorEditItem({ color, colorLabel, onUpdateColor }: ColorEditIte
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'flex-end' }}>
         <Grid xs={12} sm={9}>
           <Stack>
-            <Typography level='body-sm'>{colorLabel}</Typography>
+            <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+              <Typography level='body-sm'>{colorLabel}</Typography>
+              {colorDescription && (
+                <Tooltip title={colorDescription} arrow placement='top'>
+                  <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+                </Tooltip>
+              )}
+            </Stack>
 
             <Input
               value={String(color.hex || '').replace(/^#/, '')}
@@ -388,9 +402,10 @@ export function ColorEditItem({ color, colorLabel, onUpdateColor }: ColorEditIte
 export type ColorPreviewItemProps = {
   color: PaletteColor;
   colorLabel: string;
+  colorDescription?: string;
 };
 
-export function ColorPreviewItem({ color, colorLabel }: ColorPreviewItemProps) {
+export function ColorPreviewItem({ color, colorLabel, colorDescription }: ColorPreviewItemProps) {
   return (
     <ListItem
       sx={{
@@ -402,7 +417,14 @@ export function ColorPreviewItem({ color, colorLabel }: ColorPreviewItemProps) {
     >
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'center' }}>
         <Grid xs={12} sm={4}>
-          <Typography level='body-sm'>{colorLabel}</Typography>
+          <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+            <Typography level='body-sm'>{colorLabel}</Typography>
+            {colorDescription && (
+              <Tooltip title={colorDescription} arrow placement='top'>
+                <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+              </Tooltip>
+            )}
+          </Stack>
         </Grid>
         <Grid xs={12} sm={4}>
           <Typography level='body-sm'>
@@ -643,16 +665,16 @@ export default function VisualStyleGuideColors({
               />
               <List sx={{ p: 0, gap: 2, mt: 2 }}>
                 {sortedColors.map((color) => {
-                  const colorLabel =
-                    (color.name as string) ||
-                    USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
-                    'Color';
+                  const usageOption = USAGE_OPTIONS.find((opt) => opt.value === color.usage_option);
+                  const colorLabel = (color.name as string) || usageOption?.label || 'Color';
+                  const colorDescription = usageOption?.description;
 
                   return (
                     <ColorEditItem
                       key={String(color.palette_color_id)}
                       color={color}
                       colorLabel={colorLabel}
+                      colorDescription={colorDescription}
                       onUpdateColor={handleUpdateColor}
                     />
                   );
@@ -666,16 +688,16 @@ export default function VisualStyleGuideColors({
           <Card variant='outlined' sx={{ p: 0 }}>
             <List>
               {sortedColors.map((color) => {
-                const colorLabel =
-                  (color.name as string) ||
-                  USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
-                  'Color';
+                const usageOption = USAGE_OPTIONS.find((opt) => opt.value === color.usage_option);
+                const colorLabel = (color.name as string) || usageOption?.label || 'Color';
+                const colorDescription = usageOption?.description;
 
                 return (
                   <ColorPreviewItem
                     key={String(color.palette_color_id)}
                     color={color}
                     colorLabel={colorLabel}
+                    colorDescription={colorDescription}
                   />
                 );
               })}

@@ -519,16 +519,18 @@ export default function VisualStyleGuideTypography({
                 {mergedItems.map((item) => {
                   if (item.type === 'color') {
                     const color = item.data as PaletteColor;
-                    const colorLabel =
-                      (color.name as string) ||
-                      USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
-                      'Color';
+                    const usageOption = USAGE_OPTIONS.find(
+                      (opt) => opt.value === color.usage_option
+                    );
+                    const colorLabel = (color.name as string) || usageOption?.label || 'Color';
+                    const colorDescription = usageOption?.description;
 
                     return (
                       <ColorEditItem
                         key={String(color.palette_color_id)}
                         color={color}
                         colorLabel={colorLabel}
+                        colorDescription={colorDescription}
                         onUpdateColor={handleUpdateColor}
                       />
                     );
@@ -562,16 +564,16 @@ export default function VisualStyleGuideTypography({
               {mergedItems.map((item) => {
                 if (item.type === 'color') {
                   const color = item.data as PaletteColor;
-                  const colorLabel =
-                    (color.name as string) ||
-                    USAGE_OPTIONS.find((opt) => opt.value === color.usage_option)?.label ||
-                    'Color';
+                  const usageOption = USAGE_OPTIONS.find((opt) => opt.value === color.usage_option);
+                  const colorLabel = (color.name as string) || usageOption?.label || 'Color';
+                  const colorDescription = usageOption?.description;
 
                   return (
                     <ColorPreviewItem
                       key={String(color.palette_color_id)}
                       color={color}
                       colorLabel={colorLabel}
+                      colorDescription={colorDescription}
                     />
                   );
                 } else {
