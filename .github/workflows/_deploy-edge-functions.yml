@@ -38,9 +38,9 @@ jobs:
 
       - name: Setup Node.js
         if: env.APPLICATION_REPO == 'true' || inputs.include_app_functions == true
-        uses: actions/setup-node@v4
+        uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          cache: 'false'
 
       - name: Wrap feature functions
         if: env.APPLICATION_REPO == 'true' || inputs.include_app_functions == true
