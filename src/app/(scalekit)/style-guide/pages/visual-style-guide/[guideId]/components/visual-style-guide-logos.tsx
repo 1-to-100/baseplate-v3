@@ -16,6 +16,7 @@ import { Download, FileImage, Plus, Trash, Upload } from '@phosphor-icons/react'
 import * as React from 'react';
 import {
   useCreateLogoAsset,
+  useCustomerInfo,
   useDeleteLogoAsset,
   useGenerateLogo,
   useLogoAssets,
@@ -24,6 +25,7 @@ import {
   useLogoTypeOptions,
   useSaveGeneratedLogo,
   useUpdateLogoAsset,
+  type CustomerInfo,
   type GeneratedLogo,
 } from '@/app/(scalekit)/style-guide/lib/hooks';
 import type { LogoAsset, LogoTypeOption } from '@/app/(scalekit)/style-guide/lib/types';
@@ -46,6 +48,36 @@ const ACTIVE_LOGO_TYPES = ['primary_logo'];
 /** Helper to check if a logo type is active by programmatic_name (case insensitive) */
 const isActiveLogoType = (programmaticName: string | null | undefined): boolean =>
   ACTIVE_LOGO_TYPES.includes(String(programmaticName ?? '').toLowerCase());
+
+/**
+ * Builds an initial logo generation prompt from company information
+ */
+function buildInitialLogoPrompt(info: CustomerInfo | null): string {
+  if (!info) {
+    return 'Create a professional, modern logo. The logo should be clean, scalable, and suitable for use on both light and dark backgrounds.';
+  }
+
+  const lines: string[] = [];
+  lines.push(`Company Name: ${info.company_name}`);
+  if (info.website_url) {
+    lines.push(`Company Website: ${info.website_url}`);
+  }
+  lines.push(`Solution Name: ${info.company_name}`);
+  if (info.solution_overview) {
+    lines.push(`Solution Description: ${info.solution_overview}`);
+  }
+  if (info.tagline) {
+    lines.push(`Tagline: ${info.tagline}`);
+  }
+  if (info.one_sentence_summary) {
+    lines.push(`About: ${info.one_sentence_summary}`);
+  }
+  lines.push('');
+  lines.push(
+    'Create a professional, modern logo for this company. The logo should be clean, scalable, and suitable for use on both light and dark backgrounds.'
+  );
+  return lines.join('\n');
+}
 
 type LogoOptionCardProps = {
   onClick: () => void;
@@ -506,6 +538,13 @@ export default function VisualStyleGuideLogos({
   // Hooks for logo presets and signed URLs
   const { data: generatedLogoPresets = [], isLoading: isLoadingPresets } = useLogoPresets(guideId);
   const { logoImageUrls, refreshLogoUrl, getSignedUrl } = useLogoSignedUrls(logos);
+
+  // Fetch customer info for prefilling logo generation prompt
+  const { data: customerInfo } = useCustomerInfo();
+  const initialLogoPrompt = React.useMemo(
+    () => buildInitialLogoPrompt(customerInfo ?? null),
+    [customerInfo]
+  );
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [logoToDelete, setLogoToDelete] = React.useState<LogoAsset | null>(null);
@@ -1036,6 +1075,7 @@ export default function VisualStyleGuideLogos({
         onSave={handleSaveGeneratedLogo}
         isGenerating={generateLogoMutation.isPending}
         isSaving={isSavingGeneratedLogo}
+        initialPrompt={initialLogoPrompt}
       />
     </>
   );
