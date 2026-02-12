@@ -730,7 +730,7 @@ export async function syncListCompaniesFromFilters(listId: string): Promise<void
     throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
   }
 
-  let deleteQuery = supabase.from('list_companies').delete().eq('list_id', listId);
+  const deleteQuery = supabase.from('list_companies').delete().eq('list_id', listId);
   const { error: deleteError } = await deleteQuery;
   if (deleteError) {
     throw new Error(`Failed to clear list companies: ${deleteError.message}`);
