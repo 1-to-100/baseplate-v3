@@ -32,6 +32,8 @@ interface CompanyDetailsPopoverProps {
   anchorEl: HTMLElement | null;
   companyId: number;
   company_id?: string;
+  /** When provided, "Full Profile" navigates to segment company page (Segments > Segment Name > Company) */
+  segmentId?: string;
 }
 
 export default function CompanyDetailsPopover({
@@ -40,6 +42,7 @@ export default function CompanyDetailsPopover({
   anchorEl,
   companyId,
   company_id,
+  segmentId,
 }: CompanyDetailsPopoverProps) {
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -119,9 +122,11 @@ export default function CompanyDetailsPopover({
   };
 
   const handleViewProfile = (company: CompanyItem) => {
-    const url = company.company_id
-      ? paths.strategyForge.companies.details(company.company_id)
-      : paths.strategyForge.companies.details(String(company.id));
+    const companyIdStr = company.company_id ?? String(company.id);
+    const url =
+      segmentId && companyIdStr
+        ? paths.strategyForge.segments.companyDetails(segmentId, companyIdStr)
+        : paths.strategyForge.companies.details(companyIdStr);
     router.push(url);
     onClose();
   };

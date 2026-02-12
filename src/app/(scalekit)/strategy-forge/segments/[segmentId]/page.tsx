@@ -790,6 +790,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                     ) || 0
                   }
                   company_id={companies[openCompanyPopoverIdx].company_id}
+                  segmentId={segmentId ?? undefined}
                 />
               )}
               {meta && meta.lastPage > 1 && (
