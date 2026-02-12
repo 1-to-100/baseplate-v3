@@ -1687,8 +1687,8 @@ export function CreateSegmentForm({
             >
               {isSearching
                 ? 'Searching...'
-                : totalCount > perPage
-                  ? `Showing ${(currentPage - 1) * perPage + 1}–${Math.min(currentPage * perPage, totalCount)} of ${totalCount} companies`
+                : totalCount === 1
+                  ? '1 company found'
                   : `${totalCount} companies found`}
             </Typography>
             <Button
