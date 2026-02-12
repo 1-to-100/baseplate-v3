@@ -189,8 +189,8 @@ function renderTypographyPreview(
 
   const optionName = String(option?.programmatic_name || option?.display_name || '');
 
-  switch (optionName) {
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.BUTTON:
+  const getPreviewContent = (): React.JSX.Element => {
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.BUTTON) {
       return (
         <Button
           variant='solid'
@@ -203,8 +203,9 @@ function renderTypographyPreview(
           Button Text
         </Button>
       );
+    }
 
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LINK:
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LINK) {
       return (
         <Typography
           sx={{
@@ -217,8 +218,9 @@ function renderTypographyPreview(
           This is a link
         </Typography>
       );
+    }
 
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CODE:
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CODE) {
       return (
         <Box
           sx={{
@@ -232,8 +234,9 @@ function renderTypographyPreview(
           const example = true;
         </Box>
       );
+    }
 
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CAPTION:
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CAPTION) {
       return (
         <Typography
           level='body-xs'
@@ -245,8 +248,9 @@ function renderTypographyPreview(
           This is a caption
         </Typography>
       );
+    }
 
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LABEL:
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LABEL) {
       return (
         <Typography
           level='body-sm'
@@ -258,8 +262,9 @@ function renderTypographyPreview(
           Label Text
         </Typography>
       );
+    }
 
-    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.QUOTE:
+    if (optionName === TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.QUOTE) {
       return (
         <Box
           sx={{
@@ -272,10 +277,24 @@ function renderTypographyPreview(
           <Typography sx={baseStyles}>This is a quote</Typography>
         </Box>
       );
-  }
+    }
 
-  // Default preview
-  return <Typography sx={baseStyles}>The font will look like this</Typography>;
+    // Default preview
+    return <Typography sx={baseStyles}>The font will look like this</Typography>;
+  };
+
+  // Wrap the preview content in a light-colored background container
+  return (
+    <Box
+      sx={{
+        backgroundColor: 'neutral.50',
+        padding: '20px',
+        borderRadius: '4px',
+      }}
+    >
+      {getPreviewContent()}
+    </Box>
+  );
 }
 
 type TypographyEditItemProps = {
@@ -307,7 +326,7 @@ function TypographyEditItem({
       }}
     >
       <Stack gap={2} sx={{ width: '100%' }}>
-        <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+        <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
           <Typography level='body-sm'>
             {String(option?.display_name || option?.programmatic_name || 'Unknown')}
           </Typography>
@@ -419,13 +438,17 @@ function TypographyPreviewItem({ style, option }: TypographyPreviewItemProps): R
     >
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'center' }}>
         <Grid xs={12} sm={4}>
-          <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
             <Typography level='body-sm'>
               {String(option?.display_name || option?.programmatic_name || 'Unknown')}
             </Typography>
             {option?.description && (
               <Tooltip title={option.description} arrow placement='top'>
-                <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+                <Info
+                  size={16}
+                  weight='fill'
+                  style={{ cursor: 'help', color: 'var(--joy-palette-neutral-400)' }}
+                />
               </Tooltip>
             )}
           </Stack>

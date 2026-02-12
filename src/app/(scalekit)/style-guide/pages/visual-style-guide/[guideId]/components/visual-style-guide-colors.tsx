@@ -337,7 +337,7 @@ export function ColorEditItem({
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'flex-end' }}>
         <Grid xs={12} sm={9}>
           <Stack>
-            <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
               <Typography level='body-sm'>{colorLabel}</Typography>
               {colorDescription && (
                 <Tooltip title={colorDescription} arrow placement='top'>
@@ -421,11 +421,15 @@ export function ColorPreviewItem({ color, colorLabel, colorDescription }: ColorP
     >
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'center' }}>
         <Grid xs={12} sm={4}>
-          <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
             <Typography level='body-sm'>{colorLabel}</Typography>
             {colorDescription && (
               <Tooltip title={colorDescription} arrow placement='top'>
-                <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+                <Info
+                  size={16}
+                  weight='fill'
+                  style={{ cursor: 'help', color: 'var(--joy-palette-neutral-400)' }}
+                />
               </Tooltip>
             )}
           </Stack>
