@@ -8,8 +8,9 @@ import Input from '@mui/joy/Input';
 import List from '@mui/joy/List';
 import ListItem from '@mui/joy/ListItem';
 import Stack from '@mui/joy/Stack';
+import Tooltip from '@mui/joy/Tooltip';
 import Typography from '@mui/joy/Typography';
-import { Plus } from '@phosphor-icons/react';
+import { Info, Plus } from '@phosphor-icons/react';
 import * as React from 'react';
 import {
   useCreateTypographyStyle,
@@ -29,6 +30,7 @@ import {
   getDefaultFontSize,
   getDefaultFontWeight,
   getDefaultLineHeight,
+  TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME,
 } from '@/app/(scalekit)/style-guide/lib/constants/typography';
 import type {
   FontOption,
@@ -172,6 +174,110 @@ type VisualStyleGuideTypographyProps = {
   isEditableView: boolean;
 };
 
+// Helper function to render contextual typography previews
+function renderTypographyPreview(
+  style: TypographyStyle,
+  option: TypographyStyleOption | undefined
+): React.JSX.Element {
+  const fontFamily = style.font_family ? `${style.font_family}, sans-serif` : 'inherit';
+  const fontSize = style.font_size_px ? `${style.font_size_px}px` : undefined;
+
+  const baseStyles = {
+    fontFamily,
+    fontSize,
+  };
+
+  const optionName = String(option?.programmatic_name || option?.display_name || '');
+
+  switch (optionName) {
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.BUTTON:
+      return (
+        <Button
+          variant='solid'
+          size='sm'
+          sx={{
+            ...baseStyles,
+            pointerEvents: 'none',
+          }}
+        >
+          Button Text
+        </Button>
+      );
+
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LINK:
+      return (
+        <Typography
+          sx={{
+            ...baseStyles,
+            color: 'primary.500',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+          }}
+        >
+          This is a link
+        </Typography>
+      );
+
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CODE:
+      return (
+        <Box
+          sx={{
+            ...baseStyles,
+            backgroundColor: 'neutral.100',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            display: 'inline-block',
+          }}
+        >
+          const example = true;
+        </Box>
+      );
+
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.CAPTION:
+      return (
+        <Typography
+          level='body-xs'
+          sx={{
+            ...baseStyles,
+            color: 'neutral.500',
+          }}
+        >
+          This is a caption
+        </Typography>
+      );
+
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.LABEL:
+      return (
+        <Typography
+          level='body-sm'
+          sx={{
+            ...baseStyles,
+            fontWeight: 500,
+          }}
+        >
+          Label Text
+        </Typography>
+      );
+
+    case TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME.QUOTE:
+      return (
+        <Box
+          sx={{
+            borderLeft: '4px solid',
+            borderColor: 'neutral.300',
+            paddingLeft: 2,
+            fontStyle: 'italic',
+          }}
+        >
+          <Typography sx={baseStyles}>This is a quote</Typography>
+        </Box>
+      );
+  }
+
+  // Default preview
+  return <Typography sx={baseStyles}>The font will look like this</Typography>;
+}
+
 type TypographyEditItemProps = {
   style: TypographyStyle;
   option: TypographyStyleOption | undefined;
@@ -200,74 +306,93 @@ function TypographyEditItem({
         p: 0,
       }}
     >
-      <Stack gap={1} sx={{ width: '100%' }}>
-        <Typography level='body-sm'>
-          {String(option?.display_name || option?.programmatic_name || 'Unknown')}
-        </Typography>
-        <Select
-          value={currentFontFamily}
-          onChange={(_, newValue) => {
-            if (newValue) {
-              onUpdateTypography(
-                String(style.typography_style_id),
-                'font_family',
-                String(newValue)
-              );
-            }
-          }}
-          onListboxOpenChange={(isOpen) => {
-            if (isOpen && onDropdownOpen) {
-              onDropdownOpen();
-            }
-          }}
-          size='sm'
-          aria-label={`Select font for ${String(option?.display_name || 'Unknown')}`}
-        >
-          {/* Show current font as option if it's not in the fontOptions list */}
-          {currentFontFamily && !fontExistsInOptions && (
-            <Option
-              key={`current-${currentFontFamily}`}
-              value={currentFontFamily}
-              sx={(theme) => ({
-                fontFamily: `${currentFontFamily}, ${theme.fontFamily.body}`,
-              })}
-            >
-              {currentFontFamily}
-            </Option>
+      <Stack gap={2} sx={{ width: '100%' }}>
+        <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+          <Typography level='body-sm'>
+            {String(option?.display_name || option?.programmatic_name || 'Unknown')}
+          </Typography>
+          {option?.description && (
+            <Tooltip title={option.description} arrow placement='top'>
+              <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+            </Tooltip>
           )}
-          {fontOptions?.map((font) => (
-            <Option
-              key={String(font.font_option_id)}
-              value={String(font.display_name || '')}
-              sx={(theme) => ({
-                fontFamily: font.display_name
-                  ? `"${font.display_name}", ${theme.fontFamily.body}`
-                  : theme.fontFamily.body,
-              })}
+        </Stack>
+
+        <Grid container spacing={1} sx={{ width: '100%', alignItems: 'flex-end' }}>
+          <Grid xs={12} sm={9}>
+            <Select
+              value={currentFontFamily}
+              onChange={(_, newValue) => {
+                if (newValue) {
+                  onUpdateTypography(
+                    String(style.typography_style_id),
+                    'font_family',
+                    String(newValue)
+                  );
+                }
+              }}
+              onListboxOpenChange={(isOpen) => {
+                if (isOpen && onDropdownOpen) {
+                  onDropdownOpen();
+                }
+              }}
+              size='sm'
+              aria-label={`Select font for ${String(option?.display_name || 'Unknown')}`}
+              sx={{ width: '100%' }}
             >
-              {String(font.display_name || '')}
-            </Option>
-          ))}
-        </Select>
-        <Select
-          value={String(style.font_size_px || 16)}
-          onChange={(_, newValue) => {
-            if (newValue) {
-              const fontSize = parseInt(String(newValue), 10);
-              if (!isNaN(fontSize) && fontSize > 0) {
-                onUpdateTypography(String(style.typography_style_id), 'font_size_px', fontSize);
-              }
-            }
-          }}
-          size='sm'
-          aria-label={`Select font size for ${String(option?.display_name || 'Unknown')}`}
-        >
-          {FONT_SIZE_OPTIONS.map((size) => (
-            <Option key={size} value={String(size)}>
-              {String(size)}px
-            </Option>
-          ))}
-        </Select>
+              {/* Show current font as option if it's not in the fontOptions list */}
+              {currentFontFamily && !fontExistsInOptions && (
+                <Option
+                  key={`current-${currentFontFamily}`}
+                  value={currentFontFamily}
+                  sx={(theme) => ({
+                    fontFamily: `${currentFontFamily}, ${theme.fontFamily.body}`,
+                  })}
+                >
+                  {currentFontFamily}
+                </Option>
+              )}
+              {fontOptions?.map((font) => (
+                <Option
+                  key={String(font.font_option_id)}
+                  value={String(font.display_name || '')}
+                  sx={(theme) => ({
+                    fontFamily: font.display_name
+                      ? `"${font.display_name}", ${theme.fontFamily.body}`
+                      : theme.fontFamily.body,
+                  })}
+                >
+                  {String(font.display_name || '')}
+                </Option>
+              ))}
+            </Select>
+          </Grid>
+          <Grid xs={12} sm={3}>
+            <Select
+              value={String(style.font_size_px || 16)}
+              onChange={(_, newValue) => {
+                if (newValue) {
+                  const fontSize = parseInt(String(newValue), 10);
+                  if (!isNaN(fontSize) && fontSize > 0) {
+                    onUpdateTypography(String(style.typography_style_id), 'font_size_px', fontSize);
+                  }
+                }
+              }}
+              size='sm'
+              aria-label={`Select font size for ${String(option?.display_name || 'Unknown')}`}
+              sx={{ width: '100%' }}
+            >
+              {FONT_SIZE_OPTIONS.map((size) => (
+                <Option key={size} value={String(size)}>
+                  {String(size)}px
+                </Option>
+              ))}
+            </Select>
+          </Grid>
+        </Grid>
+
+        {/* Preview section */}
+        <Box sx={{ mt: 0.5 }}>{renderTypographyPreview(style, option)}</Box>
       </Stack>
     </ListItem>
   );
@@ -290,9 +415,16 @@ function TypographyPreviewItem({ style, option }: TypographyPreviewItemProps): R
     >
       <Grid container spacing={1} sx={{ width: '100%', alignItems: 'center' }}>
         <Grid xs={12} sm={4}>
-          <Typography level='body-sm'>
-            {String(option?.display_name || option?.programmatic_name || 'Unknown')}
-          </Typography>
+          <Stack direction='row' spacing={0.5} sx={{ alignItems: 'center' }}>
+            <Typography level='body-sm'>
+              {String(option?.display_name || option?.programmatic_name || 'Unknown')}
+            </Typography>
+            {option?.description && (
+              <Tooltip title={option.description} arrow placement='top'>
+                <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+              </Tooltip>
+            )}
+          </Stack>
         </Grid>
         <Grid xs={12} sm={4}>
           <Typography level='body-sm'>
@@ -301,17 +433,7 @@ function TypographyPreviewItem({ style, option }: TypographyPreviewItemProps): R
           </Typography>
         </Grid>
         <Grid xs={12} sm={4}>
-          <Typography
-            level='body-sm'
-            sx={(theme) => ({
-              fontFamily: style.font_family
-                ? `${style.font_family}, ${theme.fontFamily.body}`
-                : theme.fontFamily.body,
-              fontSize: style.font_size_px ? `${String(style.font_size_px)}px` : undefined,
-            })}
-          >
-            Here how your font looks
-          </Typography>
+          {renderTypographyPreview(style, option)}
         </Grid>
       </Grid>
     </ListItem>
