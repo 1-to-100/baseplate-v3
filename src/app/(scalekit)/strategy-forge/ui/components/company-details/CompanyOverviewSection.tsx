@@ -85,9 +85,7 @@ export default function CompanyOverviewSection({
               Industry
             </Typography>
             <Typography sx={{ fontSize: '14px', color: 'var(--joy-palette-text-primary)' }}>
-              {company.categories && company.categories.length > 0
-                ? company.categories.join(', ')
-                : 'N/A'}
+              {company.categories && company.categories.length > 0 ? company.categories[0] : 'N/A'}
             </Typography>
           </Box>
           <Box sx={{ mb: 2 }}>
