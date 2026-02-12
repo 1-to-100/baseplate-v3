@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
@@ -22,17 +22,13 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
-import {
-  getListById,
-  updateList,
-  syncListCompaniesFromFilters,
-} from '../../../lib/api/segment-lists';
-import { getCompanies } from '../../../lib/api/companies';
-import type { GetCompaniesParams } from '../../../lib/types/company';
-import type { CompanyItem, CompanyFilterFields } from '../../../lib/types/company';
-import { ListSubtype } from '../../../lib/types/list';
-import { CompanyFilter } from '../../../lib/components';
-import { listFiltersToCompanyFilterFields, hasListFilters } from '../../../lib/utils/list-filters';
+import { getListById, updateList, syncListCompaniesFromFilters } from '../../lib/api/segment-lists';
+import { getCompanies } from '../../lib/api/companies';
+import type { GetCompaniesParams } from '../../lib/types/company';
+import type { CompanyItem, CompanyFilterFields } from '../../lib/types/company';
+import { ListSubtype } from '../../lib/types/list';
+import { CompanyFilter } from '../../lib/components';
+import { listFiltersToCompanyFilterFields, hasListFilters } from '../../lib/utils/list-filters';
 
 const ROWS_PER_PAGE = 10;
 
@@ -41,11 +37,11 @@ function formatEmployees(employees: number | null | undefined): string {
   return employees.toLocaleString();
 }
 
-export default function EditListPage(): React.JSX.Element {
-  const params = useParams();
+export default function CreateListPage(): React.JSX.Element {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const listId = params?.listId as string | undefined;
+  const listId = searchParams?.get('listId') ?? undefined;
 
   const [listName, setListName] = useState('');
   const [draftFilters, setDraftFilters] = useState<CompanyFilterFields>({});
@@ -59,6 +55,13 @@ export default function EditListPage(): React.JSX.Element {
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigateTo, setPendingNavigateTo] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (listId === undefined) return;
+    if (!listId || listId.trim() === '') {
+      router.replace(paths.strategyForge.lists.list);
+    }
+  }, [listId, router]);
+
   const {
     data: list,
     isLoading: listLoading,
@@ -66,24 +69,28 @@ export default function EditListPage(): React.JSX.Element {
   } = useQuery({
     queryKey: ['list', listId],
     queryFn: () => getListById(listId!),
-    enabled: !!listId,
+    enabled: !!listId && listId.trim() !== '',
   });
 
   useEffect(() => {
-    if (list) {
+    if (list && listId) {
+      if (list.is_static) {
+        router.replace(paths.strategyForge.lists.details(listId));
+        return;
+      }
       setListName(list.name);
       const initial = listFiltersToCompanyFilterFields(list.filters ?? undefined);
       setDraftFilters(initial);
       setAppliedFilters(initial);
       setFiltersApplied(true);
     }
-  }, [list]);
+  }, [list, listId, router]);
 
   const { data: companiesData, isLoading: companiesLoading } = useQuery({
     queryKey: [
       'companies',
+      'create-preview',
       listId,
-      list?.is_static,
       currentPage,
       sortColumn,
       sortDirection,
@@ -106,32 +113,29 @@ export default function EditListPage(): React.JSX.Element {
         if (min != null && min > 0) params.min_employees = min;
         if (max != null && max > 0) params.max_employees = max;
       }
-      if (list?.is_static && listId) params.listId = listId;
       return getCompanies(params);
     },
-    enabled: !!listId && !!list && filtersApplied,
+    enabled: !!listId && !!list && !list.is_static && filtersApplied,
   });
 
-  const updateListMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (payload: { name: string; filters: CompanyFilterFields }) => {
       await updateList(listId!, {
         name: payload.name,
         filters: payload.filters as Record<string, unknown>,
       });
-      if (list && !list.is_static) {
-        await syncListCompaniesFromFilters(listId!);
-      }
+      await syncListCompaniesFromFilters(listId!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['list', listId] });
       queryClient.invalidateQueries({ queryKey: ['list-companies', listId] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
-      toast.success('List updated successfully');
+      toast.success('List saved successfully');
       setHasUnsavedChanges(false);
       router.push(paths.strategyForge.lists.details(listId!));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Failed to update list');
+      toast.error(err.message || 'Failed to save list');
     },
   });
 
@@ -176,8 +180,8 @@ export default function EditListPage(): React.JSX.Element {
       toast.error('List name must be between 3 and 100 characters');
       return;
     }
-    updateListMutation.mutate({ name: trimmed, filters: draftFilters });
-  }, [listId, listName, draftFilters, updateListMutation]);
+    saveMutation.mutate({ name: trimmed, filters: draftFilters });
+  }, [listId, listName, draftFilters, saveMutation]);
 
   const canSave = hasUnsavedChanges && listName.trim().length >= 3 && listName.trim().length <= 100;
 
@@ -229,6 +233,10 @@ export default function EditListPage(): React.JSX.Element {
     setHasUnsavedChanges(nameChanged || filtersChanged);
   }, [list, listName, draftFilters]);
 
+  if (listId === undefined || (listId !== undefined && !listId?.trim())) {
+    return <Box />;
+  }
+
   if (listLoading && !list) {
     return (
       <Box
@@ -265,7 +273,7 @@ export default function EditListPage(): React.JSX.Element {
     return (
       <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
         <Typography level='body-lg' sx={{ color: 'text.secondary', mb: 2 }}>
-          Only company lists can be edited here.
+          Only company lists can be configured here.
         </Typography>
         <Button
           variant='outlined'
@@ -320,7 +328,7 @@ export default function EditListPage(): React.JSX.Element {
             <Breadcrumbs separator={<BreadcrumbsSeparator />}>
               <BreadcrumbsItem href='/strategy-forge' type='start' />
               <BreadcrumbsItem href={paths.strategyForge.lists.list}>Lists</BreadcrumbsItem>
-              <BreadcrumbsItem type='end'>{listName || 'Edit list'}</BreadcrumbsItem>
+              <BreadcrumbsItem type='end'>{listName || 'Create list'}</BreadcrumbsItem>
             </Breadcrumbs>
           </Stack>
           <Stack
@@ -361,10 +369,10 @@ export default function EditListPage(): React.JSX.Element {
               variant='solid'
               color='primary'
               onClick={handleSave}
-              disabled={updateListMutation.isPending || !canSave}
+              disabled={saveMutation.isPending || !canSave}
               sx={{ width: { xs: '100%', sm: 'auto' }, py: { xs: 1, sm: 0.75 } }}
             >
-              {updateListMutation.isPending ? 'Saving...' : 'Save'}
+              {saveMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </Stack>
         </Stack>

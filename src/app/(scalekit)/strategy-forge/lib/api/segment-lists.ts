@@ -12,6 +12,9 @@ import {
   ListType,
 } from '../types/list';
 import { DEFAULT_LIST_SUBTYPE, ListSubtype } from '../constants/lists';
+import { getCompanyIds } from './companies';
+import type { GetCompaniesParams } from '../types/company';
+import { listFiltersToCompanyFilterFields } from '../utils/list-filters';
 
 interface CreateSegmentInput {
   name: string;
@@ -685,6 +688,59 @@ export async function addCompaniesToList(
 
   if (upsertError) {
     throw new Error(`Failed to add companies to list: ${upsertError.message}`);
+  }
+}
+
+const SYNC_LIST_COMPANIES_CHUNK_SIZE = 50;
+
+/**
+ * Sync list_companies for a non-static list from its current filters.
+ * Deletes existing list_companies for the list, then adds all company IDs that match the list's filters (customer-scoped).
+ * Only for list_type 'list', subtype company, is_static false. No-op if list is static.
+ */
+export async function syncListCompaniesFromFilters(listId: string): Promise<void> {
+  const list = await getListById(listId);
+  if (list.is_static) {
+    return;
+  }
+  if (list.subtype !== ListSubtype.COMPANY) {
+    throw new Error('Only company lists can sync from filters');
+  }
+
+  const filterFields = listFiltersToCompanyFilterFields(list.filters ?? undefined);
+  const params: GetCompaniesParams = {
+    search: filterFields.name,
+    country: filterFields.country ?? undefined,
+    region: filterFields.region ?? undefined,
+    category: filterFields.industry,
+    technology: filterFields.technographic,
+  };
+  if (filterFields.companySize?.length === 2) {
+    const [min, max] = filterFields.companySize;
+    if (min != null && min > 0) params.min_employees = min;
+    if (max != null && max > 0) params.max_employees = max;
+  }
+
+  const companyIds = await getCompanyIds(params);
+
+  const supabase = createClient();
+  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
+    await resolveEffectiveCustomerId(supabase);
+  if (!effectiveCustomerId && !isSystemAdmin) {
+    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
+  }
+
+  let deleteQuery = supabase.from('list_companies').delete().eq('list_id', listId);
+  const { error: deleteError } = await deleteQuery;
+  if (deleteError) {
+    throw new Error(`Failed to clear list companies: ${deleteError.message}`);
+  }
+
+  for (let i = 0; i < companyIds.length; i += SYNC_LIST_COMPANIES_CHUNK_SIZE) {
+    const chunk = companyIds.slice(i, i + SYNC_LIST_COMPANIES_CHUNK_SIZE);
+    if (chunk.length > 0) {
+      await addCompaniesToList(listId, { companyIds: chunk });
+    }
   }
 }
 

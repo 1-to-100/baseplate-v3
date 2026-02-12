@@ -54,7 +54,6 @@ function formatDateDisplay(dateString: string | null | undefined): string {
 
 /** Map getCompanies result to the same shape as getListCompanies for the table. */
 function mapCompanyItemsToTableShape(items: CompanyItem[]): Array<{
-  id: string;
   company_id: string;
   display_name: string | null;
   legal_name: string | null;
@@ -62,22 +61,17 @@ function mapCompanyItemsToTableShape(items: CompanyItem[]): Array<{
   country: string | null;
   region: string | null;
   employees: number | null;
-  categories: string[] | null;
   website_url: string | null;
-  domain?: string | null;
 }> {
   return items.map((c) => ({
-    id: c.company_id ?? String(c.id),
-    company_id: c.company_id ?? '',
+    company_id: c.company_id ?? String(c.id),
     display_name: c.name ?? null,
     legal_name: c.name ?? null,
     logo: c.logo ?? null,
     country: c.country ?? null,
     region: c.region ?? null,
     employees: c.employees ?? null,
-    categories: c.categories ?? null,
     website_url: c.website ?? c.homepageUri ?? null,
-    domain: undefined,
   }));
 }
 
@@ -102,7 +96,11 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     enabled: !!listId,
   });
 
-  const useFilteredCompanies = list != null && hasListFilters(list.filters ?? undefined);
+  const useFilteredCompanies =
+    list != null &&
+    list.subtype === ListSubtype.COMPANY &&
+    list.is_static === true &&
+    hasListFilters(list.filters ?? undefined);
 
   const {
     data: companiesData,
@@ -114,11 +112,12 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
       listId,
       currentPage,
       useFilteredCompanies,
-      list?.filters,
-      list?.is_static,
+      useFilteredCompanies ? list?.filters : null,
     ],
     queryFn: async () => {
-      if (!list || !listId) throw new Error('List required');
+      if (!list || !listId || list.subtype !== ListSubtype.COMPANY) {
+        throw new Error('List required');
+      }
       if (useFilteredCompanies) {
         const filterParams = listFiltersToCompanyFilterFields(list.filters ?? undefined);
         const params: GetCompaniesParams = {
@@ -130,12 +129,12 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           category: filterParams.industry,
           technology: filterParams.technographic,
         };
-        if (filterParams.companySize) {
+        if (filterParams.companySize?.length === 2) {
           const [min, max] = filterParams.companySize;
           if (min != null && min > 0) params.min_employees = min;
           if (max != null && max > 0) params.max_employees = max;
         }
-        if (list.is_static) params.listId = listId;
+        params.listId = listId;
         const res = await getCompanies(params);
         return {
           data: mapCompanyItemsToTableShape(res.data),
@@ -327,17 +326,6 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                         {isCompanyList ? (meta?.total ?? 0) : 0}
                       </span>
                     </Typography>
-                    {isCompanyList && useFilteredCompanies && (
-                      <Typography
-                        level='body-sm'
-                        sx={{
-                          color: 'var(--joy-palette-text-tertiary)',
-                          mt: 0.5,
-                        }}
-                      >
-                        Showing filtered view
-                      </Typography>
-                    )}
                   </Box>
                 </Box>
 
@@ -540,14 +528,12 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                         </tbody>
                       </Table>
                     </Box>
-                    {meta && meta.lastPage > 1 && (
-                      <Pagination
-                        totalPages={meta.lastPage}
-                        currentPage={currentPage}
-                        onPageChange={setCurrentPage}
-                        disabled={companiesLoading}
-                      />
-                    )}
+                    <Pagination
+                      totalPages={Math.max(1, meta?.lastPage ?? 1)}
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
+                      disabled={companiesLoading}
+                    />
                   </>
                 )}
               </Box>

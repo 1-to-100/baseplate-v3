@@ -175,6 +175,7 @@ export const paths = {
     },
     lists: {
       list: '/strategy-forge/lists',
+      create: '/strategy-forge/lists/create',
       details: (listId: string) => `/strategy-forge/lists/${listId}`,
       edit: (listId: string) => `/strategy-forge/lists/${listId}/edit`,
     },

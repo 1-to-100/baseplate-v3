@@ -931,3 +931,31 @@ export async function getCompanyPeople(
     },
   };
 }
+
+const GET_COMPANY_IDS_PAGE_SIZE = 500;
+
+/**
+ * Returns all company_ids for the current customer (or system admin) that match the given filters.
+ * Uses same auth and customer resolution as getCompanies; paginates internally.
+ */
+export async function getCompanyIds(params: GetCompaniesParams = {}): Promise<string[]> {
+  const ids: string[] = [];
+  let page = 1;
+  let hasMore = true;
+  while (hasMore) {
+    const res = await getCompanies({
+      ...params,
+      page,
+      limit: GET_COMPANY_IDS_PAGE_SIZE,
+      perPage: GET_COMPANY_IDS_PAGE_SIZE,
+    });
+    const items = res.data ?? [];
+    for (const c of items) {
+      const id = c.company_id ?? (c.id != null ? String(c.id) : null);
+      if (id) ids.push(id);
+    }
+    hasMore = items.length === GET_COMPANY_IDS_PAGE_SIZE;
+    page += 1;
+  }
+  return ids;
+}

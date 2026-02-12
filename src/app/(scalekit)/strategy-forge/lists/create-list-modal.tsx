@@ -12,9 +12,11 @@ import Button from '@mui/joy/Button';
 import Checkbox from '@mui/joy/Checkbox';
 import FormControl from '@mui/joy/FormControl';
 import FormLabel from '@mui/joy/FormLabel';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createList } from '../lib/api/segment-lists';
 import { DEFAULT_LIST_SUBTYPE } from '../lib/constants/lists';
+import { paths } from '@/paths';
 import { toast } from '@/components/core/toaster';
 
 const MIN_NAME_LENGTH = 3;
@@ -29,6 +31,7 @@ export default function CreateListModal({
   open,
   onClose,
 }: CreateListModalProps): React.JSX.Element {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [isStatic, setIsStatic] = useState(false);
@@ -39,12 +42,15 @@ export default function CreateListModal({
 
   const createMutation = useMutation({
     mutationFn: createList,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['lists'] });
       toast.success('List created successfully.');
       setName('');
       setIsStatic(false);
       onClose();
+      if (!variables.is_static && data?.list_id) {
+        router.push(`${paths.strategyForge.lists.create}?listId=${data.list_id}`);
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create list.');

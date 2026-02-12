@@ -125,7 +125,9 @@ export default function CompanyFilter({
     const categoryValues =
       industries && selectedIndustries.length > 0
         ? industries
-            .filter((ind) => selectedIndustries.includes(ind.industry_id))
+            .filter((ind) =>
+              selectedIndustries.some((sid) => Number(sid) === Number(ind.industry_id))
+            )
             .map((ind) => ind.value)
         : undefined;
 
@@ -168,6 +170,32 @@ export default function CompanyFilter({
     }
   }, [initialFilters?.name]);
 
+  // Sync location (country / region) from initial filters.
+  // List stores country/region by name; dropdowns use codes – resolve name → code when syncing.
+  useEffect(() => {
+    if (initialFilters?.country === undefined) return;
+    if (initialFilters.country === null || initialFilters.country === '') {
+      setSelectedCountry(null);
+      return;
+    }
+    const str = initialFilters.country;
+    const byCode = countries.find((c) => c.code === str);
+    const byName = countries.find((c) => c.name === str);
+    setSelectedCountry(byCode?.code ?? byName?.code ?? null);
+  }, [initialFilters?.country]);
+  useEffect(() => {
+    if (initialFilters?.region === undefined) return;
+    if (initialFilters.region === null || initialFilters.region === '') {
+      setSelectedState(null);
+      return;
+    }
+    const str = initialFilters.region;
+    const allRegions = [...usStates, ...canadianProvinces];
+    const byCode = allRegions.find((l) => l.code === str);
+    const byName = allRegions.find((l) => l.name === str);
+    setSelectedState(byCode?.code ?? byName?.code ?? null);
+  }, [initialFilters?.region]);
+
   // Determine which location options to show based on country
   const locationOptions = React.useMemo(() => {
     if (selectedCountry === 'USA') {
@@ -203,12 +231,14 @@ export default function CompanyFilter({
     }
   }, [initialFilters?.companySize, companySizes]);
 
-  // Sync selected industries from initialFilters (match by industry value strings)
+  // Sync selected industries from initialFilters (match by industry value strings, case-insensitive)
   useEffect(() => {
-    if (initialFilters?.industry && industries) {
-      const industryIds = industries
-        .filter((ind) => initialFilters.industry?.includes(ind.value))
-        .map((ind) => ind.industry_id);
+    if (!initialFilters?.industry?.length || !industries?.length) return;
+    const normalizedInitial = initialFilters.industry.map((v) => String(v).trim().toLowerCase());
+    const industryIds = industries
+      .filter((ind) => normalizedInitial.includes(String(ind.value).trim().toLowerCase()))
+      .map((ind) => Number(ind.industry_id));
+    if (industryIds.length > 0) {
       setSelectedIndustries(industryIds);
     }
   }, [initialFilters?.industry, industries]);
@@ -250,8 +280,11 @@ export default function CompanyFilter({
     (industryValue: string) => {
       if (!industries) return;
       const industry = industries.find((ind) => ind.value === industryValue);
-      if (industry && !selectedIndustries.includes(industry.industry_id)) {
-        setSelectedIndustries((prev) => [...prev, industry.industry_id]);
+      if (
+        industry &&
+        !selectedIndustries.some((sid) => Number(sid) === Number(industry.industry_id))
+      ) {
+        setSelectedIndustries((prev) => [...prev, Number(industry.industry_id)]);
         setSuggestedIndustries((prev) => prev.filter((s) => s.value !== industryValue));
       }
     },
@@ -293,7 +326,9 @@ export default function CompanyFilter({
     const industryValues =
       industries && selectedIndustries.length > 0
         ? industries
-            .filter((ind) => selectedIndustries.includes(ind.industry_id))
+            .filter((ind) =>
+              selectedIndustries.some((sid) => Number(sid) === Number(ind.industry_id))
+            )
             .map((ind) => ind.value)
         : [];
 
@@ -790,7 +825,9 @@ export default function CompanyFilter({
               {!industryAccordionOpen && selectedIndustries.length > 0 && industries && (
                 <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
                   {selectedIndustries.map((industryId) => {
-                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    const industry = industries.find(
+                      (ind) => Number(ind.industry_id) === Number(industryId)
+                    );
                     if (!industry) return null;
                     return (
                       <Box
@@ -917,10 +954,10 @@ export default function CompanyFilter({
                   options={industries || []}
                   getOptionLabel={(option) => option.value}
                   value={(industries || []).filter((ind) =>
-                    selectedIndustries.includes(ind.industry_id)
+                    selectedIndustries.some((sid) => Number(sid) === Number(ind.industry_id))
                   )}
                   onChange={(_, value) => {
-                    setSelectedIndustries(value.map((v) => v.industry_id));
+                    setSelectedIndustries(value.map((v) => Number(v.industry_id)));
                     if (value.length > 0) {
                       setSuggestedIndustries((prev) =>
                         prev.filter((item) => !value.some((v) => v.value === item.value))
@@ -951,7 +988,9 @@ export default function CompanyFilter({
               {selectedIndustries.length > 0 && industries && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                   {selectedIndustries.map((industryId) => {
-                    const industry = industries.find((ind) => ind.industry_id === industryId);
+                    const industry = industries.find(
+                      (ind) => Number(ind.industry_id) === Number(industryId)
+                    );
                     if (!industry) return null;
                     return (
                       <Box
