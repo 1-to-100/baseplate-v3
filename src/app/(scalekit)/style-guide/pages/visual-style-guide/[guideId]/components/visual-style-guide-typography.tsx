@@ -313,7 +313,11 @@ function TypographyEditItem({
           </Typography>
           {option?.description && (
             <Tooltip title={option.description} arrow placement='top'>
-              <Info size={16} weight='fill' style={{ cursor: 'help' }} />
+              <Info
+                size={16}
+                weight='fill'
+                style={{ cursor: 'help', color: 'var(--joy-palette-neutral-400)' }}
+              />
             </Tooltip>
           )}
         </Stack>
