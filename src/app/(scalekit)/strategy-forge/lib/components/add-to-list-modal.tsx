@@ -36,6 +36,8 @@ export interface AddToListModalProps {
   companyIds: string[];
   /** Optional label e.g. "Acme Inc." or "3 companies" */
   companyCountLabel?: string;
+  /** If set, this list is excluded from the "Select list" options (e.g. when opening from that list's details page). */
+  excludeListId?: string;
 }
 
 const MIN_NAME_LENGTH = 3;
@@ -46,6 +48,7 @@ export function AddToListModal({
   onClose,
   companyIds,
   companyCountLabel,
+  excludeListId,
 }: AddToListModalProps): React.JSX.Element {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('select');
@@ -61,13 +64,15 @@ export function AddToListModal({
     enabled: open,
   });
 
-  const companyLists: ListForDisplay[] = React.useMemo(
-    () =>
-      (listsData?.data ?? []).filter(
-        (l) => l.subtype === ListSubtype.COMPANY && l.is_static === true
-      ),
-    [listsData?.data]
-  );
+  const companyLists: ListForDisplay[] = React.useMemo(() => {
+    const base = (listsData?.data ?? []).filter(
+      (l) => l.subtype === ListSubtype.COMPANY && l.is_static === true
+    );
+    if (excludeListId) {
+      return base.filter((l) => l.list_id !== excludeListId);
+    }
+    return base;
+  }, [listsData?.data, excludeListId]);
 
   const addMutation = useMutation({
     mutationFn: ({ listId }: { listId: string }) => addCompaniesToList(listId, { companyIds }),

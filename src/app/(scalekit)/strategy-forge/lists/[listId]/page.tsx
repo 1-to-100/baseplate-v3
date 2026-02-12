@@ -14,10 +14,17 @@ import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Alert from '@mui/joy/Alert';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
+import Menu from '@mui/joy/Menu';
+import MenuItem from '@mui/joy/MenuItem';
+import ListItemDecorator from '@mui/joy/ListItemDecorator';
+import ListItemContent from '@mui/joy/ListItemContent';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { ArrowsClockwise as ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 import { getListById, getListCompanies } from '../../lib/api/segment-lists';
 import { getCompanies } from '../../lib/api/companies';
 import type { GetCompaniesParams } from '../../lib/types/company';
@@ -30,6 +37,8 @@ import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
 import { TypeListChip } from '../type-list-chip';
+import CompanyDetailsPopover from '../../ui/components/company-details-popover';
+import { AddToListModal } from '../../lib/components';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -75,11 +84,29 @@ function mapCompanyItemsToTableShape(items: CompanyItem[]): Array<{
   }));
 }
 
+type TableCompany = {
+  company_id: string;
+  display_name: string | null;
+  legal_name: string | null;
+  logo: string | null;
+  country: string | null;
+  region: string | null;
+  employees: number | null;
+  website_url: string | null;
+};
+
 export default function ListDetailsPage({ params }: PageProps): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [listId, setListId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
+  const [openCompanyPopoverIdx, setOpenCompanyPopoverIdx] = useState<number | null>(null);
+  const [companyPopoverAnchorEl, setCompanyPopoverAnchorEl] = useState<HTMLElement | null>(null);
+  const [addToListModalOpen, setAddToListModalOpen] = useState(false);
+  const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
+  const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     params.then((resolved) => setListId(resolved.listId));
@@ -166,6 +193,62 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     } catch {
       toast.error('Failed to refresh list');
     }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setMenuRowIndex(index);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuRowIndex(null);
+  };
+
+  // Close menu when clicking outside (Joy Menu sometimes doesn't fire onClose for outside clicks)
+  useEffect(() => {
+    if (!menuAnchorEl) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuAnchorEl.contains(target)) return;
+      const menuEl = document.querySelector('[role="menu"]');
+      if (menuEl && menuEl.contains(target)) return;
+      setMenuAnchorEl(null);
+      setMenuRowIndex(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuAnchorEl]);
+
+  const handleQuickPreview = (index: number, event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpenCompanyPopoverIdx(index);
+    setCompanyPopoverAnchorEl(menuAnchorEl);
+    handleMenuClose();
+  };
+
+  const handleCloseCompanyPopover = () => {
+    setOpenCompanyPopoverIdx(null);
+    setCompanyPopoverAnchorEl(null);
+  };
+
+  const handleViewProfile = (company: TableCompany) => {
+    router.push(paths.strategyForge.companies.details(company.company_id));
+    handleMenuClose();
+  };
+
+  const handleEditCompany = (company: TableCompany) => {
+    toast.info(`Edit action for company ${company.company_id} is not implemented here.`);
+    handleMenuClose();
+  };
+
+  const handleAddToList = (company: TableCompany) => {
+    setAddToListCompanyIds([company.company_id]);
+    setAddToListLabel(company.display_name || company.legal_name || undefined);
+    setAddToListModalOpen(true);
+    handleMenuClose();
   };
 
   if (listLoading && !list) {
@@ -380,17 +463,18 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                       >
                         <thead>
                           <tr>
-                            <th style={{ width: 48 }} />
+                            <th style={{ width: 50 }} />
                             <th style={{ textAlign: 'left', width: '30%' }}>Company name</th>
                             <th style={{ textAlign: 'left', width: '20%' }}>Description</th>
                             <th style={{ textAlign: 'left', width: '15%' }}>Country</th>
                             <th style={{ textAlign: 'left', width: 100 }}>Employees</th>
                             <th style={{ textAlign: 'left', width: '20%' }}>Website</th>
+                            <th style={{ width: 60 }} />
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
                               <Typography level='body-md' sx={{ color: 'text.secondary' }}>
                                 No items found
                               </Typography>
@@ -441,23 +525,30 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                       >
                         <thead>
                           <tr>
-                            <th style={{ width: 48 }} />
+                            <th style={{ width: 50 }} />
                             <th style={{ textAlign: 'left', width: '30%' }}>Company name</th>
                             <th style={{ textAlign: 'left', width: '20%' }}>Description</th>
                             <th style={{ textAlign: 'left', width: '15%' }}>Country</th>
                             <th style={{ textAlign: 'left', width: 100 }}>Employees</th>
                             <th style={{ textAlign: 'left', width: '20%' }}>Website</th>
+                            <th style={{ width: 60 }} />
                           </tr>
                         </thead>
                         <tbody>
-                          {companies.map((company) => (
+                          {companies.map((company, index) => (
                             <tr
                               key={company.company_id}
-                              onClick={() =>
+                              onClick={(e) => {
+                                const target = e.target as HTMLElement;
+                                if (
+                                  target.closest('[data-menu-button]') ||
+                                  target.closest('[data-menu-item]')
+                                )
+                                  return;
                                 router.push(
                                   paths.strategyForge.companies.details(company.company_id)
-                                )
-                              }
+                                );
+                              }}
                               style={{ cursor: 'pointer' }}
                             >
                               <td>
@@ -523,6 +614,65 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                                   '—'
                                 )}
                               </td>
+                              <td onClick={(e) => e.stopPropagation()} style={{ padding: '8px' }}>
+                                <IconButton
+                                  size='sm'
+                                  variant='plain'
+                                  color='neutral'
+                                  data-menu-button
+                                  onClick={(e) => handleMenuOpen(e, index)}
+                                  sx={{ '--Icon-button-size': '32px' }}
+                                >
+                                  <DotsThreeVertical size={20} />
+                                </IconButton>
+                                <Menu
+                                  anchorEl={menuAnchorEl}
+                                  open={menuRowIndex === index && Boolean(menuAnchorEl)}
+                                  onClose={handleMenuClose}
+                                  placement='bottom-end'
+                                  size='sm'
+                                  sx={{ minWidth: 180 }}
+                                >
+                                  <MenuItem
+                                    data-menu-item
+                                    onClick={(e) =>
+                                      handleQuickPreview(
+                                        index,
+                                        e as unknown as React.MouseEvent<HTMLElement>
+                                      )
+                                    }
+                                  >
+                                    <ListItemDecorator>
+                                      <SelectionAllIcon />
+                                    </ListItemDecorator>
+                                    <ListItemContent>Quick preview</ListItemContent>
+                                  </MenuItem>
+                                  <MenuItem
+                                    data-menu-item
+                                    onClick={() => handleViewProfile(company)}
+                                  >
+                                    <ListItemDecorator>
+                                      <EyeIcon />
+                                    </ListItemDecorator>
+                                    <ListItemContent>View profile</ListItemContent>
+                                  </MenuItem>
+                                  <MenuItem
+                                    data-menu-item
+                                    onClick={() => handleEditCompany(company)}
+                                  >
+                                    <ListItemDecorator>
+                                      <PencilSimpleIcon />
+                                    </ListItemDecorator>
+                                    <ListItemContent>Edit</ListItemContent>
+                                  </MenuItem>
+                                  <MenuItem data-menu-item onClick={() => handleAddToList(company)}>
+                                    <ListItemDecorator>
+                                      <PlusIcon />
+                                    </ListItemDecorator>
+                                    <ListItemContent>Add to list</ListItemContent>
+                                  </MenuItem>
+                                </Menu>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -581,6 +731,29 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
             </Box>
           </Box>
         </Box>
+
+        {/* Company details popover (Quick preview) */}
+        {openCompanyPopoverIdx !== null && companies[openCompanyPopoverIdx] && (
+          <CompanyDetailsPopover
+            open={openCompanyPopoverIdx !== null}
+            onClose={handleCloseCompanyPopover}
+            anchorEl={companyPopoverAnchorEl}
+            companyId={0}
+            company_id={companies[openCompanyPopoverIdx].company_id}
+          />
+        )}
+
+        <AddToListModal
+          open={addToListModalOpen}
+          onClose={() => {
+            setAddToListModalOpen(false);
+            setAddToListCompanyIds([]);
+            setAddToListLabel(undefined);
+          }}
+          companyIds={addToListCompanyIds}
+          companyCountLabel={addToListLabel}
+          excludeListId={listId ?? undefined}
+        />
       </Stack>
     </Box>
   );
