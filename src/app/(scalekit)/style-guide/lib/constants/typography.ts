@@ -1,4 +1,29 @@
 /**
+ * All typography style option programmatic names.
+ * Matches typography_style_options.programmatic_name seed values in SQL (0001_create.sql).
+ */
+export const TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME = {
+  HEADING_1: 'heading_1',
+  HEADING_2: 'heading_2',
+  HEADING_3: 'heading_3',
+  HEADING_4: 'heading_4',
+  HEADING_5: 'heading_5',
+  HEADING_6: 'heading_6',
+  BODY_TEXT: 'body_text',
+  BODY_TEXT_LARGE: 'body_text_large',
+  BODY_TEXT_SMALL: 'body_text_small',
+  CAPTION: 'caption',
+  LABEL: 'label',
+  BUTTON: 'button',
+  LINK: 'link',
+  QUOTE: 'quote',
+  CODE: 'code',
+} as const;
+
+export type TypographyOptionProgrammaticName =
+  (typeof TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME)[keyof typeof TYPOGRAPHY_OPTION_PROGRAMMATIC_NAME];
+
+/**
  * Available font sizes in pixels for typography styles
  */
 export const FONT_SIZE_OPTIONS = [

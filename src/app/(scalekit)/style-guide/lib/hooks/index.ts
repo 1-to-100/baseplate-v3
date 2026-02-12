@@ -15,6 +15,7 @@ export * from './use-typography-styles';
 export * from './use-social-templates';
 export * from './use-options';
 export * from './use-system-role';
+export * from './use-customer-info';
 
 // Alias for compatibility - useActiveStyleGuide for written style guides
 export { useActiveStyleGuide } from './use-style-guides';

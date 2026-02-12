@@ -47,24 +47,8 @@ function buildEnhancedPrompt(
 ): string {
   const parts: string[] = [];
 
-  // Start with clear logo generation instruction
-  parts.push('Create a professional, clean, vector-style logo design.');
-
   // Add user's specific request
   parts.push(`Design concept: ${userPrompt}`);
-
-  // Add company context if available
-  if (customerInfo?.company_name) {
-    parts.push(`Company name: ${customerInfo.company_name}`);
-  }
-
-  if (customerInfo?.tagline) {
-    parts.push(`Tagline: ${customerInfo.tagline}`);
-  }
-
-  if (customerInfo?.one_sentence_summary) {
-    parts.push(`About: ${customerInfo.one_sentence_summary}`);
-  }
 
   // Add brand colors if available
   if (brandColors.length > 0) {
@@ -77,12 +61,6 @@ function buildEnhancedPrompt(
       .join(', ');
     parts.push(`Brand colors to consider: ${colorDescriptions}`);
   }
-
-  // Add style guidelines for logo generation
-  parts.push(
-    'Style requirements: Professional, scalable, works on light and dark backgrounds, suitable for business use.'
-  );
-  parts.push('The logo should be centered with clean edges and transparent-friendly design.');
 
   return parts.join('\n');
 }
