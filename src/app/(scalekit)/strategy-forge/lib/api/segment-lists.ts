@@ -366,8 +366,9 @@ export async function getLists(params?: {
 
 /**
  * Get a single list by ID (list_type 'list' only).
+ * Includes owner_name from users table when list.user_id is set (same as getLists).
  */
-export async function getListById(listId: string): Promise<List> {
+export async function getListById(listId: string): Promise<ListForDisplay> {
   const supabase = createClient();
 
   const {
@@ -403,7 +404,18 @@ export async function getListById(listId: string): Promise<List> {
     throw new Error(`List not found: ${error?.message ?? 'not available'}`);
   }
 
-  return list as List;
+  let owner_name: string | null = null;
+  const userId = (list as { user_id?: string | null }).user_id;
+  if (userId) {
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('full_name')
+      .eq('user_id', userId)
+      .maybeSingle();
+    owner_name = (userRow?.full_name as string) ?? null;
+  }
+
+  return { ...list, owner_name } as ListForDisplay;
 }
 
 /**

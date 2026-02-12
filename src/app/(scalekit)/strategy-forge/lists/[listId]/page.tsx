@@ -722,9 +722,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                     Owner
                   </Typography>
                   <Typography level='body-sm' sx={{ fontWeight: 400 }}>
-                    {'user' in list && list.user && typeof list.user === 'object'
-                      ? ((list.user as { full_name?: string }).full_name ?? 'N/A')
-                      : 'N/A'}
+                    {list.owner_name ?? '—'}
                   </Typography>
                 </Box>
               </Stack>
