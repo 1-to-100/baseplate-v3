@@ -24,9 +24,11 @@ import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-
 import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { Minus as MinusIcon } from '@phosphor-icons/react/dist/ssr/Minus';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 
 import { paths } from '@/paths';
+import { AddToListModal } from '../../lib/components';
 import CompanyDetailsPopover from '../../ui/components/company-details-popover';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
@@ -63,6 +65,10 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
   const [companyPopoverAnchorEl, setCompanyPopoverAnchorEl] = React.useState<null | HTMLElement>(
     null
   );
+  const [bulkMenuAnchorEl, setBulkMenuAnchorEl] = React.useState<HTMLElement | null>(null);
+  const [addToListModalOpen, setAddToListModalOpen] = React.useState(false);
+  const [addToListCompanyIds, setAddToListCompanyIds] = React.useState<string[]>([]);
+  const [addToListLabel, setAddToListLabel] = React.useState<string | undefined>(undefined);
 
   // Handle async params
   React.useEffect(() => {
@@ -158,6 +164,23 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     } finally {
       setIsRemoving(false);
     }
+  };
+
+  const handleBulkAddToList = () => {
+    setBulkMenuAnchorEl(null);
+    if (selectedRows.length === 0 || companies.length === 0) return;
+    const ids = selectedRows
+      .map((idx) => companies[idx]?.company_id)
+      .filter((id): id is string => Boolean(id));
+    if (ids.length === 0) return;
+    setAddToListCompanyIds(ids);
+    const firstIdx = selectedRows[0];
+    setAddToListLabel(
+      ids.length === 1 && firstIdx !== undefined
+        ? (companies[firstIdx]?.display_name ?? undefined)
+        : `${ids.length} companies`
+    );
+    setAddToListModalOpen(true);
   };
 
   // Reset selection when page changes
@@ -333,15 +356,48 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             <Typography fontSize={{ xs: 'xl2', sm: 'xl3' }} level='h1'>
               {segment.name}
             </Typography>
-            {canEditSegments && (
-              <Button
-                variant='solid'
-                color='primary'
-                onClick={() => router.push(paths.strategyForge.segments.edit(segment.list_id))}
-              >
-                Edit
-              </Button>
-            )}
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              {selectedRows.length > 0 && (
+                <>
+                  <IconButton
+                    variant='outlined'
+                    color='neutral'
+                    onClick={(e) => setBulkMenuAnchorEl(e.currentTarget)}
+                    sx={{
+                      borderRadius: '50%',
+                      border: '1px solid var(--joy-palette-divider)',
+                      bgcolor: 'var(--joy-palette-background-mainBg)',
+                    }}
+                  >
+                    <DotsThreeVertical />
+                  </IconButton>
+                  <Menu
+                    anchorEl={bulkMenuAnchorEl}
+                    open={Boolean(bulkMenuAnchorEl)}
+                    onClose={() => setBulkMenuAnchorEl(null)}
+                    placement='bottom-end'
+                    size='sm'
+                    sx={{ minWidth: 180 }}
+                  >
+                    <MenuItem onClick={handleBulkAddToList}>
+                      <ListItemDecorator>
+                        <PlusIcon />
+                      </ListItemDecorator>
+                      <ListItemContent>Add to list</ListItemContent>
+                    </MenuItem>
+                  </Menu>
+                </>
+              )}
+              {canEditSegments && (
+                <Button
+                  variant='solid'
+                  color='primary'
+                  onClick={() => router.push(paths.strategyForge.segments.edit(segment.list_id))}
+                >
+                  Edit
+                </Button>
+              )}
+            </Stack>
           </Stack>
           <Breadcrumbs sx={{ mb: 2 }} separator={<BreadcrumbsSeparator />}>
             <BreadcrumbsItem href={paths.dashboard.overview} type='start' />
@@ -470,7 +526,7 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                 >
                   <thead>
                     <tr>
-                      <th style={{ width: 50, padding: '8px' }}>
+                      <th style={{ width: 50, padding: '10px 16px' }}>
                         <Checkbox
                           checked={companies.length > 0 && selectedRows.length === companies.length}
                           indeterminate={
@@ -747,6 +803,18 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             </>
           )}
         </Stack>
+
+        <AddToListModal
+          open={addToListModalOpen}
+          onClose={() => {
+            setAddToListModalOpen(false);
+            setAddToListCompanyIds([]);
+            setAddToListLabel(undefined);
+            setSelectedRows([]);
+          }}
+          companyIds={addToListCompanyIds}
+          companyCountLabel={addToListLabel}
+        />
       </Stack>
     </Box>
   );

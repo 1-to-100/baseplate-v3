@@ -297,6 +297,23 @@ export default function Page(): React.JSX.Element {
     handleMenuClose();
   };
 
+  const handleAddSelectedToList = useCallback(() => {
+    if (selectedRows.length === 0 || !data?.data) return;
+    const companiesOnPage = data.data;
+    const ids = companiesOnPage
+      .filter((c) => selectedRows.includes(c.id?.toString() ?? ''))
+      .map((c) => c.company_id ?? String(c.id))
+      .filter(Boolean);
+    if (ids.length === 0) return;
+    setAddToListCompanyIds(ids);
+    setAddToListLabel(
+      ids.length === 1
+        ? companiesOnPage.find((c) => selectedRows.includes(c.id?.toString() ?? ''))?.name
+        : `${ids.length} companies`
+    );
+    setAddToListModalOpen(true);
+  }, [selectedRows, data?.data]);
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
 
@@ -428,6 +445,22 @@ export default function Page(): React.JSX.Element {
                   <TrashIcon fontSize='var(--Icon-fontSize)' />
                 </IconButton>
                 <IconButton
+                  onClick={handleAddSelectedToList}
+                  sx={{
+                    bgcolor: 'var(--joy-palette-background-mainBg)',
+                    color: 'var(--joy-palette-text-primary)',
+                    borderRadius: '50%',
+                    width: { xs: 28, sm: 32 },
+                    height: { xs: 28, sm: 32 },
+                    border: '1px solid var(--joy-palette-divider)',
+                    '&:hover': {
+                      bgcolor: 'var(--joy-palette-background-level1)',
+                    },
+                  }}
+                >
+                  <PlusIcon fontSize='var(--Icon-fontSize)' />
+                </IconButton>
+                <IconButton
                   onClick={() => {
                     console.log('Export selected:', selectedRows);
                   }}
@@ -515,6 +548,22 @@ export default function Page(): React.JSX.Element {
                 }}
               >
                 <TrashIcon fontSize='var(--Icon-fontSize)' />
+              </IconButton>
+              <IconButton
+                onClick={handleAddSelectedToList}
+                sx={{
+                  bgcolor: 'var(--joy-palette-background-mainBg)',
+                  color: 'var(--joy-palette-text-primary)',
+                  borderRadius: '50%',
+                  width: { xs: 28, sm: 32 },
+                  height: { xs: 28, sm: 32 },
+                  border: '1px solid var(--joy-palette-divider)',
+                  '&:hover': {
+                    bgcolor: 'var(--joy-palette-background-level1)',
+                  },
+                }}
+              >
+                <PlusIcon fontSize='var(--Icon-fontSize)' />
               </IconButton>
               <IconButton
                 onClick={() => {
@@ -1037,6 +1086,7 @@ export default function Page(): React.JSX.Element {
             setAddToListModalOpen(false);
             setAddToListCompanyIds([]);
             setAddToListLabel(undefined);
+            setSelectedRows([]);
           }}
           companyIds={addToListCompanyIds}
           companyCountLabel={addToListLabel}
