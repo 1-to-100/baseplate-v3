@@ -54,15 +54,12 @@ const isActiveLogoType = (programmaticName: string | null | undefined): boolean 
  */
 function buildInitialLogoPrompt(info: CustomerInfo | null): string {
   if (!info) {
-    return 'Create a professional, modern logo. The logo should be clean, scalable, and suitable for use on both light and dark backgrounds.';
+    return 'Create a professional, modern logo. The logo should be clean, scalable, and suitable for use on both light and dark backgrounds. The logo should be centered with clean edges and transparent-friendly design.';
   }
 
   const lines: string[] = [];
   lines.push(`Company Name: ${info.company_name}`);
-  if (info.website_url) {
-    lines.push(`Company Website: ${info.website_url}`);
-  }
-  lines.push(`Solution Name: ${info.company_name}`);
+
   if (info.solution_overview) {
     lines.push(`Solution Description: ${info.solution_overview}`);
   }
@@ -73,9 +70,13 @@ function buildInitialLogoPrompt(info: CustomerInfo | null): string {
     lines.push(`About: ${info.one_sentence_summary}`);
   }
   lines.push('');
+
+  // Add style guidelines for logo generation
   lines.push(
-    'Create a professional, modern logo for this company. The logo should be clean, scalable, and suitable for use on both light and dark backgrounds.'
+    'Style requirements: Professional, scalable, works on light and dark backgrounds, suitable for business use.'
   );
+  lines.push('The logo should be centered with clean edges and transparent-friendly design.');
+
   return lines.join('\n');
 }
 
