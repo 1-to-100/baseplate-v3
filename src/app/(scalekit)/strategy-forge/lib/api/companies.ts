@@ -681,7 +681,7 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
     }
   }
 
-  let dynamicLists: CompanyItemList[] = [];
+  const dynamicLists: CompanyItemList[] = [];
   let dynamicQuery = supabase
     .from('lists')
     .select('list_id, name, description, filters')
