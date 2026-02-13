@@ -27,6 +27,7 @@ export const layoutConfig: LayoutConfig = {
             SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
             SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
             SYSTEM_ROLES.MANAGER,
+            SYSTEM_ROLES.CUSTOMER_SUCCESS,
           ],
         },
         {

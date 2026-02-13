@@ -36,35 +36,19 @@ export interface MobileNavProps {
   open: boolean;
 }
 
-/**
- * Permission-based nav item filter (ported from 1to100-app-v3).
- *
- * Evaluation order:
- *   1. `show` callback — dynamic, arbitrary visibility logic.
- *   2. `permissions` array — checked against the user's current role.
- *      System Administrators always pass.
- *   3. If neither field is present the item is visible to everyone.
- *
- * Legacy key-based filtering has been removed; all restricted items
- * should declare an explicit `permissions` array in config.ts.
- */
 function filterNavItem(
   item: NavItemConfig,
   userInfo: ReturnType<typeof useUserInfo>['userInfo']
 ): boolean {
-  // Dynamic show callback
   if (item.show && !item.show(userInfo)) {
     return false;
   }
 
-  // Permission-based filtering
   if ('permissions' in item && item.permissions) {
     const permissions = item.permissions as string[];
-    // System admin always has full access
     if (isSystemAdministrator(userInfo)) {
       return true;
     }
-    // Check if user's current role is in the allowed list
     return permissions.some((role) => hasRole(userInfo, role));
   }
 
@@ -307,8 +291,6 @@ function NavItem({
   const isLeaf = Boolean(!children && href);
   const showChildren = Boolean(children && open);
 
-  // Divider visibility is now controlled via the `permissions` field in
-  // config.ts and filtered by filterNavItem — no hardcoded role check needed.
   if (type === 'divider') {
     return (
       <ListItem

@@ -8,14 +8,14 @@ export interface NotAuthorizedProps {
 }
 
 export function NotAuthorized({
-  title = 'Not authorized',
-  message = 'You do not have permission to access this page.',
+  title = 'Access Denied',
+  message = 'You do not have the required permissions to view this page.',
 }: NotAuthorizedProps): React.JSX.Element {
   return (
-    <Box sx={{ textAlign: 'center', mt: 35 }}>
+    <Box sx={{ textAlign: 'center', mt: { xs: 10, sm: 20, md: 35 } }}>
       <Typography
         sx={{
-          fontSize: '24px',
+          fontSize: { xs: '18px', sm: '22px', md: '24px' },
           fontWeight: '600',
           color: 'var(--joy-palette-text-primary)',
         }}
@@ -24,7 +24,7 @@ export function NotAuthorized({
       </Typography>
       <Typography
         sx={{
-          fontSize: '14px',
+          fontSize: { xs: '12px', sm: '13px', md: '14px' },
           fontWeight: '300',
           color: 'var(--joy-palette-text-secondary)',
           mt: 1,
