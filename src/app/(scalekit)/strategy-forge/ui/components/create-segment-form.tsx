@@ -240,10 +240,10 @@ export function CreateSegmentForm({
         setSelectedTechnographics(filters.technographics);
       }
 
-      // Set personas
-      if (filters.personas && filters.personas.length > 0) {
-        setSelectedPersonas(filters.personas);
-      }
+      // Personas filter commented out
+      // if (filters.personas && filters.personas.length > 0) {
+      //   setSelectedPersonas(filters.personas);
+      // }
 
       setFormInitialized(true);
     }
@@ -308,7 +308,7 @@ export function CreateSegmentForm({
     setSelectedCompanySizes([]);
     setSelectedIndustries([]);
     setSelectedTechnographics([]);
-    setSelectedPersonas([]);
+    // setSelectedPersonas([]);
     setSuggestedIndustries([]);
     setSmartSearchEnabled(false);
     setIndustrySearchQuery('');
@@ -322,8 +322,8 @@ export function CreateSegmentForm({
     setCompanySizeAccordionOpen(false);
     setIndustryAccordionOpen(false);
     setTechnographicsAccordionOpen(false);
-    setPersonaAccordionOpen(false);
-    setPersonaWarningDismissed(false);
+    // setPersonaAccordionOpen(false);
+    // setPersonaWarningDismissed(false);
   }, []);
 
   const lastPage = Math.max(1, Math.ceil(totalCount / perPage));
@@ -385,7 +385,7 @@ export function CreateSegmentForm({
           employees,
           categories: categoryNames,
           technographics: selectedTechnographics,
-          personas: selectedPersonas,
+          // personas: selectedPersonas,
         },
         {
           page,
@@ -480,7 +480,7 @@ export function CreateSegmentForm({
         categories: categoryNames,
         employees: companySizeRanges,
         technographics: selectedTechnographics,
-        personas: selectedPersonas,
+        // personas: selectedPersonas,
       };
 
       if (isEditMode && segmentId) {
@@ -1519,8 +1519,8 @@ export function CreateSegmentForm({
           )}
         </Box>
 
-        {/* Personas Accordion */}
-        <Box>
+        {/* Personas filter commented out */}
+        {/* <Box>
           <Box
             onClick={() => setPersonaAccordionOpen(!personaAccordionOpen)}
             sx={{
@@ -1558,7 +1558,7 @@ export function CreateSegmentForm({
               </FormControl>
             </Box>
           )}
-        </Box>
+        </Box> */}
       </Box>
 
       {/* Apply Filters / Clear Filters Buttons - attached to bottom (match creso) */}
@@ -2088,7 +2088,8 @@ export function CreateSegmentForm({
             </span>
           </Typography>
         )}
-        {editModeFilters.persona && (
+        {/* Personas filter commented out */}
+        {/* {editModeFilters.persona && (
           <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
             <span>Persona:</span>{' '}
             <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
@@ -2105,7 +2106,7 @@ export function CreateSegmentForm({
                 {editModeFilters.personas.length} selected
               </span>
             </Typography>
-          )}
+          )} */}
       </Box>
     ) : null;
 
@@ -2228,8 +2229,8 @@ export function CreateSegmentForm({
           position: 'relative',
         }}
       >
-        {/* Persona warning banner */}
-        {hasSearched && selectedPersonas.length === 0 && !personaWarningDismissed && (
+        {/* Personas filter commented out - persona warning banner */}
+        {/* {hasSearched && selectedPersonas.length === 0 && !personaWarningDismissed && (
           <PersonaWarningBanner
             onDismiss={() => setPersonaWarningDismissed(true)}
             message={
@@ -2239,7 +2240,7 @@ export function CreateSegmentForm({
               </>
             }
           />
-        )}
+        )} */}
         <Box
           sx={{
             display: {

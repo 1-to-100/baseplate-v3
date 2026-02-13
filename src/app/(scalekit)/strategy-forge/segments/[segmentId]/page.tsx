@@ -316,14 +316,15 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
           </span>
         </Typography>
       )}
-      {filters.persona && (
+      {/* Personas filter commented out */}
+      {/* {filters.persona && (
         <Typography fontSize={12} sx={{ color: 'var(--joy-palette-text-secondary)', mr: 4 }}>
           <span>Persona:</span>{' '}
           <span style={{ fontWeight: 500, color: 'var(--joy-palette-text-primary)' }}>
             {filters.persona}
           </span>
         </Typography>
-      )}
+      )} */}
     </Box>
   );
 
