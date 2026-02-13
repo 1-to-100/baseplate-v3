@@ -801,6 +801,24 @@ export async function createList(input: CreateListInput): Promise<List> {
     throw new Error('Cannot create list: no user context. Please login first.');
   }
 
+  // Check name uniqueness (case-insensitive) for this customer
+  const { data: existingList, error: checkError } = await supabase
+    .from('lists')
+    .select('list_id')
+    .eq('customer_id', customerId)
+    .eq('list_type', ListType.LIST)
+    .ilike('name', trimmedName)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (checkError) {
+    throw new Error(`Failed to check list name: ${checkError.message}`);
+  }
+
+  if (existingList) {
+    throw new Error('A list with this name already exists. Please choose a different name.');
+  }
+
   const { data: list, error: insertError } = await supabase
     .from('lists')
     .insert({

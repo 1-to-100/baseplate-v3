@@ -247,6 +247,46 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuAnchorEl]);
 
+  // Close company details popover when clicking outside (same pattern as companies page)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openCompanyPopoverIdx !== null) {
+        const target = event.target as HTMLElement;
+        const isClickOnPopoverOrMenu =
+          target.closest('[data-menu-item]') ||
+          target.closest('[data-menu-button]') ||
+          target.closest('[data-popover]') ||
+          target.closest('.MuiTabs-root') ||
+          target.closest('.MuiTab-root') ||
+          target.closest('.MuiTabList-root') ||
+          target.closest('.MuiTabPanel-root') ||
+          target.closest("[role='tab']") ||
+          target.closest("[role='tablist']") ||
+          target.closest("[role='tabpanel']");
+
+        if (!isClickOnPopoverOrMenu) {
+          handleCloseCompanyPopover();
+        }
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && openCompanyPopoverIdx !== null) {
+        handleCloseCompanyPopover();
+      }
+    };
+
+    if (openCompanyPopoverIdx !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openCompanyPopoverIdx]);
+
   const handleQuickPreview = (index: number, event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();

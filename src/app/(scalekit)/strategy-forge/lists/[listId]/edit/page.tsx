@@ -12,9 +12,6 @@ import Input from '@mui/joy/Input';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Table from '@mui/joy/Table';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Modal from '@mui/joy/Modal';
-import ModalDialog from '@mui/joy/ModalDialog';
-import ModalClose from '@mui/joy/ModalClose';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { Funnel as FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
 import { paths } from '@/paths';
@@ -29,6 +26,7 @@ import type { CompanyItem, CompanyFilterFields } from '../../../lib/types/compan
 import { ListSubtype } from '../../../lib/types/list';
 import { CompanyFilter } from '../../../lib/components';
 import { listFiltersToCompanyFilterFields, hasListFilters } from '../../../lib/utils/list-filters';
+import UnsavedChangesModal from '@/components/dashboard/modals/UnsavedChangesModal';
 
 const ROWS_PER_PAGE = 10;
 
@@ -705,24 +703,12 @@ export default function EditListPage(): React.JSX.Element {
         </Box>
       </Box>
 
-      {/* Unsaved changes modal */}
-      <Modal open={showUnsavedModal} onClose={handleStay}>
-        <ModalDialog variant='outlined' role='alertdialog'>
-          <ModalClose />
-          <Typography level='title-md'>Unsaved changes</Typography>
-          <Typography level='body-sm' sx={{ mt: 1 }}>
-            You have unsaved changes. Leave without saving?
-          </Typography>
-          <Stack direction='row' spacing={2} sx={{ mt: 2, justifyContent: 'flex-end' }}>
-            <Button variant='plain' color='neutral' onClick={handleStay}>
-              Stay
-            </Button>
-            <Button variant='solid' color='danger' onClick={handleLeaveWithoutSaving}>
-              Leave without saving
-            </Button>
-          </Stack>
-        </ModalDialog>
-      </Modal>
+      <UnsavedChangesModal
+        open={showUnsavedModal}
+        onClose={handleStay}
+        onLeaveWithoutSaving={handleLeaveWithoutSaving}
+        onStay={handleStay}
+      />
     </Box>
   );
 }
