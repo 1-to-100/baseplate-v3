@@ -130,3 +130,39 @@ enable_confirmations = false
 # Edge Functions are enabled by default and don't need explicit configuration
 # [edge_functions]
 # enabled = true
+
+[functions.user-management]
+verify_jwt = false
+
+[functions.segments-search]
+verify_jwt = false
+
+[functions.segments-create]
+verify_jwt = false
+
+[functions.auth-context]
+verify_jwt = false
+
+[functions.admin-operations]
+verify_jwt = false
+
+[functions.segments-process]
+verify_jwt = false
+
+[functions.team-management]
+verify_jwt = false
+
+[functions.segments-ai]
+verify_jwt = false
+
+[functions.segments-update]
+verify_jwt = false
+
+[functions.industries-smart-search]
+verify_jwt = false
+
+[functions.company-scoring]
+verify_jwt = false
+
+[functions.company-scoring-worker]
+verify_jwt = false
