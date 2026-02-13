@@ -231,6 +231,6 @@ export function getComponentConfig(config: ThemeConfig) {
  */
 export function getThemeToken(path: string, fallback?: string): string {
   // Convert path like "palette.primary.500" to CSS var "--joy-palette-primary-500"
-  const cssVar = `var(--joy-${path.replace(/\./g, '-')})`;
-  return fallback ? `${cssVar}, ${fallback}` : cssVar;
+  const varName = `--joy-${path.replace(/\./g, '-')}`;
+  return fallback ? `var(${varName}, ${fallback})` : `var(${varName})`;
 }
