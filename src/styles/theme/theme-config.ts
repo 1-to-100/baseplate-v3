@@ -27,7 +27,7 @@ const colorScaleSchema = z
     outlinedColor: z.string().optional(),
     plainColor: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Background palette (standard Joy UI)
@@ -41,7 +41,7 @@ const backgroundPaletteSchema = z
     level3: z.string().optional(),
     backdrop: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Text palette (standard Joy UI)
@@ -51,7 +51,7 @@ const textPaletteSchema = z
     secondary: z.string().optional(),
     tertiary: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Common colors (standard Joy UI)
@@ -60,7 +60,7 @@ const commonPaletteSchema = z
     black: z.string().optional(),
     white: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Full palette for a color scheme
@@ -76,7 +76,7 @@ const schemePaletteSchema = z
     common: commonPaletteSchema,
     divider: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Color schemes (light/dark)
@@ -87,17 +87,17 @@ const colorSchemesSchema = z
         palette: schemePaletteSchema,
         shadowOpacity: z.string().optional(),
       })
-      .strict()
+      .passthrough()
       .optional(),
     dark: z
       .object({
         palette: schemePaletteSchema,
         shadowOpacity: z.string().optional(),
       })
-      .strict()
+      .passthrough()
       .optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Typography level definition
@@ -108,7 +108,7 @@ const typographyLevelSchema = z
     fontWeight: z.union([z.number(), z.string()]).optional(),
     lineHeight: z.union([z.number(), z.string()]).optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Typography configuration
@@ -132,7 +132,7 @@ const typographySchema = z
     quote: typographyLevelSchema,
     code: typographyLevelSchema,
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Font family configuration
@@ -143,7 +143,7 @@ const fontFamilySchema = z
     code: z.string().optional(),
     fallback: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Radius tokens
@@ -155,7 +155,7 @@ const radiusSchema = z
     lg: z.string().optional(),
     xl: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Shadow tokens
@@ -167,7 +167,7 @@ const shadowSchema = z
     lg: z.string().optional(),
     xl: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Spacing tokens
@@ -179,7 +179,7 @@ const spacingSchema = z
     lg: z.string().optional(),
     xl: z.string().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Component-specific configuration
@@ -191,10 +191,10 @@ const buttonConfigSchema = z
         primary: z.string().optional(),
         primaryHover: z.string().optional(),
       })
-      .strict()
+      .passthrough()
       .optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 const checkboxConfigSchema = z
@@ -205,10 +205,10 @@ const checkboxConfigSchema = z
         checked: z.string().optional(),
         checkedHover: z.string().optional(),
       })
-      .strict()
+      .passthrough()
       .optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 const componentsConfigSchema = z
@@ -216,7 +216,7 @@ const componentsConfigSchema = z
     button: buttonConfigSchema,
     checkbox: checkboxConfigSchema,
   })
-  .strict()
+  .passthrough()
   .optional();
 
 // Main theme configuration schema
@@ -227,7 +227,7 @@ export const themeConfigSchema = z.object({
       name: z.string().optional(),
       version: z.string().optional(),
     })
-    .strict()
+    .passthrough()
     .optional(),
   colorSchemes: colorSchemesSchema,
   typography: typographySchema,
@@ -247,7 +247,7 @@ const logoAssetsSchema = z
     width: z.number().optional(),
     height: z.number().optional(),
   })
-  .strict()
+  .passthrough()
   .optional();
 
 export const assetsConfigSchema = z.object({
