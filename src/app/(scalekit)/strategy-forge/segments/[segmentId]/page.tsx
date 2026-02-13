@@ -140,6 +140,21 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
     setOpenMenuIndex(null);
   };
 
+  // Close menu when clicking outside (Joy Menu sometimes doesn't fire onClose for outside clicks)
+  React.useEffect(() => {
+    if (!menuAnchorEl) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuAnchorEl.contains(target)) return;
+      const menuEl = document.querySelector('[role="menu"]');
+      if (menuEl && menuEl.contains(target)) return;
+      setMenuAnchorEl(null);
+      setOpenMenuIndex(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuAnchorEl]);
+
   const handleOpenCompanyPopover = (idx: number) => {
     setCompanyPopoverAnchorEl(menuAnchorEl);
     setOpenCompanyPopoverIdx(idx);
@@ -181,6 +196,13 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
         : `${ids.length} companies`
     );
     setAddToListModalOpen(true);
+  };
+
+  const handleAddToList = (company: (typeof companies)[number]) => {
+    setAddToListCompanyIds([company.company_id]);
+    setAddToListLabel(company.display_name || company.legal_name || undefined);
+    setAddToListModalOpen(true);
+    handleMenuClose();
   };
 
   // Reset selection when page changes
@@ -758,6 +780,15 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
                             <EyeIcon fontSize='var(--Icon-fontSize)' weight='bold' />
                           </ListItemDecorator>
                           <ListItemContent>View profile</ListItemContent>
+                        </MenuItem>
+                        <MenuItem
+                          data-menu-item
+                          onClick={() => company && handleAddToList(company)}
+                        >
+                          <ListItemDecorator>
+                            <PlusIcon fontSize='var(--Icon-fontSize)' weight='bold' />
+                          </ListItemDecorator>
+                          <ListItemContent>Add to list</ListItemContent>
                         </MenuItem>
                         {canEditSegments && (
                           <MenuItem
