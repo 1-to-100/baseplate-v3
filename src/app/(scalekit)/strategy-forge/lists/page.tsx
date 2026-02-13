@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/core/toaster';
@@ -26,6 +26,7 @@ import { Copy as CopyIcon } from '@phosphor-icons/react/dist/ssr/Copy';
 import { getLists, deleteList, duplicateList } from '../lib/api/segment-lists';
 import type { ListForDisplay } from '../lib/types/list';
 import { ListType } from '../lib/types/list';
+import { useGlobalSearch } from '@/hooks/use-global-search';
 import { paths } from '@/paths';
 import Pagination from '@/components/dashboard/layout/pagination';
 import CreateListModal from './create-list-modal';
@@ -58,17 +59,23 @@ export default function ListsPage(): React.JSX.Element {
   const [rowsToDelete, setRowsToDelete] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
+  const { debouncedSearchValue } = useGlobalSearch();
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchValue]);
 
   const {
     data: listsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['lists', currentPage],
+    queryKey: ['lists', currentPage, debouncedSearchValue],
     queryFn: () =>
       getLists({
         page: currentPage,
         perPage: ITEMS_PER_PAGE,
+        search: debouncedSearchValue || undefined,
       }),
     refetchOnWindowFocus: true,
   });

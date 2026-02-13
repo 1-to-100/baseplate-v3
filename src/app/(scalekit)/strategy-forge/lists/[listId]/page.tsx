@@ -31,6 +31,7 @@ import type { GetCompaniesParams } from '../../lib/types/company';
 import type { CompanyItem } from '../../lib/types/company';
 import { ListSubtype } from '../../lib/types/list';
 import { hasListFilters, listFiltersToCompanyFilterFields } from '../../lib/utils/list-filters';
+import { useGlobalSearch } from '@/hooks/use-global-search';
 import { paths } from '@/paths';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
@@ -107,10 +108,15 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
   const [addToListModalOpen, setAddToListModalOpen] = useState(false);
   const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
   const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
+  const { debouncedSearchValue } = useGlobalSearch();
 
   useEffect(() => {
     params.then((resolved) => setListId(resolved.listId));
   }, [params]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchValue]);
 
   const {
     data: list,
@@ -139,6 +145,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
       currentPage,
       list?.is_static,
       useFilterBasedSearch ? list?.filters : null,
+      debouncedSearchValue,
     ],
     queryFn: async () => {
       if (!list || !listId || list.subtype !== ListSubtype.COMPANY) {
@@ -162,7 +169,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
         const params: GetCompaniesParams = {
           page: currentPage,
           limit: ITEMS_PER_PAGE,
-          search: filterParams.name,
+          search: debouncedSearchValue?.trim() || filterParams.name || undefined,
           country: filterParams.country ?? undefined,
           region: filterParams.region ?? undefined,
           category: filterParams.industry,
@@ -189,7 +196,12 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           },
         };
       }
-      return getListCompanies(listId, currentPage, ITEMS_PER_PAGE);
+      return getListCompanies(
+        listId,
+        currentPage,
+        ITEMS_PER_PAGE,
+        debouncedSearchValue?.trim() || undefined
+      );
     },
     enabled: !!listId && list != null && list.subtype === ListSubtype.COMPANY,
   });
