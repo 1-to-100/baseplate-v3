@@ -16,7 +16,7 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
     return null;
   }
 
-  const periodUsed = balance.period_used;
+  const periodRemaining = balance.period_remaining;
   const periodLimit = balance.period_limit;
 
   return (
@@ -41,7 +41,7 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
               fontWeight: 'lg',
             }}
           >
-            {periodUsed.toLocaleString()}
+            {periodRemaining.toLocaleString()}
           </Typography>
           <Typography
             level='body-sm'
@@ -49,7 +49,7 @@ export function CreditBalanceWidget(): React.JSX.Element | null {
               color: 'var(--joy-palette-neutral-400)',
             }}
           >
-            / {periodLimit.toLocaleString()} credits
+            / {periodLimit.toLocaleString()}
           </Typography>
         </Stack>
         <Stack direction='row' spacing={1}>
