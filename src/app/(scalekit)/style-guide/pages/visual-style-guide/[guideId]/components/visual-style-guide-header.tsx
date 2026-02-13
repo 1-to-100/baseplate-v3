@@ -15,6 +15,7 @@ type VisualStyleGuideHeaderProps = {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   showRefresh?: boolean;
+  canEdit?: boolean;
 };
 
 export default function VisualStyleGuideHeader({
@@ -26,6 +27,7 @@ export default function VisualStyleGuideHeader({
   onRefresh,
   isRefreshing = false,
   showRefresh = false,
+  canEdit = true,
 }: VisualStyleGuideHeaderProps): React.JSX.Element {
   return (
     <Stack
@@ -56,24 +58,32 @@ export default function VisualStyleGuideHeader({
             Refresh
           </Button>
         )}
-        {isEditableView ? (
-          <Button variant='soft' color='neutral' onClick={() => handleVisualStyleGuideEdit(false)}>
-            Exit Edit Mode
-          </Button>
-        ) : (
-          <Button
-            variant='solid'
-            color='primary'
-            startDecorator={<PencilLine />}
-            onClick={() => handleVisualStyleGuideEdit(true)}
-          >
-            Edit
-          </Button>
-        )}
+        {canEdit ? (
+          isEditableView ? (
+            <Button
+              variant='soft'
+              color='neutral'
+              onClick={() => handleVisualStyleGuideEdit(false)}
+            >
+              Exit Edit Mode
+            </Button>
+          ) : (
+            <Button
+              variant='solid'
+              color='primary'
+              startDecorator={<PencilLine />}
+              onClick={() => handleVisualStyleGuideEdit(true)}
+            >
+              Edit
+            </Button>
+          )
+        ) : null}
 
-        <Button variant='solid' color='primary' onClick={onPublish}>
-          Mark as Final
-        </Button>
+        {canEdit ? (
+          <Button variant='solid' color='primary' onClick={onPublish}>
+            Mark as Final
+          </Button>
+        ) : null}
       </Stack>
     </Stack>
   );

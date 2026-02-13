@@ -34,6 +34,7 @@ import { useUserInfo } from '@/hooks/use-user-info';
 import { useColorScheme } from '@mui/joy/styles';
 import { useGlobalSearch } from '@/hooks/use-global-search';
 import { isSystemAdministrator, isCustomerSuccess } from '@/lib/user-utils';
+import { NotAuthorized } from '@/components/core/not-authorized';
 
 interface HttpError extends Error {
   response?: {
@@ -68,7 +69,7 @@ export default function Page(): React.JSX.Element {
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const { userInfo } = useUserInfo();
+  const { userInfo, isUserLoading } = useUserInfo();
   const { colorScheme } = useColorScheme();
   const { debouncedSearchValue } = useGlobalSearch();
 
@@ -261,7 +262,7 @@ export default function Page(): React.JSX.Element {
     marginRight: { xs: '10px', sm: '14px' },
   };
 
-  if (!userInfo) {
+  if (isUserLoading) {
     return (
       <Box
         sx={{
@@ -276,41 +277,10 @@ export default function Page(): React.JSX.Element {
     );
   }
 
-  if (error || !isSystemAdministrator(userInfo)) {
-    const httpError = error as HttpError;
-    let status: number | undefined = httpError?.response?.status;
+  const hasAccess = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
 
-    if (!status && httpError?.message?.includes('status:')) {
-      const match = httpError.message.match(/status: (\d+)/);
-      status = match ? parseInt(match[1] ?? '0', 10) : undefined;
-    }
-
-    if (status === 403 || !(isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo))) {
-      return (
-        <Box sx={{ textAlign: 'center', mt: { xs: 10, sm: 20, md: 35 } }}>
-          <Typography
-            sx={{
-              fontSize: { xs: '18px', sm: '22px', md: '24px' },
-              fontWeight: '600',
-              color: 'var(--joy-palette-text-primary)',
-            }}
-          >
-            Access Denied
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: { xs: '12px', sm: '13px', md: '14px' },
-              fontWeight: '300',
-              color: 'var(--joy-palette-text-secondary)',
-              mt: 1,
-            }}
-          >
-            You do not have the required permissions to view this page. <br />
-            Please contact your administrator if you believe this is a mistake.
-          </Typography>
-        </Box>
-      );
-    }
+  if (error || !hasAccess) {
+    return <NotAuthorized />;
   }
 
   return (

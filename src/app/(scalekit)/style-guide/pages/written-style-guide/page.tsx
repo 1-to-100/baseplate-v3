@@ -21,6 +21,8 @@ import FormHelperText from '@mui/joy/FormHelperText';
 import { MagicWand } from '@phosphor-icons/react/dist/ssr';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/core/toaster';
+import { NotAuthorized } from '@/components/core/not-authorized';
+import { isCustomerAdminOrManager, isSystemAdministrator } from '@/lib/user-utils';
 
 /**
  * Style Guide Entry Page
@@ -33,6 +35,7 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
   const { userInfo, isUserLoading } = useUserInfo();
 
   const customerId = userInfo?.customerId || null;
+  const canEditStyleGuide = isSystemAdministrator(userInfo) || isCustomerAdminOrManager(userInfo);
 
   // Fetch active style guide if no ID provided
   const {
@@ -191,6 +194,10 @@ export default function StyleGuideEditorPage(): React.JSX.Element {
         </Alert>
       </Box>
     );
+  }
+
+  if (!isLoading && !canEditStyleGuide && !guideToEdit?.style_guide_id) {
+    return <NotAuthorized message='You do not have permission to create a written style guide.' />;
   }
 
   // Show loading while checking for existing guide or generating

@@ -14,6 +14,8 @@ import Stack from '@mui/joy/Stack';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { isCustomerAdminOrManager, isSystemAdministrator } from '@/lib/user-utils';
 import WrittenStyleGuideHeader from './components/written-style-guide-header';
 import WrittenStyleGuideBreadcrumbs from './components/written-style-guide-breadcrumbs';
 import WrittenStyleGuideSummary from './components/written-style-guide-summary';
@@ -23,9 +25,12 @@ import WrittenStyleGuideActivityTracker from './components/written-style-guide-a
 export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
   const params = useParams();
   const guideId = params?.guideId as string;
+  const { userInfo, isUserLoading } = useUserInfo();
 
   const [isEditableView, setIsEditableView] = React.useState<boolean>(false);
   const [isReanalyzing, setIsReanalyzing] = React.useState<boolean>(false);
+
+  const canEditStyleGuide = isSystemAdministrator(userInfo) || isCustomerAdminOrManager(userInfo);
 
   const { data: guide, isLoading, refetch } = useStyleGuide(guideId);
   const {
@@ -117,7 +122,7 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
     }
   }, [guide, guideId, refetch]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
         <CircularProgress />
@@ -133,6 +138,8 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
     );
   }
 
+  const showEditableView = isEditableView && canEditStyleGuide;
+
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
@@ -140,10 +147,15 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
           <WrittenStyleGuideHeader
             name={String(guide.guide_name || 'Written Style')}
             onPublish={handlePublish}
-            isEditableView={isEditableView}
-            handleWrittenStyleGuideEdit={setIsEditableView}
-            onReanalyze={handleReanalyze}
+            isEditableView={showEditableView}
+            handleWrittenStyleGuideEdit={(next) => {
+              if (canEditStyleGuide) {
+                setIsEditableView(next);
+              }
+            }}
+            onReanalyze={canEditStyleGuide ? handleReanalyze : undefined}
             isReanalyzing={isReanalyzing}
+            canEdit={canEditStyleGuide}
           />
           <WrittenStyleGuideBreadcrumbs guideName={String(guide.guide_name || 'Written Style')} />
         </Stack>
@@ -162,7 +174,7 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
                 pr: { md: 2.5 },
               }}
             >
-              {isEditableView ? (
+              {showEditableView ? (
                 <WrittenStyleGuideEditor
                   guide={guide}
                   framingConcepts={framingConcepts}
@@ -182,7 +194,11 @@ export default function WrittenStyleGuideOverviewPage(): React.JSX.Element {
                   preferredVocabulary={preferredVocabulary}
                   prohibitedVocabulary={prohibitedVocabulary}
                   isLoading={framingConceptsLoading || vocabularyLoading}
-                  onEditClick={() => setIsEditableView(true)}
+                  onEditClick={() => {
+                    if (canEditStyleGuide) {
+                      setIsEditableView(true);
+                    }
+                  }}
                 />
               )}
             </Grid>

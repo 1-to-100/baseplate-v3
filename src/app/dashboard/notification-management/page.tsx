@@ -34,6 +34,9 @@ import { useColorScheme } from '@mui/joy/styles';
 import { toast } from '@/components/core/toaster';
 import { useGlobalSearch } from '@/hooks/use-global-search';
 import { sanitizeNotificationHTML } from '@/lib/sanitize';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { isSystemAdministrator, isCustomerSuccess } from '@/lib/user-utils';
+import { NotAuthorized } from '@/components/core/not-authorized';
 
 interface HttpError extends Error {
   response?: {
@@ -48,6 +51,7 @@ const metadata = {
 export default function Page(): React.JSX.Element {
   const { colorScheme } = useColorScheme();
   const { debouncedSearchValue } = useGlobalSearch();
+  const { userInfo, isUserLoading } = useUserInfo();
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [anchorEl, setAnchorPopper] = useState<null | HTMLElement>(null);
@@ -302,41 +306,25 @@ export default function Page(): React.JSX.Element {
   };
   const handleCloseSentNotificationsModal = () => setOpenSentNotificationsModal(false);
 
-  if (error) {
-    const httpError = error as HttpError;
-    let status: number | undefined = httpError.response?.status;
+  if (isUserLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: { xs: '40vh', sm: '50vh' },
+        }}
+      >
+        <CircularProgress size='lg' />
+      </Box>
+    );
+  }
 
-    if (!status && httpError.message.includes('status:')) {
-      const match = httpError.message.match(/status: (\d+)/);
-      status = match ? parseInt(match[1] ?? '0', 10) : undefined;
-    }
+  const hasAccess = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
 
-    if (status === 403) {
-      return (
-        <Box sx={{ textAlign: 'center', mt: { xs: 10, sm: 20, md: 35 } }}>
-          <Typography
-            sx={{
-              fontSize: { xs: '20px', sm: '24px' },
-              fontWeight: '600',
-              color: 'var(--joy-palette-text-primary)',
-            }}
-          >
-            Access Denied
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: { xs: '12px', sm: '14px' },
-              fontWeight: '300',
-              color: 'var(--joy-palette-text-secondary)',
-              mt: 1,
-            }}
-          >
-            You do not have the required permissions to view this page. <br />
-            Please contact your administrator if you believe this is a mistake.
-          </Typography>
-        </Box>
-      );
-    }
+  if (error || !hasAccess) {
+    return <NotAuthorized />;
   }
 
   const getFirstLine = (html: string) => {
