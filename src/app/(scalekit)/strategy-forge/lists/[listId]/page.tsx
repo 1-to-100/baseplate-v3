@@ -764,6 +764,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
             anchorEl={companyPopoverAnchorEl}
             companyId={0}
             company_id={companies[openCompanyPopoverIdx].company_id}
+            excludeListId={listId ?? undefined}
           />
         )}
 

@@ -34,6 +34,8 @@ interface CompanyDetailsPopoverProps {
   company_id?: string;
   /** When provided, "Full Profile" navigates to segment company page (Segments > Segment Name > Company) */
   segmentId?: string;
+  /** When provided (e.g. from list details page), this list is excluded from "Add to list" options */
+  excludeListId?: string;
 }
 
 export default function CompanyDetailsPopover({
@@ -43,6 +45,7 @@ export default function CompanyDetailsPopover({
   companyId,
   company_id,
   segmentId,
+  excludeListId,
 }: CompanyDetailsPopoverProps) {
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -690,6 +693,7 @@ export default function CompanyDetailsPopover({
         onClose={handleAddToListModalClose}
         companyIds={company_id ? [company_id] : []}
         companyCountLabel={company?.name}
+        excludeListId={excludeListId}
       />
     </>
   );
