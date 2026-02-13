@@ -24,7 +24,7 @@ import { paths } from '@/paths';
 import type { CompanyItem } from '../../lib/types/company';
 import { getCompanyById } from '../../lib/api/companies';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
-import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
+import { AddToListModal } from '../../lib/components';
 
 interface CompanyDetailsPopoverProps {
   open: boolean;
@@ -685,10 +685,11 @@ export default function CompanyDetailsPopover({
         company={company || null}
       />
 
-      <AddCompanyToListModal
+      <AddToListModal
         open={addToListModalOpen}
         onClose={handleAddToListModalClose}
-        companyIds={company ? [company.id] : []}
+        companyIds={company_id ? [company_id] : []}
+        companyCountLabel={company?.name}
       />
     </>
   );
