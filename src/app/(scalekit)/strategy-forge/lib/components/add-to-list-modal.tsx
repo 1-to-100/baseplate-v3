@@ -64,6 +64,7 @@ export function AddToListModal({
     enabled: open,
   });
 
+  // Only static lists can receive added companies (dynamic lists are filter-based, no list_company assignments).
   const companyLists: ListForDisplay[] = React.useMemo(() => {
     const base = (listsData?.data ?? []).filter(
       (l) => l.subtype === ListSubtype.COMPANY && l.is_static === true

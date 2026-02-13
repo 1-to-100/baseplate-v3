@@ -13,6 +13,7 @@ import type {
   CompanyItemList,
   UpdateCompanyPayload,
 } from '../types/company';
+import { hasListFilters, companyMatchesListFilters } from '../utils/list-filters';
 
 /** Apply common filters to a companies query builder (used for both paths). */
 function applyCompaniesFilters<
@@ -624,7 +625,8 @@ export async function getCompanyWithScoring(company_id: string): Promise<Company
 }
 
 /**
- * Get lists (segments, etc.) that include this company
+ * Get lists (segments, etc.) that include this company.
+ * Static lists: from list_companies. Dynamic lists: those whose filters match this company.
  */
 export async function getCompanyLists(company_id: string): Promise<CompanyItemList[]> {
   const supabase = createClient();
@@ -635,6 +637,22 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
   } = await supabase.auth.getUser();
   if (authError || !user) throw new Error('Not authenticated');
 
+  const [{ data: session }, { data: currentCustomerId, error: customerIdError }] =
+    await Promise.all([supabase.auth.getSession(), supabase.rpc('current_customer_id')]);
+  const sessionData = session?.session ?? null;
+  const jwtCustomerId = (sessionData?.user?.app_metadata as Record<string, unknown> | undefined)
+    ?.customer_id;
+  const fromJwt =
+    typeof jwtCustomerId === 'string' && jwtCustomerId.trim() ? jwtCustomerId.trim() : null;
+  const fromRpc =
+    !customerIdError && currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : (currentCustomerId as string)
+      : null;
+  const effectiveCustomerId = fromJwt ?? fromRpc;
+
+  const staticLists: CompanyItemList[] = [];
   const { data: listCompanies, error: listsError } = await supabase
     .from('list_companies')
     .select(
@@ -649,20 +667,62 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
     )
     .eq('company_id', company_id);
 
-  if (listsError || !listCompanies) return [];
-
-  return listCompanies
-    .map((lc): CompanyItemList | null => {
+  if (!listsError && listCompanies) {
+    for (const lc of listCompanies) {
       const list = Array.isArray(lc.lists) ? lc.lists[0] : lc.lists;
-      if (!list) return null;
-      return {
+      if (!list) continue;
+      staticLists.push({
         id: parseInt(lc.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
         name: list.name || 'Unknown',
         description: list.description || undefined,
         isAttached: true,
-      };
-    })
-    .filter((list): list is CompanyItemList => list !== null);
+        list_id: lc.list_id ?? undefined,
+      });
+    }
+  }
+
+  let dynamicLists: CompanyItemList[] = [];
+  let dynamicQuery = supabase
+    .from('lists')
+    .select('list_id, name, description, filters')
+    .eq('list_type', 'list')
+    .eq('subtype', 'company')
+    .eq('is_static', false)
+    .is('deleted_at', null);
+  if (effectiveCustomerId) {
+    dynamicQuery = dynamicQuery.eq('customer_id', effectiveCustomerId);
+  }
+  const { data: dynamicListRows, error: dynamicError } = await dynamicQuery;
+  if (!dynamicError && dynamicListRows && dynamicListRows.length > 0) {
+    const { data: companyRow } = await supabase
+      .from('companies')
+      .select(
+        'display_name, legal_name, domain, country, region, employees, categories, technologies'
+      )
+      .eq('company_id', company_id)
+      .single();
+    if (companyRow) {
+      for (const list of dynamicListRows) {
+        if (!hasListFilters(list.filters ?? undefined)) continue;
+        if (
+          !companyMatchesListFilters(
+            companyRow as Record<string, unknown>,
+            list.filters ?? undefined
+          )
+        )
+          continue;
+        dynamicLists.push({
+          id: parseInt(list.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
+          name: list.name || 'Unknown',
+          description: list.description ?? undefined,
+          isAttached: true,
+          list_id: list.list_id ?? undefined,
+        });
+      }
+    }
+  }
+
+  return [...staticLists, ...dynamicLists];
 }
 
 /**

@@ -46,6 +46,8 @@ export interface CompanyItemList {
   name: string;
   description?: string;
   isAttached: boolean;
+  /** List ID for linking to list details (e.g. strategy-forge lists) */
+  list_id?: string;
 }
 
 // UI-level company filter fields used across filter components

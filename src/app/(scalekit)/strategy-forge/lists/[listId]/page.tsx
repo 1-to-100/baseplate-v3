@@ -123,11 +123,10 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     enabled: !!listId,
   });
 
-  const useFilteredCompanies =
+  const useFilterBasedSearch =
     list != null &&
     list.subtype === ListSubtype.COMPANY &&
-    list.is_static === true &&
-    hasListFilters(list.filters ?? undefined);
+    ((list.is_static && hasListFilters(list.filters ?? undefined)) || !list.is_static);
 
   const {
     data: companiesData,
@@ -138,14 +137,27 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
       'list-companies',
       listId,
       currentPage,
-      useFilteredCompanies,
-      useFilteredCompanies ? list?.filters : null,
+      list?.is_static,
+      useFilterBasedSearch ? list?.filters : null,
     ],
     queryFn: async () => {
       if (!list || !listId || list.subtype !== ListSubtype.COMPANY) {
         throw new Error('List required');
       }
-      if (useFilteredCompanies) {
+      if (!list.is_static && !hasListFilters(list.filters ?? undefined)) {
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            lastPage: 1,
+            currentPage: currentPage,
+            perPage: ITEMS_PER_PAGE,
+            prev: null,
+            next: null,
+          },
+        };
+      }
+      if (useFilterBasedSearch) {
         const filterParams = listFiltersToCompanyFilterFields(list.filters ?? undefined);
         const params: GetCompaniesParams = {
           page: currentPage,
@@ -161,7 +173,9 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           if (min != null && min > 0) params.min_employees = min;
           if (max != null && max > 0) params.max_employees = max;
         }
-        params.listId = listId;
+        if (list.is_static) {
+          params.listId = listId;
+        }
         const res = await getCompanies(params);
         return {
           data: mapCompanyItemsToTableShape(res.data),

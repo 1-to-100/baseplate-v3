@@ -22,7 +22,7 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
-import { getListById, updateList, syncListCompaniesFromFilters } from '../../lib/api/segment-lists';
+import { getListById, updateList } from '../../lib/api/segment-lists';
 import { getCompanies } from '../../lib/api/companies';
 import type { GetCompaniesParams } from '../../lib/types/company';
 import type { CompanyItem, CompanyFilterFields } from '../../lib/types/company';
@@ -124,7 +124,6 @@ export default function CreateListPage(): React.JSX.Element {
         name: payload.name,
         filters: payload.filters as Record<string, unknown>,
       });
-      await syncListCompaniesFromFilters(listId!);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['list', listId] });
@@ -155,16 +154,6 @@ export default function CreateListPage(): React.JSX.Element {
     setCurrentPage(1);
     setFiltersApplied(true);
   }, []);
-
-  const handleResetFilters = useCallback(() => {
-    setDraftFilters({});
-    setAppliedFilters({});
-    setCurrentPage(1);
-    setFiltersApplied(true);
-    setHasUnsavedChanges(true);
-  }, []);
-
-  const hasActiveFilters = hasListFilters(draftFilters as Record<string, unknown>);
 
   const handleCloseFilter = useCallback(() => setIsFilterOpen(false), []);
   const handleToggleFilter = useCallback(() => setIsFilterOpen((prev) => !prev), []);

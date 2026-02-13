@@ -335,14 +335,17 @@ export async function getLists(params?: {
 
   const listsWithCounts = await Promise.all(
     (lists || []).map(async (list) => {
-      const { count: companyCount } = await supabase
-        .from('list_companies')
-        .select('*', { count: 'exact', head: true })
-        .eq('list_id', list.list_id);
-
+      let company_count: number | undefined;
+      if ((list as { is_static?: boolean }).is_static) {
+        const { count: companyCount } = await supabase
+          .from('list_companies')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.list_id);
+        company_count = companyCount ?? 0;
+      }
       return {
         ...list,
-        company_count: companyCount || 0,
+        company_count,
         owner_name: list.user_id ? (userMap.get(list.user_id) ?? null) : null,
       };
     })
@@ -669,7 +672,7 @@ export async function addCompaniesToList(
 
   let listQuery = supabase
     .from('lists')
-    .select('list_id, list_type, subtype')
+    .select('list_id, list_type, subtype, is_static')
     .eq('list_id', listId)
     .eq('list_type', ListType.LIST)
     .is('deleted_at', null);
@@ -686,6 +689,10 @@ export async function addCompaniesToList(
 
   if ((listRow as { subtype?: string }).subtype !== ListSubtype.COMPANY) {
     throw new Error('Only company lists can have companies added');
+  }
+
+  if ((listRow as { is_static?: boolean }).is_static === false) {
+    throw new Error('Adding companies is only supported for static lists');
   }
 
   const records = companyIds.map((company_id) => ({
@@ -754,72 +761,6 @@ export async function syncListCompaniesFromFilters(listId: string): Promise<void
       await addCompaniesToList(listId, { companyIds: chunk });
     }
   }
-}
-
-/**
- * Check which of the given company IDs are already in the list.
- * Returns a record mapping company_id to true if in list, false otherwise.
- */
-export async function checkCompaniesInList(
-  listId: string,
-  companyIds: string[]
-): Promise<Record<string, boolean>> {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    throw new Error('Not authenticated');
-  }
-
-  const { effectiveCustomerId, isSystemAdmin, customerIdError } =
-    await resolveEffectiveCustomerId(supabase);
-
-  if (!effectiveCustomerId && !isSystemAdmin) {
-    throw new Error(`Failed to get customer ID: ${customerIdError?.message ?? 'not available'}`);
-  }
-
-  const ids = companyIds.filter((id): id is string => typeof id === 'string' && id.length > 0);
-  if (ids.length === 0) {
-    return {};
-  }
-
-  let listQuery = supabase
-    .from('lists')
-    .select('list_id')
-    .eq('list_id', listId)
-    .eq('list_type', ListType.LIST)
-    .is('deleted_at', null);
-
-  if (effectiveCustomerId) {
-    listQuery = listQuery.eq('customer_id', effectiveCustomerId);
-  }
-
-  const { data: listRow, error: listError } = await listQuery.single();
-
-  if (listError || !listRow) {
-    throw new Error(`List not found: ${listError?.message ?? 'not available'}`);
-  }
-
-  const { data: rows, error: fetchError } = await supabase
-    .from('list_companies')
-    .select('company_id')
-    .eq('list_id', listId)
-    .in('company_id', ids);
-
-  if (fetchError) {
-    throw new Error(`Failed to check companies in list: ${fetchError.message}`);
-  }
-
-  const inList = new Set((rows ?? []).map((r) => r.company_id));
-  const result: Record<string, boolean> = {};
-  for (const id of ids) {
-    result[id] = inList.has(id);
-  }
-  return result;
 }
 
 export interface CreateListInput {
