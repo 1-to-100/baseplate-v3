@@ -148,8 +148,12 @@ export default function NotificationFilter({
         sx={{
           borderColor: filterCount > 0 ? 'transparent' : 'var(--joy-palette-divider)',
           borderRadius: '20px',
-          background: filterCount > 0 ? '#C7C5FC' : 'var(--joy-palette-background-mainBg)',
-          color: filterCount > 0 ? '#3D37DD' : 'var(--joy-palette-text-primary)',
+          background:
+            filterCount > 0
+              ? 'var(--joy-palette-primary-200)'
+              : 'var(--joy-palette-background-level1)',
+          color:
+            filterCount > 0 ? 'var(--joy-palette-primary-600)' : 'var(--joy-palette-text-primary)',
           padding: { xs: '6px 12px', sm: '7px 14px' },
           fontSize: { xs: '12px', sm: '14px' },
           width: { xs: '100%', sm: 'auto' },
@@ -210,7 +214,7 @@ export default function NotificationFilter({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'Type'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:
@@ -241,7 +245,7 @@ export default function NotificationFilter({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'Channel'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:
@@ -276,7 +280,7 @@ export default function NotificationFilter({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'User'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:
@@ -307,7 +311,7 @@ export default function NotificationFilter({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'Customer'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:

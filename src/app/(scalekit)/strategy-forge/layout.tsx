@@ -18,10 +18,10 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
       <GlobalStyles
         styles={{
           '[data-joy-color-scheme="dark"]': {
-            '--Layout-bg': 'var(--joy-palette-common-black)',
+            '--Layout-bg': 'var(--joy-palette-background-body)',
           },
           '[data-joy-color-scheme="light"]': {
-            '--Layout-bg': 'var(--joy-palette-background-mainBg)',
+            '--Layout-bg': 'var(--joy-palette-background-body)',
           },
           body: {
             '--Layout-gap': '24px',
@@ -33,7 +33,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
             '--MobileNav-zIndex': 1100,
             // When RTL is used, for some reason, Global styles are applied before default styles.
             // The !important is needed to override this behavior.
-            background: 'var(--joy-palette-background-mainBg) !important',
+            background: 'var(--joy-palette-background-body) !important',
           },
         }}
       />

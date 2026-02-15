@@ -4,11 +4,12 @@ export const LogLevel = {
   NONE: 'NONE',
   ERROR: 'ERROR',
   WARN: 'WARN',
+  INFO: 'INFO',
   DEBUG: 'DEBUG',
   ALL: 'ALL',
 } as const;
 
-const LogLevelNumber = { NONE: 0, ERROR: 1, WARN: 2, DEBUG: 3, ALL: 4 } as const;
+const LogLevelNumber = { NONE: 0, ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4, ALL: 5 } as const;
 
 export interface LoggerOptions {
   prefix?: string;
@@ -42,6 +43,12 @@ export class Logger {
     }
   };
 
+  info = (...args: unknown[]): void => {
+    if (this.canWrite(LogLevel.INFO)) {
+      this.write(LogLevel.INFO, ...args);
+    }
+  };
+
   error = (...args: unknown[]): void => {
     if (this.canWrite(LogLevel.ERROR)) {
       this.write(LogLevel.ERROR, ...args);
@@ -61,6 +68,10 @@ export class Logger {
 
     if (level === LogLevel.ERROR) {
       console.error(prefix, ...args);
+    } else if (level === LogLevel.WARN) {
+      console.warn(prefix, ...args);
+    } else if (level === LogLevel.INFO) {
+      console.info(prefix, ...args);
     } else {
       console.log(prefix, ...args);
     }

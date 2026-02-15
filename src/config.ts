@@ -1,14 +1,13 @@
 import { AuthStrategy } from '@/lib/auth/strategy';
 import { getSiteURL } from '@/lib/get-site-url';
 import { LogLevel } from '@/lib/logger';
-import type { ColorScheme, PrimaryColor } from '@/styles/theme/types';
+import type { ColorScheme } from '@/styles/theme/types';
 
 export interface Config {
   site: {
     name: string;
     description: string;
     colorScheme: ColorScheme;
-    primaryColor: PrimaryColor;
     themeColor: string;
     url: string;
     version?: string;
@@ -34,7 +33,6 @@ export const config = {
     description: '',
     colorScheme: 'light',
     themeColor: '#090a0b',
-    primaryColor: 'palatinateBlue',
     url: getSiteURL(),
     version: process.env.NEXT_PUBLIC_SITE_VERSION,
   },

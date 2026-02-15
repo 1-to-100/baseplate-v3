@@ -133,7 +133,7 @@ export function NavMenu({ items, showLogo = true }: NavMenuProps) {
   return (
     <Box
       sx={{
-        '--NavItem-active-background': 'var(--joy-palette-background-navActiveBg)',
+        '--NavItem-active-background': 'var(--joy-palette-background-surface)',
         bgcolor: 'var(--joy-palette-background-body)',
         color: 'var(--joy-palette-text-primary)',
         height: '100vh',
