@@ -20,6 +20,7 @@ import { getUsers } from '@/lib/api/users';
 import { Role } from '@/contexts/auth/types';
 import { isSystemAdministrator } from '@/lib/user-utils';
 import { NotAuthorized } from '@/components/core/not-authorized';
+import Alert from '@mui/joy/Alert';
 
 interface HttpError extends Error {
   response?: {
@@ -75,8 +76,29 @@ export default function Page(): React.JSX.Element {
     );
   }
 
-  if (error || !isSystemAdministrator(userInfo)) {
+  if (!isSystemAdministrator(userInfo)) {
     return <NotAuthorized />;
+  }
+
+  if (error) {
+    const httpError = error as HttpError;
+    if (httpError.response?.status === 403) {
+      return <NotAuthorized />;
+    }
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: { xs: '40vh', sm: '50vh' },
+        }}
+      >
+        <Alert color='danger'>
+          Something went wrong while loading the data. Please try again later.
+        </Alert>
+      </Box>
+    );
   }
 
   return (
