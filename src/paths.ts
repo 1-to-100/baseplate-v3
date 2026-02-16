@@ -49,18 +49,6 @@ export const paths = {
         `/dashboard/documentation/${categoryId}/${articleId}`,
       add: (categoryId: string) => `/dashboard/documentation/${categoryId}/add`,
     },
-    segments: {
-      list: '/segments',
-      details: (segmentId: string) => `/segments/${segmentId}`,
-      create: '/segments/create',
-      edit: (segmentId: string) => `/segments/${segmentId}/edit`,
-    },
-    companies: {
-      list: '/companies',
-      create: '/companies/create',
-      details: (companyId: string) => `/companies/${companyId}`,
-      edit: (companyId: string) => `/companies/${companyId}/edit`,
-    },
     roleSettings: {
       list: '/dashboard/role-settings',
       details: (roleId: string) => `/dashboard/role-settings/${roleId}`,
@@ -141,22 +129,6 @@ export const paths = {
       details: (id: string) => `/source-and-snap/captures/${id}`,
     },
     diagnostics: '/source-and-snap/diagnostics',
-  },
-  creso: {
-    segments: {
-      list: '/segments',
-      create: '/segments/create',
-      details: (segmentId: string) => `/segments/${segmentId}`,
-      edit: (segmentId: string) => `/segments/${segmentId}/edit`,
-      companyDetails: (segmentId: string, companyId: string) =>
-        `/segments/${segmentId}/${companyId}`,
-    },
-    companies: {
-      list: '/companies',
-      create: '/companies/create',
-      details: (companyId: string) => `/companies/${companyId}`,
-      edit: (companyId: string) => `/companies/${companyId}/edit`,
-    },
   },
   strategyForge: {
     segments: {

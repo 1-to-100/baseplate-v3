@@ -755,7 +755,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
               </Box>
             </Box>
 
-            {/* Right: list details (match creso – Name, Date Created, Owner only) */}
+            {/* Right: list details (Name, Date Created, Owner only) */}
             <Box sx={{ width: { xs: '100%', lg: 380 }, flexShrink: 0 }}>
               <Stack
                 spacing={2}

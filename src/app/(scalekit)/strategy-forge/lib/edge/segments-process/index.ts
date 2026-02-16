@@ -1,6 +1,9 @@
-import { corsHeaders } from '../_shared/cors.ts';
-import { ApiError, createErrorResponse } from '../_shared/errors.ts';
-import { createServiceClient } from '../_shared/supabase.ts';
+import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
+import {
+  ApiError,
+  createErrorResponse,
+} from '../../../../../../../supabase/functions/_shared/errors.ts';
+import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 import { DqlAdapter } from './dql-adapter.ts';
 import { DiffbotClient } from './diffbot-client.ts';
 import {

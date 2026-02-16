@@ -4,6 +4,10 @@ import {
   ApiError,
   createErrorResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 import { buildSystemPrompt } from './prompt.ts';
 import type {
@@ -53,15 +57,7 @@ Deno.serve(async (req) => {
       throw new ApiError('Description must be less than 1000 characters', 400);
     }
 
-    // Get OpenAI API key
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.error('OPENAI_API_KEY not configured');
-      throw new ApiError('AI service not configured', 500);
-    }
-
     const openaiModel = Deno.env.get('OPENAI_MODEL_SEGMENT') || 'gpt-4o-mini';
-
     const supabase = createServiceClient();
 
     // Fetch industries and company sizes for the prompt
@@ -94,14 +90,9 @@ Deno.serve(async (req) => {
 
     console.log('Calling OpenAI API with model:', openaiModel);
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
+    const openai = providers.openai();
+    const completion = await withLogging('openai', 'chat.completions.create', openaiModel, () =>
+      openai.chat.completions.create({
         model: openaiModel,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -109,17 +100,10 @@ Deno.serve(async (req) => {
         ],
         response_format: { type: 'json_object' },
         temperature: 0.2,
-      }),
-    });
+      })
+    );
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', openaiResponse.status, errorText);
-      throw new ApiError('AI service error', 500);
-    }
-
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices?.[0]?.message?.content;
+    const content = completion.choices?.[0]?.message?.content;
 
     if (!content) {
       console.error('Empty response from OpenAI');

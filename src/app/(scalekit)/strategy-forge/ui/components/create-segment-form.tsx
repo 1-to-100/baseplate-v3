@@ -1561,7 +1561,7 @@ export function CreateSegmentForm({
         </Box> */}
       </Box>
 
-      {/* Apply Filters / Clear Filters Buttons - attached to bottom (match creso) */}
+      {/* Apply Filters / Clear Filters Buttons - attached to bottom */}
       <Box
         sx={{
           p: { xs: 2, sm: 2 },
@@ -1639,7 +1639,7 @@ export function CreateSegmentForm({
       }}
     >
       {!shouldShowCompanies ? (
-        // Empty state - no companies to show (styles match creso)
+        // Empty state - no companies to show
         <Box sx={{ textAlign: 'center', maxWidth: 450 }}>
           <Typography
             fontWeight={600}

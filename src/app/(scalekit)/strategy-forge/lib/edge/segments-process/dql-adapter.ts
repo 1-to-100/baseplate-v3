@@ -25,7 +25,7 @@ function extractEmployeesValue(employees: string | string[] | null | undefined):
 
 /**
  * Converts segment filters to Diffbot Query Language (DQL)
- * Based on creso-ai-api SegmentDtoToDqlAdapter
+ * Based on strategy-forge SegmentDtoToDqlAdapter
  */
 export class DqlAdapter {
   static convert(dto: SegmentFilterDto): string[] {

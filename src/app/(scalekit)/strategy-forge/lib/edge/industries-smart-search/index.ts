@@ -4,6 +4,10 @@ import {
   ApiError,
   createErrorResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 
 interface OptionIndustry {
@@ -46,38 +50,27 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+const EMBEDDING_MODEL = 'text-embedding-3-small';
+
 /**
- * Get embeddings from OpenAI
+ * Get embeddings from OpenAI via LLM adapter
  */
-async function getEmbeddings(texts: string[], apiKey: string): Promise<number[][]> {
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
+async function getEmbeddings(texts: string[]): Promise<number[][]> {
+  const openai = providers.openai();
+  const result = await withLogging('openai', 'embeddings.create', EMBEDDING_MODEL, () =>
+    openai.embeddings.create({
+      model: EMBEDDING_MODEL,
       input: texts,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('OpenAI embeddings error:', response.status, errorText);
-    throw new ApiError('AI service error', 500);
-  }
-
-  const data = await response.json();
-  return data.data.map((item: { embedding: number[] }) => item.embedding);
+    })
+  );
+  return result.data.map((item: { embedding: number[] }) => item.embedding);
 }
 
 /**
  * Initialize or get cached industry embeddings
  */
 async function getIndustryEmbeddings(
-  supabase: ReturnType<typeof createServiceClient>,
-  apiKey: string
+  supabase: ReturnType<typeof createServiceClient>
 ): Promise<{ industries: OptionIndustry[]; embeddings: Map<string, number[]> }> {
   // If already cached, return from cache
   if (industryEmbeddingsCache && cachedIndustries) {
@@ -106,7 +99,7 @@ async function getIndustryEmbeddings(
 
   // Get embeddings for all industry values
   const industryValues = industryList.map((i) => i.value);
-  const embeddings = await getEmbeddings(industryValues, apiKey);
+  const embeddings = await getEmbeddings(industryValues);
 
   // Create cache map
   industryEmbeddingsCache = new Map();
@@ -157,20 +150,13 @@ Deno.serve(async (req) => {
 
     console.log('Smart search query:', normalizedQuery);
 
-    // Get OpenAI API key
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      console.error('OPENAI_API_KEY not configured');
-      throw new ApiError('AI service not configured', 500);
-    }
-
     const supabase = createServiceClient();
 
     // Get cached industry embeddings (or compute if first request)
-    const { industries, embeddings } = await getIndustryEmbeddings(supabase, openaiApiKey);
+    const { industries, embeddings } = await getIndustryEmbeddings(supabase);
 
     // Get embedding for the query (1 API call per search)
-    const [queryEmbedding] = await getEmbeddings([normalizedQuery], openaiApiKey);
+    const [queryEmbedding] = await getEmbeddings([normalizedQuery]);
 
     // Calculate similarity scores for all industries
     const allResults = industries.map((industry) => ({

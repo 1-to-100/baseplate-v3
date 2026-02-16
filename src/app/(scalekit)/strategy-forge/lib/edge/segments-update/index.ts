@@ -1,7 +1,10 @@
-import { corsHeaders } from '../_shared/cors.ts';
-import { authenticateRequest } from '../_shared/auth.ts';
-import { ApiError, createErrorResponse } from '../_shared/errors.ts';
-import { createServiceClient } from '../_shared/supabase.ts';
+import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
+import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
+import {
+  ApiError,
+  createErrorResponse,
+} from '../../../../../../../supabase/functions/_shared/errors.ts';
+import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 import type { UpdateSegmentRequest, UpdateSegmentResponse } from './types.ts';
 
 Deno.serve(async (req) => {

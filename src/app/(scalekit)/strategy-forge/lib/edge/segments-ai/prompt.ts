@@ -8,7 +8,7 @@ export function buildSystemPrompt(industries: string[], companySizes: string[]):
 
   return `### NAME
 
-CresoAiSegments
+StrategyForgeSegments
 
 ### DESCRIPTION
 

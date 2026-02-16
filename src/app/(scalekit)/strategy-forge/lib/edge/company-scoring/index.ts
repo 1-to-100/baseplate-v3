@@ -8,6 +8,10 @@ import {
   ApiError,
   createErrorResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -139,22 +143,14 @@ Deno.serve(async (req) => {
       throw new ApiError('Diffbot data not found for company; run segment processing first.', 400);
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new ApiError('OPENAI_API_KEY not configured', 500);
-    }
-
     const diffbotJson = metadata.diffbot_json as Record<string, unknown>;
     const userMessage = `Process scoring for company data: ${JSON.stringify(diffbotJson)}`;
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
+    const openaiModel = 'gpt-4o-mini';
+    const openai = providers.openai();
+    const completion = (await withLogging('openai', 'chat.completions.create', openaiModel, () =>
+      openai.chat.completions.create({
+        model: openaiModel,
         messages: [
           { role: 'system', content: COMPANY_SCORING_SYSTEM_PROMPT },
           { role: 'user', content: userMessage },
@@ -189,17 +185,10 @@ Deno.serve(async (req) => {
           },
         },
         temperature: 0.7,
-      }),
-    });
+      })
+    )) as { choices?: Array<{ message?: { content?: string | null } }> };
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', openaiResponse.status, errorText);
-      throw new ApiError('AI service error', 500);
-    }
-
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices?.[0]?.message?.content;
+    const content = completion.choices?.[0]?.message?.content;
 
     if (!content) {
       throw new ApiError('No response content from OpenAI', 500);

@@ -40,7 +40,6 @@ import { technologies } from '../constants/technologies';
 import type { CompanyFilterFields } from '../types/company';
 import { parseCompanySizeRange } from '../utils/company-size';
 
-// Suggested technographics for Smart search "Also:" section (reference: creso-ai)
 const SUGGESTED_TECHNOGRAPHICS = [
   'Amazon EC2',
   'Aurora',
