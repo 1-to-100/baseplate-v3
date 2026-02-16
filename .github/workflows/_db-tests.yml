@@ -30,13 +30,37 @@ jobs:
         id: db-tests
         continue-on-error: true
         run: |
+          set -euo pipefail
+          shopt -s nullglob
+
           DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          for f in supabase/tests/*.test.sql; do
-            psql "$DB_URL" -X -t -f "$f" 2>/dev/null
-          done | grep -E '^\s*(ok |not ok |1\.\.|#)' | sed 's/^ *//' > test-results/tap-output.txt
+          RAW_OUTPUT_FILE="test-results/psql-output.txt"
+          TAP_OUTPUT_FILE="test-results/tap-output.txt"
+          : > "$RAW_OUTPUT_FILE"
+
+          test_files=(supabase/tests/*.test.sql)
+          if [ ${#test_files[@]} -eq 0 ]; then
+            echo "::error::No pgTAP SQL test files found in supabase/tests"
+            exit 1
+          fi
+
+          for f in "${test_files[@]}"; do
+            echo "Running pgTAP SQL file: $f"
+            psql "$DB_URL" -X -t -v ON_ERROR_STOP=1 -f "$f" | tee -a "$RAW_OUTPUT_FILE"
+          done
+
+          if ! grep -E '^\s*(ok |not ok |1\.\.|#)' "$RAW_OUTPUT_FILE" | sed 's/^ *//' > "$TAP_OUTPUT_FILE"; then
+            # grep returns 1 when there are no TAP lines; handled by explicit empty-file check below.
+            :
+          fi
+
+          if [ ! -s "$TAP_OUTPUT_FILE" ]; then
+            echo "::error::No TAP output produced by pgTAP runner"
+            exit 1
+          fi
 
           # Fail if any tests failed
-          if grep -q '^not ok' test-results/tap-output.txt; then
+          if grep -q '^not ok' "$TAP_OUTPUT_FILE"; then
             echo "::error::pgTAP tests have failures"
             exit 1
           fi
