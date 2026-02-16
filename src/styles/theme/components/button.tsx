@@ -1,78 +1,96 @@
 import type { Components, Theme } from '@mui/joy/styles';
+import type { ButtonConfig } from '../theme-config';
 
-export const JoyButton = {
-  styleOverrides: {
-    root: ({ ownerState }) => ({
-      borderRadius: '20px',
-      padding: '8px 16px',
-      fontSize: '14px',
-      fontWeight: 600,
-      color: '#FFFFFF',
-      transition: 'all 0.2s ease-in-out',
+export function createButtonOverride(config?: ButtonConfig): Components<Theme>['JoyButton'] {
+  // Get gradients from config or use fallback gradients with CSS variables
+  const buttonGradients = {
+    primary:
+      config?.gradients?.primary ||
+      'linear-gradient(120deg, var(--joy-palette-primary-700) 0%, var(--joy-palette-primary-400) 100%)',
+    primaryHover:
+      config?.gradients?.primaryHover ||
+      'linear-gradient(120deg, var(--joy-palette-primary-800) 0%, var(--joy-palette-primary-500) 100%)',
+  };
 
-      ...(ownerState.variant === 'solid' &&
-        ownerState.color === 'primary' && {
-          '--variant-solidBg': 'linear-gradient(120deg, #282490 0%, #3F4DCF 100%)',
-          '--variant-solidHoverBg': 'linear-gradient(120deg, #1E1A6F 0%, #3439B0 100%)',
-          boxShadow: '0 3px 6px rgba(0,102,204,0.2)',
+  // Get borderRadius from config or use fallback
+  const borderRadius = config?.borderRadius || 'var(--joy-radius-xl)';
 
-          background: 'var(--variant-solidBg)',
+  return {
+    styleOverrides: {
+      root: ({ ownerState }) => {
+        return {
+          borderRadius,
+          padding: '8px 16px',
+          fontSize: '14px',
+          fontWeight: 600,
+          color: 'var(--joy-palette-common-white)',
+          transition: 'all 0.2s ease-in-out',
 
-          '&:hover': {
-            background: 'var(--variant-solidHoverBg)',
-          },
+          ...(ownerState.variant === 'solid' &&
+            ownerState.color === 'primary' && {
+              '--variant-solidBg': buttonGradients.primary,
+              '--variant-solidHoverBg': buttonGradients.primaryHover,
+              boxShadow: 'var(--joy-shadow-sm)',
 
-          '&:active': {
-            transform: 'scale(0.98)',
-          },
-        }),
+              background: 'var(--variant-solidBg)',
 
-      ...(ownerState.color === 'neutral' && {
-        backgroundColor: 'var(--joy-palette-background-secondaryBtn)',
-        border: '1px solid #E5E7EB',
-        padding: '2px 10px',
+              '&:hover': {
+                background: 'var(--variant-solidHoverBg)',
+              },
 
-        '&:hover': {
-          backgroundColor: '#646872',
-        },
-      }),
+              '&:active': {
+                transform: 'scale(0.98)',
+              },
+            }),
 
-      ...(ownerState.color === 'danger' && {
-        backgroundColor: '#D3232F',
-        padding: '2px 10px',
-        '&:hover': {
-          backgroundColor: '#DC2626',
-        },
-      }),
+          ...(ownerState.color === 'neutral' && {
+            backgroundColor: 'var(--joy-palette-neutral-100)',
+            border: '1px solid var(--joy-palette-divider)',
+            padding: '2px 10px',
 
-      ...(ownerState.variant === 'plain' && {
-        color: 'var(--joy-palette-text-secondary)',
-        backgroundColor: 'transparent',
-        background: 'var(--joy-palette-background-primaryColor)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        padding: 0,
-        '&:hover': {
-          backgroundColor: 'transparent',
-          background: 'var(--joy-palette-background-primaryColor)',
-          opacity: '0.8',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        },
-        '& .MuiButton-startDecorator': {
-          color: 'var(--joy-palette-background-primaryColor)',
-        },
-      }),
+            '&:hover': {
+              backgroundColor: 'var(--joy-palette-neutral-200)',
+            },
+          }),
 
-      ...(ownerState.variant === 'outlined' && {
-        borderColor: '#E5E7EB',
-        borderRadius: '20px',
-        color: 'var(--joy-palette-text-secondaryBtn)',
-        padding: '7px 14px',
-        '&:hover': {
-          background: 'transparent',
-        },
-      }),
-    }),
-  },
-} satisfies Components<Theme>['JoyButton'];
+          ...(ownerState.color === 'danger' && {
+            backgroundColor: 'var(--joy-palette-danger-600)',
+            padding: '2px 10px',
+            '&:hover': {
+              backgroundColor: 'var(--joy-palette-danger-500)',
+            },
+          }),
+
+          ...(ownerState.variant === 'plain' && {
+            color: 'var(--joy-palette-text-secondary)',
+            backgroundColor: 'transparent',
+            background: 'var(--joy-palette-primary-500)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            padding: 0,
+            '&:hover': {
+              backgroundColor: 'transparent',
+              background: 'var(--joy-palette-primary-500)',
+              opacity: '0.8',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            },
+            '& .MuiButton-startDecorator': {
+              color: 'var(--joy-palette-primary-500)',
+            },
+          }),
+
+          ...(ownerState.variant === 'outlined' && {
+            borderColor: 'var(--joy-palette-divider)',
+            borderRadius,
+            color: 'var(--joy-palette-text-secondary)',
+            padding: '7px 14px',
+            '&:hover': {
+              background: 'transparent',
+            },
+          }),
+        };
+      },
+    },
+  };
+}

@@ -50,7 +50,7 @@ export default function SearchInput({ onSearch, style }: SearchInputProps) {
           borderRadius: '20px',
           border: '1px solid var(--joy-palette-divider)',
           '&:hover': {
-            background: 'var(--joy-palette-background-mainBg)',
+            background: 'var(--joy-palette-background-level1)',
           },
           '& .MuiInput-input': {
             padding: '0px 0px',

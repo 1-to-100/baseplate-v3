@@ -1,29 +1,47 @@
 import type { Components, Theme } from '@mui/joy/styles';
+import type { CheckboxConfig } from '../theme-config';
 
-export const JoyCheckbox = {
-  styleOverrides: {
-    root: ({ ownerState, theme }) => ({
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '20px',
-      padding: 0,
-      width: '20px',
-      borderRadius: '3px',
+export function createCheckboxOverride(config?: CheckboxConfig): Components<Theme>['JoyCheckbox'] {
+  // Get gradients from config or use fallback gradients with CSS variables
+  const checkboxGradients = {
+    checked:
+      config?.gradients?.checked ||
+      'linear-gradient(120deg, var(--joy-palette-primary-700) 0%, var(--joy-palette-primary-400) 100%)',
+    checkedHover:
+      config?.gradients?.checkedHover ||
+      'linear-gradient(120deg, var(--joy-palette-primary-800) 0%, var(--joy-palette-primary-500) 100%)',
+  };
 
-      ...(ownerState.checked && {
-        '--variant-solidBg': 'linear-gradient(120deg, #282490 0%, #3F4DCF 100%)',
-        '--variant-solidHoverBg': 'linear-gradient(120deg, #1E1A6F 0%, #3439B0 100%)',
-        '--Icon-color': '#FFFFFF',
-        background: 'var(--variant-solidBg)',
-        height: '20px',
-        width: '20px',
-        padding: 0,
+  // Get borderRadius from config or use fallback
+  const borderRadius = config?.borderRadius || 'var(--joy-radius-xs)';
 
-        '&:hover': {
-          background: 'var(--variant-solidHoverBg)',
-        },
-      }),
-    }),
-  },
-} satisfies Components<Theme>['JoyCheckbox'];
+  return {
+    styleOverrides: {
+      root: ({ ownerState }) => {
+        return {
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '20px',
+          padding: 0,
+          width: '20px',
+          borderRadius,
+
+          ...(ownerState.checked && {
+            '--variant-solidBg': checkboxGradients.checked,
+            '--variant-solidHoverBg': checkboxGradients.checkedHover,
+            '--Icon-color': 'var(--joy-palette-common-white)',
+            background: 'var(--variant-solidBg)',
+            height: '20px',
+            width: '20px',
+            padding: 0,
+
+            '&:hover': {
+              background: 'var(--variant-solidHoverBg)',
+            },
+          }),
+        };
+      },
+    },
+  };
+}
