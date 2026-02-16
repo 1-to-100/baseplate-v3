@@ -87,7 +87,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
           '--MobileNav-background': 'var(--Layout-bg)',
           '--MobileNav-color': 'var(--joy-palette-common-white)',
           '--NavItem-color': 'var(--joy-palette-neutral-200)',
-          '--NavItem-active-background': 'var(--joy-palette-background-navActiveBg)',
+          '--NavItem-active-background': 'var(--joy-palette-background-level2)',
           '--NavItem-active-color': 'var(--joy-palette-common-white)',
           '--NavItem-active-icon-color': 'var(--joy-palette-common-white)',
           '--NavItem-open-color': 'var(--joy-palette-common-white)',

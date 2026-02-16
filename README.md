@@ -90,6 +90,21 @@ It's recommended to use multiple `.env` files if you want to switch between runn
 
 Copy `.env.template` to create env files in the root directory with the variables you need.
 
+### Platform vs Application Repos
+
+Baseplate follows a **platform/application repo** model. The platform repo contains core functionality and feature source code. Application repos are created from the platform and include the generated artifacts needed to run a specific set of features.
+
+Feature-specific files (migration symlinks, edge function wrappers) are **generated** by scripts and use a **double-underscore naming convention** (`__feature-slug__`) to distinguish them from core files:
+
+| Artifact       | Core                           | Feature (generated)                            |
+| -------------- | ------------------------------ | ---------------------------------------------- |
+| Migrations     | `20260115182857_add_users.sql` | `20260206135642__style-guide__0001_create.sql` |
+| Edge Functions | `user-management/index.ts`     | `extract-logos/index.ts` (2-line wrapper)      |
+
+**In the platform repo (baseplate)**, these generated files must not be committed — the source of truth lives in `src/app/(scalekit)/<feature>/lib/sql/` and `src/app/(scalekit)/<feature>/lib/edge/`. A CI check (`check-feature-artifacts`) enforces this on pull requests.
+
+**In application repos**, these files **should** be committed because they are required for Supabase to discover and deploy migrations and edge functions. Application repos set the GitHub repository variable `APPLICATION_REPO=true`, which skips the CI check.
+
 ### 🗄️ Database Migrations
 
 Database schema and Row Level Security (RLS) policies are managed via Supabase migrations in `supabase/migrations/`. Scalekit features and application features have their own migrations under `src/app/(scalekit)/<feature-name>/lib/sql/` and `src/app/<feature-name>/lib/sql/`, respectively.
@@ -124,7 +139,9 @@ There are core database migrations that come from the Baseplate application that
 
 Each feature will have an initial `0001_create.sql` migration for initial table creation, and a `0002_rls.sql` migration for RLS policies. Changes to tables or new migrations should follow the same pattern, e.g. `0003_add_x_column.sql`.
 
-There is a script to link all the feature migrations into the `supabase/migrations/` directory so Supabase can see them and apply them, and a lockfile is maintained to track already linked migrations. This script will have already likely been run and the links committed, however if you need to re-run it for new migrations, you can do so with:
+There is a script to link all the feature migrations into the `supabase/migrations/` directory so Supabase can see them and apply them, and a lockfile is maintained to track already linked migrations. Feature migration symlinks use the double-underscore naming convention (e.g. `20260206135642__style-guide__0001_create.sql`). In the platform repo (baseplate) these symlinks should not be committed — they are for local development only. In application repos they should be committed as they are required for Supabase to discover and apply them. See [Platform vs Application Repos](#platform-vs-application-repos) for details.
+
+If you need to re-run the script for new migrations, you can do so with:
 
 ```bash
 # Dry run to see any changes that would be made
@@ -152,7 +169,7 @@ Core Supabase Edge Functions for the Baseplate application exist by default unde
 Scalekit features have their own edge functions under the app src tree at `src/app/(scalekit)/<name>/lib/edge/`.
 Application features have their own edge functions under the app src tree at `src/app/(features)/<name>/lib/edge/`.
 
-There is a script to wrap all feature Edge Functions into the `supabase/functions/` directory. This allows the Supabase CLI to deploy remotely and serve them locally, ands also allows feature specific functions to use shared libraries. When creating a new App from the Baseplate application, the wrapper should be run and the wrappers committed.
+There is a script to wrap all feature Edge Functions into the `supabase/functions/` directory. This allows the Supabase CLI to deploy remotely and serve them locally, and also allows feature specific functions to use shared libraries. In the platform repo (baseplate) these wrappers should not be committed — they are for local development only. In application repos the wrappers should be committed as they are required for Supabase to deploy the functions. See [Platform vs Application Repos](#platform-vs-application-repos) for details.
 
 ```bash
 # Dry run to see any changes that would be made

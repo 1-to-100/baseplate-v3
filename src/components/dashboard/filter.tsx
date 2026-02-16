@@ -239,13 +239,19 @@ const Filter = ({
         sx={{
           borderColor: totalFiltersApplied > 0 ? 'transparent' : 'transparent',
           borderRadius: '20px',
-          background: totalFiltersApplied > 0 ? '#C7C5FC' : 'var(--joy-palette-background-mainBg)',
-          color: totalFiltersApplied > 0 ? '#3D37DD' : 'var(--joy-palette-text-primary)',
+          background:
+            totalFiltersApplied > 0
+              ? 'var(--joy-palette-primary-200)'
+              : 'var(--joy-palette-background-level1)',
+          color:
+            totalFiltersApplied > 0
+              ? 'var(--joy-palette-primary-600)'
+              : 'var(--joy-palette-text-primary)',
           padding: { xs: '6px 12px', sm: '7px 14px' },
           fontSize: { xs: '12px', sm: '14px' },
           width: { xs: '100%', sm: 'auto' },
           '&:hover': {
-            background: '#DDDEE0',
+            background: 'var(--joy-palette-neutral-200)',
           },
         }}
       >
@@ -303,7 +309,10 @@ const Filter = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       p: { xs: '4px 8px', sm: '6px 12px' },
-                      bgcolor: activeCategory === 'Status' ? '#EEEFF0' : 'transparent',
+                      bgcolor:
+                        activeCategory === 'Status'
+                          ? 'var(--joy-palette-background-level1)'
+                          : 'transparent',
                       borderRadius: '4px',
                       cursor: 'pointer',
                     }}
@@ -316,7 +325,7 @@ const Filter = ({
                         color:
                           activeCategory === 'Status'
                             ? 'var(--joy-palette-text-primary)'
-                            : '#32383E',
+                            : 'var(--joy-palette-text-tertiary)',
                         fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
@@ -332,7 +341,10 @@ const Filter = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       p: { xs: '4px 8px', sm: '6px 12px' },
-                      bgcolor: activeCategory === 'Customer' ? '#EEEFF0' : 'transparent',
+                      bgcolor:
+                        activeCategory === 'Customer'
+                          ? 'var(--joy-palette-background-level1)'
+                          : 'transparent',
                       borderRadius: '4px',
                       cursor: 'pointer',
                     }}
@@ -345,7 +357,7 @@ const Filter = ({
                         color:
                           activeCategory === 'Customer'
                             ? 'var(--joy-palette-text-primary)'
-                            : '#32383E',
+                            : 'var(--joy-palette-text-tertiary)',
                         fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
@@ -395,7 +407,7 @@ const Filter = ({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'Manager'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:
@@ -413,7 +425,7 @@ const Filter = ({
                         color:
                           activeCategory === 'Manager'
                             ? 'var(--joy-palette-text-primary)'
-                            : '#32383E',
+                            : 'var(--joy-palette-text-tertiary)',
                         fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
@@ -431,7 +443,7 @@ const Filter = ({
                       p: { xs: '4px 8px', sm: '6px 12px' },
                       bgcolor:
                         activeCategory === 'Subscription'
-                          ? 'var(--joy-palette-background-mainBg)'
+                          ? 'var(--joy-palette-background-level1)'
                           : 'transparent',
                       borderRadius: '4px',
                       border:
@@ -449,7 +461,7 @@ const Filter = ({
                         color:
                           activeCategory === 'Subscription'
                             ? 'var(--joy-palette-text-primary)'
-                            : '#32383E',
+                            : 'var(--joy-palette-text-tertiary)',
                         fontSize: { xs: '14px', sm: '16px' },
                       }}
                     >
@@ -717,13 +729,13 @@ const Filter = ({
                 onClick={handleApply}
                 sx={{
                   borderRadius: '25px',
-                  bgcolor: '#4F46E5',
-                  color: '#FFFFFF',
+                  bgcolor: 'var(--joy-palette-notification-feature-bg, #4F46E5)',
+                  color: 'var(--joy-palette-common-white, #FFFFFF)',
                   fontSize: { xs: '12px', sm: '14px' },
                   fontWeight: 500,
                   px: { xs: 2, sm: 3 },
                   py: 1,
-                  '&:hover': { bgcolor: '#4338CA' },
+                  '&:hover': { bgcolor: 'var(--joy-palette-primary-600, #4338CA)' },
                   width: { xs: '48%', sm: 'auto' },
                   height: { xs: '32px', sm: '45px' },
                 }}

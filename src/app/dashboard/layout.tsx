@@ -21,7 +21,7 @@ export default function Layout({ children }: LayoutProps): React.JSX.Element {
             '--Layout-bg': 'var(--joy-palette-common-black)',
           },
           '[data-joy-color-scheme="light"]': {
-            '--Layout-bg': 'var(--joy-palette-background-mainBg)',
+            '--Layout-bg': 'var(--joy-palette-background-body)',
           },
           body: {
             '--Layout-gap': '24px',

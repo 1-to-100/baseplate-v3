@@ -1,6 +1,10 @@
 /// <reference lib="deno.ns" />
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
+import {
   strategyResponseJsonSchema,
   supplementalStrategyItemsJsonSchema,
   safeParseSupplementalStrategyItems,
@@ -465,7 +469,6 @@ function validateStrategyResponse(
 }
 
 async function generateSupplementalStrategyItems(args: {
-  openaiKey: string;
   kind: 'values' | 'principles';
   companyName: string;
   companyUrl: string;
@@ -474,16 +477,8 @@ async function generateSupplementalStrategyItems(args: {
   vision: string;
   visionDescription: string;
 }): Promise<StrategyItem[]> {
-  const {
-    openaiKey,
-    kind,
-    companyName,
-    companyUrl,
-    mission,
-    missionDescription,
-    vision,
-    visionDescription,
-  } = args;
+  const { kind, companyName, companyUrl, mission, missionDescription, vision, visionDescription } =
+    args;
 
   const label = kind === 'values' ? 'corporate values' : 'strategic principles';
 
@@ -517,59 +512,41 @@ Return ONLY a JSON array where each element has the following shape:
 
 Provide between 3 and 6 items. Do not include markdown, code fences, or any surrounding commentary.`;
 
-  const responsePayload = {
-    model: 'gpt-5',
-    input: prompt,
-    reasoning: { effort: 'low' },
-    text: {
-      format: supplementalStrategyItemsJsonSchema,
-    },
-  };
+  // Get OpenAI client from provider adapters (handles credentials automatically)
+  const openai = providers.openai();
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${openaiKey}`,
-      'OpenAI-Beta': 'responses=v1',
-    },
-    body: JSON.stringify(responsePayload),
-  });
+  // Use Responses API with reasoning (wrapped with logging)
+  const responseData = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+    openai.responses.create({
+      model: 'gpt-5',
+      input: prompt,
+      reasoning: { effort: 'low' as const },
+      text: {
+        format: {
+          type: 'json_schema' as const,
+          name: supplementalStrategyItemsJsonSchema.name,
+          strict: supplementalStrategyItemsJsonSchema.strict,
+          schema: supplementalStrategyItemsJsonSchema.schema,
+        },
+      },
+    })
+  );
 
-  if (!response.ok) {
-    let errorBody: unknown = null;
-    try {
-      errorBody = await response.json();
-    } catch {
-      errorBody = await response.text();
-    }
-    console.error('OpenAI supplemental generation error:', errorBody);
-    throw new Error(`Failed to generate supplemental ${label}: ${JSON.stringify(errorBody)}`);
-  }
+  console.log(`Supplemental ${label} response received`);
+  console.log('Response status:', responseData.status);
 
-  const responseData = await response.json();
-  const output = (responseData as { output?: Array<Record<string, unknown>> }).output ?? [];
-  const messageItem = output.find((item) => item?.type === 'message') as
-    | { content?: Array<Record<string, unknown>> }
-    | undefined;
-
-  if (!messageItem?.content) {
-    throw new Error(`OpenAI supplemental response missing message content for ${label}.`);
-  }
-
-  const textItem = messageItem.content.find((entry) => entry.type === 'output_text') as
-    | { text?: string }
-    | undefined;
-
-  if (!textItem?.text) {
+  // Extract text using SDK's output_text helper
+  const responseContent = responseData.output_text;
+  if (!responseContent) {
+    console.error('No output_text in response:', responseData);
     throw new Error(`OpenAI supplemental response missing text output for ${label}.`);
   }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(textItem.text);
+    parsed = JSON.parse(responseContent);
   } catch {
-    console.error(`Failed to parse supplemental ${label} JSON:`, textItem.text);
+    console.error(`Failed to parse supplemental ${label} JSON:`, responseContent);
     throw new Error(`OpenAI supplemental ${label} response was not valid JSON.`);
   }
 
@@ -908,10 +885,8 @@ Deno.serve(async (req) => {
     const companyUrl = buildCompanyUrl(customer.email_domain);
     console.log('Derived company URL:', companyUrl, { processId });
 
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is not set.');
-    }
+    // Get OpenAI client from provider adapters (handles credentials automatically)
+    const openai = providers.openai();
 
     const prompt = createStrategyPrompt({
       companyUrl,
@@ -935,78 +910,52 @@ Deno.serve(async (req) => {
       hasCustomerInfo: Boolean(customerInfo),
     });
 
-    const responsePayload = {
-      model: 'gpt-5',
-      input: combinedPrompt,
-      reasoning: { effort: 'medium' },
-      tools: [
-        {
-          type: 'web_search',
-          filters: { allowed_domains: [domain] },
+    // Use Responses API with web_search tool (wrapped with logging)
+    const responseData = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+      openai.responses.create({
+        model: 'gpt-5',
+        input: combinedPrompt,
+        reasoning: { effort: 'medium' as const },
+        tools: [
+          {
+            type: 'web_search' as const,
+            search_context_size: 'medium' as const,
+            filters: { allowed_domains: [domain] },
+          },
+        ],
+        text: {
+          format: {
+            type: 'json_schema' as const,
+            name: strategyResponseJsonSchema.name,
+            strict: strategyResponseJsonSchema.strict,
+            schema: strategyResponseJsonSchema.schema,
+          },
         },
-      ],
-      text: {
-        format: strategyResponseJsonSchema,
-      },
-    };
-
-    const openAiResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiKey}`,
-        'OpenAI-Beta': 'responses=v1',
-      },
-      body: JSON.stringify(responsePayload),
-    });
+      })
+    );
 
     console.log('OpenAI response received.', {
       processId,
-      status: openAiResponse.status,
+      status: responseData.status,
       elapsedMs: Date.now() - openAiStart,
-      ok: openAiResponse.ok,
     });
-
-    if (!openAiResponse.ok) {
-      let errorBody: unknown = null;
-      try {
-        errorBody = await openAiResponse.json();
-      } catch {
-        errorBody = await openAiResponse.text();
-      }
-      console.error('OpenAI API error:', errorBody);
-      throw new Error(`OpenAI API error: ${JSON.stringify(errorBody)}`);
-    }
-
-    const responseData = await openAiResponse.json();
-    const output = (responseData as { output?: Array<Record<string, unknown>> }).output ?? [];
-    const messageItem = output.find((item) => item?.type === 'message') as
-      | { content?: Array<Record<string, unknown>> }
-      | undefined;
 
     let parsedResult: unknown = {};
 
-    if (messageItem?.content) {
-      const textItem = messageItem.content.find((entry) => entry.type === 'output_text') as
-        | { text?: string }
-        | undefined;
+    // Extract text using SDK's output_text helper
+    const responseText = responseData.output_text;
+    if (responseText) {
+      console.log('OpenAI output received (first 400 chars):', responseText.slice(0, 400));
 
-      if (textItem?.text) {
-        const responseText = textItem.text;
-        console.log('OpenAI output received (first 400 chars):', responseText.slice(0, 400));
-
-        try {
-          parsedResult = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse OpenAI JSON:', parseError);
-          console.warn('Using default values due to JSON parse error.');
-          parsedResult = {}; // Use empty object to trigger default values
-        }
-      } else {
-        console.warn('No output_text found in message content. Using default values.');
+      try {
+        parsedResult = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse OpenAI JSON:', parseError);
+        console.warn('Using default values due to JSON parse error.');
+        parsedResult = {}; // Use empty object to trigger default values
       }
     } else {
-      console.warn('No message item found in OpenAI response. Using default values.');
+      console.warn('No output_text found in response. Using default values.');
     }
 
     let strategy = validateStrategyResponse(parsedResult, customer.name);
@@ -1015,7 +964,6 @@ Deno.serve(async (req) => {
     let strategyValues = strategy.values;
     if (!strategyValues.length) {
       strategyValues = await generateSupplementalStrategyItems({
-        openaiKey,
         kind: 'values',
         companyName: customer.name,
         companyUrl,
@@ -1031,7 +979,6 @@ Deno.serve(async (req) => {
     let strategyPrinciples = strategy.principles;
     if (!strategyPrinciples.length) {
       strategyPrinciples = await generateSupplementalStrategyItems({
-        openaiKey,
         kind: 'principles',
         companyName: customer.name,
         companyUrl,

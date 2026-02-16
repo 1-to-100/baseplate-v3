@@ -376,7 +376,7 @@ const SystemAdminSettings: React.FC = () => {
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
 
   const iconStyle = {
@@ -579,7 +579,7 @@ const SystemAdminSettings: React.FC = () => {
                     color: 'var(--joy-palette-text-secondary)',
                     "&[aria-selected='true']": {
                       border: '1px solid var(--joy-palette-divider)',
-                      color: 'var(--joy-palette-background-primaryColor)',
+                      color: 'var(--joy-palette-primary-500)',
                       '& svg': { fill: 'url(#tab-gradient)' },
                     },
                   },
@@ -1197,7 +1197,7 @@ const SystemAdminSettings: React.FC = () => {
                       p: '12px',
                       cursor: 'pointer',
                       borderRadius: '8px',
-                      bgcolor: 'var(--joy-palette-background-mainBg)',
+                      bgcolor: 'var(--joy-palette-background-level1)',
                       display: 'flex',
                       flexDirection: 'column',
                     }}

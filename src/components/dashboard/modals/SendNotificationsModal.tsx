@@ -229,7 +229,7 @@ export default function SendNotifications({
                       sx={{
                         cursor: 'pointer',
                         '&:hover': {
-                          backgroundColor: 'var(--joy-palette-background-mainBg)',
+                          backgroundColor: 'var(--joy-palette-background-level1)',
                         },
                       }}
                     >
@@ -242,7 +242,7 @@ export default function SendNotifications({
                           padding: '5px 10px',
                           cursor: 'pointer',
                           '&:hover': {
-                            backgroundColor: 'var(--joy-palette-background-mainBg)',
+                            backgroundColor: 'var(--joy-palette-background-level1)',
                           },
                         }}
                       >

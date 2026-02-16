@@ -30,7 +30,7 @@ export function CenteredLayout({ children }: CenteredLayoutProps): React.JSX.Ele
       >
         <Box
           sx={{
-            bgcolor: 'var(--joy-palette-background-body)',
+            bgcolor: 'var(--joy-palette-background-surface)',
             borderRadius: 'var(--joy-radius-xl)',
             color: 'var(--joy-palette-text-primary)',
             display: 'flex',

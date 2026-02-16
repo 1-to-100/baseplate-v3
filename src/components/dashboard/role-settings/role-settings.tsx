@@ -92,7 +92,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
 
   const iconStyle = {
@@ -138,7 +138,7 @@ const RoleSettings: React.FC<RoleSettingsProps> = ({ roles, fetchRoles }) => {
             borderRadius: '8px',
             border: '1px solid var(--joy-palette-divider)',
             boxShadow: 'none',
-            backgroundColor: 'var(--joy-palette-background-body)',
+            backgroundColor: 'var(--joy-palette-background-surface)',
             display: 'flex',
             flexDirection: 'column',
             minHeight: '210px',

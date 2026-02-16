@@ -1,5 +1,9 @@
 /// <reference lib="deno.ns" />
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import {
+  providers,
+  withLogging,
+} from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { competitorsJsonSchema, parseCompetitorsResponse, type CompetitorItem } from './schema.ts';
 
 interface RequestBody {
@@ -98,62 +102,44 @@ Return ONLY valid JSON (no markdown or commentary) with this shape:
 - Avoid duplicates, outdated companies, or made-up data.`;
 }
 
-async function callOpenAI(args: { openaiKey: string; prompt: string }): Promise<CompetitorItem[]> {
-  const { openaiKey, prompt } = args;
+async function callOpenAI(args: { prompt: string }): Promise<CompetitorItem[]> {
+  const { prompt } = args;
 
-  const payload = {
-    model: 'gpt-5',
-    input: prompt,
-    reasoning: { effort: 'medium' as const },
-    text: {
-      format: competitorsJsonSchema,
-    },
-  };
+  // Get OpenAI client from provider adapters (handles credentials automatically)
+  const openai = providers.openai();
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${openaiKey}`,
-      'OpenAI-Beta': 'responses=v1',
-    },
-    body: JSON.stringify(payload),
-  });
+  // Use Responses API with reasoning (wrapped with logging)
+  const responseData = await withLogging('openai', 'responses.create', 'gpt-5', () =>
+    openai.responses.create({
+      model: 'gpt-5',
+      input: prompt,
+      reasoning: { effort: 'medium' as const },
+      text: {
+        format: {
+          type: 'json_schema' as const,
+          name: competitorsJsonSchema.name,
+          strict: competitorsJsonSchema.strict,
+          schema: competitorsJsonSchema.schema,
+        },
+      },
+    })
+  );
 
-  if (!response.ok) {
-    let errorBody: unknown = null;
-    try {
-      errorBody = await response.json();
-    } catch {
-      errorBody = await response.text();
-    }
-    console.error('OpenAI API error:', errorBody);
-    throw new Error('OpenAI request failed');
-  }
+  console.log('Responses API response received');
+  console.log('Response status:', responseData.status);
 
-  const data = await response.json();
-  const output = (data as { output?: Array<Record<string, unknown>> }).output ?? [];
-  const messageItem = output.find((item) => item?.type === 'message') as
-    | { content?: Array<Record<string, unknown>> }
-    | undefined;
-
-  if (!messageItem?.content) {
-    throw new Error('OpenAI response missing message content');
-  }
-
-  const textItem = messageItem.content.find((entry) => entry.type === 'output_text') as
-    | { text?: string }
-    | undefined;
-
-  if (!textItem?.text) {
+  // Extract text using SDK's output_text helper
+  const responseContent = responseData.output_text;
+  if (!responseContent) {
+    console.error('No output_text in response:', responseData);
     throw new Error('OpenAI response missing text output');
   }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(textItem.text);
+    parsed = JSON.parse(responseContent);
   } catch (error) {
-    console.error('Failed to parse OpenAI JSON:', textItem.text);
+    console.error('Failed to parse OpenAI JSON:', responseContent);
     throw new Error('OpenAI response was not valid JSON');
   }
 
@@ -213,9 +199,8 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
 
-    if (!supabaseUrl || !anonKey || !openaiKey) {
+    if (!supabaseUrl || !anonKey) {
       throw new Error('Missing required environment variables');
     }
 
@@ -298,7 +283,7 @@ Deno.serve(async (req) => {
       limit,
     });
 
-    const suggestions = await callOpenAI({ openaiKey, prompt });
+    const suggestions = await callOpenAI({ prompt });
 
     // Fetch default status and source options
     const { data: defaultStatus, error: statusError } = await supabase

@@ -35,8 +35,29 @@ jobs:
       - name: Type check edge functions
         run: deno check 'src/**/edge/**/*.ts'
 
+      - name: Create test results directory
+        run: mkdir -p test-results
+
       - name: Run all edge function tests
+        id: deno-tests
+        continue-on-error: true
         run: deno task test:edge
+
+      - name: Create fallback test report
+        if: always() && steps.deno-tests.outcome == 'failure'
+        run: |
+          if [ ! -f test-results/edge-functions.xml ]; then
+            cat > test-results/edge-functions.xml << 'XMLEOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <testsuites>
+            <testsuite name="Edge Function Tests" tests="1" failures="1" errors="0">
+              <testcase name="Test Suite Execution" classname="deno.test.runner">
+                <failure message="Test runner crashed">The Deno test runner failed before producing JUnit results. Check the workflow log for details.</failure>
+              </testcase>
+            </testsuite>
+          </testsuites>
+          XMLEOF
+          fi
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -45,6 +66,7 @@ jobs:
           name: edge-function-test-results
           path: test-results/edge-functions.xml
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Publish test report
         uses: dorny/test-reporter@v1
@@ -53,3 +75,7 @@ jobs:
           name: Edge Function Tests
           path: test-results/edge-functions.xml
           reporter: java-junit
+
+      - name: Fail job if tests failed
+        if: always() && steps.deno-tests.outcome == 'failure'
+        run: exit 1
