@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import Chip from '@mui/joy/Chip';
 import Stack from '@mui/joy/Stack';
@@ -11,7 +10,7 @@ import { TextAlignRight as TextAlignRightIcon } from '@phosphor-icons/react/dist
 
 import type { Settings } from '@/types/settings';
 import { Popup, PopupContent } from '@/components/core/popup';
-import type { Direction, PrimaryColor } from '@/styles/theme/types';
+import type { Direction } from '@/styles/theme/types';
 
 export interface SettingsPopoverProps {
   anchorEl?: HTMLElement | null;
@@ -28,11 +27,9 @@ export function SettingsPopover({
   open,
   settings,
 }: SettingsPopoverProps): React.JSX.Element | null {
-  const [primaryColor, setPrimaryColor] = React.useState<PrimaryColor>(settings.primaryColor);
   const [direction, setDirection] = React.useState<Direction>(settings.direction ?? 'ltr');
 
   React.useEffect((): void => {
-    setPrimaryColor(settings.primaryColor);
     setDirection(settings.direction ?? 'ltr');
   }, [settings]);
 
@@ -46,38 +43,6 @@ export function SettingsPopover({
     >
       <PopupContent sx={{ p: 2 }}>
         <Stack spacing={3}>
-          <Stack spacing={2}>
-            <Typography level='title-md'>Primary Color</Typography>
-            <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap' }}>
-              {(
-                [
-                  { value: 'palatinateBlue', color: '#3d37dd' },
-                  { value: 'seaGreen', color: '#18834c' },
-                  { value: 'crayolaBlue', color: '#1b49f5' },
-                ] satisfies { value: PrimaryColor; color: string }[]
-              ).map(
-                (option): React.JSX.Element => (
-                  <Box
-                    key={option.value}
-                    onClick={(): void => {
-                      setPrimaryColor(option.value);
-                    }}
-                    sx={{
-                      bgcolor: option.color,
-                      border: '1px solid var(--joy-palette-background-surface)',
-                      borderRadius: 'var(--joy-radius-sm)',
-                      flex: '0 0 auto',
-                      height: '32px',
-                      width: '32px',
-                      ...(primaryColor === option.value && {
-                        outline: `2px solid ${option.color}`,
-                      }),
-                    }}
-                  />
-                )
-              )}
-            </Stack>
-          </Stack>
           <Stack spacing={2}>
             <Typography level='title-md'>Direction</Typography>
             <Stack direction='row' spacing={2} sx={{ flexWrap: 'wrap' }}>
@@ -109,7 +74,7 @@ export function SettingsPopover({
           <Button
             color='neutral'
             onClick={(): void => {
-              onUpdate?.({ primaryColor, direction });
+              onUpdate?.({ direction });
             }}
             size='sm'
             variant='outlined'

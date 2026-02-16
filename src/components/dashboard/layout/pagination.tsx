@@ -144,7 +144,10 @@ export default function Pagination({
               height: { xs: '32px', sm: '40px' },
               fontSize: { xs: '12px', sm: '14px' },
               backgroundColor: currentPage === page ? 'transparent' : 'transparent',
-              borderColor: currentPage === page ? 'var(--joy-palette-primary-500)' : '#EEEFF0',
+              borderColor:
+                currentPage === page
+                  ? 'var(--joy-palette-primary-500)'
+                  : 'var(--joy-palette-background-level1)',
               borderWidth: currentPage === page ? '2px' : '1px',
               color:
                 currentPage === page
@@ -189,7 +192,7 @@ export default function Pagination({
             currentPage === totalPages
               ? 'var(--joy-palette-text-secondary)'
               : 'var(--joy-palette-text-primary)',
-          borderColor: '#EEEFF0',
+          borderColor: 'var(--joy-palette-background-level1)',
           fontSize: { xs: '12px', sm: '14px' },
         }}
       >
@@ -213,7 +216,7 @@ export default function Pagination({
             currentPage === totalPages
               ? 'var(--joy-palette-text-secondary)'
               : 'var(--joy-palette-text-primary)',
-          borderColor: '#EEEFF0',
+          borderColor: 'var(--joy-palette-background-level1)',
           fontSize: { xs: '12px', sm: '14px' },
         }}
       >

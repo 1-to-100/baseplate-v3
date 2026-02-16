@@ -450,7 +450,7 @@ export default function Page(): React.JSX.Element {
                                   color: 'var(--joy-palette-text-primary)',
                                   gap: { xs: '10px', sm: '14px' },
                                   '&:hover': {
-                                    backgroundColor: 'var(--joy-palette-background-mainBg)',
+                                    backgroundColor: 'var(--joy-palette-background-level1)',
                                   },
                                 }}
                               >

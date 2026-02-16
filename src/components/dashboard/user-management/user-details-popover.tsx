@@ -174,7 +174,7 @@ const UserDetailsPopover: React.FC<UserDetailsPopoverProps> = ({
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
 
   const iconStyle = {

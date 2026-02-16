@@ -151,7 +151,7 @@ export function MemberModal({ member, open }: MemberModalProps): React.JSX.Eleme
                   <Avatar
                     sx={{
                       '--Avatar-size': '48px',
-                      background: `var(--joy-palette-gradient-${(index % 4) + 1})`,
+                      background: `var(--joy-palette-neutral-${[100, 200, 300, 400][index % 4]})`,
                       svg: { display: 'none' },
                     }}
                   />

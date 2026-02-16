@@ -358,7 +358,7 @@ export default function Page(): React.JSX.Element {
     alignItems: 'center',
     cursor: 'pointer',
     color: 'var(--joy-palette-text-primary)',
-    '&:hover': { backgroundColor: 'var(--joy-palette-background-mainBg)' },
+    '&:hover': { backgroundColor: 'var(--joy-palette-background-level1)' },
   };
 
   const avatarColors: ColorPaletteProp[] = ['primary', 'neutral', 'danger', 'warning', 'success'];
@@ -453,7 +453,7 @@ export default function Page(): React.JSX.Element {
                   <IconButton
                     onClick={handleBulkDeactivate}
                     sx={{
-                      bgcolor: 'var(--joy-palette-background-mainBg)',
+                      bgcolor: 'var(--joy-palette-background-level1)',
                       color: '#636B74',
                       borderRadius: '50%',
                       width: { xs: 28, sm: 32 },

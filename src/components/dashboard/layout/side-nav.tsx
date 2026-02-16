@@ -71,10 +71,10 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
   return (
     <Box
       sx={{
-        '--SideNav-background': 'var(--joy-palette-background-mainBg)',
+        '--SideNav-background': 'var(--joy-palette-background-level1)',
         '--SideNav-color': 'var(--joy-palette-common-white)',
         '--NavItem-color': 'var(--joy-palette-text-primary)',
-        '--NavItem-active-background': 'var(--joy-palette-background-navActiveBg)',
+        '--NavItem-active-background': 'var(--joy-palette-background-level2)',
         '--NavItem-active-color': 'var(--joy-palette-text-primary)',
         '--NavItem-active-icon-color': 'var(--joy-palette-common-white)',
         '--NavItem-open-color': 'var(--joy-palette-common-white)',
