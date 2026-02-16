@@ -43,14 +43,15 @@ export class DqlAdapter {
       dql.push(`location.city.name:${location}`);
     }
 
-    // Categories/Industries - multiple separate clauses (AND logic)
+    // Categories/Industries - OR syntax (match ANY category)
     if (dto.categories && dto.categories.length > 0) {
-      dto.categories.forEach((category) => {
-        if (category && category.trim()) {
-          const categoryQuoted = `"${category.trim()}"`;
-          dql.push(`categories.name:${categoryQuoted}`);
-        }
-      });
+      const validCategories = dto.categories.filter((category) => category && category.trim());
+      if (validCategories.length > 0) {
+        const categoriesQuoted = validCategories
+          .map((category) => `"${category.trim()}"`)
+          .join(', ');
+        dql.push(`categories.name:or(${categoriesQuoted})`);
+      }
     }
 
     // Technographics - OR syntax (match ANY technology)
