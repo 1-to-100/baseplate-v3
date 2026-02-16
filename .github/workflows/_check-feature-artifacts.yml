@@ -100,13 +100,25 @@ jobs:
       - name: Check for generated registry
         id: check-registry
         run: |
-          CHANGED_FILES=$(gh pr diff ${{ inputs.pr_number }} --name-only || true)
+          # `gh pr diff --name-only` has no status information. Use the PR files API
+          # so deletions of the generated registry file do not fail this check.
+          REGISTRY_STATUSES=$(gh api "repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/files" \
+            --paginate \
+            --jq '.[] | select(.filename == "supabase/functions/_shared/response-processors/registry.ts") | .status' \
+            || true)
 
-          if echo "$CHANGED_FILES" | grep -qx "supabase/functions/_shared/response-processors/registry.ts"; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
+          echo "Registry file statuses:"
+          echo "$REGISTRY_STATUSES"
+
+          REGISTRY_VIOLATION=false
+          while IFS= read -r status; do
+            if [[ -n "$status" && "$status" != "removed" ]]; then
+              REGISTRY_VIOLATION=true
+              break
+            fi
+          done <<< "$REGISTRY_STATUSES"
+
+          echo "found=$REGISTRY_VIOLATION" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
 
