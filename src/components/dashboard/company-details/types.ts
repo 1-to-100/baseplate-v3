@@ -13,7 +13,7 @@ export interface SimplePerson {
 
 // Common company details data that both CompanyItem and segment Company can map to
 export interface CompanyDetailsData {
-  id: number;
+  id: string | number;
   name: string;
   logo?: string;
   description?: string;

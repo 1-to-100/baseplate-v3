@@ -43,7 +43,9 @@ export default function CompanyDetailsHeader({
             mb: 1,
           }}
         >
-          <Avatar src={company.logo} alt={company.name} sx={{ width: 48, height: 48 }} />
+          <Avatar src={company.logo} alt={company.name} sx={{ width: 48, height: 48 }}>
+            {company.name.charAt(0).toUpperCase()}
+          </Avatar>
           <Box sx={{ flex: 1 }}>
             <Typography
               sx={{

@@ -25,7 +25,7 @@ import {
   CompanyHeaderMenu,
   type CompanyDetailsData,
   type SimplePerson,
-} from '../../../ui/components/company-details';
+} from '@/components/dashboard/company-details';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import { AddToListModal } from '../../../lib/components';
 import { toast } from '@/components/core/toaster';
