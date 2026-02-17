@@ -1,0 +1,270 @@
+import type { DiffbotArticleResponse, DiffbotArticle } from './types.ts';
+
+/** Default page size when fetching all pages */
+const DEFAULT_PAGE_SIZE = 200;
+
+/** Retry config for transient errors */
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 1000;
+
+/**
+ * Retry a function with exponential backoff on retryable errors (429, 5xx, DIFFBOT_SERVICE_UNAVAILABLE).
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = MAX_RETRIES,
+  baseDelayMs: number = RETRY_BASE_DELAY_MS
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const isRetryable =
+        message.includes('DIFFBOT_SERVICE_UNAVAILABLE') ||
+        message.includes('429') ||
+        message.includes('503') ||
+        message.includes('502') ||
+        message.includes('500');
+
+      if (!isRetryable || attempt === maxRetries) {
+        throw error;
+      }
+
+      const delayMs = baseDelayMs * Math.pow(2, attempt);
+      console.log(`[Diffbot Article] Retry ${attempt + 1}/${maxRetries} in ${delayMs}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * Diffbot API client for article/news search
+ */
+export class DiffbotArticleClient {
+  private readonly baseUrl: string;
+  private readonly token: string;
+
+  constructor(baseUrl?: string, token?: string) {
+    this.baseUrl = baseUrl || Deno.env.get('DIFFBOT_API_URL') || 'https://kg.diffbot.com/kg/v3/dql';
+    this.token = token || Deno.env.get('DIFFBOT_API_TOKEN') || '';
+
+    if (!this.token) {
+      throw new Error('DIFFBOT_API_TOKEN environment variable is required');
+    }
+  }
+
+  /**
+   * Search for articles mentioning specific organizations by their Diffbot entity IDs.
+   * Single request; use searchArticlesByOrganizationsAllPages for full result set.
+   *
+   * @param diffbotIds - Array of Diffbot organization entity IDs (e.g., ["Exxxx", "Eyyyy"])
+   * @param options - Search options
+   * @returns Articles and total count
+   */
+  async searchArticlesByOrganizations(
+    diffbotIds: string[],
+    options?: {
+      /** How many days back to search (default 30) */
+      daysBack?: number;
+      /** Max results to return (default 50) */
+      size?: number;
+      /** Offset for pagination (default 0) */
+      from?: number;
+      /** Language filter (e.g., "en") */
+      language?: string;
+    }
+  ): Promise<{
+    data: DiffbotArticle[];
+    totalCount: number;
+  }> {
+    if (diffbotIds.length === 0) {
+      return { data: [], totalCount: 0 };
+    }
+
+    const daysBack = options?.daysBack ?? 30;
+    const size = options?.size ?? 50;
+    const from = options?.from ?? 0;
+
+    // Build tags.uri OR clause for all organizations
+    // Format: (tags.uri:"diffbot.com/entity/ID1" OR tags.uri:"diffbot.com/entity/ID2" ...)
+    const tagsClause = diffbotIds
+      .map((id) => {
+        // Normalize ID - remove any prefix if present
+        const cleanId = id.startsWith('diffbot.com/entity/')
+          ? id.replace('diffbot.com/entity/', '')
+          : id;
+        return `tags.uri:"diffbot.com/entity/${cleanId}"`;
+      })
+      .join(' OR ');
+
+    // Build DQL query
+    // type:Article (tags.uri:...) date<30d get:fields sortBy:date
+    const getClause =
+      'id,diffbotUri,title,text,summary,pageUrl,date,sentiment,language,author,siteName,tags';
+
+    let queryString = `type:Article (${tagsClause}) date<${daysBack}d`;
+
+    // Add language filter if specified
+    if (options?.language) {
+      queryString += ` language:"${options.language}"`;
+    }
+
+    queryString += ` get:${getClause} sortBy:date`;
+
+    const encodedQuery = encodeURIComponent(queryString);
+
+    // Build full URL
+    const url = `${this.baseUrl}?type=query&token=${this.token}&query=${encodedQuery}&size=${size}&from=${from}&include=searchInfo`;
+
+    return withRetry(async () => {
+      console.log(
+        `[Diffbot Article] Fetching articles for ${diffbotIds.length} organizations, last ${daysBack} days (from=${from}, size=${size})`
+      );
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Diffbot Article API] Error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+
+        if (response.status >= 500) {
+          throw new Error('DIFFBOT_SERVICE_UNAVAILABLE');
+        }
+        if (response.status === 429) {
+          throw new Error('Diffbot API rate limit (429)');
+        }
+
+        throw new Error(`Diffbot API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: DiffbotArticleResponse = await response.json();
+
+      const totalCount =
+        typeof data.hits === 'number' ? data.hits : data.searchInfo?.totalHits || 0;
+
+      const articles = (data.data || []).map((item) => item.entity);
+
+      console.log(`[Diffbot Article] Found ${articles.length} articles (total: ${totalCount})`);
+
+      return {
+        data: articles,
+        totalCount,
+      };
+    });
+  }
+
+  /**
+   * Fetch all articles for the given organizations with pagination.
+   * Use this when a single request may not return all results (e.g. media-heavy companies).
+   *
+   * @param diffbotIds - Array of Diffbot organization entity IDs
+   * @param options - Search options (daysBack, language, pageSize)
+   * @returns All articles and total count
+   */
+  async searchArticlesByOrganizationsAllPages(
+    diffbotIds: string[],
+    options?: {
+      daysBack?: number;
+      language?: string;
+      pageSize?: number;
+    }
+  ): Promise<{
+    data: DiffbotArticle[];
+    totalCount: number;
+  }> {
+    if (diffbotIds.length === 0) {
+      return { data: [], totalCount: 0 };
+    }
+
+    const pageSize = options?.pageSize ?? DEFAULT_PAGE_SIZE;
+    const allArticles: DiffbotArticle[] = [];
+    let from = 0;
+    let totalCount = 0;
+
+    while (true) {
+      const { data, totalCount: count } = await this.searchArticlesByOrganizations(diffbotIds, {
+        daysBack: options?.daysBack ?? 30,
+        size: pageSize,
+        from,
+        language: options?.language,
+      });
+
+      totalCount = count;
+      allArticles.push(...data);
+
+      if (data.length < pageSize || data.length === 0) {
+        break;
+      }
+      from += pageSize;
+      if (from >= totalCount) {
+        break;
+      }
+
+      // Small delay between pages to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    console.log(`[Diffbot Article] Paginated fetch: ${allArticles.length} articles total`);
+    return { data: allArticles, totalCount };
+  }
+
+  /**
+   * Extract the Diffbot entity ID from a tags.uri value
+   * @example "diffbot.com/entity/E1234567890" -> "E1234567890"
+   */
+  static extractEntityIdFromUri(uri: string | undefined): string | null {
+    if (!uri) return null;
+    const match = uri.match(/diffbot\.com\/entity\/([A-Za-z0-9_-]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Map articles to their respective company IDs based on tags.uri
+   *
+   * @param articles - Articles from Diffbot
+   * @param diffbotIdToCompanyId - Map of diffbot_id -> company_id
+   * @returns Map of company_id -> articles
+   */
+  static mapArticlesToCompanies(
+    articles: DiffbotArticle[],
+    diffbotIdToCompanyId: Map<string, string>
+  ): Map<string, DiffbotArticle[]> {
+    const result = new Map<string, DiffbotArticle[]>();
+
+    for (const article of articles) {
+      if (!article.tags) continue;
+
+      // Find which companies this article is tagged with
+      for (const tag of article.tags) {
+        const entityId = DiffbotArticleClient.extractEntityIdFromUri(tag.uri);
+        if (!entityId) continue;
+
+        const companyId = diffbotIdToCompanyId.get(entityId);
+        if (!companyId) continue;
+
+        // Add article to this company's list
+        const existing = result.get(companyId) || [];
+        // Avoid duplicates (same article can match multiple tags)
+        if (!existing.some((a) => a.pageUrl === article.pageUrl)) {
+          existing.push(article);
+          result.set(companyId, existing);
+        }
+      }
+    }
+
+    return result;
+  }
+}
