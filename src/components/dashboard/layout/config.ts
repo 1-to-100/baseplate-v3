@@ -75,6 +75,12 @@ export const layoutConfig: LayoutConfig = {
           icon: 'bell',
           permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS],
         },
+        {
+          key: 'llm-jobs',
+          title: 'Jobs',
+          href: paths.dashboard.llmJobs.list,
+          icon: 'robot',
+        },
         // { key: 'test', title: 'User Test', href: paths.dashboard.test.list, icon: 'help' },
         // { key: 'accounting', title: 'Accounting', href: paths.dashboard.crypto, icon: 'accounting' },
         // { key: 'help', title: 'Help Centre', href: paths.dashboard.crypto, icon: 'help' },

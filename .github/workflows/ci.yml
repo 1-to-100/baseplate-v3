@@ -36,12 +36,22 @@ jobs:
     needs: typecheck-lint
     uses: ./.github/workflows/_deno-tests.yml
 
+  db-tests:
+    name: Database Tests
+    needs: typecheck-lint
+    uses: ./.github/workflows/_db-tests.yml
+
+  storybook-tests:
+    name: Storybook Tests
+    needs: typecheck-lint
+    uses: ./.github/workflows/_storybook-tests.yml
+
   # ============================================
   # Stage 3: Deploy (only on push to main branches)
   # ============================================
   deploy:
     name: Deploy Edge Functions
-    needs: [build, deno-tests]
+    needs: [build, deno-tests, db-tests, storybook-tests]
     if: (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/_deploy-edge-functions.yml
     with:
