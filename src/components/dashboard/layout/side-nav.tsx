@@ -63,10 +63,7 @@ export function SideNav({ items }: SideNavProps): React.JSX.Element {
   const pathname = usePathname();
   const { userInfo } = useUserInfo();
 
-  const filteredItems = items.map((group) => ({
-    ...group,
-    items: filterNavItems(group.items, userInfo),
-  }));
+  const filteredItems = filterNavItems(items, userInfo) ?? [];
 
   return (
     <Box

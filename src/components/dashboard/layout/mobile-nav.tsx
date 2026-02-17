@@ -74,10 +74,7 @@ export function MobileNav({ items, onClose, open }: MobileNavProps): React.JSX.E
   const canOpen = useMediaQuery('between', 'xs', 'lg');
   const { userInfo } = useUserInfo();
 
-  const filteredItems = items.map((group) => ({
-    ...group,
-    items: filterNavItems(group.items, userInfo),
-  }));
+  const filteredItems = filterNavItems(items, userInfo) ?? [];
 
   return (
     <Drawer
