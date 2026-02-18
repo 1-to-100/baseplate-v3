@@ -1,7 +1,7 @@
+/// <reference lib="deno.ns" />
 /**
  * Company scoring Edge Function.
  * Scores one company for one customer using OpenAI and Diffbot data.
- * Requires OPENAI_API_KEY in Supabase Edge Function secrets.
  */
 import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import {
@@ -13,8 +13,12 @@ import {
   withLogging,
 } from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
+import {
+  safeParseCompanyScoringRequest,
+  safeParseCompanyScoringResult,
+  type CompanyScoringResult,
+} from './schema.ts';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const COMPANY_SCORING_SYSTEM_PROMPT = `You are an assistant that generates company scoring results in a structured JSON format.
@@ -50,104 +54,16 @@ You must respond with a JSON object containing exactly these three fields:
 - Use clear, professional language
 - Do not invent specific company names, locations, or details not provided in the input`;
 
-interface CompanyScoringBody {
-  company_id: string;
-  customer_id: string;
+export interface HandlerDeps {
+  createServiceClient: () => ReturnType<typeof createServiceClient>;
+  callOpenaiScoring: (userMessage: string) => Promise<{ content: string }>;
 }
 
-interface CompanyScoringResult {
-  score: number;
-  short_description: string;
-  full_description: string;
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    let body: CompanyScoringBody;
-    try {
-      body = await req.json();
-    } catch {
-      throw new ApiError('Invalid request body', 400);
-    }
-
-    const companyId = body?.company_id;
-    const customerId = body?.customer_id;
-    if (
-      !companyId ||
-      !customerId ||
-      typeof companyId !== 'string' ||
-      typeof customerId !== 'string' ||
-      !UUID_REGEX.test(companyId.trim()) ||
-      !UUID_REGEX.test(customerId.trim())
-    ) {
-      throw new ApiError('company_id and customer_id are required (valid UUIDs)', 400);
-    }
-
-    const supabase = createServiceClient();
-
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('company_id')
-      .eq('company_id', companyId)
-      .single();
-
-    if (companyError || !company) {
-      throw new ApiError('Company not found', 404);
-    }
-
-    const { data: customer, error: customerError } = await supabase
-      .from('customers')
-      .select('customer_id')
-      .eq('customer_id', customerId)
-      .single();
-
-    if (customerError || !customer) {
-      throw new ApiError('Customer not found', 404);
-    }
-
-    const { data: customerCompany, error: ccError } = await supabase
-      .from('customer_companies')
-      .select('scoring_results_updated_at')
-      .eq('customer_id', customerId)
-      .eq('company_id', companyId)
-      .single();
-
-    if (ccError || !customerCompany) {
-      throw new ApiError('Customer company record not found', 404);
-    }
-
-    const updatedAt = customerCompany.scoring_results_updated_at;
-    if (updatedAt) {
-      const cutoff = new Date(Date.now() - THIRTY_DAYS_MS);
-      if (new Date(updatedAt) > cutoff) {
-        return new Response(JSON.stringify({ status: 'skipped', reason: 'recently_scored' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
-      }
-    }
-
-    const { data: metadata, error: metaError } = await supabase
-      .from('company_metadata')
-      .select('diffbot_json')
-      .eq('company_id', companyId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (metaError || !metadata?.diffbot_json) {
-      throw new ApiError('Diffbot data not found for company; run segment processing first.', 400);
-    }
-
-    const diffbotJson = metadata.diffbot_json as Record<string, unknown>;
-    const userMessage = `Process scoring for company data: ${JSON.stringify(diffbotJson)}`;
-
-    const openaiModel = 'gpt-4o-mini';
+const defaultDeps: HandlerDeps = {
+  createServiceClient,
+  callOpenaiScoring: async (userMessage: string) => {
     const openai = providers.openai();
+    const openaiModel = 'gpt-4o-mini';
     const completion = (await withLogging('openai', 'chat.completions.create', openaiModel, () =>
       openai.chat.completions.create({
         model: openaiModel,
@@ -171,12 +87,12 @@ Deno.serve(async (req) => {
                 short_description: {
                   type: 'string',
                   minLength: 1,
-                  description: 'Brief description of the company score rationale',
+                  description: 'Brief description',
                 },
                 full_description: {
                   type: 'string',
                   minLength: 1,
-                  description: 'Detailed explanation of the company score with supporting evidence',
+                  description: 'Detailed explanation',
                 },
               },
               required: ['score', 'short_description', 'full_description'],
@@ -187,72 +103,153 @@ Deno.serve(async (req) => {
         temperature: 0.7,
       })
     )) as { choices?: Array<{ message?: { content?: string | null } }> };
+    const content = completion.choices?.[0]?.message?.content ?? '';
+    return { content };
+  },
+};
 
-    const content = completion.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new ApiError('No response content from OpenAI', 500);
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    let result: CompanyScoringResult;
     try {
-      result = JSON.parse(content) as CompanyScoringResult;
-    } catch {
-      throw new ApiError('Failed to parse OpenAI response', 500);
-    }
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new ApiError('Invalid request body', 400);
+      }
 
-    if (typeof result.score !== 'number' || result.score < 0 || result.score > 10) {
-      throw new ApiError(
-        `Invalid score range: ${result.score}. Score must be between 0 and 10`,
-        500
-      );
-    }
-    if (typeof result.short_description !== 'string' || !result.short_description.trim()) {
-      throw new ApiError('OpenAI response missing valid short_description', 500);
-    }
-    if (typeof result.full_description !== 'string' || !result.full_description.trim()) {
-      throw new ApiError('OpenAI response missing valid full_description', 500);
-    }
+      const parseResult = safeParseCompanyScoringRequest(body);
+      if (!parseResult.success) {
+        throw new ApiError('company_id and customer_id are required (valid UUIDs)', 400);
+      }
 
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('customer_companies')
-      .update({
-        last_scoring_results: {
+      const { company_id: companyId, customer_id: customerId } = parseResult.data;
+      const supabase = deps.createServiceClient();
+
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('company_id')
+        .eq('company_id', companyId)
+        .single();
+
+      if (companyError || !company) {
+        throw new ApiError('Company not found', 404);
+      }
+
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('customer_id')
+        .eq('customer_id', customerId)
+        .single();
+
+      if (customerError || !customer) {
+        throw new ApiError('Customer not found', 404);
+      }
+
+      const { data: customerCompany, error: ccError } = await supabase
+        .from('customer_companies')
+        .select('scoring_results_updated_at')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (ccError || !customerCompany) {
+        throw new ApiError('Customer company record not found', 404);
+      }
+
+      const updatedAt = customerCompany.scoring_results_updated_at;
+      if (updatedAt) {
+        const cutoff = new Date(Date.now() - THIRTY_DAYS_MS);
+        if (new Date(updatedAt) > cutoff) {
+          return new Response(JSON.stringify({ status: 'skipped', reason: 'recently_scored' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          });
+        }
+      }
+
+      const { data: metadata, error: metaError } = await supabase
+        .from('company_metadata')
+        .select('diffbot_json')
+        .eq('company_id', companyId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (metaError || !metadata?.diffbot_json) {
+        throw new ApiError(
+          'Diffbot data not found for company; run segment processing first.',
+          400
+        );
+      }
+
+      const diffbotJson = metadata.diffbot_json as Record<string, unknown>;
+      const userMessage = `Process scoring for company data: ${JSON.stringify(diffbotJson)}`;
+
+      const { content } = await deps.callOpenaiScoring(userMessage);
+
+      if (!content) {
+        throw new ApiError('No response content from OpenAI', 500);
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        throw new ApiError('Failed to parse OpenAI response', 500);
+      }
+
+      const resultParse = safeParseCompanyScoringResult(parsed);
+      if (!resultParse.success) {
+        throw new ApiError('OpenAI response missing valid score or descriptions', 500);
+      }
+
+      const result: CompanyScoringResult = resultParse.data;
+      const now = new Date().toISOString();
+
+      const { error: updateError } = await supabase
+        .from('customer_companies')
+        .update({
+          last_scoring_results: {
+            score: result.score,
+            short_description: result.short_description,
+            full_description: result.full_description,
+          },
+          scoring_results_updated_at: now,
+          updated_at: now,
+        })
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId);
+
+      if (updateError) {
+        throw new ApiError('Failed to save scoring results', 500);
+      }
+
+      return new Response(
+        JSON.stringify({
+          status: 'completed',
           score: result.score,
           short_description: result.short_description,
           full_description: result.full_description,
-        },
-        scoring_results_updated_at: now,
-        updated_at: now,
-      })
-      .eq('customer_id', customerId)
-      .eq('company_id', companyId);
-
-    if (updateError) {
-      console.error('Failed to update customer_companies:', updateError);
-      throw new ApiError('Failed to save scoring results', 500);
-    }
-
-    return new Response(
-      JSON.stringify({
-        status: 'completed',
-        score: result.score,
-        short_description: result.short_description,
-        full_description: result.full_description,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return createErrorResponse(error);
       }
-    );
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return createErrorResponse(error);
+      return createErrorResponse(
+        new ApiError(error instanceof Error ? error.message : 'Internal server error', 500)
+      );
     }
-    console.error('Error in company-scoring:', error);
-    return createErrorResponse(
-      new ApiError(error instanceof Error ? error.message : 'Internal server error', 500)
-    );
-  }
-});
+  };
+}
+
+Deno.serve(createHandler());

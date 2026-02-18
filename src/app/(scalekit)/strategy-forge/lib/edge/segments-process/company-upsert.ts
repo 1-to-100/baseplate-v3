@@ -1,4 +1,4 @@
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import type { DiffbotOrganization } from './types.ts';
 
 /** Normalize diffbot_id for consistent map keys (DB vs Diffbot response may differ in whitespace). */
@@ -320,17 +320,26 @@ export async function bulkInsertCustomerCompanies(
     return 0;
   }
 
-  const { error, count } = await supabase
-    .from('customer_companies')
-    .upsert(records, {
-      onConflict: 'customer_id,company_id',
-      ignoreDuplicates: true,
-    })
-    .select('customer_companies_id', { count: 'exact' });
+  const upsertChain = supabase.from('customer_companies').upsert(records, {
+    onConflict: 'customer_id,company_id',
+    ignoreDuplicates: true,
+  });
+  // Postgrest UpsertBuilder types allow only .select(columns?); runtime supports count/head
+  type SelectWithCount = {
+    select(
+      columns?: string,
+      options?: { count: 'exact'; head?: boolean }
+    ): Promise<{ error: { message?: string } | null; count: number | null }>;
+  };
+  const result = await (upsertChain as unknown as SelectWithCount).select('*', {
+    count: 'exact',
+    head: true,
+  });
+  const { error, count } = result;
 
   if (error) {
     console.error('Error inserting customer_companies:', error);
-    throw new Error(`Failed to insert customer_companies: ${error.message}`);
+    throw new Error(`Failed to insert customer_companies: ${error.message ?? String(error)}`);
   }
 
   return count || 0;

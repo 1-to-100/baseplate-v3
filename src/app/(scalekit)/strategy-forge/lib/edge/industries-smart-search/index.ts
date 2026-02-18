@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
 import {
@@ -9,53 +10,20 @@ import {
   withLogging,
 } from '../../../../../../../supabase/functions/_shared/llm/index.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
+import { cosineSimilarity } from './cosine-similarity.ts';
+import { safeParseSmartSearchRequest, type SmartSearchResult } from './schema.ts';
 
 interface OptionIndustry {
   industry_id: number;
   value: string;
 }
 
-interface SmartSearchRequest {
-  query: string;
-}
+const EMBEDDING_MODEL = 'text-embedding-3-small';
 
-interface SmartSearchResult {
-  industry_id: number;
-  value: string;
-  score: number;
-}
-
-// Cache for industry embeddings (persists across requests in same instance)
 let industryEmbeddingsCache: Map<string, number[]> | null = null;
 let cachedIndustries: OptionIndustry[] | null = null;
 
-/**
- * Calculate cosine similarity between two vectors
- */
-function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
-    throw new Error('Vectors must have the same length');
-  }
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-
-/**
- * Get embeddings from OpenAI via LLM adapter
- */
-async function getEmbeddings(texts: string[]): Promise<number[][]> {
+async function defaultGetEmbeddings(texts: string[]): Promise<number[][]> {
   const openai = providers.openai();
   const result = await withLogging('openai', 'embeddings.create', EMBEDDING_MODEL, () =>
     openai.embeddings.create({
@@ -66,150 +34,118 @@ async function getEmbeddings(texts: string[]): Promise<number[][]> {
   return result.data.map((item: { embedding: number[] }) => item.embedding);
 }
 
-/**
- * Initialize or get cached industry embeddings
- */
-async function getIndustryEmbeddings(
+async function defaultGetIndustryEmbeddings(
   supabase: ReturnType<typeof createServiceClient>
 ): Promise<{ industries: OptionIndustry[]; embeddings: Map<string, number[]> }> {
-  // If already cached, return from cache
   if (industryEmbeddingsCache && cachedIndustries) {
-    console.log('Using cached industry embeddings');
     return { industries: cachedIndustries, embeddings: industryEmbeddingsCache };
   }
-
-  console.log('Computing industry embeddings (first time only)...');
-
-  // Fetch industries from database
   const { data: industries, error } = await supabase
     .from('option_industries')
     .select('industry_id, value')
     .order('value');
 
-  if (error) {
-    console.error('Failed to fetch industries:', error);
-    throw new ApiError('Failed to fetch industries', 500);
-  }
-
-  if (!industries || industries.length === 0) {
-    throw new ApiError('No industries found', 500);
-  }
+  if (error) throw new ApiError('Failed to fetch industries', 500);
+  if (!industries?.length) throw new ApiError('No industries found', 500);
 
   const industryList = industries as OptionIndustry[];
-
-  // Get embeddings for all industry values
   const industryValues = industryList.map((i) => i.value);
-  const embeddings = await getEmbeddings(industryValues);
+  const embeddings = await defaultGetEmbeddings(industryValues);
 
-  // Create cache map
   industryEmbeddingsCache = new Map();
   industryList.forEach((industry, index) => {
     industryEmbeddingsCache!.set(industry.value, embeddings[index]);
   });
-
   cachedIndustries = industryList;
-
-  console.log(`Cached embeddings for ${industryList.length} industries`);
 
   return { industries: industryList, embeddings: industryEmbeddingsCache };
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+export interface HandlerDeps {
+  authenticateRequest: (req: Request) => Promise<{ user_id: string }>;
+  createServiceClient: () => ReturnType<typeof createServiceClient>;
+  getIndustryEmbeddings: (
+    supabase: ReturnType<typeof createServiceClient>
+  ) => Promise<{ industries: OptionIndustry[]; embeddings: Map<string, number[]> }>;
+  getEmbeddings: (texts: string[]) => Promise<number[][]>;
+}
 
-  try {
-    // Authenticate user
+const defaultDeps: HandlerDeps = {
+  authenticateRequest: async (req) => {
     const user = await authenticateRequest(req);
-    console.log('User authenticated:', { user_id: user.user_id });
+    return { user_id: user.user_id };
+  },
+  createServiceClient,
+  getIndustryEmbeddings: defaultGetIndustryEmbeddings,
+  getEmbeddings: defaultGetEmbeddings,
+};
 
-    // Parse request body
-    let body: SmartSearchRequest;
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
     try {
-      body = await req.json();
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      throw new ApiError('Invalid request body', 400);
-    }
+      await deps.authenticateRequest(req);
 
-    // Validate input
-    if (!body.query || typeof body.query !== 'string') {
-      throw new ApiError('Query is required', 400);
-    }
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new ApiError('Invalid request body', 400);
+      }
 
-    const normalizedQuery = body.query.trim().toLowerCase();
-    if (normalizedQuery.length === 0) {
-      throw new ApiError('Query cannot be empty', 400);
-    }
+      const parseResult = safeParseSmartSearchRequest(body);
+      if (!parseResult.success) {
+        const first = parseResult.error.issues[0];
+        const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Validation failed';
+        throw new ApiError(msg, 400);
+      }
 
-    if (normalizedQuery.length > 500) {
-      throw new ApiError('Query must be less than 500 characters', 400);
-    }
+      const normalizedQuery = parseResult.data.query.trim().toLowerCase();
+      if (normalizedQuery.length === 0) {
+        throw new ApiError('Query cannot be empty', 400);
+      }
 
-    console.log('Smart search query:', normalizedQuery);
+      const supabase = deps.createServiceClient();
+      const { industries, embeddings } = await deps.getIndustryEmbeddings(supabase);
+      const [queryEmbedding] = await deps.getEmbeddings([normalizedQuery]);
 
-    const supabase = createServiceClient();
-
-    // Get cached industry embeddings (or compute if first request)
-    const { industries, embeddings } = await getIndustryEmbeddings(supabase);
-
-    // Get embedding for the query (1 API call per search)
-    const [queryEmbedding] = await getEmbeddings([normalizedQuery]);
-
-    // Calculate similarity scores for all industries
-    const allResults = industries.map((industry) => ({
-      industry_id: industry.industry_id,
-      value: industry.value,
-      score: cosineSimilarity(queryEmbedding, embeddings.get(industry.value)!),
-    }));
-
-    // Minimum score threshold
-    const minScore = 0.3;
-
-    // Filter by minimum score and sort by score descending
-    const filtered = allResults
-      .filter((r) => r.score >= minScore)
-      .sort((a, b) => b.score - a.score);
-
-    let results: SmartSearchResult[];
-
-    if (filtered.length === 0) {
-      // Fallback: if no results meet threshold, return top 3 anyway
-      console.warn(`No industries found with score >= ${minScore}, returning top 3 results`);
-      results = allResults
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
-        .map((r) => ({
-          ...r,
-          score: Math.round(r.score * 100) / 100,
-        }));
-    } else {
-      // Return filtered and sorted results with rounded scores
-      results = filtered.map((r) => ({
-        ...r,
-        score: Math.round(r.score * 100) / 100,
+      const allResults = industries.map((industry) => ({
+        industry_id: industry.industry_id,
+        value: industry.value,
+        score: cosineSimilarity(queryEmbedding, embeddings.get(industry.value)!),
       }));
+
+      const minScore = 0.3;
+      const filtered = allResults
+        .filter((r) => r.score >= minScore)
+        .sort((a, b) => b.score - a.score);
+
+      let results: SmartSearchResult[];
+      if (filtered.length === 0) {
+        results = allResults
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((r) => ({ ...r, score: Math.round(r.score * 100) / 100 }));
+      } else {
+        results = filtered.map((r) => ({ ...r, score: Math.round(r.score * 100) / 100 }));
+      }
+
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return createErrorResponse(error);
+      }
+      return createErrorResponse(
+        new ApiError(error instanceof Error ? error.message : 'Internal server error', 500)
+      );
     }
+  };
+}
 
-    console.log(`Returning ${results.length} matching industries`);
-
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    console.error('Error in industries-smart-search:', error);
-
-    if (error instanceof ApiError) {
-      return createErrorResponse(error);
-    }
-
-    const apiError = new ApiError(
-      error instanceof Error ? error.message : 'Internal server error',
-      500
-    );
-    return createErrorResponse(apiError);
-  }
-});
+Deno.serve(createHandler());

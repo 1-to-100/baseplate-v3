@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import {
   ApiError,
@@ -17,107 +18,140 @@ import {
   notifyProcessingCompleted,
   notifyProcessingFailed,
 } from './notifications.ts';
+import { safeParseProcessSegmentRequest } from './schema.ts';
 import type { SegmentFilterDto } from './types.ts';
+import type { DiffbotOrganization } from './types.ts';
 
 const MAX_COMPANIES = 100;
 
-interface ProcessSegmentRequest {
-  segment_id: string;
-  customer_id: string;
+export interface HandlerDeps {
+  createServiceClient: () => ReturnType<typeof createServiceClient>;
+  searchOrganizations: (
+    query: string[],
+    options: { size: number; from: number }
+  ) => Promise<{ data: DiffbotOrganization[]; totalCount: number }>;
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const defaultDeps: HandlerDeps = {
+  createServiceClient,
+  searchOrganizations: async (query, options) => {
+    const client = new DiffbotClient();
+    return client.searchOrganizations(query, options);
+  },
+};
 
-  try {
-    // Parse request body
-    const body: ProcessSegmentRequest = await req.json();
-
-    if (!body.segment_id) {
-      throw new ApiError('segment_id is required', 400);
-    }
-
-    const supabase = createServiceClient();
-
-    // Fetch segment from database
-    const { data: segment, error: fetchError } = await supabase
-      .from('lists')
-      .select('*')
-      .eq('list_id', body.segment_id)
-      .single();
-
-    if (fetchError || !segment) {
-      throw new ApiError('Segment not found', 404);
-    }
-
-    // Validate segment status
-    if (segment.status !== 'new') {
-      console.log(`Segment ${body.segment_id} already processed (status: ${segment.status})`);
-      return new Response(
-        JSON.stringify({ message: 'Segment already processed', status: segment.status }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-
-    // Update status to processing
-    const { error: updateError } = await supabase
-      .from('lists')
-      .update({ status: 'processing', updated_at: new Date().toISOString() })
-      .eq('list_id', body.segment_id);
-
-    if (updateError) {
-      console.error('Failed to update segment status to processing:', updateError);
-    }
-
-    // Send processing started notification
-    if (segment.user_id) {
-      await notifyProcessingStarted(
-        supabase,
-        segment.customer_id,
-        segment.user_id,
-        segment.name,
-        segment.list_id
-      );
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
     try {
-      // Extract and validate filters
-      const filters = segment.filters as SegmentFilterDto;
-      if (!filters) {
-        throw new Error('Segment has no filters');
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new ApiError('Invalid request body', 400);
       }
 
-      // Convert filters to DQL
-      const dqlQueries = DqlAdapter.convert(filters);
-      if (dqlQueries.length === 0) {
-        throw new Error('No valid DQL queries generated from filters');
+      const parseResult = safeParseProcessSegmentRequest(body);
+      if (!parseResult.success) {
+        const first = parseResult.error.issues[0];
+        const msg = first ? `${first.path.join('.')}: ${first.message}` : 'segment_id is required';
+        throw new ApiError(msg, 400);
       }
 
-      console.log(`Processing segment ${body.segment_id}: ${dqlQueries.join(' ')}`);
+      const { segment_id, customer_id: _customerId } = parseResult.data;
+      const supabase = deps.createServiceClient();
 
-      // Search Diffbot for companies
-      const diffbotClient = new DiffbotClient();
-      const { data: companies, totalCount } = await diffbotClient.searchOrganizations(dqlQueries, {
-        size: MAX_COMPANIES,
-        from: 0,
-      });
+      const { data: segment, error: fetchError } = await supabase
+        .from('lists')
+        .select('*')
+        .eq('list_id', segment_id)
+        .single();
 
-      console.log(
-        `Diffbot search completed for segment ${body.segment_id}: ${companies.length} companies found (total: ${totalCount})`
-      );
+      if (fetchError || !segment) {
+        throw new ApiError('Segment not found', 404);
+      }
 
-      if (companies.length === 0) {
-        // No companies found - mark as completed with 0 companies
+      if (segment.status !== 'new') {
+        return new Response(
+          JSON.stringify({ message: 'Segment already processed', status: segment.status }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
+      await supabase
+        .from('lists')
+        .update({ status: 'processing', updated_at: new Date().toISOString() })
+        .eq('list_id', segment_id);
+
+      if (segment.user_id) {
+        await notifyProcessingStarted(
+          supabase,
+          segment.customer_id,
+          segment.user_id,
+          segment.name,
+          segment.list_id
+        );
+      }
+
+      try {
+        const filters = segment.filters as SegmentFilterDto;
+        if (!filters) throw new Error('Segment has no filters');
+
+        const dqlQueries = DqlAdapter.convert(filters);
+        if (dqlQueries.length === 0) throw new Error('No valid DQL queries generated from filters');
+
+        const { data: companies, totalCount } = await deps.searchOrganizations(dqlQueries, {
+          size: MAX_COMPANIES,
+          from: 0,
+        });
+
+        if (companies.length === 0) {
+          await supabase
+            .from('lists')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('list_id', segment_id);
+
+          if (segment.user_id) {
+            await notifyProcessingCompleted(
+              supabase,
+              segment.customer_id,
+              segment.user_id,
+              segment.name,
+              segment.list_id,
+              0
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              message: 'Segment processed successfully',
+              segment_id,
+              companies_added: 0,
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+
+        const { companyIds, companies: validCompanies } = await bulkUpsertCompanies(
+          supabase,
+          companies
+        );
+        await bulkUpsertCompanyMetadata(supabase, companyIds, validCompanies);
+        await bulkInsertListCompanies(supabase, segment_id, companyIds);
+        await bulkInsertCustomerCompanies(
+          supabase,
+          segment.customer_id,
+          validCompanies,
+          companyIds
+        );
+
         await supabase
           .from('lists')
           .update({ status: 'completed', updated_at: new Date().toISOString() })
-          .eq('list_id', body.segment_id);
+          .eq('list_id', segment_id);
 
         if (segment.user_id) {
           await notifyProcessingCompleted(
@@ -126,140 +160,65 @@ Deno.serve(async (req) => {
             segment.user_id,
             segment.name,
             segment.list_id,
-            0
+            validCompanies.length
           );
+        }
+
+        if (companyIds.length > 0) {
+          const now = new Date().toISOString();
+          const queueRecords = companyIds.map((company_id) => ({
+            customer_id: segment.customer_id,
+            company_id,
+            status: 'pending',
+            updated_at: now,
+          }));
+          const { error: queueError } = await supabase
+            .from('company_scoring_queue')
+            .upsert(queueRecords, {
+              onConflict: 'customer_id,company_id',
+              ignoreDuplicates: false,
+            });
+          if (!queueError) {
+            supabase.functions
+              .invoke('company-scoring-worker', { body: {} })
+              .catch((err) => console.error('Failed to trigger company-scoring-worker', err));
+          }
         }
 
         return new Response(
           JSON.stringify({
             message: 'Segment processed successfully',
-            segment_id: body.segment_id,
-            companies_added: 0,
+            segment_id,
+            companies_added: validCompanies.length,
+            total_available: totalCount,
           }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
-      }
+      } catch (processingError) {
+        await supabase
+          .from('lists')
+          .update({ status: 'failed', updated_at: new Date().toISOString() })
+          .eq('list_id', segment_id);
 
-      // Bulk upsert companies (unique by diffbot_id); only valid companies returned
-      console.log(`Upserting ${companies.length} companies...`);
-      const { companyIds, companies: validCompanies } = await bulkUpsertCompanies(
-        supabase,
-        companies
-      );
-      console.log(`Upserted companies, got ${companyIds.length} IDs`);
-
-      // Upsert company_metadata with full Diffbot payload (for company scoring)
-      const metadataResult = await bulkUpsertCompanyMetadata(supabase, companyIds, validCompanies);
-      console.log(
-        `Upserted company_metadata: ${metadataResult.updated} updated, ${metadataResult.inserted} inserted`
-      );
-
-      // Create list_companies for every company (new and existing)
-      console.log(`Linking companies to segment ${body.segment_id}...`);
-      const linkedCount = await bulkInsertListCompanies(supabase, body.segment_id, companyIds);
-      console.log(`Linked ${linkedCount} companies to segment`);
-
-      // Bulk insert into customer_companies table
-      console.log(`Creating customer_companies records...`);
-      const customerCompaniesCount = await bulkInsertCustomerCompanies(
-        supabase,
-        segment.customer_id,
-        validCompanies,
-        companyIds
-      );
-      console.log(`Created ${customerCompaniesCount} customer_companies records`);
-
-      // Update status to completed
-      await supabase
-        .from('lists')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .eq('list_id', body.segment_id);
-
-      // Send completion notification
-      if (segment.user_id) {
-        await notifyProcessingCompleted(
-          supabase,
-          segment.customer_id,
-          segment.user_id,
-          segment.name,
-          segment.list_id,
-          validCompanies.length
-        );
-      }
-
-      // Enqueue company scoring jobs and trigger worker (no pg_cron required)
-      if (companyIds.length > 0) {
-        const now = new Date().toISOString();
-        const queueRecords = companyIds.map((company_id) => ({
-          customer_id: segment.customer_id,
-          company_id,
-          status: 'pending',
-          updated_at: now,
-        }));
-        const { error: queueError } = await supabase
-          .from('company_scoring_queue')
-          .upsert(queueRecords, {
-            onConflict: 'customer_id,company_id',
-            ignoreDuplicates: false,
-          });
-        if (queueError) {
-          console.error('Failed to enqueue company scoring jobs:', queueError);
-        } else {
-          console.log(`Enqueued ${companyIds.length} company scoring jobs`);
-          // Trigger worker so queue is processed without pg_cron
-          supabase.functions
-            .invoke('company-scoring-worker', { body: {} })
-            .catch((err) => console.error('Failed to trigger company-scoring-worker', err));
+        const errorMessage =
+          processingError instanceof Error ? processingError.message : 'Unknown error';
+        if (segment.user_id) {
+          await notifyProcessingFailed(
+            supabase,
+            segment.customer_id,
+            segment.user_id,
+            segment.name,
+            segment.list_id,
+            errorMessage
+          );
         }
+        throw processingError;
       }
-
-      return new Response(
-        JSON.stringify({
-          message: 'Segment processed successfully',
-          segment_id: body.segment_id,
-          companies_added: validCompanies.length,
-          total_available: totalCount,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    } catch (processingError) {
-      // Update status to failed
-      await supabase
-        .from('lists')
-        .update({ status: 'failed', updated_at: new Date().toISOString() })
-        .eq('list_id', body.segment_id);
-
-      const errorMessage =
-        processingError instanceof Error ? processingError.message : 'Unknown error';
-
-      console.error(`Failed to process segment ${body.segment_id}:`, errorMessage);
-
-      // Send failure notification
-      if (segment.user_id) {
-        await notifyProcessingFailed(
-          supabase,
-          segment.customer_id,
-          segment.user_id,
-          segment.name,
-          segment.list_id,
-          errorMessage
-        );
-      }
-
-      throw processingError;
-    }
-  } catch (error) {
-    if (error instanceof ApiError) {
+    } catch (error) {
+      if (error instanceof ApiError) return createErrorResponse(error);
       return createErrorResponse(error);
     }
+  };
+}
 
-    console.error('Unexpected error in segments-process:', error);
-    return createErrorResponse(error);
-  }
-});
+Deno.serve(createHandler());

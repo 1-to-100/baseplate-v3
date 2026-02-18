@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
 import {
@@ -5,190 +6,146 @@ import {
   createErrorResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
-import type { UpdateSegmentRequest, UpdateSegmentResponse } from './types.ts';
+import { safeParseUpdateSegmentRequest, type UpdateSegmentResponse } from './schema.ts';
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+export interface HandlerDeps {
+  authenticateRequest: (req: Request) => Promise<{ user_id: string; customer_id: string | null }>;
+  createServiceClient: () => ReturnType<typeof createServiceClient>;
+}
 
-  try {
-    // Authenticate user
+const defaultDeps: HandlerDeps = {
+  authenticateRequest: async (req) => {
     const user = await authenticateRequest(req);
-    console.log('User authenticated:', { user_id: user.user_id, customer_id: user.customer_id });
+    return { user_id: user.user_id, customer_id: user.customer_id };
+  },
+  createServiceClient,
+};
 
-    if (!user.customer_id) {
-      throw new ApiError('User must belong to a customer', 403);
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    // Parse request body
-    let body: UpdateSegmentRequest;
     try {
-      body = await req.json();
-      console.log('Request body received:', {
-        segment_id: body.segment_id,
-        name: body.name,
-        hasFilters: !!body.filters,
-      });
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      throw new ApiError('Invalid request body', 400);
-    }
-
-    // Validate input
-    if (!body.segment_id || typeof body.segment_id !== 'string') {
-      throw new ApiError('Segment ID is required', 400);
-    }
-
-    if (!body.name || typeof body.name !== 'string') {
-      throw new ApiError('Segment name is required', 400);
-    }
-
-    const trimmedName = body.name.trim();
-    if (trimmedName.length < 3 || trimmedName.length > 100) {
-      throw new ApiError('Segment name must be between 3 and 100 characters', 400);
-    }
-
-    if (!body.filters || typeof body.filters !== 'object') {
-      throw new ApiError('Filters are required', 400);
-    }
-
-    const supabase = createServiceClient();
-
-    // Get existing segment to check ownership and compare filters
-    const { data: existingSegment, error: fetchError } = await supabase
-      .from('lists')
-      .select('*')
-      .eq('list_id', body.segment_id)
-      .eq('customer_id', user.customer_id)
-      .eq('list_type', 'segment')
-      .is('deleted_at', null)
-      .single();
-
-    if (fetchError || !existingSegment) {
-      throw new ApiError('Segment not found', 404);
-    }
-
-    // Check name uniqueness (excluding current segment)
-    const { data: duplicateSegment, error: checkError } = await supabase
-      .from('lists')
-      .select('list_id')
-      .eq('customer_id', user.customer_id)
-      .eq('list_type', 'segment')
-      .ilike('name', trimmedName)
-      .neq('list_id', body.segment_id)
-      .is('deleted_at', null)
-      .maybeSingle();
-
-    if (checkError) {
-      throw new ApiError(`Database error: ${checkError.message}`, 500);
-    }
-
-    if (duplicateSegment) {
-      throw new ApiError(
-        'A segment with this title already exists. Please choose a different title.',
-        409
-      );
-    }
-
-    // Check if filters have changed
-    const existingFilters = existingSegment.filters || {};
-    const newFilters = body.filters || {};
-    const filtersChanged = JSON.stringify(existingFilters) !== JSON.stringify(newFilters);
-
-    console.log('Filters changed:', filtersChanged);
-
-    // If filters changed, we need to re-process the segment
-    if (filtersChanged) {
-      // Delete existing list_companies for this segment
-      const { error: deleteError } = await supabase
-        .from('list_companies')
-        .delete()
-        .eq('list_id', body.segment_id);
-
-      if (deleteError) {
-        console.error('Failed to delete existing companies:', deleteError);
-        // Continue anyway - we'll re-process
-      } else {
-        console.log('Deleted existing list_companies for segment:', body.segment_id);
+      const { user_id, customer_id } = await deps.authenticateRequest(req);
+      if (!customer_id) {
+        throw new ApiError('User must belong to a customer', 403);
       }
-    }
 
-    // Update segment - set status to 'new' if filters changed so it gets reprocessed
-    const { data: segment, error: updateError } = await supabase
-      .from('lists')
-      .update({
-        name: trimmedName,
-        filters: body.filters,
-        status: filtersChanged ? 'new' : existingSegment.status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('list_id', body.segment_id)
-      .eq('customer_id', user.customer_id)
-      .select()
-      .single();
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new ApiError('Invalid request body', 400);
+      }
 
-    if (updateError) {
-      console.error('Failed to update segment:', updateError);
-      throw new ApiError(`Failed to update segment: ${updateError.message}`, 500);
-    }
+      const parseResult = safeParseUpdateSegmentRequest(body);
+      if (!parseResult.success) {
+        const first = parseResult.error.issues[0];
+        const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Validation failed';
+        throw new ApiError(msg, 400);
+      }
 
-    console.log('Segment updated successfully:', segment.list_id);
+      const { segment_id, name, filters } = parseResult.data;
+      const trimmedName = name.trim();
+      if (trimmedName.length < 3 || trimmedName.length > 100) {
+        throw new ApiError('Segment name must be between 3 and 100 characters', 400);
+      }
 
-    // If filters changed, trigger background processing
-    if (filtersChanged) {
-      // Create notification for segment update
-      const { error: notificationError } = await supabase.from('notifications').insert({
-        customer_id: user.customer_id,
-        user_id: user.user_id,
-        type: ['in_app'],
-        title: 'Segment Updated',
-        message: `Segment "${trimmedName}" has been updated and is being reprocessed.`,
-        channel: 'segment',
-        metadata: {
-          id: segment.list_id,
+      const supabase = deps.createServiceClient();
+
+      const { data: existingSegment, error: fetchError } = await supabase
+        .from('lists')
+        .select('*')
+        .eq('list_id', segment_id)
+        .eq('customer_id', customer_id)
+        .eq('list_type', 'segment')
+        .is('deleted_at', null)
+        .single();
+
+      if (fetchError || !existingSegment) {
+        throw new ApiError('Segment not found', 404);
+      }
+
+      const { data: duplicateSegment, error: checkError } = await supabase
+        .from('lists')
+        .select('list_id')
+        .eq('customer_id', customer_id)
+        .eq('list_type', 'segment')
+        .ilike('name', trimmedName)
+        .neq('list_id', segment_id)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (checkError) {
+        throw new ApiError(`Database error: ${checkError.message}`, 500);
+      }
+
+      if (duplicateSegment) {
+        throw new ApiError(
+          'A segment with this title already exists. Please choose a different title.',
+          409
+        );
+      }
+
+      const existingFilters = (existingSegment.filters as Record<string, unknown>) || {};
+      const newFilters = filters || {};
+      const filtersChanged = JSON.stringify(existingFilters) !== JSON.stringify(newFilters);
+
+      if (filtersChanged) {
+        await supabase.from('list_companies').delete().eq('list_id', segment_id);
+      }
+
+      const { data: segment, error: updateError } = await supabase
+        .from('lists')
+        .update({
           name: trimmedName,
-          status: 'new',
-        },
-        generated_by: 'system (segment service)',
-      });
+          filters,
+          status: filtersChanged ? 'new' : existingSegment.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('list_id', segment_id)
+        .eq('customer_id', customer_id)
+        .select()
+        .single();
 
-      if (notificationError) {
-        console.error('Failed to create notification:', notificationError);
-        // Don't fail the request if notification creation fails
+      if (updateError) {
+        throw new ApiError(`Failed to update segment: ${updateError.message}`, 500);
       }
 
-      // Trigger background processing (fire-and-forget)
-      supabase.functions
-        .invoke('segments-process', {
-          body: {
-            segment_id: segment.list_id,
-            customer_id: user.customer_id,
-          },
-        })
-        .catch((error) => {
-          console.error('Failed to trigger segment processing:', error);
+      if (filtersChanged) {
+        await supabase.from('notifications').insert({
+          customer_id,
+          user_id,
+          type: ['in_app'],
+          title: 'Segment Updated',
+          message: `Segment "${trimmedName}" has been updated and is being reprocessed.`,
+          channel: 'segment',
+          metadata: { id: segment.list_id, name: trimmedName, status: 'new' },
+          generated_by: 'system (segment service)',
         });
 
-      console.log('Triggered segments-process for segment:', segment.list_id);
+        supabase.functions
+          .invoke('segments-process', {
+            body: { segment_id: segment.list_id, customer_id },
+          })
+          .catch((err) => console.error('Failed to trigger segment processing:', err));
+      }
+
+      return new Response(JSON.stringify(segment as UpdateSegmentResponse), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return createErrorResponse(error);
+      }
+      return createErrorResponse(
+        new ApiError(error instanceof Error ? error.message : 'Internal server error', 500)
+      );
     }
+  };
+}
 
-    return new Response(JSON.stringify(segment as UpdateSegmentResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    console.error('Error in segments-update:', error);
-
-    if (error instanceof ApiError) {
-      return createErrorResponse(error);
-    }
-
-    const apiError = new ApiError(
-      error instanceof Error ? error.message : 'Internal server error',
-      500
-    );
-    return createErrorResponse(apiError);
-  }
-});
+Deno.serve(createHandler());

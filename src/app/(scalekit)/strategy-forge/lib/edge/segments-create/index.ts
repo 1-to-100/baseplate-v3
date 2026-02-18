@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { corsHeaders } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
 import {
@@ -5,157 +6,167 @@ import {
   createErrorResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
 import { createServiceClient } from '../../../../../../../supabase/functions/_shared/supabase.ts';
-import type { CreateSegmentRequest, CreateSegmentResponse } from './types.ts';
+import {
+  safeParseCreateSegmentRequest,
+  type CreateSegmentRequest,
+  type CreateSegmentResponse,
+} from './schema.ts';
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// =============================================================================
+// Handler Dependencies (for testing)
+// =============================================================================
 
-  try {
-    // Authenticate user
+export interface HandlerDeps {
+  authenticateRequest: (req: Request) => Promise<{ user_id: string; customer_id: string | null }>;
+  createServiceClient: () => ReturnType<typeof createServiceClient>;
+  fetch: (url: string, init?: RequestInit) => Promise<Response>;
+}
+
+const defaultDeps: HandlerDeps = {
+  authenticateRequest: async (req) => {
     const user = await authenticateRequest(req);
-    console.log('User authenticated:', { user_id: user.user_id, customer_id: user.customer_id });
+    return { user_id: user.user_id, customer_id: user.customer_id };
+  },
+  createServiceClient,
+  fetch: globalThis.fetch,
+};
 
-    if (!user.customer_id) {
-      throw new ApiError('User must belong to a customer', 403);
+// =============================================================================
+// Handler
+// =============================================================================
+
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    // Parse request body
-    let body: CreateSegmentRequest;
     try {
-      body = await req.json();
-      console.log('Request body received:', { name: body.name, hasFilters: !!body.filters });
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      throw new ApiError('Invalid request body', 400);
-    }
+      const { user_id, customer_id } = await deps.authenticateRequest(req);
+      console.log('User authenticated:', { user_id, customer_id });
 
-    // Validate input
-    if (!body.name || typeof body.name !== 'string') {
-      throw new ApiError('Segment name is required', 400);
-    }
+      if (!customer_id) {
+        throw new ApiError('User must belong to a customer', 403);
+      }
 
-    const trimmedName = body.name.trim();
-    if (trimmedName.length < 3 || trimmedName.length > 100) {
-      throw new ApiError('Segment name must be between 3 and 100 characters', 400);
-    }
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch (parseError) {
+        console.error('Failed to parse request body:', parseError);
+        throw new ApiError('Invalid request body', 400);
+      }
 
-    if (!body.filters || typeof body.filters !== 'object') {
-      throw new ApiError('Filters are required', 400);
-    }
+      const parseResult = safeParseCreateSegmentRequest(body);
+      if (!parseResult.success) {
+        const first = parseResult.error.issues[0];
+        const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Validation failed';
+        throw new ApiError(msg, 400);
+      }
 
-    const supabase = createServiceClient();
+      const { name, filters } = parseResult.data;
+      const trimmedName = name.trim();
+      if (trimmedName.length < 3 || trimmedName.length > 100) {
+        throw new ApiError('Segment name must be between 3 and 100 characters', 400);
+      }
 
-    // Check name uniqueness (case-insensitive) for this customer
-    const { data: existingSegment, error: checkError } = await supabase
-      .from('lists')
-      .select('list_id')
-      .eq('customer_id', user.customer_id)
-      .eq('list_type', 'segment')
-      .ilike('name', trimmedName)
-      .is('deleted_at', null)
-      .maybeSingle();
+      const supabase = deps.createServiceClient();
 
-    if (checkError) {
-      throw new ApiError(`Database error: ${checkError.message}`, 500);
-    }
+      const { data: existingSegment, error: checkError } = await supabase
+        .from('lists')
+        .select('list_id')
+        .eq('customer_id', customer_id)
+        .eq('list_type', 'segment')
+        .ilike('name', trimmedName)
+        .is('deleted_at', null)
+        .maybeSingle();
 
-    if (existingSegment) {
-      throw new ApiError(
-        'A segment with this title already exists. Please choose a different title.',
-        409
-      );
-    }
+      if (checkError) {
+        throw new ApiError(`Database error: ${checkError.message}`, 500);
+      }
 
-    // Insert segment into lists table
-    const { data: segment, error: insertError } = await supabase
-      .from('lists')
-      .insert({
-        customer_id: user.customer_id,
-        user_id: user.user_id,
-        list_type: 'segment',
-        name: trimmedName,
-        description: null,
-        filters: body.filters,
-        status: 'new',
-        subtype: 'company',
-        is_static: false,
-      })
-      .select()
-      .single();
+      if (existingSegment) {
+        throw new ApiError(
+          'A segment with this title already exists. Please choose a different title.',
+          409
+        );
+      }
 
-    if (insertError) {
-      console.error('Failed to insert segment:', insertError);
-      throw new ApiError(`Failed to create segment: ${insertError.message}`, 500);
-    }
+      const { data: segment, error: insertError } = await supabase
+        .from('lists')
+        .insert({
+          customer_id,
+          user_id,
+          list_type: 'segment',
+          name: trimmedName,
+          description: null,
+          filters,
+          status: 'new',
+          subtype: 'company',
+          is_static: false,
+        })
+        .select()
+        .single();
 
-    console.log('Segment created successfully:', segment.list_id);
+      if (insertError) {
+        console.error('Failed to insert segment:', insertError);
+        throw new ApiError(`Failed to create segment: ${insertError.message}`, 500);
+      }
 
-    // Create notification for segment creation
-    const { error: notificationError } = await supabase.from('notifications').insert({
-      customer_id: user.customer_id,
-      user_id: user.user_id,
-      type: ['in_app'],
-      title: 'Segment Created',
-      message: `Segment "${trimmedName}" has been created and processing has started.`,
-      channel: 'segment',
-      metadata: {
-        id: segment.list_id,
-        name: trimmedName,
-        status: 'new',
-      },
-      generated_by: 'system (segment service)',
-    });
+      console.log('Segment created successfully:', segment.list_id);
 
-    if (notificationError) {
-      console.error('Failed to create notification:', notificationError);
-      // Don't fail the request if notification creation fails
-    }
-
-    // Trigger background processing immediately (fire-and-forget)
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (supabaseUrl && serviceRoleKey) {
-      // Fire-and-forget: don't await, let it run in background
-      fetch(`${supabaseUrl}/functions/v1/segments-process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${serviceRoleKey}`,
+      await supabase.from('notifications').insert({
+        customer_id,
+        user_id,
+        type: ['in_app'],
+        title: 'Segment Created',
+        message: `Segment "${trimmedName}" has been created and processing has started.`,
+        channel: 'segment',
+        metadata: {
+          id: segment.list_id,
+          name: trimmedName,
+          status: 'new',
         },
-        body: JSON.stringify({
-          segment_id: segment.list_id,
-          customer_id: user.customer_id,
-        }),
-      }).catch((error) => {
-        // Log error but don't fail the request
-        console.error('Failed to trigger segment processing:', error);
+        generated_by: 'system (segment service)',
       });
-    } else {
-      console.warn(
-        'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY, cannot trigger background processing'
+      // Notification failure is non-fatal; don't throw
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supabaseUrl && serviceRoleKey) {
+        deps
+          .fetch(`${supabaseUrl}/functions/v1/segments-process`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              segment_id: segment.list_id,
+              customer_id,
+            }),
+          })
+          .catch((error) => {
+            console.error('Failed to trigger segment processing:', error);
+          });
+      }
+
+      return new Response(JSON.stringify(segment as CreateSegmentResponse), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 201,
+      });
+    } catch (error) {
+      console.error('Error in segments-create:', error);
+      if (error instanceof ApiError) {
+        return createErrorResponse(error);
+      }
+      const apiError = new ApiError(
+        error instanceof Error ? error.message : 'Internal server error',
+        500
       );
+      return createErrorResponse(apiError);
     }
+  };
+}
 
-    return new Response(JSON.stringify(segment as CreateSegmentResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 201,
-    });
-  } catch (error) {
-    console.error('Error in segments-create:', error);
-
-    if (error instanceof ApiError) {
-      return createErrorResponse(error);
-    }
-
-    // For unexpected errors, create an ApiError instance
-    const apiError = new ApiError(
-      error instanceof Error ? error.message : 'Internal server error',
-      500
-    );
-    return createErrorResponse(apiError);
-  }
-});
+Deno.serve(createHandler());
