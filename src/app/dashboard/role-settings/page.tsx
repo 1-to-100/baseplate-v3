@@ -19,6 +19,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getUsers } from '@/lib/api/users';
 import { Role } from '@/contexts/auth/types';
 import { isSystemAdministrator } from '@/lib/user-utils';
+import { NotAuthorized } from '@/components/core/not-authorized';
+import Alert from '@mui/joy/Alert';
 
 interface HttpError extends Error {
   response?: {
@@ -30,7 +32,7 @@ export default function Page(): React.JSX.Element {
   const [error, setError] = useState<HttpError | null>(null);
   const [openAddRoleModal, setOpenAddRoleModal] = useState(false);
 
-  const { userInfo } = useUserInfo();
+  const { userInfo, isUserLoading } = useUserInfo();
   const { debouncedSearchValue } = useGlobalSearch();
 
   const {
@@ -59,41 +61,44 @@ export default function Page(): React.JSX.Element {
     setOpenAddRoleModal(false);
   };
 
-  if (error || !isSystemAdministrator(userInfo)) {
+  if (isUserLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: { xs: '40vh', sm: '50vh' },
+        }}
+      >
+        <CircularProgress size='lg' />
+      </Box>
+    );
+  }
+
+  if (!isSystemAdministrator(userInfo)) {
+    return <NotAuthorized />;
+  }
+
+  if (error) {
     const httpError = error as HttpError;
-    let status: number | undefined = httpError?.response?.status;
-
-    if (!status && httpError?.message?.includes('status:')) {
-      const match = httpError.message.match(/status: (\d+)/);
-      status = match ? parseInt(match[1] ?? '0', 10) : undefined;
+    if (httpError.response?.status === 403) {
+      return <NotAuthorized />;
     }
-
-    if (status === 403 || !status) {
-      return (
-        <Box sx={{ textAlign: 'center', mt: 35 }}>
-          <Typography
-            sx={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: 'var(--joy-palette-text-primary)',
-            }}
-          >
-            Access Denied
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: '14px',
-              fontWeight: '300',
-              color: 'var(--joy-palette-text-secondary)',
-              mt: 1,
-            }}
-          >
-            You do not have the required permissions to view this page. <br /> Please contact your
-            administrator if you believe this is a mistake.
-          </Typography>
-        </Box>
-      );
-    }
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: { xs: '40vh', sm: '50vh' },
+        }}
+      >
+        <Alert color='danger'>
+          Something went wrong while loading the data. Please try again later.
+        </Alert>
+      </Box>
+    );
   }
 
   return (
