@@ -48,9 +48,13 @@ export function GenerateLogoModal({
   const [selectedLogoId, setSelectedLogoId] = React.useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = React.useState(false);
 
-  // Update prompt when initialPrompt changes and modal opens
+  const prevOpenRef = React.useRef(false);
+  // Sync prompt from initialPrompt only when the modal first opens, so async
+  // initialPrompt updates (e.g. from useCustomerInfo) don't overwrite in-progress edits.
   React.useEffect(() => {
-    if (open && initialPrompt) {
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (justOpened) {
       setPrompt(initialPrompt);
     }
   }, [open, initialPrompt]);
