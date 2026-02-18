@@ -12,6 +12,7 @@ type WrittenStyleGuideHeaderProps = {
   handleWrittenStyleGuideEdit: (isEditable: boolean) => void;
   onReanalyze?: () => void;
   isReanalyzing?: boolean;
+  canEdit?: boolean;
 };
 
 export default function WrittenStyleGuideHeader({
@@ -21,6 +22,7 @@ export default function WrittenStyleGuideHeader({
   handleWrittenStyleGuideEdit,
   onReanalyze,
   isReanalyzing = false,
+  canEdit = true,
 }: WrittenStyleGuideHeaderProps): React.JSX.Element {
   return (
     <Stack
@@ -34,7 +36,7 @@ export default function WrittenStyleGuideHeader({
         <Typography level='h1'>Written Style</Typography>
       </Stack>
       <Stack direction='row' spacing={1}>
-        {onReanalyze && (
+        {canEdit && onReanalyze ? (
           <Button
             variant='outlined'
             color='neutral'
@@ -45,25 +47,33 @@ export default function WrittenStyleGuideHeader({
           >
             Reanalyze
           </Button>
-        )}
-        {isEditableView ? (
-          <Button variant='soft' color='neutral' onClick={() => handleWrittenStyleGuideEdit(false)}>
-            Exit Edit Mode
-          </Button>
-        ) : (
-          <Button
-            variant='solid'
-            color='primary'
-            startDecorator={<PencilLine />}
-            onClick={() => handleWrittenStyleGuideEdit(true)}
-          >
-            Edit
-          </Button>
-        )}
+        ) : null}
+        {canEdit ? (
+          isEditableView ? (
+            <Button
+              variant='soft'
+              color='neutral'
+              onClick={() => handleWrittenStyleGuideEdit(false)}
+            >
+              Exit Edit Mode
+            </Button>
+          ) : (
+            <Button
+              variant='solid'
+              color='primary'
+              startDecorator={<PencilLine />}
+              onClick={() => handleWrittenStyleGuideEdit(true)}
+            >
+              Edit
+            </Button>
+          )
+        ) : null}
 
-        <Button variant='solid' color='primary' onClick={onPublish}>
-          Mark as Final
-        </Button>
+        {canEdit ? (
+          <Button variant='solid' color='primary' onClick={onPublish}>
+            Mark as Final
+          </Button>
+        ) : null}
       </Stack>
     </Stack>
   );

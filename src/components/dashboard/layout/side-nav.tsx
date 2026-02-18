@@ -20,48 +20,50 @@ import { NoSsr } from '@/components/core/no-ssr';
 import { useUserInfo } from '@/hooks/use-user-info';
 import { ColorSchemeSwitch } from './color-scheme-switch';
 import { icons } from './nav-icons';
-import {
-  isSystemAdministrator,
-  isCustomerSuccess,
-  isCustomerAdminOrManager,
-} from '@/lib/user-utils';
+import { isSystemAdministrator, hasRole } from '@/lib/user-utils';
 
 export interface SideNavProps {
   items: NavItemConfig[];
+}
+
+function filterNavItem(
+  item: NavItemConfig,
+  userInfo: ReturnType<typeof useUserInfo>['userInfo']
+): boolean {
+  if (item.show && !item.show(userInfo)) {
+    return false;
+  }
+
+  if ('permissions' in item && item.permissions) {
+    const permissions = item.permissions as string[];
+    if (isSystemAdministrator(userInfo)) {
+      return true;
+    }
+    return permissions.some((role) => hasRole(userInfo, role));
+  }
+
+  return true;
+}
+
+function filterNavItems(
+  items: NavItemConfig[] | undefined,
+  userInfo: ReturnType<typeof useUserInfo>['userInfo']
+): NavItemConfig[] | undefined {
+  if (!items) return undefined;
+
+  return items
+    .filter((item) => filterNavItem(item, userInfo))
+    .map((item) => ({
+      ...item,
+      items: filterNavItems(item.items, userInfo),
+    }));
 }
 
 export function SideNav({ items }: SideNavProps): React.JSX.Element {
   const pathname = usePathname();
   const { userInfo } = useUserInfo();
 
-  const filteredItems = items.map((group) => ({
-    ...group,
-    items: group.items?.filter((item) => {
-      if (isCustomerSuccess(userInfo)) {
-        return item.key !== 'role' && item.key !== 'system-users';
-      }
-
-      if (isCustomerAdminOrManager(userInfo)) {
-        return (
-          item.key !== 'role' &&
-          item.key !== 'customer' &&
-          item.key !== 'system-users' &&
-          item.key !== 'notification-management'
-        );
-      }
-
-      if (!isSystemAdministrator(userInfo) && !isCustomerSuccess(userInfo)) {
-        return (
-          item.key !== 'role' &&
-          item.key !== 'customer' &&
-          item.key !== 'system-users' &&
-          item.key !== 'notification-management' &&
-          item.key !== 'management'
-        );
-      }
-      return true;
-    }),
-  }));
+  const filteredItems = filterNavItems(items, userInfo) ?? [];
 
   return (
     <Box
@@ -302,13 +304,8 @@ function NavItem({
   const isBranch = Boolean(children && !href);
   const isLeaf = Boolean(!children && href);
   const showChildren = Boolean(children && open);
-  const { userInfo } = useUserInfo();
 
   if (type === 'divider') {
-    const shouldShowDivider = isSystemAdministrator(userInfo) || isCustomerSuccess(userInfo);
-    if (!shouldShowDivider) {
-      return <></>;
-    }
     return (
       <ListItem
         data-depth={depth}

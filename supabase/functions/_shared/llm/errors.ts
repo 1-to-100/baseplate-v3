@@ -77,6 +77,42 @@ export class LLMError extends Error {
   }
 
   /**
+   * Create a timeout error for a specific provider.
+   */
+  static timeout(provider: LLMProvider, timeoutSeconds: number): LLMError {
+    return new LLMError(
+      `${provider} request timed out after ${timeoutSeconds}s`,
+      'TIMEOUT',
+      provider,
+      408,
+      true
+    );
+  }
+
+  /**
+   * Create an authentication error for missing credentials.
+   */
+  static authenticationFailed(provider: LLMProvider, envVar: string): LLMError {
+    return new LLMError(
+      `Missing ${envVar} environment variable`,
+      'AUTHENTICATION_FAILED',
+      provider
+    );
+  }
+
+  /**
+   * Create an error for providers that don't support background/async mode.
+   */
+  static backgroundNotSupported(provider: LLMProvider): LLMError {
+    return new LLMError(
+      `${provider} does not support background/async mode`,
+      'BACKGROUND_NOT_SUPPORTED',
+      provider,
+      400
+    );
+  }
+
+  /**
    * Returns a JSON-serializable representation for logging.
    */
   toJSON(): Record<string, unknown> {

@@ -52,6 +52,8 @@ import { getRoles } from '@/lib/api/roles';
 import { deleteUser, getUserById, getUsers, resendInviteUser, updateUser } from '@/lib/api/users';
 import { useGlobalSearch } from '@/hooks/use-global-search';
 import { authService } from '@/lib/auth/auth-service';
+import { NotAuthorized } from '@/components/core/not-authorized';
+import Alert from '@mui/joy/Alert';
 
 interface HttpError extends Error {
   response?: {
@@ -539,15 +541,12 @@ export default function Page(): React.JSX.Element {
     }
   };
 
-  // Check access control - standard users should not have access
-  // Allowed roles: System Administrators, Customer Success, Customer Administrators, Managers
   const hasAccess =
     userInfo &&
     (isSystemAdministrator(userInfo) ||
       isCustomerSuccess(userInfo) ||
       isCustomerAdminOrManager(userInfo));
 
-  // Wait for userInfo to load before checking access
   if (isUserLoading) {
     return (
       <Box
@@ -563,41 +562,29 @@ export default function Page(): React.JSX.Element {
     );
   }
 
-  if (error || !hasAccess) {
+  if (!hasAccess) {
+    return <NotAuthorized />;
+  }
+
+  if (error) {
     const httpError = error as HttpError;
-    let status: number | undefined = httpError?.response?.status;
-
-    if (!status && httpError?.message?.includes('status:')) {
-      const match = httpError.message.match(/status: (\d+)/);
-      status = match ? parseInt(match[1] ?? '0', 10) : undefined;
+    if (httpError.response?.status === 403) {
+      return <NotAuthorized />;
     }
-
-    if (status === 403 || !hasAccess) {
-      return (
-        <Box sx={{ textAlign: 'center', mt: { xs: 10, sm: 20, md: 35 } }}>
-          <Typography
-            sx={{
-              fontSize: { xs: '20px', sm: '24px' },
-              fontWeight: '600',
-              color: 'var(--joy-palette-text-primary)',
-            }}
-          >
-            Access Denied
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: { xs: '12px', sm: '14px' },
-              fontWeight: '300',
-              color: 'var(--joy-palette-text-secondary)',
-              mt: 1,
-            }}
-          >
-            You do not have the required permissions to view this page. <br />
-            Please contact your administrator if you believe this is a mistake.
-          </Typography>
-        </Box>
-      );
-    }
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: { xs: '40vh', sm: '50vh' },
+        }}
+      >
+        <Alert color='danger'>
+          Something went wrong while loading the data. Please try again later.
+        </Alert>
+      </Box>
+    );
   }
 
   return (
