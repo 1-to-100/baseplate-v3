@@ -1,5 +1,6 @@
 import type { NavItemConfig } from '@/types/nav';
 import { paths } from '@/paths';
+import { SYSTEM_ROLES } from '@/lib/user-utils';
 
 // NOTE: We did not use React Components for Icons, because
 //  you may one to get the config from the server.
@@ -22,6 +23,12 @@ export const layoutConfig: LayoutConfig = {
           title: 'User Management',
           href: paths.dashboard.userManagement,
           icon: 'user-list',
+          permissions: [
+            SYSTEM_ROLES.SYSTEM_ADMINISTRATOR,
+            SYSTEM_ROLES.CUSTOMER_ADMINISTRATOR,
+            SYSTEM_ROLES.MANAGER,
+            SYSTEM_ROLES.CUSTOMER_SUCCESS,
+          ],
         },
         {
           key: 'team-management',
@@ -35,30 +42,38 @@ export const layoutConfig: LayoutConfig = {
           href: paths.dashboard.documentation.list,
           icon: 'documentation',
         },
-        { key: 'divider1', type: 'divider' },
+        {
+          key: 'divider1',
+          type: 'divider',
+          permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS],
+        },
         {
           key: 'role',
           title: 'Role Settings',
           href: paths.dashboard.roleSettings.list,
           icon: 'role',
+          permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR],
         },
         {
           key: 'customer',
           title: 'Customer Management',
           href: paths.dashboard.customerManagement.list,
           icon: 'customer',
+          permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS],
         },
         {
           key: 'system-users',
           title: 'System Users',
           href: paths.dashboard.systemUsers.list,
           icon: 'user-gear',
+          permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR],
         },
         {
           key: 'notification-management',
           title: 'Notification Management',
           href: paths.dashboard.notificationManagement.list,
           icon: 'bell',
+          permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS],
         },
         {
           key: 'llm-jobs',
