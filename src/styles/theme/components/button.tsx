@@ -2,15 +2,9 @@ import type { Components, Theme } from '@mui/joy/styles';
 import type { ButtonConfig } from '../theme-config';
 
 export function createButtonOverride(config?: ButtonConfig): Components<Theme>['JoyButton'] {
-  // Get gradients from config or use fallback gradients with CSS variables
-  const buttonGradients = {
-    primary:
-      config?.gradients?.primary ||
-      'linear-gradient(120deg, var(--joy-palette-primary-700) 0%, var(--joy-palette-primary-400) 100%)',
-    primaryHover:
-      config?.gradients?.primaryHover ||
-      'linear-gradient(120deg, var(--joy-palette-primary-800) 0%, var(--joy-palette-primary-500) 100%)',
-  };
+  // Gradient config is only applied when explicitly provided; otherwise JoyUI uses palette tokens (solidBg, solidHoverBg) from theme.json
+  const primaryGradient = config?.gradients?.primary;
+  const primaryHoverGradient = config?.gradients?.primaryHover;
 
   // Get borderRadius from config or use fallback
   const borderRadius = config?.borderRadius || 'var(--joy-radius-xl)';
@@ -28,16 +22,19 @@ export function createButtonOverride(config?: ButtonConfig): Components<Theme>['
 
           ...(ownerState.variant === 'solid' &&
             ownerState.color === 'primary' && {
-              '--variant-solidBg': buttonGradients.primary,
-              '--variant-solidHoverBg': buttonGradients.primaryHover,
               boxShadow: 'var(--joy-shadow-sm)',
 
-              background: 'var(--variant-solidBg)',
-
-              '&:hover': {
-                background: 'var(--variant-solidHoverBg)',
-              },
-
+              // Only override background when gradient config is provided; otherwise JoyUI uses palette solidBg/solidHoverBg from theme.json
+              ...(primaryGradient && {
+                '--variant-solidBg': primaryGradient,
+                background: 'var(--variant-solidBg)',
+              }),
+              ...(primaryHoverGradient && {
+                '--variant-solidHoverBg': primaryHoverGradient,
+                '&:hover': {
+                  background: 'var(--variant-solidHoverBg)',
+                },
+              }),
               '&:active': {
                 transform: 'scale(0.98)',
               },

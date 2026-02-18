@@ -2,15 +2,9 @@ import type { Components, Theme } from '@mui/joy/styles';
 import type { CheckboxConfig } from '../theme-config';
 
 export function createCheckboxOverride(config?: CheckboxConfig): Components<Theme>['JoyCheckbox'] {
-  // Get gradients from config or use fallback gradients with CSS variables
-  const checkboxGradients = {
-    checked:
-      config?.gradients?.checked ||
-      'linear-gradient(120deg, var(--joy-palette-primary-700) 0%, var(--joy-palette-primary-400) 100%)',
-    checkedHover:
-      config?.gradients?.checkedHover ||
-      'linear-gradient(120deg, var(--joy-palette-primary-800) 0%, var(--joy-palette-primary-500) 100%)',
-  };
+  // Gradient config is only applied when explicitly provided; otherwise JoyUI uses palette tokens (solidBg, solidHoverBg) from theme.json
+  const checkedGradient = config?.gradients?.checked;
+  const checkedHoverGradient = config?.gradients?.checkedHover;
 
   // Get borderRadius from config or use fallback
   const borderRadius = config?.borderRadius || 'var(--joy-radius-xs)';
@@ -28,17 +22,22 @@ export function createCheckboxOverride(config?: CheckboxConfig): Components<Them
           borderRadius,
 
           ...(ownerState.checked && {
-            '--variant-solidBg': checkboxGradients.checked,
-            '--variant-solidHoverBg': checkboxGradients.checkedHover,
             '--Icon-color': 'var(--joy-palette-common-white)',
-            background: 'var(--variant-solidBg)',
             height: '20px',
             width: '20px',
             padding: 0,
 
-            '&:hover': {
-              background: 'var(--variant-solidHoverBg)',
-            },
+            // Only override background when gradient config is provided; otherwise JoyUI uses palette solidBg/solidHoverBg from theme.json
+            ...(checkedGradient && {
+              '--variant-solidBg': checkedGradient,
+              background: 'var(--variant-solidBg)',
+            }),
+            ...(checkedHoverGradient && {
+              '--variant-solidHoverBg': checkedHoverGradient,
+              '&:hover': {
+                background: 'var(--variant-solidHoverBg)',
+              },
+            }),
           }),
         };
       },
