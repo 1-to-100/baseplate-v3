@@ -150,6 +150,7 @@ Articles are mapped back to companies using `tags.uri` field matching.
 - **Large results**: `searchArticlesByOrganizationsAllPages()` paginates with page size 200 so Tesla/Apple-level volume is covered.
 - **Timestamp on success only**: `news_last_fetched_at` is updated only inside the try block after a successful Diffbot fetch; on API/network error the batch is not marked updated and will be retried next day.
 - **Limit per company**: After mapping, each company gets at most 20 articles per batch (`MAX_ARTICLES_PER_COMPANY`).
+- **Limit per batch**: Total articles per batch capped at 300 (`MAX_ARTICLES_PER_BATCH`) to guard against memory/DB load.
 - **Dedupe**: Global `Set` keyed by `company_id:url` so the same article is not upserted twice in one batch.
 - **Retry**: Diffbot client uses `withRetry` (max 2 retries, exponential backoff) for 429 and 5xx.
 
