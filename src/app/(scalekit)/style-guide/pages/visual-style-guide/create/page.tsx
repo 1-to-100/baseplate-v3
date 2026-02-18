@@ -10,11 +10,16 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { CreateVisualStyleGuideWizard } from '@/app/(scalekit)/style-guide/lib/components/create-visual-style-guide-wizard';
 import { useVisualStyleGuides } from '@/app/(scalekit)/style-guide/lib/hooks';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { isCustomerAdminOrManager, isSystemAdministrator } from '@/lib/user-utils';
+import { NotAuthorized } from '@/components/core/not-authorized';
 
 export default function CreateVisualStyleGuidePage(): React.JSX.Element {
   const router = useRouter();
   const { data: visualStyleGuides, isLoading } = useVisualStyleGuides();
+  const { userInfo, isUserLoading } = useUserInfo();
   const firstStyleGuide = visualStyleGuides?.[0];
+  const canEditStyleGuide = isSystemAdministrator(userInfo) || isCustomerAdminOrManager(userInfo);
 
   // Redirect to view page if a style guide already exists
   React.useEffect(() => {
@@ -26,7 +31,7 @@ export default function CreateVisualStyleGuidePage(): React.JSX.Element {
   }, [firstStyleGuide, isLoading, router]);
 
   // Show loading state while checking
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <Box sx={{ p: 'var(--Content-padding)' }}>
         <Typography>Loading...</Typography>
@@ -37,6 +42,10 @@ export default function CreateVisualStyleGuidePage(): React.JSX.Element {
   // Don't render if redirecting
   if (firstStyleGuide) {
     return <></>;
+  }
+
+  if (!canEditStyleGuide) {
+    return <NotAuthorized message='You do not have permission to create a visual style guide.' />;
   }
 
   return (

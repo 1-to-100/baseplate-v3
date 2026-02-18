@@ -3,6 +3,7 @@ export const NotificationChannel = {
   alert: 'alert',
   info: 'info',
   article: 'article',
+  llm: 'llm',
 } as const;
 
 export type NotificationChannel = (typeof NotificationChannel)[keyof typeof NotificationChannel];

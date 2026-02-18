@@ -77,6 +77,11 @@ function buildManagedSection() {
     lines.push("# No feature edge functions discovered");
   }
 
+  // Auto-generated response processor registry
+  lines.push("");
+  lines.push("# Auto-generated response processor registry");
+  lines.push("supabase/functions/_shared/response-processors/registry.ts");
+
   lines.push("");
   lines.push(END_MARKER);
 
