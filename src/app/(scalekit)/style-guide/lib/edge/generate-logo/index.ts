@@ -20,15 +20,6 @@ import {
 // Configuration
 const OPENAI_IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1.5';
 
-// Customer info interface
-interface CustomerInfo {
-  company_name: string;
-  tagline?: string;
-  one_sentence_summary?: string;
-  problem_overview?: string;
-  solution_overview?: string;
-}
-
 // Palette color interface
 interface PaletteColor {
   hex: string;
@@ -37,14 +28,10 @@ interface PaletteColor {
 }
 
 /**
- * Builds an enhanced prompt for OpenAI image model logo generation
- * Combines user input with company context and brand colors
+ * Builds an enhanced prompt for OpenAI image model logo generation.
+ * Company context is provided client-side via the prompt; this adds brand colors only.
  */
-function buildEnhancedPrompt(
-  userPrompt: string,
-  customerInfo: CustomerInfo | null,
-  brandColors: PaletteColor[]
-): string {
+function buildEnhancedPrompt(userPrompt: string, brandColors: PaletteColor[]): string {
   const parts: string[] = [];
 
   // Add user's specific request
@@ -153,20 +140,6 @@ Deno.serve(async (req) => {
       throw new ApiError('You do not have access to this visual style guide', 403);
     }
 
-    // Fetch customer info for context
-    console.log('Fetching customer info...');
-    const { data: customerInfo, error: customerInfoError } = await supabase
-      .from('customer_info')
-      .select('company_name, tagline, one_sentence_summary, problem_overview, solution_overview')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (customerInfoError) {
-      console.warn('Failed to fetch customer info:', customerInfoError.message);
-    }
-
-    console.log('Customer info:', customerInfo?.company_name || 'Not found');
-
     // Fetch brand colors for context
     console.log('Fetching palette colors...');
     const { data: paletteColors, error: colorsError } = await supabase
@@ -181,12 +154,8 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${paletteColors?.length || 0} palette colors`);
 
-    // Build enhanced prompt with company context
-    const enhancedPrompt = buildEnhancedPrompt(
-      prompt,
-      customerInfo as CustomerInfo | null,
-      (paletteColors || []) as PaletteColor[]
-    );
+    // Build enhanced prompt (company context is already in prompt from client)
+    const enhancedPrompt = buildEnhancedPrompt(prompt, (paletteColors || []) as PaletteColor[]);
 
     console.log('Enhanced prompt length:', enhancedPrompt.length);
 
