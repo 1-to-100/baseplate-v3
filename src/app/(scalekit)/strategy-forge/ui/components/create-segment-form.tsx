@@ -1644,7 +1644,7 @@ export function CreateSegmentForm({
             insufficientCredits
               ? 'You need at least 5 credits to preview segment results.'
               : insufficientCreditsForCompanies && !filtersChangedSinceSearch
-                ? 'You need at least 5 credits to preview segment results.'
+                ? 'You do not have enough credits to save segment. Please add credits to continue.'
                 : undefined
           }
         >
