@@ -61,6 +61,42 @@ function truncateText(text: string | undefined | null, maxLength: number): strin
 }
 
 /**
+ * Parse Diffbot date which can be a string or object { str, precision, timestamp }
+ */
+function parseDiffbotDate(date: unknown): string | null {
+  if (!date) return null;
+
+  // Handle object format: { str: "d2026-02-19T05:00", precision: 4, timestamp: 1771477200000 }
+  if (typeof date === 'object' && date !== null) {
+    const dateObj = date as { str?: string; timestamp?: number };
+
+    // Prefer timestamp (milliseconds since epoch)
+    if (typeof dateObj.timestamp === 'number') {
+      return new Date(dateObj.timestamp).toISOString();
+    }
+
+    // Fallback to str field (remove leading 'd' if present)
+    if (typeof dateObj.str === 'string') {
+      const str = dateObj.str.startsWith('d') ? dateObj.str.slice(1) : dateObj.str;
+      const parsed = new Date(str);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString();
+      }
+    }
+  }
+
+  // Handle string format
+  if (typeof date === 'string') {
+    const parsed = new Date(date);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return null;
+}
+
+/**
  * Convert Diffbot article to ProcessedArticle for DB insertion
  */
 function toProcessedArticle(
@@ -81,7 +117,7 @@ function toProcessedArticle(
     title: article.title,
     description,
     url: article.pageUrl,
-    published_at: article.date || null,
+    published_at: parseDiffbotDate(article.date),
     diffbot_article_id: article.id || null,
     diffbot_uri: article.diffbotUri || null,
     sentiment: typeof article.sentiment === 'number' ? article.sentiment : null,
@@ -130,7 +166,7 @@ async function processBatch(
     // Fetch all articles with pagination (handles media-heavy companies)
     const { data: articles } = await diffbotClient.searchArticlesByOrganizationsAllPages(
       diffbotIds,
-      { daysBack, pageSize: 200 }
+      { daysBack, pageSize: 200, language: 'en' }
     );
 
     // Map articles to companies

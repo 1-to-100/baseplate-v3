@@ -60,21 +60,13 @@ export class DiffbotArticleClient {
   /**
    * Search for articles mentioning specific organizations by their Diffbot entity IDs.
    * Single request; use searchArticlesByOrganizationsAllPages for full result set.
-   *
-   * @param diffbotIds - Array of Diffbot organization entity IDs (e.g., ["Exxxx", "Eyyyy"])
-   * @param options - Search options
-   * @returns Articles and total count
    */
   async searchArticlesByOrganizations(
     diffbotIds: string[],
     options?: {
-      /** How many days back to search (default 30) */
       daysBack?: number;
-      /** Max results to return (default 50) */
       size?: number;
-      /** Offset for pagination (default 0) */
       from?: number;
-      /** Language filter (e.g., "en") */
       language?: string;
     }
   ): Promise<{
@@ -89,8 +81,6 @@ export class DiffbotArticleClient {
     const size = options?.size ?? 50;
     const from = options?.from ?? 0;
 
-    // Build tags.uri OR clause for all organizations
-    // Format: (tags.uri:"http://diffbot.com/entity/ID1" OR tags.uri:"http://diffbot.com/entity/ID2" ...)
     const tagsClause = diffbotIds
       .map((id) => {
         // Normalize: extract only the entity ID part
@@ -107,7 +97,6 @@ export class DiffbotArticleClient {
     // Build simpler query matching customer's example format
     let queryString = `type:Article ${tagsClause} lastCrawlTime<${daysBack}d`;
 
-    // Add language filter if specified
     if (options?.language) {
       queryString += ` language:"${options.language}"`;
     }
@@ -116,8 +105,6 @@ export class DiffbotArticleClient {
     console.log('[Diffbot] Raw DQL query:', queryString);
 
     const encodedQuery = encodeURIComponent(queryString);
-
-    // Build full URL
     const url = `${this.baseUrl}?type=query&token=${this.token}&query=${encodedQuery}&size=${size}&from=${from}`;
 
     // Log the full URL (with token masked)
@@ -130,9 +117,7 @@ export class DiffbotArticleClient {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
+        headers: { Accept: 'application/json' },
       });
 
       if (!response.ok) {
@@ -154,28 +139,18 @@ export class DiffbotArticleClient {
       }
 
       const data: DiffbotArticleResponse = await response.json();
-
       const totalCount =
         typeof data.hits === 'number' ? data.hits : data.searchInfo?.totalHits || 0;
-
       const articles = (data.data || []).map((item) => item.entity);
 
       console.log(`[Diffbot Article] Found ${articles.length} articles (total: ${totalCount})`);
 
-      return {
-        data: articles,
-        totalCount,
-      };
+      return { data: articles, totalCount };
     });
   }
 
   /**
    * Fetch all articles for the given organizations with pagination.
-   * Use this when a single request may not return all results (e.g. media-heavy companies).
-   *
-   * @param diffbotIds - Array of Diffbot organization entity IDs
-   * @param options - Search options (daysBack, language, pageSize)
-   * @returns All articles and total count
    */
   async searchArticlesByOrganizationsAllPages(
     diffbotIds: string[],
@@ -216,7 +191,6 @@ export class DiffbotArticleClient {
         break;
       }
 
-      // Small delay between pages to avoid rate limiting
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
@@ -224,23 +198,12 @@ export class DiffbotArticleClient {
     return { data: allArticles, totalCount };
   }
 
-  /**
-   * Extract the Diffbot entity ID from a tags.uri value
-   * @example "diffbot.com/entity/E1234567890" -> "E1234567890"
-   */
   static extractEntityIdFromUri(uri: string | undefined): string | null {
     if (!uri) return null;
     const match = uri.match(/diffbot\.com\/entity\/([A-Za-z0-9_-]+)/);
     return match ? match[1] : null;
   }
 
-  /**
-   * Map articles to their respective company IDs based on tags.uri
-   *
-   * @param articles - Articles from Diffbot
-   * @param diffbotIdToCompanyId - Map of diffbot_id -> company_id
-   * @returns Map of company_id -> articles
-   */
   static mapArticlesToCompanies(
     articles: DiffbotArticle[],
     diffbotIdToCompanyId: Map<string, string>
@@ -250,7 +213,6 @@ export class DiffbotArticleClient {
     for (const article of articles) {
       if (!article.tags) continue;
 
-      // Find which companies this article is tagged with
       for (const tag of article.tags) {
         const entityId = DiffbotArticleClient.extractEntityIdFromUri(tag.uri);
         if (!entityId) continue;
@@ -258,9 +220,7 @@ export class DiffbotArticleClient {
         const companyId = diffbotIdToCompanyId.get(entityId);
         if (!companyId) continue;
 
-        // Add article to this company's list
         const existing = result.get(companyId) || [];
-        // Avoid duplicates (same article can match multiple tags)
         if (!existing.some((a) => a.pageUrl === article.pageUrl)) {
           existing.push(article);
           result.set(companyId, existing);

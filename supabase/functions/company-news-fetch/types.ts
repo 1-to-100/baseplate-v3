@@ -89,18 +89,6 @@ export interface ProcessedArticle {
 }
 
 /**
- * Result of news fetch operation for a batch
- */
-export interface NewsFetchBatchResult {
-  /** Companies that were processed */
-  processedCompanyIds: string[];
-  /** Articles fetched and saved */
-  articlesCount: number;
-  /** Errors encountered (non-fatal) */
-  errors: string[];
-}
-
-/**
  * Request body for manual trigger of news fetch
  */
 export interface CompanyNewsFetchBody {

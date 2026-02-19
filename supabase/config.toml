@@ -166,3 +166,6 @@ verify_jwt = false
 
 [functions.company-scoring-worker]
 verify_jwt = false
+
+[functions.company-news-fetch]
+verify_jwt = false

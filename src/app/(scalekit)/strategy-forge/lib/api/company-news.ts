@@ -222,3 +222,52 @@ export async function getCompanyNewsStats(companyId: string): Promise<{
     averageSentiment,
   };
 }
+
+/**
+ * Response from company-news-fetch Edge Function
+ */
+export interface FetchCompanyNewsResponse {
+  status: 'completed' | 'partial' | 'no_companies';
+  companiesProcessed: number;
+  articlesInserted: number;
+  errors: string[];
+}
+
+/**
+ * Trigger the company-news-fetch Edge Function for one or more companies (test/manual use).
+ * Requires: user must be authenticated (valid JWT), company-news-fetch deployed, DIFFBOT_API_TOKEN set.
+ */
+export async function invokeFetchCompanyNews(
+  companyIds: string[]
+): Promise<FetchCompanyNewsResponse> {
+  const supabase = createClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error('You must be logged in to fetch company news. Please sign in and try again.');
+  }
+
+  const { data, error } = await supabase.functions.invoke('company-news-fetch', {
+    body: { company_ids: companyIds },
+  });
+
+  if (error) {
+    const msg = error.message ?? '';
+    if (msg.includes('Invalid JWT') || msg.includes('401')) {
+      throw new Error(
+        'Session expired or invalid. Please sign out, sign in again, and try fetching news.'
+      );
+    }
+    throw new Error(msg || 'Failed to invoke company-news-fetch');
+  }
+
+  const result = data as FetchCompanyNewsResponse | undefined;
+  if (!result || typeof result.status !== 'string') {
+    throw new Error('Invalid response from company-news-fetch');
+  }
+
+  return result;
+}

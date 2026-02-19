@@ -6,9 +6,10 @@ import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
 import { paths } from '@/paths';
 import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
 import Typography from '@mui/joy/Typography';
 import Chip from '@mui/joy/Chip';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getCompanyWithScoring,
   getCompanyLists,
@@ -16,6 +17,7 @@ import {
   getCompanyDiffbotJson,
   getCompanyPeople,
 } from '../../lib/api/companies';
+import { invokeFetchCompanyNews } from '../../lib/api/company-news';
 import type { CompanyItem, CompanyItemList } from '../../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -111,6 +113,8 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
     enabled: !!companyId,
   });
 
+  console.log('company', company);
+
   const { userInfo } = useUserInfo();
   const isSuperAdmin = userInfo?.isSuperadmin;
   const isCustomerSuccess = userInfo?.isCustomerSuccess;
@@ -195,6 +199,18 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
     queryKey: ['company-diffbot-json', companyId],
     queryFn: () => getCompanyDiffbotJson(companyId),
     enabled: isDebugModalOpen && !!companyId,
+  });
+
+  const queryClient = useQueryClient();
+  const fetchNewsMutation = useMutation({
+    mutationFn: () => invokeFetchCompanyNews([companyId]),
+    onSuccess: (data) => {
+      toast.success(`News fetch completed: ${data.articlesInserted} articles for this company.`);
+      queryClient.invalidateQueries({ queryKey: ['company-news', companyId] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message ?? 'Failed to fetch company news');
+    },
   });
 
   useEffect(() => {
@@ -411,6 +427,25 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                   onDebugClick={() => setIsDebugModalOpen(true)}
                   showDebugButton={true}
                 />
+
+                <Box sx={{ mb: 3 }}>
+                  <Button
+                    size='sm'
+                    variant='soft'
+                    color='neutral'
+                    loading={fetchNewsMutation.isPending}
+                    disabled={fetchNewsMutation.isPending}
+                    onClick={() => fetchNewsMutation.mutate()}
+                  >
+                    Fetch news (test)
+                  </Button>
+                  <Typography
+                    component='span'
+                    sx={{ ml: 1.5, fontSize: '12px', color: 'var(--joy-palette-text-tertiary)' }}
+                  >
+                    Runs company-news-fetch for this company only
+                  </Typography>
+                </Box>
 
                 <KeyContactsSection
                   people={people}
