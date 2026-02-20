@@ -39,7 +39,7 @@ export const paletteColorSchema = z.object({
   customer_id: z.string().uuid(),
   hex: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/),
   name: z.string().nullable().optional(),
-  usage_option: z.enum(['primary', 'secondary', 'foreground', 'background', 'accent']),
+  usage_option: z.enum(['primary', 'neutral', 'danger', 'success', 'warning']),
   sort_order: z.number().int(),
   contrast_ratio_against_background: z.number().nullable().optional(),
   created_at: z.string(),

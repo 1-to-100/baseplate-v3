@@ -15,16 +15,10 @@ import * as React from 'react';
 import {
   useCreateTypographyStyle,
   useFontOptions,
-  usePaletteColors,
   useTypographyStyleOptions,
   useTypographyStyles,
-  useUpdatePaletteColor,
   useUpdateTypographyStyle,
 } from '@/app/(scalekit)/style-guide/lib/hooks';
-import {
-  COLOR_USAGE_OPTION,
-  USAGE_OPTIONS,
-} from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
 import {
   FONT_SIZE_OPTIONS,
   getDefaultFontSize,
@@ -34,11 +28,9 @@ import {
 } from '@/app/(scalekit)/style-guide/lib/constants/typography';
 import type {
   FontOption,
-  PaletteColor,
   TypographyStyle,
   TypographyStyleOption,
 } from '@/app/(scalekit)/style-guide/lib/types';
-import { ColorEditItem, ColorPreviewItem } from './visual-style-guide-colors';
 
 // Typography preset options enum
 enum TypographyPreset {
@@ -477,7 +469,6 @@ export default function VisualStyleGuideTypography({
   const { data: typographyOptions } = useTypographyStyleOptions();
 
   const { data: fontOptions } = useFontOptions();
-  const { data: colors, isLoading: colorsLoading } = usePaletteColors();
 
   // Extract unique font families from saved typography styles (DB data)
   const savedFontFamilies = React.useMemo(() => {
@@ -499,26 +490,9 @@ export default function VisualStyleGuideTypography({
     }
   }, [fontOptions, loadFonts]);
 
-  const foregroundAndBackgroundColors = React.useMemo(() => {
-    return (colors || [])
-      .filter(
-        (c: PaletteColor) =>
-          String(c.style_guide_id || '') === String(guideId) &&
-          (String(c.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
-            String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND)
-      )
-      .sort(
-        (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
-      );
-  }, [colors, guideId]);
-
-  // Merged list of colors and typography styles
+  // Typography styles only (colors are managed in the Colors section)
   const mergedItems = React.useMemo(() => {
-    const colorItems = foregroundAndBackgroundColors.map((color) => ({
-      type: 'color' as const,
-      data: color,
-    }));
-    const typographyItems = (typographyStyles || [])
+    return (typographyStyles || [])
       .map((style) => ({
         type: 'typography' as const,
         data: style,
@@ -530,12 +504,10 @@ export default function VisualStyleGuideTypography({
       }))
       .sort((a, b) => (a.sortOrder as number) - (b.sortOrder as number))
       .map(({ sortOrder, ...item }) => item);
-    return [...colorItems, ...typographyItems];
-  }, [foregroundAndBackgroundColors, typographyStyles, typographyOptions]);
+  }, [typographyStyles, typographyOptions]);
 
   const createTypographyStyle = useCreateTypographyStyle();
   const updateTypography = useUpdateTypographyStyle();
-  const updateColor = useUpdatePaletteColor();
 
   const handleUpdateTypography = React.useCallback(
     async (styleId: string, field: string, value: unknown) => {
@@ -555,22 +527,6 @@ export default function VisualStyleGuideTypography({
       }
     },
     [updateTypography, loadFont]
-  );
-
-  const handleUpdateColor = React.useCallback(
-    async (color: PaletteColor, field: string, value: unknown) => {
-      try {
-        const normalizedValue = field === 'name' && value === '' ? null : value;
-
-        await updateColor.mutateAsync({
-          id: String(color.palette_color_id),
-          input: { [field]: normalizedValue },
-        });
-      } catch (error) {
-        toast.error('Failed to update color');
-      }
-    },
-    [updateColor]
   );
 
   const handleSelectTypographyPreset = React.useCallback(
@@ -653,7 +609,7 @@ export default function VisualStyleGuideTypography({
       </Typography>
 
       {(() => {
-        if (typographyLoading || colorsLoading) return <CircularProgress />;
+        if (typographyLoading) return <CircularProgress />;
 
         // Edit mode
         if (isEditableView)
@@ -666,41 +622,22 @@ export default function VisualStyleGuideTypography({
               />
               <List sx={{ p: 0, gap: 2, mt: 2 }}>
                 {mergedItems.map((item) => {
-                  if (item.type === 'color') {
-                    const color = item.data as PaletteColor;
-                    const usageOption = USAGE_OPTIONS.find(
-                      (opt) => opt.value === color.usage_option
-                    );
-                    const colorLabel = (color.name as string) || usageOption?.label || 'Color';
-                    const colorDescription = usageOption?.description;
-
-                    return (
-                      <ColorEditItem
-                        key={String(color.palette_color_id)}
-                        color={color}
-                        colorLabel={colorLabel}
-                        colorDescription={colorDescription}
-                        onUpdateColor={handleUpdateColor}
-                      />
-                    );
-                  } else {
-                    const style = item.data as TypographyStyle;
-                    const option = typographyOptions?.find(
-                      (opt) =>
-                        String(opt.typography_style_option_id) ===
-                        String(style.typography_style_option_id)
-                    );
-                    return (
-                      <TypographyEditItem
-                        key={String(style.typography_style_id)}
-                        style={style}
-                        option={option}
-                        fontOptions={fontOptions}
-                        onUpdateTypography={handleUpdateTypography}
-                        onDropdownOpen={handleFontDropdownOpen}
-                      />
-                    );
-                  }
+                  const style = item.data as TypographyStyle;
+                  const option = typographyOptions?.find(
+                    (opt) =>
+                      String(opt.typography_style_option_id) ===
+                      String(style.typography_style_option_id)
+                  );
+                  return (
+                    <TypographyEditItem
+                      key={String(style.typography_style_id)}
+                      style={style}
+                      option={option}
+                      fontOptions={fontOptions}
+                      onUpdateTypography={handleUpdateTypography}
+                      onDropdownOpen={handleFontDropdownOpen}
+                    />
+                  );
                 })}
               </List>
             </>
@@ -711,35 +648,19 @@ export default function VisualStyleGuideTypography({
           <Card variant='outlined' sx={{ p: 0 }}>
             <List>
               {mergedItems.map((item) => {
-                if (item.type === 'color') {
-                  const color = item.data as PaletteColor;
-                  const usageOption = USAGE_OPTIONS.find((opt) => opt.value === color.usage_option);
-                  const colorLabel = (color.name as string) || usageOption?.label || 'Color';
-                  const colorDescription = usageOption?.description;
-
-                  return (
-                    <ColorPreviewItem
-                      key={String(color.palette_color_id)}
-                      color={color}
-                      colorLabel={colorLabel}
-                      colorDescription={colorDescription}
-                    />
-                  );
-                } else {
-                  const style = item.data as TypographyStyle;
-                  const option = typographyOptions?.find(
-                    (opt) =>
-                      String(opt.typography_style_option_id) ===
-                      String(style.typography_style_option_id)
-                  );
-                  return (
-                    <TypographyPreviewItem
-                      key={String(style.typography_style_id)}
-                      style={style}
-                      option={option}
-                    />
-                  );
-                }
+                const style = item.data as TypographyStyle;
+                const option = typographyOptions?.find(
+                  (opt) =>
+                    String(opt.typography_style_option_id) ===
+                    String(style.typography_style_option_id)
+                );
+                return (
+                  <TypographyPreviewItem
+                    key={String(style.typography_style_id)}
+                    style={style}
+                    option={option}
+                  />
+                );
               })}
             </List>
           </Card>

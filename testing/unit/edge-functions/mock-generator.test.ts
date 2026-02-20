@@ -189,7 +189,7 @@ Deno.test('Mock Generator: isStrictSchema detects strict mode', () => {
 
 Deno.test('Mock Generator: generates valid enum values', () => {
   const mocks = generateMockArray(PaletteColorItemSchema, 10);
-  const validOptions = ['primary', 'secondary', 'foreground', 'background', 'accent'];
+  const validOptions = ['primary', 'neutral', 'danger', 'success', 'warning'];
 
   for (const mock of mocks) {
     assert(
