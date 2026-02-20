@@ -168,8 +168,13 @@ export default function Page(): React.JSX.Element {
           target.closest("[role='tab']") ||
           target.closest("[role='tablist']") ||
           target.closest("[role='tabpanel']");
+        const isClickOnModalOrListbox =
+          target.closest('.MuiModal-root') ||
+          target.closest('[role="dialog"]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="option"]');
 
-        if (!isClickOnMenu) {
+        if (!isClickOnMenu && !isClickOnModalOrListbox) {
           handleCloseCompanyPopover();
         }
       } else if (menuRowIndex !== null && anchorEl) {

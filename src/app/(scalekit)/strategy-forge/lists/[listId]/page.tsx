@@ -263,8 +263,13 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           target.closest("[role='tab']") ||
           target.closest("[role='tablist']") ||
           target.closest("[role='tabpanel']");
+        const isClickOnModalOrListbox =
+          target.closest('.MuiModal-root') ||
+          target.closest('[role="dialog"]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="option"]');
 
-        if (!isClickOnPopoverOrMenu) {
+        if (!isClickOnPopoverOrMenu && !isClickOnModalOrListbox) {
           handleCloseCompanyPopover();
         }
       }
