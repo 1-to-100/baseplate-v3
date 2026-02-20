@@ -6,6 +6,7 @@ import { File as FileIcon } from '@phosphor-icons/react/dist/ssr/File';
 import { GearSix as GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { GridFour as GridFourIcon } from '@phosphor-icons/react/dist/ssr/GridFour';
 import { House as HouseIcon } from '@phosphor-icons/react/dist/ssr/House';
+import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
 import { Kanban as KanbanIcon } from '@phosphor-icons/react/dist/ssr/Kanban';
 import { Package as PackageIcon } from '@phosphor-icons/react/dist/ssr/Package';
 import { Question as QuestionIcon } from '@phosphor-icons/react/dist/ssr/Question';
@@ -50,6 +51,7 @@ export const icons = {
   'user-gear': UserGearIcon,
   'bag-simple': BagSimpleIcon,
   'user-focus': UserFocusIcon,
+  list: ListIcon,
   buildings: BuildingsIcon,
   file: FileIcon,
   house: HouseIcon,

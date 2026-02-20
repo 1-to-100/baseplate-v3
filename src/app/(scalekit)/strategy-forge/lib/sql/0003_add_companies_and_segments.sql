@@ -347,6 +347,7 @@ create table public.customer_companies (
   revenue numeric(20, 2),
   country text,
   region text,
+  email text,
   employees integer,
   last_scoring_results jsonb,
   scoring_results_updated_at timestamptz(6),

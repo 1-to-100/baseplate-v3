@@ -134,6 +134,28 @@ export const paths = {
     },
     diagnostics: '/source-and-snap/diagnostics',
   },
+  strategyForge: {
+    segments: {
+      list: '/strategy-forge/segments',
+      create: '/strategy-forge/segments/create',
+      details: (segmentId: string) => `/strategy-forge/segments/${segmentId}`,
+      edit: (segmentId: string) => `/strategy-forge/segments/${segmentId}/edit`,
+      companyDetails: (segmentId: string, companyId: string) =>
+        `/strategy-forge/segments/${segmentId}/${companyId}`,
+    },
+    companies: {
+      list: '/strategy-forge/companies',
+      create: '/strategy-forge/companies/create',
+      details: (companyId: string) => `/strategy-forge/companies/${companyId}`,
+      edit: (companyId: string) => `/strategy-forge/companies/${companyId}/edit`,
+    },
+    lists: {
+      list: '/strategy-forge/lists',
+      create: '/strategy-forge/lists/create',
+      details: (listId: string) => `/strategy-forge/lists/${listId}`,
+      edit: (listId: string) => `/strategy-forge/lists/${listId}/edit`,
+    },
+  },
   docs: 'https://docs.lotru.devias.io',
   purchase: 'https://mui.com/store/items/lotru',
 } as const;

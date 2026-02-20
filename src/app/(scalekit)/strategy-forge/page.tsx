@@ -13,6 +13,7 @@ import {
   Users as UsersIcon,
   User as UserIcon,
   ChartBar as ChartBarIcon,
+  List as ListIcon,
   MapTrifold as MapTrifoldIcon,
 } from '@phosphor-icons/react/dist/ssr';
 import type { IconWeight } from '@phosphor-icons/react/dist/lib/types';
@@ -72,6 +73,12 @@ const navigationCards: NavigationCard[] = [
     description: 'Organize and manage market segments',
     href: '/strategy-forge/segments',
     icon: ChartBarIcon,
+  },
+  {
+    title: 'Lists',
+    description: 'View and manage all lists (segments, territories, lists)',
+    href: '/strategy-forge/lists',
+    icon: ListIcon,
   },
   {
     title: 'Customer Journey',

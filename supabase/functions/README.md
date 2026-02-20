@@ -193,6 +193,16 @@ const validData = generateMock(MySchema);
 const invalidData = generateInvalidMock(MySchema, ['requiredField']);
 ```
 
+### Testing strategy-forge functions
+
+Strategy-forge edge functions (and other feature functions under `src/app/(scalekit)/.../lib/edge/`) are refactored for testability:
+
+- **Handler injection**: Each function exports `createHandler(deps)` and runs `Deno.serve(createHandler())` so the same handler can be exercised in tests with mocked dependencies (`authenticateRequest`, `createServiceClient`, LLM/search APIs, etc.).
+- **Schema tests**: Co-located `schema.test.ts` next to each function validate Zod request/response schemas using the shared mock generator (valid mocks, invalid/missing/extra fields, contract checks).
+- **Behavioral tests**: Handler-level tests live in `supabase/functions/_tests/` (e.g. `segments-create.test.ts`, `company-scoring.test.ts`). They import `createHandler` from the source path, build mock deps (auth, Supabase, external APIs), send `Request` objects, and assert on `Response` status and body.
+
+Run everything with `deno task test:edge` from the repo root.
+
 ## Local Development
 
 ### Serve Functions Locally

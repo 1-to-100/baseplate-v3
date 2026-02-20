@@ -36,14 +36,28 @@ Create `.env` file:
 ```bash
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# For segments-ai edge function (AI-powered segment generation)
 OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL_SEGMENT=gpt-4o-mini  # Optional, defaults to gpt-4o-mini
 OPENAI_IMAGE_MODEL=gpt-image-1.5
 ```
 
 Get `SUPABASE_URL` from: **Supabase -> Project Settings**
 Get `SUPABASE_SERVICE_ROLE_KEY` from: **Supabase -> Project Settings → API Keys -> Legacy anon, service_role API keys**
-Get `OPENAI_API_KEY` from: **OpenAI -> API Keys** (https://platform.openai.com/api-keys)
-`OPENAI_IMAGE_MODEL` defaults to `gpt-image-1.5` for image generation
+Get `OPENAI_API_KEY` from: **[OpenAI Platform](https://platform.openai.com/api-keys) -> API Keys**
+
+### Setting Edge Function Secrets
+
+For deployed Edge Functions, set secrets using the Supabase CLI:
+
+```bash
+# Set OpenAI API key for segments-ai function
+npx supabase secrets set OPENAI_API_KEY=your_openai_api_key
+
+# Optionally set the model (defaults to gpt-4o-mini)
+npx supabase secrets set OPENAI_MODEL_SEGMENT=gpt-4o-mini
+```
 
 ## Common Commands
 
@@ -67,6 +81,11 @@ npx supabase start
 - **user-management** - User invitations, banning, privileged operations
 - **auth-context** - JWT context for customer switching & impersonation
 - **admin-operations** - System admin operations
+- **segments-ai** - AI-powered segment generation from natural language descriptions (requires `OPENAI_API_KEY`)
+- **segments-create** - Create new segments with filters
+- **segments-update** - Update existing segments (detects filter changes and re-triggers processing)
+- **segments-process** - Background processing for segment company search
+- **segments-search** - Search companies by segment filters
 
 ## Security
 
