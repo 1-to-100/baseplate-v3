@@ -100,7 +100,7 @@ Deno.test('Schema: validates sort_order is a number', () => {
       {
         hex: '#FFFFFF',
         name: 'White',
-        usage_option: 'background',
+        usage_option: 'neutral',
         sort_order: 'not a number', // should be number
       },
     ],
