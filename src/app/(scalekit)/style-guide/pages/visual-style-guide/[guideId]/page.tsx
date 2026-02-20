@@ -7,7 +7,6 @@ import {
   useTypographyStyles,
   useLogoAssets,
 } from '@/app/(scalekit)/style-guide/lib/hooks';
-import { COLOR_USAGE_OPTION } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
 import { scanVisualStyleGuide } from '@/app/(scalekit)/style-guide/lib/utils/scan-visual-style-guide';
 import { useCreateCaptureRequest } from '@/app/(scalekit)/source-and-snap/lib/hooks';
 import { toast } from '@/components/core/toaster';
@@ -101,29 +100,9 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
     [paletteColors, guideId]
   );
 
-  const colorSchemeColors = React.useMemo(
-    () =>
-      guideColors.filter(
-        (color) =>
-          String(color.usage_option || '') !== COLOR_USAGE_OPTION.FOREGROUND &&
-          String(color.usage_option || '') !== COLOR_USAGE_OPTION.BACKGROUND
-      ),
-    [guideColors]
-  );
-
-  const typographyColors = React.useMemo(
-    () =>
-      guideColors.filter(
-        (color) =>
-          String(color.usage_option || '') === COLOR_USAGE_OPTION.FOREGROUND ||
-          String(color.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND
-      ),
-    [guideColors]
-  );
-
-  const hasColorSchemeColors = colorSchemeColors.length > 0;
+  const hasColorSchemeColors = guideColors.length > 0;
   const hasLogos = (logoAssets?.length || 0) > 0;
-  const hasTypographyItems = typographyColors.length + (typographyStyles?.length || 0) > 0;
+  const hasTypographyItems = (typographyStyles?.length || 0) > 0;
 
   const showEmptyState =
     !colorsLoading &&

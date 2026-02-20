@@ -487,21 +487,10 @@ export default function VisualStyleGuideColors({
   const [isApplyingPreset, setIsApplyingPreset] = React.useState(false);
 
   const sortedColors = React.useMemo(() => {
-    return (colors || [])
-      .filter(
-        (c: PaletteColor) =>
-          // these colors are a part of typography styles
-          String(c.usage_option || '') !== COLOR_USAGE_OPTION.FOREGROUND &&
-          String(c.usage_option || '') !== COLOR_USAGE_OPTION.BACKGROUND
-      )
-      .sort(
-        (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
-      );
+    return (colors || []).sort(
+      (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
+    );
   }, [colors]);
-
-  const hasBackground = sortedColors.some(
-    (c: PaletteColor) => String(c.usage_option || '') === COLOR_USAGE_OPTION.BACKGROUND
-  );
 
   const handleAddColor = React.useCallback(async () => {
     if (!newColor.hex.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
