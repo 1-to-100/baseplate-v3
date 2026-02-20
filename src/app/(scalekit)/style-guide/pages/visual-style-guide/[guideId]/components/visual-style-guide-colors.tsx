@@ -340,7 +340,7 @@ export function ColorEditItem({
             <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
               <Typography level='body-sm'>{colorLabel}</Typography>
               {colorDescription && (
-                <Tooltip title={colorDescription} arrow placement='top'>
+                <Tooltip title={colorDescription} arrow placement='top' sx={{ maxWidth: 220 }}>
                   <Info
                     size={16}
                     weight='fill'
@@ -424,7 +424,7 @@ export function ColorPreviewItem({ color, colorLabel, colorDescription }: ColorP
           <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
             <Typography level='body-sm'>{colorLabel}</Typography>
             {colorDescription && (
-              <Tooltip title={colorDescription} arrow placement='top'>
+              <Tooltip title={colorDescription} arrow placement='top' sx={{ maxWidth: 220 }}>
                 <Info
                   size={16}
                   weight='fill'
