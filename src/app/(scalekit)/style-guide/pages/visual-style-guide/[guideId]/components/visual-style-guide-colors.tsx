@@ -487,7 +487,7 @@ export default function VisualStyleGuideColors({
   const [isApplyingPreset, setIsApplyingPreset] = React.useState(false);
 
   const sortedColors = React.useMemo(() => {
-    return (colors || []).sort(
+    return [...(colors || [])].sort(
       (a: PaletteColor, b: PaletteColor) => (a.sort_order as number) - (b.sort_order as number)
     );
   }, [colors]);
