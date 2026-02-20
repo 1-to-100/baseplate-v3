@@ -692,7 +692,6 @@ export default function CompanyDetailsPopover({
         open={addToListModalOpen}
         onClose={handleAddToListModalClose}
         companyIds={company_id ? [company_id] : []}
-        companyCountLabel={company?.name}
         excludeListId={excludeListId}
       />
     </>

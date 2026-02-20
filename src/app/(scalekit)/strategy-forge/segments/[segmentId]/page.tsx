@@ -846,7 +846,6 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             setSelectedRows([]);
           }}
           companyIds={addToListCompanyIds}
-          companyCountLabel={addToListLabel}
         />
       </Stack>
     </Box>

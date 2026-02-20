@@ -816,7 +816,6 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
             setAddToListLabel(undefined);
           }}
           companyIds={addToListCompanyIds}
-          companyCountLabel={addToListLabel}
           excludeListId={listId ?? undefined}
         />
       </Stack>

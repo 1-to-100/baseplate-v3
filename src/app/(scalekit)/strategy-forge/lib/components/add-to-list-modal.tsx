@@ -34,8 +34,6 @@ export interface AddToListModalProps {
   open: boolean;
   onClose: () => void;
   companyIds: string[];
-  /** Optional label e.g. "Acme Inc." or "3 companies" */
-  companyCountLabel?: string;
   /** If set, this list is excluded from the "Select list" options (e.g. when opening from that list's details page). */
   excludeListId?: string;
 }
@@ -47,7 +45,6 @@ export function AddToListModal({
   open,
   onClose,
   companyIds,
-  companyCountLabel,
   excludeListId,
 }: AddToListModalProps): React.JSX.Element {
   const queryClient = useQueryClient();
@@ -165,15 +162,6 @@ export function AddToListModal({
         <Typography level='h4' component='h2' sx={{ mb: 1 }}>
           Add to list
         </Typography>
-        {companyCountLabel ? (
-          <Typography level='body-sm' sx={{ color: 'text.secondary', mb: 2 }}>
-            {companyCountLabel}
-          </Typography>
-        ) : companyIds.length > 0 ? (
-          <Typography level='body-sm' sx={{ color: 'text.secondary', mb: 2 }}>
-            {companyIds.length === 1 ? '1 company' : `${companyIds.length} companies`} selected
-          </Typography>
-        ) : null}
 
         <Tabs
           value={activeTab}
