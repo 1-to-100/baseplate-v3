@@ -12,11 +12,21 @@ import Input from '@mui/joy/Input';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Table from '@mui/joy/Table';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
+import IconButton from '@mui/joy/IconButton';
+import Menu from '@mui/joy/Menu';
+import MenuItem from '@mui/joy/MenuItem';
+import ListItemDecorator from '@mui/joy/ListItemDecorator';
+import ListItemContent from '@mui/joy/ListItemContent';
 import Modal from '@mui/joy/Modal';
 import ModalDialog from '@mui/joy/ModalDialog';
 import ModalClose from '@mui/joy/ModalClose';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { Funnel as FunnelIcon } from '@phosphor-icons/react/dist/ssr/Funnel';
+import { DotsThreeVertical } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
+import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 import { paths } from '@/paths';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
@@ -27,8 +37,9 @@ import { getCompanies } from '../../lib/api/companies';
 import type { GetCompaniesParams } from '../../lib/types/company';
 import type { CompanyItem, CompanyFilterFields } from '../../lib/types/company';
 import { ListSubtype } from '../../lib/types/list';
-import { CompanyFilter } from '../../lib/components';
+import { CompanyFilter, AddToListModal } from '../../lib/components';
 import { listFiltersToCompanyFilterFields, hasListFilters } from '../../lib/utils/list-filters';
+import CompanyDetailsPopover from '../../ui/components/company-details-popover';
 
 const ROWS_PER_PAGE = 10;
 
@@ -54,6 +65,13 @@ export default function CreateListPage(): React.JSX.Element {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigateTo, setPendingNavigateTo] = useState<string | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
+  const [openCompanyPopoverIdx, setOpenCompanyPopoverIdx] = useState<number | null>(null);
+  const [companyPopoverAnchorEl, setCompanyPopoverAnchorEl] = useState<HTMLElement | null>(null);
+  const [addToListModalOpen, setAddToListModalOpen] = useState(false);
+  const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
+  const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (listId === undefined) return;
@@ -137,6 +155,110 @@ export default function CreateListPage(): React.JSX.Element {
       toast.error(err.message || 'Failed to save list');
     },
   });
+
+  // Close menu when clicking outside (Joy Menu sometimes doesn't fire onClose for outside clicks)
+  useEffect(() => {
+    if (!menuAnchorEl) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuAnchorEl.contains(target)) return;
+      const menuEl = document.querySelector('[role="menu"]');
+      if (menuEl && menuEl.contains(target)) return;
+      setMenuAnchorEl(null);
+      setMenuRowIndex(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuAnchorEl]);
+
+  // Close company details popover when clicking outside (same pattern as list details page)
+  useEffect(() => {
+    const handleCloseCompanyPopover = () => {
+      setOpenCompanyPopoverIdx(null);
+      setCompanyPopoverAnchorEl(null);
+    };
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openCompanyPopoverIdx !== null) {
+        const target = event.target as HTMLElement;
+        const isClickOnPopoverOrMenu =
+          target.closest('[data-menu-item]') ||
+          target.closest('[data-menu-button]') ||
+          target.closest('[data-popover]') ||
+          target.closest('.MuiTabs-root') ||
+          target.closest('.MuiTab-root') ||
+          target.closest('.MuiTabList-root') ||
+          target.closest('.MuiTabPanel-root') ||
+          target.closest("[role='tab']") ||
+          target.closest("[role='tablist']") ||
+          target.closest("[role='tabpanel']");
+        const isClickOnModalOrListbox =
+          target.closest('.MuiModal-root') ||
+          target.closest('[role="dialog"]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="option"]');
+
+        if (!isClickOnPopoverOrMenu && !isClickOnModalOrListbox) {
+          handleCloseCompanyPopover();
+        }
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && openCompanyPopoverIdx !== null) {
+        setOpenCompanyPopoverIdx(null);
+        setCompanyPopoverAnchorEl(null);
+      }
+    };
+    if (openCompanyPopoverIdx !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openCompanyPopoverIdx]);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, index: number) => {
+    setMenuAnchorEl(event.currentTarget);
+    setMenuRowIndex(index);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setMenuRowIndex(null);
+  };
+
+  const handleQuickPreview = (index: number, event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpenCompanyPopoverIdx(index);
+    setCompanyPopoverAnchorEl(menuAnchorEl);
+    handleMenuClose();
+  };
+
+  const handleCloseCompanyPopover = () => {
+    setOpenCompanyPopoverIdx(null);
+    setCompanyPopoverAnchorEl(null);
+  };
+
+  const handleViewProfile = (company: CompanyItem) => {
+    router.push(paths.strategyForge.companies.details(company.company_id ?? String(company.id)));
+    handleMenuClose();
+  };
+
+  const handleEditCompany = (company: CompanyItem) => {
+    toast.info(
+      `Edit action for company ${company.company_id ?? company.id} is not implemented here.`
+    );
+    handleMenuClose();
+  };
+
+  const handleAddToList = (company: CompanyItem) => {
+    setAddToListCompanyIds([company.company_id ?? String(company.id)]);
+    setAddToListLabel(company.name ?? undefined);
+    setAddToListModalOpen(true);
+    handleMenuClose();
+  };
 
   const companies: CompanyItem[] = companiesData?.data ?? [];
   const totalPages = companiesData?.pagination?.totalPages ?? companiesData?.meta?.lastPage ?? 1;
@@ -504,12 +626,15 @@ export default function CreateListPage(): React.JSX.Element {
                             <th style={{ padding: '8px', textAlign: 'left', width: '180px' }}>
                               Website
                             </th>
+                            <th style={{ padding: '8px', textAlign: 'right', width: '80px' }}>
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {companies.length === 0 ? (
                             <tr>
-                              <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
+                              <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
                                 <Typography level='body-md' color='neutral'>
                                   No companies match selected filters
                                 </Typography>
@@ -631,6 +756,68 @@ export default function CreateListPage(): React.JSX.Element {
                                     </Typography>
                                   )}
                                 </td>
+                                <td onClick={(e) => e.stopPropagation()} style={{ padding: '8px' }}>
+                                  <IconButton
+                                    size='sm'
+                                    variant='plain'
+                                    color='neutral'
+                                    data-menu-button
+                                    onClick={(e) => handleMenuOpen(e, index)}
+                                    sx={{ '--Icon-button-size': '32px' }}
+                                  >
+                                    <DotsThreeVertical size={20} />
+                                  </IconButton>
+                                  <Menu
+                                    anchorEl={menuAnchorEl}
+                                    open={menuRowIndex === index && Boolean(menuAnchorEl)}
+                                    onClose={handleMenuClose}
+                                    placement='bottom-end'
+                                    size='sm'
+                                    sx={{ minWidth: 180 }}
+                                  >
+                                    <MenuItem
+                                      data-menu-item
+                                      onClick={(e) =>
+                                        handleQuickPreview(
+                                          index,
+                                          e as unknown as React.MouseEvent<HTMLElement>
+                                        )
+                                      }
+                                    >
+                                      <ListItemDecorator>
+                                        <SelectionAllIcon />
+                                      </ListItemDecorator>
+                                      <ListItemContent>Quick preview</ListItemContent>
+                                    </MenuItem>
+                                    <MenuItem
+                                      data-menu-item
+                                      onClick={() => handleViewProfile(company)}
+                                    >
+                                      <ListItemDecorator>
+                                        <EyeIcon />
+                                      </ListItemDecorator>
+                                      <ListItemContent>View profile</ListItemContent>
+                                    </MenuItem>
+                                    <MenuItem
+                                      data-menu-item
+                                      onClick={() => handleEditCompany(company)}
+                                    >
+                                      <ListItemDecorator>
+                                        <PencilSimpleIcon />
+                                      </ListItemDecorator>
+                                      <ListItemContent>Edit</ListItemContent>
+                                    </MenuItem>
+                                    <MenuItem
+                                      data-menu-item
+                                      onClick={() => handleAddToList(company)}
+                                    >
+                                      <ListItemDecorator>
+                                        <PlusIcon />
+                                      </ListItemDecorator>
+                                      <ListItemContent>Add to list</ListItemContent>
+                                    </MenuItem>
+                                  </Menu>
+                                </td>
                               </tr>
                             ))
                           )}
@@ -708,6 +895,31 @@ export default function CreateListPage(): React.JSX.Element {
           )}
         </Box>
       </Box>
+
+      {openCompanyPopoverIdx !== null && companies[openCompanyPopoverIdx] && (
+        <CompanyDetailsPopover
+          open={openCompanyPopoverIdx !== null}
+          onClose={handleCloseCompanyPopover}
+          anchorEl={companyPopoverAnchorEl}
+          companyId={0}
+          company_id={
+            companies[openCompanyPopoverIdx].company_id ??
+            String(companies[openCompanyPopoverIdx].id)
+          }
+          excludeListId={listId ?? undefined}
+        />
+      )}
+
+      <AddToListModal
+        open={addToListModalOpen}
+        onClose={() => {
+          setAddToListModalOpen(false);
+          setAddToListCompanyIds([]);
+          setAddToListLabel(undefined);
+        }}
+        companyIds={addToListCompanyIds}
+        excludeListId={listId ?? undefined}
+      />
 
       {/* Unsaved changes modal */}
       <Modal open={showUnsavedModal} onClose={handleStay}>
