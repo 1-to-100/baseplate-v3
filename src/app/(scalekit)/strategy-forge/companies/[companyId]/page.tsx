@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, use } from 'react';
+import dayjs from 'dayjs';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import { BreadcrumbsItem } from '@/components/core/breadcrumbs-item';
 import { BreadcrumbsSeparator } from '@/components/core/breadcrumbs-separator';
@@ -17,12 +18,13 @@ import {
   getCompanyDiffbotJson,
   getCompanyPeople,
 } from '../../lib/api/companies';
-import { invokeFetchCompanyNews } from '../../lib/api/company-news';
+import { getCompanyNews, invokeFetchCompanyNews } from '../../lib/api/company-news';
 import type { CompanyItem, CompanyItemList } from '../../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
+import Pagination from '@/components/dashboard/layout/pagination';
 import { useUserInfo } from '@/hooks/use-user-info';
 import {
   CompanyDetailsHeader,
@@ -113,14 +115,13 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
     enabled: !!companyId,
   });
 
-  console.log('company', company);
-
   const { userInfo } = useUserInfo();
   const isSuperAdmin = userInfo?.isSuperadmin;
   const isCustomerSuccess = userInfo?.isCustomerSuccess;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(25);
+  const [newsPage, setNewsPage] = useState(1);
 
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [menuRowIndex, setMenuRowIndex] = useState<number | null>(null);
@@ -202,10 +203,28 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   });
 
   const queryClient = useQueryClient();
+
+  // Fetch company news from DB (paginated, 5 per page)
+  const { data: companyNewsResponse, isLoading: companyNewsLoading } = useQuery({
+    queryKey: ['company-news', companyId, newsPage],
+    queryFn: () =>
+      getCompanyNews({
+        company_id: companyId,
+        page: newsPage,
+        limit: 5,
+      }),
+    enabled: !!companyId,
+  });
+  const companyNews = companyNewsResponse?.data ?? [];
+  const companyNewsMeta = companyNewsResponse?.meta;
+  const companyNewsTotalPages = companyNewsMeta?.totalPages ?? 1;
+  const companyNewsTotal = companyNewsMeta?.total ?? 0;
+
   const fetchNewsMutation = useMutation({
     mutationFn: () => invokeFetchCompanyNews([companyId]),
     onSuccess: (data) => {
       toast.success(`News fetch completed: ${data.articlesInserted} articles for this company.`);
+      setNewsPage(1);
       queryClient.invalidateQueries({ queryKey: ['company-news', companyId] });
     },
     onError: (err: Error) => {
@@ -501,6 +520,96 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                       </Typography>
                     )}
                   </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    borderTop: '1px solid var(--joy-palette-divider)',
+                    pt: 3,
+                    mt: 3,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: '16px',
+                      fontWeight: '400',
+                      color: 'var(--joy-palette-text-secondary)',
+                      mb: 2,
+                    }}
+                  >
+                    News
+                  </Typography>
+                  {companyNewsLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                      <CircularProgress size='sm' />
+                    </Box>
+                  ) : companyNews.length === 0 ? (
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: 'var(--joy-palette-text-tertiary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      No news yet
+                    </Typography>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {companyNews.map((item) => (
+                          <Box
+                            key={item.company_news_id}
+                            component={item.url ? 'a' : 'div'}
+                            href={item.url || undefined}
+                            target={item.url ? '_blank' : undefined}
+                            rel={item.url ? 'noopener noreferrer' : undefined}
+                            sx={{
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              cursor: item.url ? 'pointer' : 'default',
+                              '&:hover': item.url
+                                ? { color: 'var(--joy-palette-primary-600)' }
+                                : {},
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                color: 'var(--joy-palette-text-primary)',
+                                lineHeight: 1.4,
+                                whiteSpace: 'normal',
+                                wordBreak: 'break-word',
+                              }}
+                            >
+                              {item.title}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: '12px',
+                                color: 'var(--joy-palette-text-tertiary)',
+                                mt: 0.5,
+                              }}
+                            >
+                              {item.published_at
+                                ? dayjs(item.published_at).format('D MMM [at] h:mmA')
+                                : '—'}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                      {companyNewsTotalPages > 1 && (
+                        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                          <Pagination
+                            totalPages={companyNewsTotalPages}
+                            currentPage={newsPage}
+                            onPageChange={setNewsPage}
+                            disabled={companyNewsLoading}
+                          />
+                        </Box>
+                      )}
+                    </>
+                  )}
                 </Box>
               </Box>
             </Box>
