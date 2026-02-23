@@ -579,7 +579,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                     <Button
                       role='tab'
                       aria-selected={detailTab === COMPANY_DETAIL_TAB.NEWS}
-                      variant='plain'
                       size='sm'
                       onClick={() => setDetailTab(COMPANY_DETAIL_TAB.NEWS)}
                       sx={{
@@ -589,7 +588,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                         fontSize: '14px',
                         ...(detailTab === COMPANY_DETAIL_TAB.NEWS && {
                           bgcolor: 'var(--joy-palette-neutral-100)',
-                          color: 'var(--joy-palette-text-primary)',
                           '&:hover': {
                             bgcolor: 'var(--joy-palette-neutral-200)',
                           },
