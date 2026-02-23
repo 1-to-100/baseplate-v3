@@ -24,7 +24,7 @@ import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
-import Pagination from '@/components/dashboard/layout/pagination';
+import { Pagination } from '@/components/core/pagination';
 import { useUserInfo } from '@/hooks/use-user-info';
 import {
   CompanyDetailsHeader,
@@ -601,10 +601,13 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                       {companyNewsTotalPages > 1 && (
                         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
                           <Pagination
-                            totalPages={companyNewsTotalPages}
-                            currentPage={newsPage}
-                            onPageChange={setNewsPage}
+                            size='sm'
+                            count={companyNewsTotalPages}
+                            page={newsPage}
+                            onChange={(_, value) => value != null && setNewsPage(value)}
                             disabled={companyNewsLoading}
+                            hideNextButton
+                            hidePrevButton
                           />
                         </Box>
                       )}
