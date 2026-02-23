@@ -270,11 +270,11 @@ function ColorPalettePresetSelector({
         }}
       >
         <Typography level='body-sm' color='neutral'>
-          Select from recommendation or add own colors
+          Select from recommendation
         </Typography>
-        <Button variant='plain' color='primary' startDecorator={<Plus />} onClick={onAddCustom}>
+        {/* <Button variant='plain' color='primary' startDecorator={<Plus />} onClick={onAddCustom}>
           Add Your Own
-        </Button>
+        </Button> */}
       </Stack>
 
       <Grid container spacing={2}>

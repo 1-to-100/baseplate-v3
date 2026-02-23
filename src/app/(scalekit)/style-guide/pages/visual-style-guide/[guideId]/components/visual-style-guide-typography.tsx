@@ -80,9 +80,9 @@ function TypographyPresetSelector({
         }}
       >
         <Typography level='body-sm' color='neutral'>
-          Select from recommendation or add own typography
+          Select from recommendation
         </Typography>
-        <Button
+        {/* <Button
           variant='plain'
           color='primary'
           startDecorator={<Plus />}
@@ -90,7 +90,7 @@ function TypographyPresetSelector({
           disabled={isLoading}
         >
           Add Your Own
-        </Button>
+        </Button> */}
       </Stack>
 
       <Grid container spacing={2}>
