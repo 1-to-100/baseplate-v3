@@ -490,20 +490,17 @@ export default function VisualStyleGuideTypography({
     }
   }, [fontOptions, loadFonts]);
 
-  // Typography styles only (colors are managed in the Colors section)
-  const mergedItems = React.useMemo(() => {
-    return (typographyStyles || [])
-      .map((style) => ({
-        type: 'typography' as const,
-        data: style,
-        sortOrder:
-          typographyOptions?.find(
-            (opt) =>
-              String(opt.typography_style_option_id) === String(style.typography_style_option_id)
-          )?.sort_order ?? Infinity,
-      }))
-      .sort((a, b) => (a.sortOrder as number) - (b.sortOrder as number))
-      .map(({ sortOrder, ...item }) => item);
+  // Typography styles sorted by option order (colors are managed in the Colors section)
+  const sortedTypographyStyles = React.useMemo(() => {
+    return [...(typographyStyles || [])].sort(
+      (a, b) =>
+        (typographyOptions?.find(
+          (opt) => String(opt.typography_style_option_id) === String(a.typography_style_option_id)
+        )?.sort_order ?? Infinity) -
+        (typographyOptions?.find(
+          (opt) => String(opt.typography_style_option_id) === String(b.typography_style_option_id)
+        )?.sort_order ?? Infinity)
+    );
   }, [typographyStyles, typographyOptions]);
 
   const createTypographyStyle = useCreateTypographyStyle();
@@ -621,8 +618,7 @@ export default function VisualStyleGuideTypography({
                 loadingPreset={loadingPreset}
               />
               <List sx={{ p: 0, gap: 2, mt: 2 }}>
-                {mergedItems.map((item) => {
-                  const style = item.data as TypographyStyle;
+                {sortedTypographyStyles.map((style) => {
                   const option = typographyOptions?.find(
                     (opt) =>
                       String(opt.typography_style_option_id) ===
@@ -647,8 +643,7 @@ export default function VisualStyleGuideTypography({
         return (
           <Card variant='outlined' sx={{ p: 0 }}>
             <List>
-              {mergedItems.map((item) => {
-                const style = item.data as TypographyStyle;
+              {sortedTypographyStyles.map((style) => {
                 const option = typographyOptions?.find(
                   (opt) =>
                     String(opt.typography_style_option_id) ===
