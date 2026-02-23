@@ -31,6 +31,7 @@ type GenerateLogoModalProps = {
   onGenerate: (prompt: string) => Promise<GeneratedLogo[]>;
   isGenerating?: boolean;
   isSaving?: boolean;
+  initialPrompt?: string;
 };
 
 export function GenerateLogoModal({
@@ -40,11 +41,23 @@ export function GenerateLogoModal({
   onGenerate,
   isGenerating = false,
   isSaving = false,
+  initialPrompt = '',
 }: GenerateLogoModalProps): React.JSX.Element {
-  const [prompt, setPrompt] = React.useState('');
+  const [prompt, setPrompt] = React.useState(initialPrompt);
   const [generatedLogos, setGeneratedLogos] = React.useState<GeneratedLogo[]>([]);
   const [selectedLogoId, setSelectedLogoId] = React.useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = React.useState(false);
+
+  const prevOpenRef = React.useRef(false);
+  // Sync prompt from initialPrompt only when the modal first opens, so async
+  // initialPrompt updates (e.g. from useCustomerInfo) don't overwrite in-progress edits.
+  React.useEffect(() => {
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (justOpened) {
+      setPrompt(initialPrompt);
+    }
+  }, [open, initialPrompt]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -85,7 +98,7 @@ export function GenerateLogoModal({
   };
 
   const handleClose = () => {
-    setPrompt('');
+    setPrompt(initialPrompt);
     setGeneratedLogos([]);
     setSelectedLogoId(null);
     setHasGenerated(false);

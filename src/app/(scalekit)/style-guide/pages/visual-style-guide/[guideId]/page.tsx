@@ -21,6 +21,8 @@ import Typography from '@mui/joy/Typography';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useUserInfo } from '@/hooks/use-user-info';
+import { isCustomerAdminOrManager, isSystemAdministrator } from '@/lib/user-utils';
 import VisualStyleGuideActivityTracker from './components/visual-style-guide-activity-tracker';
 import VisualStyleGuideBreadcrumbs from './components/visual-style-guide-breadcrumbs';
 import VisualStyleGuideColors from './components/visual-style-guide-colors';
@@ -32,9 +34,11 @@ import { Plus } from '@phosphor-icons/react';
 function EmptyVisualStyleGuideState({
   onEditMood,
   extractionFailed,
+  canEdit,
 }: {
   onEditMood: () => void;
   extractionFailed: boolean;
+  canEdit: boolean;
 }): React.JSX.Element {
   return (
     <Stack spacing={4}>
@@ -64,9 +68,11 @@ function EmptyVisualStyleGuideState({
         <Typography level='body-md' sx={{ display: 'block' }}>
           Go to Edit mode to upload your own or generate new ones.
         </Typography>
-        <Button variant='soft' size='lg' startDecorator={<Plus />} onClick={onEditMood}>
-          Go to Edit Mode
-        </Button>
+        {canEdit ? (
+          <Button variant='soft' size='lg' startDecorator={<Plus />} onClick={onEditMood}>
+            Go to Edit Mode
+          </Button>
+        ) : null}
       </Stack>
     </Stack>
   );
@@ -78,6 +84,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
   const searchParams = useSearchParams();
   const guideId = params?.guideId as string;
   const extractionFailed = searchParams.get('extractionFailed') === 'true';
+  const { userInfo, isUserLoading } = useUserInfo();
 
   const [isEditableView, setIsEditableView] = React.useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
@@ -126,9 +133,13 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
     !hasTypographyItems &&
     !hasLogos;
 
+  const canEditStyleGuide = isSystemAdministrator(userInfo) || isCustomerAdminOrManager(userInfo);
+
   const handleGoToEditMood = React.useCallback(() => {
-    setIsEditableView(true);
-  }, []);
+    if (canEditStyleGuide) {
+      setIsEditableView(true);
+    }
+  }, [canEditStyleGuide]);
 
   // // Show all colors for the customer, not just for this guide
   // const sortedColors = React.useMemo(() => {
@@ -214,7 +225,7 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
     }
   }, [guide, guideId, createCaptureRequest, refetch, router]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
         <CircularProgress />
@@ -230,6 +241,8 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
     );
   }
 
+  const showEditableView = isEditableView && canEditStyleGuide;
+
   return (
     <Box sx={{ p: 'var(--Content-padding)' }}>
       <Stack spacing={3}>
@@ -238,11 +251,16 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
             name={String(guide.name || '')}
             description={guide.description ? String(guide.description) : null}
             onPublish={handlePublish}
-            isEditableView={isEditableView}
-            handleVisualStyleGuideEdit={setIsEditableView}
+            isEditableView={showEditableView}
+            handleVisualStyleGuideEdit={(next) => {
+              if (canEditStyleGuide) {
+                setIsEditableView(next);
+              }
+            }}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            showRefresh={isSystemRole === true}
+            showRefresh={isSystemRole === true && canEditStyleGuide}
+            canEdit={canEditStyleGuide}
           />
           <VisualStyleGuideBreadcrumbs guideName={String(guide.name || '')} />
         </Stack>
@@ -261,16 +279,17 @@ export default function VisualStyleGuideOverviewPage(): React.JSX.Element {
                 pr: { md: 2.5 },
               }}
             >
-              {showEmptyState && !isEditableView ? (
+              {showEmptyState && !showEditableView ? (
                 <EmptyVisualStyleGuideState
                   onEditMood={handleGoToEditMood}
                   extractionFailed={extractionFailed}
+                  canEdit={canEditStyleGuide}
                 />
               ) : (
                 <Stack spacing={4.5}>
-                  <VisualStyleGuideColors guideId={guideId} isEditable={isEditableView} />
-                  <VisualStyleGuideTypography guideId={guideId} isEditableView={isEditableView} />
-                  <VisualStyleGuideLogos guideId={guideId} isEditableView={isEditableView} />
+                  <VisualStyleGuideColors guideId={guideId} isEditable={showEditableView} />
+                  <VisualStyleGuideTypography guideId={guideId} isEditableView={showEditableView} />
+                  <VisualStyleGuideLogos guideId={guideId} isEditableView={showEditableView} />
                 </Stack>
               )}
             </Grid>

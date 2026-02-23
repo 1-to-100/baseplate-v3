@@ -38,6 +38,13 @@ import { createSegment, editSegment, getSegmentById } from '../../lib/api/segmen
 import { searchByFilters } from '../../lib/api/search';
 import { countries, usStates, canadianProvinces } from '../../lib/constants/locations';
 import { technologies } from '../../lib/constants/technologies';
+import {
+  formatEmployeesFromSelections,
+  getCompanySizeIndex,
+  getOptionsBetween,
+  isRemovableOption,
+  parseEmployeesRangeToSelections,
+} from '../../lib/utils/company-size';
 import { type List, type AiGeneratedSegment } from '../../lib/types/list';
 import { AskAiSegment } from './ask-ai-segment';
 import type { CompanyPreview } from '../../lib/types/search';
@@ -52,7 +59,6 @@ import Avatar from '@mui/joy/Avatar';
 import CircularProgress from '@mui/joy/CircularProgress';
 import Chip from '@mui/joy/Chip';
 import { useCallback } from 'react';
-import { PersonaWarningBanner } from '@/components/dashboard/banners/persona-warning-banner';
 
 const DIFFBOT_COMPANIES_LIMIT = 5;
 
@@ -66,15 +72,6 @@ interface CreateSegmentFormProps {
 }
 
 // Helper functions for mapping filter values to form state
-function mapCompanySizeValuesToIds(values: string[], companySizes: OptionCompanySize[]): number[] {
-  return values
-    .map((value) => {
-      const companySize = companySizes.find((cs) => cs.value === value);
-      return companySize?.company_size_id;
-    })
-    .filter((id): id is number => id !== undefined);
-}
-
 function mapIndustryNamesToIds(names: string[], industries: OptionIndustry[]): number[] {
   return names
     .map((name) => {
@@ -123,7 +120,7 @@ export function CreateSegmentForm({
   // Filter selections
   const [selectedCountry, setSelectedCountry] = React.useState<string | null>(null);
   const [selectedState, setSelectedState] = React.useState<string | null>(null);
-  const [selectedCompanySizes, setSelectedCompanySizes] = React.useState<number[]>([]);
+  const [selectedCompanySizes, setSelectedCompanySizes] = React.useState<string[]>([]);
   const [selectedIndustries, setSelectedIndustries] = React.useState<number[]>([]);
   const [selectedTechnographics, setSelectedTechnographics] = React.useState<string[]>([]);
   const [selectedPersonas, setSelectedPersonas] = React.useState<number[]>([]);
@@ -189,6 +186,46 @@ export function CreateSegmentForm({
 
   const showLocationDropdown = locationOptions.length > 0;
 
+  // Ordered company size option values (for multi-select and auto-fill)
+  const companySizeOptionValues = React.useMemo(
+    () => (companySizes ?? []).map((cs) => cs.value),
+    [companySizes]
+  );
+
+  // Company size multi-select: auto-fill range when non-consecutive options are selected
+  const handleCompanySizeChange = React.useCallback(
+    (newSelections: string[]) => {
+      if (newSelections.length === 0 || newSelections.length === 1) {
+        setSelectedCompanySizes(newSelections);
+        return;
+      }
+      const indices = newSelections
+        .map((s) => getCompanySizeIndex(s, companySizeOptionValues))
+        .filter((idx) => idx !== -1)
+        .sort((a, b) => a - b);
+      if (indices.length === 0) {
+        setSelectedCompanySizes(newSelections);
+        return;
+      }
+      let allNeighbors = true;
+      for (let i = 0; i < indices.length - 1; i++) {
+        if (indices[i + 1]! - indices[i]! !== 1) {
+          allNeighbors = false;
+          break;
+        }
+      }
+      if (allNeighbors) {
+        setSelectedCompanySizes(newSelections);
+        return;
+      }
+      const minIndex = Math.min(...indices);
+      const maxIndex = Math.max(...indices);
+      const autoFilled = getOptionsBetween(minIndex, maxIndex, companySizeOptionValues);
+      setSelectedCompanySizes(autoFilled);
+    },
+    [companySizeOptionValues]
+  );
+
   // Populate form fields when segment data is available (edit mode)
   React.useEffect(() => {
     if (segment && industries && companySizes) {
@@ -220,13 +257,16 @@ export function CreateSegmentForm({
         }
       }
 
-      // Set company sizes
+      // Set company sizes (value strings)
       if (filters.employees) {
         const employeesArray = Array.isArray(filters.employees)
           ? filters.employees
           : [filters.employees];
-        const companySizeIds = mapCompanySizeValuesToIds(employeesArray, companySizes);
-        setSelectedCompanySizes(companySizeIds);
+        const values =
+          employeesArray.length === 1 && typeof employeesArray[0] === 'string'
+            ? parseEmployeesRangeToSelections(employeesArray[0])
+            : employeesArray.filter((v): v is string => typeof v === 'string');
+        setSelectedCompanySizes(values.length > 0 ? values : []);
       }
 
       // Set industries
@@ -366,23 +406,17 @@ export function CreateSegmentForm({
               .map((ind) => ind.value)
           : [];
 
-      // Get company size range from IDs
-      const companySizeRanges =
-        companySizes && selectedCompanySizes.length > 0
-          ? companySizes
-              .filter((cs) => selectedCompanySizes.includes(cs.company_size_id))
-              .map((cs) => cs.value)
-          : [];
-
-      // For now, use the first company size range
-      // TODO: Handle multiple company size ranges properly
-      const employees = companySizeRanges.length > 0 ? companySizeRanges[0] : null;
+      // Company size: single formatted range string for search API
+      const employees =
+        selectedCompanySizes.length > 0
+          ? formatEmployeesFromSelections(selectedCompanySizes)
+          : null;
 
       const response = await searchByFilters(
         {
           country,
           location,
-          employees,
+          employees: employees ?? undefined,
           categories: categoryNames,
           technographics: selectedTechnographics,
           // personas: selectedPersonas,
@@ -466,19 +500,11 @@ export function CreateSegmentForm({
               .map((ind) => ind.value)
           : [];
 
-      // Get company size range from IDs
-      const companySizeRanges =
-        companySizes && selectedCompanySizes.length > 0
-          ? companySizes
-              .filter((cs) => selectedCompanySizes.includes(cs.company_size_id))
-              .map((cs) => cs.value)
-          : [];
-
       const filters = {
         country,
         location,
         categories: categoryNames,
-        employees: companySizeRanges,
+        employees: selectedCompanySizes.length > 0 ? selectedCompanySizes : undefined,
         technographics: selectedTechnographics,
         // personas: selectedPersonas,
       };
@@ -560,11 +586,15 @@ export function CreateSegmentForm({
         }
       }
 
-      // Map company sizes (employees)
-      if (filters.employees && filters.employees.length > 0 && companySizes) {
-        const companySizeIds = mapCompanySizeValuesToIds(filters.employees, companySizes);
-        if (companySizeIds.length > 0) {
-          setSelectedCompanySizes(companySizeIds);
+      // Map company sizes (employees) – value strings
+      if (filters.employees && filters.employees.length > 0) {
+        const values = Array.isArray(filters.employees) ? filters.employees : [filters.employees];
+        const parsed =
+          values.length === 1 && typeof values[0] === 'string'
+            ? parseEmployeesRangeToSelections(values[0])
+            : values.filter((v): v is string => typeof v === 'string');
+        if (parsed.length > 0) {
+          setSelectedCompanySizes(parsed);
           setCompanySizeAccordionOpen(true);
         }
       }
@@ -590,7 +620,7 @@ export function CreateSegmentForm({
       setTotalCount(0);
       setSearchError(null);
     },
-    [countries, companySizes, industries, locationOptions]
+    [countries, industries, locationOptions]
   );
 
   // Handle smart search for industries
@@ -999,14 +1029,13 @@ export function CreateSegmentForm({
                 </Typography>
               </Box>
               {/* Selected company size chips when accordion is closed */}
-              {!companySizeAccordionOpen && selectedCompanySizes.length > 0 && companySizes && (
+              {!companySizeAccordionOpen && selectedCompanySizes.length > 0 && (
                 <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-                  {selectedCompanySizes.map((id) => {
-                    const cs = companySizes.find((c) => c.company_size_id === id);
-                    if (!cs) return null;
+                  {selectedCompanySizes.map((size) => {
+                    const removable = isRemovableOption(size, selectedCompanySizes);
                     return (
                       <Box
-                        key={id}
+                        key={size}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1019,7 +1048,28 @@ export function CreateSegmentForm({
                           gap: 0.5,
                         }}
                       >
-                        <Typography sx={{ fontSize: 12 }}>{cs.value}</Typography>
+                        <Typography sx={{ fontSize: 12 }}>{size}</Typography>
+                        {removable && (
+                          <Box
+                            sx={{
+                              fontSize: 12,
+                              p: 0,
+                              height: 16,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompanySizeChange(
+                                selectedCompanySizes.filter((s) => s !== size)
+                              );
+                            }}
+                          >
+                            <X size={14} />
+                          </Box>
+                        )}
                       </Box>
                     );
                   })}
@@ -1049,7 +1099,7 @@ export function CreateSegmentForm({
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedCompanySizes([]);
+                    handleCompanySizeChange([]);
                   }}
                 >
                   <Typography
@@ -1070,14 +1120,13 @@ export function CreateSegmentForm({
           {companySizeAccordionOpen && (
             <Box sx={{ p: 2, pl: 0, borderBottom: '1px solid var(--joy-palette-divider)' }}>
               {/* Selected company size chips on top of input */}
-              {selectedCompanySizes.length > 0 && companySizes && (
+              {selectedCompanySizes.length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                  {selectedCompanySizes.map((id) => {
-                    const cs = companySizes.find((c) => c.company_size_id === id);
-                    if (!cs) return null;
+                  {selectedCompanySizes.map((size) => {
+                    const removable = isRemovableOption(size, selectedCompanySizes);
                     return (
                       <Box
-                        key={id}
+                        key={size}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1088,18 +1137,29 @@ export function CreateSegmentForm({
                           fontSize: 12,
                           height: 22,
                           gap: 0.5,
-                          cursor: 'pointer',
                         }}
-                        onClick={() =>
-                          setSelectedCompanySizes((prev) => prev.filter((x) => x !== id))
-                        }
                       >
-                        <Typography sx={{ fontSize: 12 }}>{cs.value}</Typography>
-                        <Box
-                          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <X size={14} />
-                        </Box>
+                        <Typography sx={{ fontSize: 12 }}>{size}</Typography>
+                        {removable && (
+                          <Box
+                            sx={{
+                              fontSize: 12,
+                              p: 0,
+                              height: 16,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            onClick={() =>
+                              handleCompanySizeChange(
+                                selectedCompanySizes.filter((s) => s !== size)
+                              )
+                            }
+                          >
+                            <X size={14} />
+                          </Box>
+                        )}
                       </Box>
                     );
                   })}
@@ -1109,18 +1169,17 @@ export function CreateSegmentForm({
                 <Autocomplete
                   multiple
                   disableCloseOnSelect
-                  options={companySizes || []}
-                  getOptionLabel={(option) => option.value}
-                  value={(companySizes || []).filter((cs) =>
-                    selectedCompanySizes.includes(cs.company_size_id)
-                  )}
-                  onChange={(_, value) =>
-                    setSelectedCompanySizes(value.map((v) => v.company_size_id))
-                  }
+                  options={companySizeOptionValues}
+                  value={selectedCompanySizes}
+                  onChange={(_, newValue) => {
+                    const valueArray = Array.isArray(newValue) ? newValue : [];
+                    handleCompanySizeChange(valueArray);
+                  }}
+                  isOptionEqualToValue={(option, value) => option === value}
                   placeholder='Select company sizes'
                   size='sm'
                   loading={companySizesLoading}
-                  disabled={companySizesLoading || !companySizes?.length}
+                  disabled={companySizesLoading || !companySizeOptionValues.length}
                   renderTags={() => null}
                   slotProps={{
                     input: {
@@ -2027,9 +2086,12 @@ export function CreateSegmentForm({
     persona?: string;
     personas?: number[];
   };
-  const editModeEmployeesDisplay = Array.isArray(editModeFilters.employees)
-    ? editModeFilters.employees[0]
-    : editModeFilters.employees;
+  const editModeEmployeesDisplay =
+    editModeFilters.employees == null
+      ? undefined
+      : Array.isArray(editModeFilters.employees)
+        ? formatEmployeesFromSelections(editModeFilters.employees)
+        : editModeFilters.employees;
   const viewFilters =
     isEditMode && segment ? (
       <Box

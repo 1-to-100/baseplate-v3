@@ -374,16 +374,31 @@ async function getCompaniesWithCustomerContext(
   customerId: string,
   opts: { page: number; limit: number; from: number; to: number; sortBy: string; sortOrder: string }
 ): Promise<GetCompaniesResponse> {
-  const { data: ccRows, error: ccError } = await supabase
-    .from('customer_companies')
-    .select('company_id')
-    .eq('customer_id', customerId);
+  // Fetch all company IDs for this customer in chunks; Supabase caps single response at 1000 rows.
+  // We need the full ID set so the companies query can apply filters/sort and then page correctly.
+  const PAGE_SIZE = 1000;
+  const companyIds: string[] = [];
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data: ccRows, error: ccError } = await supabase
+      .from('customer_companies')
+      .select('company_id')
+      .eq('customer_id', customerId)
+      .range(offset, offset + PAGE_SIZE - 1);
 
-  if (ccError) {
-    throw new Error(`Failed to fetch customer companies: ${ccError.message}`);
+    if (ccError) {
+      throw new Error(`Failed to fetch customer companies: ${ccError.message}`);
+    }
+
+    const rows = ccRows || [];
+    for (const r of rows) {
+      const id = r.company_id as string;
+      if (id) companyIds.push(id);
+    }
+    hasMore = rows.length === PAGE_SIZE;
+    offset += PAGE_SIZE;
   }
-
-  const companyIds = (ccRows || []).map((r) => r.company_id as string).filter(Boolean);
   if (companyIds.length === 0) {
     return {
       data: [],

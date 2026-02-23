@@ -1,5 +1,6 @@
 import { DiffbotOrganizationResponse, DiffbotOrganization } from './types.ts';
-import { DIFFBOT_COMPANIES_LIMIT } from './index.ts';
+
+export const DIFFBOT_COMPANIES_LIMIT = 5;
 
 /**
  * Diffbot API client for organization search

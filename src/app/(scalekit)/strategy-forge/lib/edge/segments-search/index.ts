@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+/// <reference lib="deno.ns" />
 import { handleCors } from '../../../../../../../supabase/functions/_shared/cors.ts';
 import { authenticateRequest } from '../../../../../../../supabase/functions/_shared/auth.ts';
 import {
@@ -6,100 +6,119 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from '../../../../../../../supabase/functions/_shared/errors.ts';
-import { DiffbotClient } from './diffbot-client.ts';
+import { DiffbotClient, DIFFBOT_COMPANIES_LIMIT } from './diffbot-client.ts';
 import { DqlAdapter } from './dql-adapter.ts';
-import { SearchByFiltersRequest, SearchByFiltersResponse, CompanyPreview } from './types.ts';
+import { safeParseSearchByFiltersRequest, type CompanyPreview } from './schema.ts';
+import type { SegmentFilterDto } from './types.ts';
+import type { DiffbotOrganization } from './types.ts';
 
-export const DIFFBOT_COMPANIES_LIMIT = 5;
+export { DIFFBOT_COMPANIES_LIMIT } from './diffbot-client.ts';
 
-serve(async (req) => {
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
+export interface HandlerDeps {
+  authenticateRequest: (req: Request) => Promise<unknown>;
+  searchOrganizations: (
+    query: string[],
+    options: { size: number; from: number; getClause?: string }
+  ) => Promise<{ data: DiffbotOrganization[]; totalCount: number }>;
+}
 
-  try {
-    // Authenticate the request
-    const user = await authenticateRequest(req);
+const defaultDeps: HandlerDeps = {
+  authenticateRequest: (req) => authenticateRequest(req),
+  searchOrganizations: async (query, options) => {
+    const client = new DiffbotClient();
+    return client.searchOrganizations(query, options);
+  },
+};
 
-    // Only accept POST requests
-    if (req.method !== 'POST') {
-      throw new ApiError('Method not allowed', 405);
+function mapToCompanyPreview(org: DiffbotOrganization): CompanyPreview {
+  return {
+    id: org.id,
+    diffbotId: org.diffbotId,
+    name: org.name,
+    fullName: org.fullName,
+    logo: org.logo || org.image,
+    type: org.type,
+    location: org.location,
+    nbEmployees: org.nbEmployees,
+    nbEmployeesMin: org.nbEmployeesMin,
+    nbEmployeesMax: org.nbEmployeesMax,
+    categories: org.categories,
+    homepageUri: org.homepageUri,
+  };
+}
+
+export function createHandler(deps: HandlerDeps = defaultDeps) {
+  return async function handler(req: Request): Promise<Response> {
+    const corsResponse = handleCors(req);
+    if (corsResponse) return corsResponse;
+
+    try {
+      await deps.authenticateRequest(req);
+
+      if (req.method !== 'POST') {
+        throw new ApiError('Method not allowed', 405);
+      }
+
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        throw new ApiError('Invalid request body', 400);
+      }
+
+      const parseResult = safeParseSearchByFiltersRequest(body);
+      if (!parseResult.success) {
+        const first = parseResult.error.issues[0];
+        const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Validation failed';
+        throw new ApiError(msg, 400);
+      }
+
+      const { filters, page = 1, perPage = DIFFBOT_COMPANIES_LIMIT } = parseResult.data;
+
+      if (page < 1) {
+        throw new ApiError('Page must be >= 1', 400);
+      }
+
+      const dqlQuery = DqlAdapter.convert(filters as SegmentFilterDto);
+      if (dqlQuery.length === 0) {
+        throw new ApiError('No valid filters provided. Please select at least one filter.', 400);
+      }
+
+      const from = (page - 1) * perPage;
+
+      const { data: organizations, totalCount } = await deps.searchOrganizations(dqlQuery, {
+        size: perPage,
+        from,
+        getClause:
+          'id,name,fullName,type,logo,location,nbEmployees,nbEmployeesMin,nbEmployeesMax,categories',
+      });
+
+      if (organizations.length === 0 && from === 0) {
+        const errorMessage = DqlAdapter.formatActiveFilters(filters as SegmentFilterDto);
+        throw new ApiError(errorMessage, 409);
+      }
+
+      const companyPreviews: CompanyPreview[] = organizations.map(mapToCompanyPreview);
+
+      const response = {
+        data: companyPreviews,
+        totalCount,
+        page,
+        perPage,
+        diffbotQueries: [`company: ${dqlQuery.join(' ')}`],
+      };
+
+      return createSuccessResponse(response);
+    } catch (error) {
+      console.error('[Segments Search] Error:', error);
+      if (error instanceof Error && error.message === 'DIFFBOT_SERVICE_UNAVAILABLE') {
+        return createErrorResponse(
+          new ApiError("We couldn't load results due to a temporary issue. Please try again.", 503)
+        );
+      }
+      return createErrorResponse(error);
     }
+  };
+}
 
-    // Parse request body
-    const body: SearchByFiltersRequest = await req.json();
-
-    if (!body.filters) {
-      throw new ApiError('Filters are required', 400);
-    }
-
-    const { filters, page = 1, perPage = DIFFBOT_COMPANIES_LIMIT } = body;
-
-    // Validate pagination parameters
-    if (page < 1) {
-      throw new ApiError('Page must be >= 1', 400);
-    }
-
-    // Convert filters to DQL
-    const dqlQuery = DqlAdapter.convert(filters);
-
-    if (dqlQuery.length === 0) {
-      throw new ApiError('No valid filters provided. Please select at least one filter.', 400);
-    }
-
-    // Calculate pagination offset
-    const from = (page - 1) * perPage;
-
-    // Search organizations via Diffbot
-    const diffbotClient = new DiffbotClient();
-    const { data: organizations, totalCount } = await diffbotClient.searchOrganizations(dqlQuery, {
-      size: perPage,
-      from,
-      // Use preview fields to reduce response size
-      getClause:
-        'id,name,fullName,type,logo,location,nbEmployees,nbEmployeesMin,nbEmployeesMax,categories',
-    });
-
-    // Check if any results were found
-    if (organizations.length === 0 && from === 0) {
-      const errorMessage = DqlAdapter.formatActiveFilters(filters);
-      throw new ApiError(errorMessage, 409); // 409 Conflict - no results found
-    }
-
-    // Format response
-    const companyPreviews: CompanyPreview[] = organizations.map((org) => ({
-      id: org.id,
-      diffbotId: org.diffbotId,
-      name: org.name,
-      fullName: org.fullName,
-      logo: org.logo || org.image,
-      type: org.type,
-      location: org.location,
-      nbEmployees: org.nbEmployees,
-      nbEmployeesMin: org.nbEmployeesMin,
-      nbEmployeesMax: org.nbEmployeesMax,
-      categories: org.categories,
-      homepageUri: org.homepageUri,
-    }));
-
-    const response: SearchByFiltersResponse = {
-      data: companyPreviews,
-      totalCount,
-      page,
-      perPage,
-      diffbotQueries: [`company: ${dqlQuery.join(' ')}`],
-    };
-
-    return createSuccessResponse(response);
-  } catch (error) {
-    console.error('[Segments Search] Error:', error);
-
-    // Handle specific Diffbot errors
-    if (error instanceof Error && error.message === 'DIFFBOT_SERVICE_UNAVAILABLE') {
-      return createErrorResponse(
-        new ApiError("We couldn't load results due to a temporary issue. Please try again.", 503)
-      );
-    }
-
-    return createErrorResponse(error);
-  }
-});
+Deno.serve(createHandler());
