@@ -46,7 +46,7 @@ export default function VisualStyleGuideHeader({
         ) : null}
       </Stack> */}
       <Stack direction='row' spacing={1}>
-        {showRefresh && onRefresh && (
+        {/* {showRefresh && onRefresh && (
           <Button
             variant='outlined'
             color='neutral'
@@ -57,7 +57,7 @@ export default function VisualStyleGuideHeader({
           >
             Refresh
           </Button>
-        )}
+        )} */}
         {canEdit ? (
           isEditableView ? (
             <Button
@@ -78,12 +78,12 @@ export default function VisualStyleGuideHeader({
             </Button>
           )
         ) : null}
-
-        {canEdit ? (
+        {/* TODO: Add back in when publish functionality/versioning is implemented later. */}
+        {/* {canEdit ? (
           <Button variant='solid' color='primary' onClick={onPublish}>
             Mark as Final
           </Button>
-        ) : null}
+        ) : null} */}
       </Stack>
     </Stack>
   );
