@@ -13,13 +13,7 @@ import { zodToJsonSchema } from 'npm:zod-to-json-schema@3.24.1';
 // Zod Schema Definitions
 // ============================================================================
 
-export const UsageOptionEnum = z.enum([
-  'primary',
-  'secondary',
-  'foreground',
-  'background',
-  'accent',
-]);
+export const UsageOptionEnum = z.enum(['primary', 'neutral', 'danger', 'success', 'warning']);
 
 export const PaletteColorItemSchema = z
   .object({

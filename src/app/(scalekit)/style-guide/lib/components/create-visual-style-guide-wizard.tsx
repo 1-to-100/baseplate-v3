@@ -319,31 +319,37 @@ export function CreateVisualStyleGuideWizard(): React.JSX.Element {
             }
           }
 
-          // Create default palette colors
+          // Create default palette colors (JoyUI standard)
           const defaultColors = [
-            {
-              hex: method === 'default' ? '#000000' : '#000000',
-              name: 'Foreground Text',
-              usage: COLOR_USAGE_OPTION.FOREGROUND,
-              sort_order: 1,
-            },
-            {
-              hex: method === 'default' ? '#FFFFFF' : '#FFFFFF',
-              name: 'Background',
-              usage: COLOR_USAGE_OPTION.BACKGROUND,
-              sort_order: 2,
-            },
             {
               hex: method === 'default' ? '#1976D2' : '#0000FF',
               name: 'Primary',
               usage: COLOR_USAGE_OPTION.PRIMARY,
+              sort_order: 1,
+            },
+            {
+              hex: method === 'default' ? '#6B7280' : '#666666',
+              name: 'Neutral',
+              usage: COLOR_USAGE_OPTION.NEUTRAL,
+              sort_order: 2,
+            },
+            {
+              hex: method === 'default' ? '#D32F2F' : '#C62828',
+              name: 'Danger',
+              usage: COLOR_USAGE_OPTION.DANGER,
               sort_order: 3,
             },
             {
-              hex: method === 'default' ? '#757575' : '#666666',
-              name: 'Secondary',
-              usage: COLOR_USAGE_OPTION.SECONDARY,
+              hex: method === 'default' ? '#2E7D32' : '#1B5E20',
+              name: 'Success',
+              usage: COLOR_USAGE_OPTION.SUCCESS,
               sort_order: 4,
+            },
+            {
+              hex: method === 'default' ? '#ED6C02' : '#E65100',
+              name: 'Warning',
+              usage: COLOR_USAGE_OPTION.WARNING,
+              sort_order: 5,
             },
           ];
 

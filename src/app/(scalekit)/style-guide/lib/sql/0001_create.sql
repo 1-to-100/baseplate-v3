@@ -520,7 +520,7 @@ CREATE TABLE IF NOT EXISTS public.palette_colors (
   CONSTRAINT palette_colors_hex_format_check 
     CHECK (hex ~ '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'),
   CONSTRAINT palette_colors_usage_option_check 
-    CHECK (usage_option IN ('primary', 'secondary', 'foreground', 'background', 'accent'))
+    CHECK (usage_option IN ('primary', 'neutral', 'danger', 'success', 'warning'))
 );
 
 COMMENT ON TABLE public.palette_colors IS 
@@ -530,7 +530,7 @@ COMMENT ON COLUMN public.palette_colors.hex IS
   'Hex color code in format #RGB or #RRGGBB';
 
 COMMENT ON COLUMN public.palette_colors.usage_option IS 
-  'Semantic usage category: primary, secondary, foreground, background, accent';
+  'Semantic usage category (JoyUI): primary, neutral, danger, success, warning';
 
 COMMENT ON COLUMN public.palette_colors.contrast_ratio_against_background IS 
   'WCAG contrast ratio when used against typical background colors';

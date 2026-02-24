@@ -21,8 +21,8 @@ const corsHeaders = {
 
 // PaletteColorItem and ColorsResponse types are imported from schema.ts
 
-// System prompt for color extraction
-const SYSTEM_PROMPT = `You are an expert color analyst and brand designer. Your role is to analyze websites and extract accurate color palette information including primary brand colors, secondary/accent colors, foreground text colors, and background colors.`;
+// System prompt for color extraction (JoyUI standard: primary, neutral, danger, success, warning)
+const SYSTEM_PROMPT = `You are an expert color analyst and brand designer. Your role is to analyze websites and extract accurate color palette information using JoyUI semantic categories: primary (brand/CTAs), neutral (surfaces/text), danger (errors/destructive), success (positive states), and warning (caution).`;
 
 /**
  * Generates the user prompt for color extraction
@@ -53,49 +53,46 @@ Your task is to extract the complete color palette from the provided screenshot 
 
 ANALYSIS APPROACH:
 Examine the provided screenshot image and the HTML/CSS content to identify all colors used across:
-- Brand colors (logos, headers, primary UI elements)
-- Text colors (headings, body text, links)
-- Background colors (page backgrounds, sections)
-- Accent colors (buttons, highlights, call-to-action elements)
-- Secondary colors (supporting elements)
+- Brand and CTA colors (logos, headers, primary buttons, links)
+- Neutral/base colors (backgrounds, surfaces, body text, borders)
+- Status colors (errors, success states, warnings)
 
-COLOR USAGE TYPES:
-You must identify colors for each of these usage categories:
+COLOR USAGE TYPES (JoyUI standard — use ONLY these values):
+You must categorize each color using exactly one of these usage_option values:
 
-1. FOREGROUND (1 entry required):
-   - Main text color used for body copy and content
-   - Usually a dark color (black, dark gray) on light backgrounds
-   - usage_option: "foreground"
-
-2. BACKGROUND (1 entry required):
-   - Primary page background color
-   - Usually white or light gray
-   - usage_option: "background"
-
-3. PRIMARY (2-4 entries required):
-   - Main brand colors prominently used throughout the site
-   - Colors in logos, headers, primary buttons
+1. PRIMARY:
+   - Main brand colors prominently used throughout the site, primary CTAs, key highlights, active/selected states
+   - Colors in logos, headers, primary buttons, important links
    - Most recognizable brand colors
    - usage_option: "primary"
 
-4. SECONDARY or ACCENT (2-4 entries required):
-   - Supporting colors or accent colors
-   - Used sparingly for highlights, special elements
-   - May include secondary brand colors
-   - usage_option: "secondary" or "accent"
+2. NEUTRAL:
+   - Surfaces, backgrounds, containers, borders, dividers, body text
+   - Default controls, layout hierarchy, theme-aware grays
+   - usage_option: "neutral"
+
+3. DANGER:
+   - Error states, destructive actions, high-severity alerts
+   - Delete buttons, validation errors, failed operations
+   - usage_option: "danger"
+
+4. SUCCESS:
+   - Positive confirmation, completion states, verified/connected indicators
+   - usage_option: "success"
+
+5. WARNING:
+   - Caution states, non-blocking alerts, degraded states
+   - usage_option: "warning"
 
 For each color, provide:
 - hex: Hex color code WITH # prefix (REQUIRED - e.g., "#1976D2")
-- name: Descriptive color name (REQUIRED - e.g., "Primary Blue", "Dark Text Gray", "Accent Orange")
-- usage_option: One of "primary", "secondary", "foreground", "background", or "accent" (REQUIRED)
+- name: Descriptive color name (REQUIRED - e.g., "Primary Blue", "Neutral Gray", "Danger Red")
+- usage_option: One of "primary", "neutral", "danger", "success", or "warning" (REQUIRED)
 - sort_order: Integer for ordering (REQUIRED - start from 1, increment for each color)
 
 **CRITICAL INSTRUCTIONS**:
 - Provide 6-10 colors total
-- MUST include at least 1 foreground color
-- MUST include at least 1 background color  
-- MUST include 2-4 primary colors
-- MUST include 2-4 secondary/accent colors
+- Include 2-4 primary colors, 2-4 neutral colors; add danger/success/warning only if visibly used
 - All hex codes MUST start with # (e.g., "#FF5733" not "FF5733")
 - Return PURE JSON with NO markdown formatting or code blocks
 
@@ -105,13 +102,13 @@ Return your response as a JSON object with this EXACT structure:
     {
       "hex": "#FFFFFF",
       "name": "Background White",
-      "usage_option": "background",
+      "usage_option": "neutral",
       "sort_order": 1
     },
     {
       "hex": "#000000",
       "name": "Text Black",
-      "usage_option": "foreground",
+      "usage_option": "neutral",
       "sort_order": 2
     },
     {
@@ -156,15 +153,6 @@ function validateColorsResponse(response: unknown): ColorsResponse {
 
   if (paletteColors.length < 6) {
     console.warn(`Warning: Only ${paletteColors.length} colors provided (recommended: 6-10)`);
-  }
-
-  // Verify we have required usage types
-  const usageTypes = paletteColors.map((c) => c.usage_option);
-  if (!usageTypes.includes('foreground')) {
-    console.warn('Warning: No foreground color provided');
-  }
-  if (!usageTypes.includes('background')) {
-    console.warn('Warning: No background color provided');
   }
 
   return result.data;

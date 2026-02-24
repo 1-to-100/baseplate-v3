@@ -44,7 +44,7 @@ Deno.test('Schema: validates generated mock data', () => {
 });
 
 Deno.test('Schema: validates all enum values', () => {
-  const validOptions = ['primary', 'secondary', 'foreground', 'background', 'accent'];
+  const validOptions = ['primary', 'neutral', 'danger', 'success', 'warning'];
 
   for (const option of validOptions) {
     const result = UsageOptionEnum.safeParse(option);
@@ -100,7 +100,7 @@ Deno.test('Schema: validates sort_order is a number', () => {
       {
         hex: '#FFFFFF',
         name: 'White',
-        usage_option: 'background',
+        usage_option: 'neutral',
         sort_order: 'not a number', // should be number
       },
     ],
