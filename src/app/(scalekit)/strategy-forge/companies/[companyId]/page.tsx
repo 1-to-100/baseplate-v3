@@ -218,7 +218,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
 
   const queryClient = useQueryClient();
 
-  // Fetch company news from DB (paginated, 5 per page)
+  // Fetch company news from DB (paginated, 5 per page, last 30 days only)
   const { data: companyNewsResponse, isLoading: companyNewsLoading } = useQuery({
     queryKey: ['company-news', companyId, newsPage],
     queryFn: () =>
@@ -226,6 +226,7 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         company_id: companyId,
         page: newsPage,
         limit: 5,
+        from_date: dayjs().subtract(30, 'day').toISOString(),
       }),
     enabled: !!companyId,
   });
