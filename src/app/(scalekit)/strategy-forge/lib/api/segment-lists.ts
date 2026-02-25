@@ -23,8 +23,7 @@ interface CreateSegmentInput {
 
 /**
  * Whether the current user can create, edit, and remove segments.
- * Regular users can edit. System admin can edit only when a customer is selected.
- * Customer success users can view but not modify segments.
+ * Regular users can edit. System admin and customer success can edit when a customer is selected.
  */
 export async function getCanEditSegments(): Promise<{ canEditSegments: boolean }> {
   const supabase = createClient();
@@ -32,7 +31,9 @@ export async function getCanEditSegments(): Promise<{ canEditSegments: boolean }
     await Promise.all([resolveEffectiveCustomerId(supabase), supabase.rpc('is_customer_success')]);
   const customerSuccess = Boolean(isCustomerSuccess);
   return {
-    canEditSegments: (!systemAdmin && !customerSuccess) || (systemAdmin && !!effectiveCustomerId),
+    canEditSegments:
+      (!systemAdmin && !customerSuccess) ||
+      ((systemAdmin || customerSuccess) && !!effectiveCustomerId),
   };
 }
 

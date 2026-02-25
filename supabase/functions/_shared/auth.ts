@@ -104,10 +104,11 @@ async function _authenticate(req: Request): Promise<AuthResult> {
   // Normalize role - Supabase may return array or single object
   const role = Array.isArray(dbUser.role) ? (dbUser.role[0] ?? null) : (dbUser.role ?? null);
 
-  // For system admin with context switcher: use JWT app_metadata.customer_id
+  // For system admin and customer success with context switcher: use JWT app_metadata.customer_id
   // Fallback to Admin API if JWT lacks it (JWT may not include custom app_metadata until refresh)
   let customerId: string | null = dbUser.customer_id;
-  if (role?.name === 'system_admin') {
+  const roleName = role?.name;
+  if (roleName === 'system_admin' || roleName === 'customer_success') {
     const jwtCustomerId = (authUser.app_metadata as Record<string, unknown> | undefined)
       ?.customer_id;
     if (typeof jwtCustomerId === 'string' && jwtCustomerId.trim()) {
