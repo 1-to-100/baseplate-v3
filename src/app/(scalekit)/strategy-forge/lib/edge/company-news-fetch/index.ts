@@ -45,12 +45,6 @@ const DEFAULT_DAYS_THRESHOLD = 30;
 /** Max characters for article description */
 const MAX_DESCRIPTION_LENGTH = 500;
 
-/** Max articles to store per company per batch (avoids one company dominating) */
-const MAX_ARTICLES_PER_COMPANY = 20;
-
-/** Max articles to insert per batch overall (guards against memory/DB load) */
-const MAX_ARTICLES_PER_BATCH = 300;
-
 /**
  * Truncate text to max length, adding ellipsis if needed
  */
@@ -175,24 +169,12 @@ async function processBatch(
       diffbotIdToCompanyId
     );
 
-    // Prepare articles: limit per company, global dedupe, and cap total per batch
+    // Prepare articles: global dedupe by company_id:url
     const seenKey = new Set<string>();
     const allArticles: ProcessedArticle[] = [];
-    let batchLimitReached = false;
 
     for (const [companyId, companyArticles] of articlesByCompany) {
-      if (batchLimitReached) break;
-
-      const limited = companyArticles.slice(0, MAX_ARTICLES_PER_COMPANY);
-      for (const article of limited) {
-        if (allArticles.length >= MAX_ARTICLES_PER_BATCH) {
-          batchLimitReached = true;
-          console.log(
-            `[Company News Fetch] Batch limit reached (${MAX_ARTICLES_PER_BATCH} articles)`
-          );
-          break;
-        }
-
+      for (const article of companyArticles) {
         const processed = toProcessedArticle(article, companyId);
         if (!processed) continue;
 
