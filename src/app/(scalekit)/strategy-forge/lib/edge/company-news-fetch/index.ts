@@ -33,9 +33,6 @@ import type {
   DiffbotArticle,
 } from './types.ts';
 
-/** Default number of companies to process per job run */
-const DEFAULT_COMPANIES_LIMIT = 50;
-
 /** Default number of companies per Diffbot API request */
 const DEFAULT_BATCH_SIZE = 10;
 
@@ -262,7 +259,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    const limit = body.limit ?? DEFAULT_COMPANIES_LIMIT;
     const daysThreshold = body.days_threshold ?? DEFAULT_DAYS_THRESHOLD;
     const batchSize = body.batch_size ?? DEFAULT_BATCH_SIZE;
 
@@ -279,14 +275,18 @@ Deno.serve(async (req) => {
       // Manual trigger for specific companies
       query = query.in('company_id', body.company_ids);
     } else {
-      // Default: companies with stale or no news
+      // Default: all companies with stale or no news
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
 
       query = query
         .or(`news_last_fetched_at.is.null,news_last_fetched_at.lt.${cutoffDate.toISOString()}`)
-        .order('news_last_fetched_at', { ascending: true, nullsFirst: true })
-        .limit(limit);
+        .order('news_last_fetched_at', { ascending: true, nullsFirst: true });
+
+      // Optional limit if provided in body (for testing)
+      if (body.limit && body.limit > 0) {
+        query = query.limit(body.limit);
+      }
     }
 
     const { data: companies, error: selectError } = await query;

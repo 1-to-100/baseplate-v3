@@ -6,10 +6,10 @@ Fetches news articles from Diffbot Knowledge Graph for companies and stores them
 
 This edge function:
 
-1. Selects companies that haven't had news fetched recently (30+ days or never)
+1. Selects **all** companies that haven't had news fetched recently (30+ days or never)
 2. Batches companies (10 per request) to minimize API calls
-3. Queries Diffbot for articles with **pagination** (200 per page) so media-heavy companies get full coverage
-4. Maps articles back to companies; limits to 20 articles per company per batch; dedupes by `(company_id, url)`
+3. Queries Diffbot for articles with **pagination** (100 per page) so media-heavy companies get full coverage
+4. Maps articles back to companies; dedupes by `(company_id, url)` (no per-company or per-batch caps)
 5. Upserts into `company_news` and counts **actual** rows affected via `.select('company_news_id')`
 6. Updates `companies.news_last_fetched_at` **only when Diffbot responded successfully** (failed batches retry next run)
 7. **Retry** with exponential backoff for 429 and 5xx
@@ -60,7 +60,7 @@ POST /functions/v1/company-news-fetch
 ```json
 {
   "company_ids": ["uuid1", "uuid2"], // Optional: specific companies
-  "limit": 50, // Optional: max companies to process (default 50)
+  "limit": 100, // Optional: max companies to process (no limit by default)
   "days_threshold": 30, // Optional: days before news is stale (default 30)
   "batch_size": 10 // Optional: companies per Diffbot request (default 10)
 }
@@ -105,34 +105,13 @@ Unique constraint: `(company_id, url)` - prevents duplicate articles.
 
 ## Cron Setup
 
-Add to Supabase cron jobs (daily at 2 AM UTC):
+Scheduled via migration `0007_cron_company_news_fetch.sql` (daily at 3 AM UTC). Uses Vault for credentials (same as company-scoring-worker).
 
-```sql
-SELECT cron.schedule(
-  'fetch-company-news-daily',
-  '0 2 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://your-project.supabase.co/functions/v1/company-news-fetch',
-    headers := jsonb_build_object(
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key'),
-      'Content-Type', 'application/json'
-    ),
-    body := '{}'::jsonb
-  );
-  $$
-);
-```
+The cron job calls `process_company_news_fetch()` which POSTs to the Edge Function with the service role key from Vault.
 
 ## Load Estimation
 
-| Companies | Days to Full Cycle | API Requests/Day |
-| --------- | ------------------ | ---------------- |
-| 1,000     | 20                 | 5                |
-| 5,000     | 100                | 5                |
-| 10,000    | 200                | 5                |
-
-With batching (10 companies per request), **~85% reduction** in API calls vs. individual requests.
+All companies needing refresh are processed in a single daily run. With batching (10 companies per Diffbot request), there's an **~85% reduction** in API calls vs. individual requests per company.
 
 ## Diffbot DQL Query
 
@@ -147,8 +126,9 @@ Articles are mapped back to companies using `tags.uri` field matching.
 ## Implementation details (audit fixes)
 
 - **articlesInserted**: Uses upsert `.select('company_news_id')` and counts returned rows (real inserts/updates).
-- **Large results**: `searchArticlesByOrganizationsAllPages()` paginates with page size 200 so Tesla/Apple-level volume is covered.
-- **Timestamp on success only**: `news_last_fetched_at` is updated only inside the try block after a successful Diffbot fetch; on API/network error the batch is not marked updated and will be retried next day.
+- **Large results**: `searchArticlesByOrganizationsAllPages()` paginates with page size 100 so Tesla/Apple-level volume is covered.
+- **No company limit**: All companies needing refresh are processed in a single run (no default limit).
+- **Timestamp on success only**: `news_last_fetched_at` is updated only after successful Diffbot fetch **and** upsert; failed batches retry next run.
 - **No per-company or per-batch caps**: All articles returned by Diffbot (after mapping to companies) are deduped by `company_id:url` and upserted.
 - **Dedupe**: Global `Set` keyed by `company_id:url` so the same article is not upserted twice in one batch.
 - **Retry**: Diffbot client uses `withRetry` (max 2 retries, exponential backoff) for 429 and 5xx.

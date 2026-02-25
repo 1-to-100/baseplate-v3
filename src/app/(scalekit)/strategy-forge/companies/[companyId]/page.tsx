@@ -18,7 +18,7 @@ import {
   getCompanyDiffbotJson,
   getCompanyPeople,
 } from '../../lib/api/companies';
-import { getCompanyNews, invokeFetchCompanyNews } from '../../lib/api/company-news';
+import { getCompanyNews } from '../../lib/api/company-news';
 import type { CompanyItem, CompanyItemList } from '../../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
@@ -235,18 +235,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
   const companyNewsTotalPages = companyNewsMeta?.totalPages ?? 1;
   const companyNewsTotal = companyNewsMeta?.total ?? 0;
 
-  const fetchNewsMutation = useMutation({
-    mutationFn: () => invokeFetchCompanyNews([companyId]),
-    onSuccess: (data) => {
-      toast.success(`News fetch completed: ${data.articlesInserted} articles for this company.`);
-      setNewsPage(1);
-      queryClient.invalidateQueries({ queryKey: ['company-news', companyId] });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message ?? 'Failed to fetch company news');
-    },
-  });
-
   useEffect(() => {
     if (companyError) {
       const err = companyError as { response?: { data?: { message?: string } }; message?: string };
@@ -461,25 +449,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                   onDebugClick={() => setIsDebugModalOpen(true)}
                   showDebugButton={true}
                 />
-
-                <Box sx={{ mb: 3 }}>
-                  <Button
-                    size='sm'
-                    variant='soft'
-                    color='neutral'
-                    loading={fetchNewsMutation.isPending}
-                    disabled={fetchNewsMutation.isPending}
-                    onClick={() => fetchNewsMutation.mutate()}
-                  >
-                    Fetch news (test)
-                  </Button>
-                  <Typography
-                    component='span'
-                    sx={{ ml: 1.5, fontSize: '12px', color: 'var(--joy-palette-text-tertiary)' }}
-                  >
-                    Runs company-news-fetch for this company only
-                  </Typography>
-                </Box>
 
                 <KeyContactsSection
                   people={people}

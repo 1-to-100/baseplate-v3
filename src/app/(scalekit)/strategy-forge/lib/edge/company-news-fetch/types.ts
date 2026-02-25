@@ -106,7 +106,7 @@ export interface NewsFetchBatchResult {
 export interface CompanyNewsFetchBody {
   /** Optional: specific company IDs to fetch news for */
   company_ids?: string[];
-  /** Optional: limit number of companies to process (default 50) */
+  /** Optional: limit number of companies to process (no limit by default) */
   limit?: number;
   /** Optional: days threshold for stale news (default 30) */
   days_threshold?: number;
