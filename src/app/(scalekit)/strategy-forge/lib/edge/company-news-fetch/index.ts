@@ -45,6 +45,9 @@ const DEFAULT_DAYS_THRESHOLD = 30;
 /** Max characters for article description */
 const MAX_DESCRIPTION_LENGTH = 500;
 
+/** Default page size for Diffbot API requests */
+const DEFAULT_PAGE_SIZE = 100;
+
 /**
  * Truncate text to max length, adding ellipsis if needed
  */
@@ -160,7 +163,7 @@ async function processBatch(
     // Fetch all articles with pagination (handles media-heavy companies)
     const { data: articles } = await diffbotClient.searchArticlesByOrganizationsAllPages(
       diffbotIds,
-      { daysBack, pageSize: 200, language: 'en' }
+      { daysBack, pageSize: DEFAULT_PAGE_SIZE, language: 'en' }
     );
 
     // Map articles to companies
@@ -185,6 +188,7 @@ async function processBatch(
       }
     }
 
+    let batchSucceeded = true;
     if (allArticles.length > 0) {
       const now = new Date().toISOString();
       const { data: upsertedRows, error: upsertError } = await supabase
@@ -212,20 +216,23 @@ async function processBatch(
 
       if (upsertError) {
         errors.push(`Failed to upsert articles: ${upsertError.message}`);
+        batchSucceeded = false;
       } else {
         articlesInserted = upsertedRows?.length ?? 0;
       }
     }
 
-    // Only update news_last_fetched_at when Diffbot succeeded (so failed runs retry next day)
-    successfulCompanyIds.push(...companies.map((c) => c.company_id));
-    const { error: updateError } = await supabase
-      .from('companies')
-      .update({ news_last_fetched_at: new Date().toISOString() })
-      .in('company_id', successfulCompanyIds);
+    // Only update news_last_fetched_at when batch completed successfully (Diffbot + upsert ok)
+    if (batchSucceeded) {
+      successfulCompanyIds.push(...companies.map((c) => c.company_id));
+      const { error: updateError } = await supabase
+        .from('companies')
+        .update({ news_last_fetched_at: new Date().toISOString() })
+        .in('company_id', successfulCompanyIds);
 
-    if (updateError) {
-      errors.push(`Failed to update news_last_fetched_at: ${updateError.message}`);
+      if (updateError) {
+        errors.push(`Failed to update news_last_fetched_at: ${updateError.message}`);
+      }
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

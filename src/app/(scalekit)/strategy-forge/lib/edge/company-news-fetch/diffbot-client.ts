@@ -1,7 +1,7 @@
 import type { DiffbotArticleResponse, DiffbotArticle } from './types.ts';
 
-/** Default page size when fetching all pages */
-const DEFAULT_PAGE_SIZE = 200;
+/** Default page size when fetching all pages (100 per strategy: cost/performance balance) */
+const DEFAULT_PAGE_SIZE = 100;
 
 /** Retry config for transient errors */
 const MAX_RETRIES = 2;
