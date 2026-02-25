@@ -23,7 +23,6 @@ import type { CompanyItem, CompanyItemList } from '../../lib/types/company';
 import { toast } from '@/components/core/toaster';
 import CircularProgress from '@mui/joy/CircularProgress';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
-import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
 import { Pagination } from '@/components/core/pagination';
 import { AddToListModal } from '../../lib/components';
 import { useUserInfo } from '@/hooks/use-user-info';

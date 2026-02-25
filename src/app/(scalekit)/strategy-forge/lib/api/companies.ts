@@ -793,6 +793,37 @@ export async function getCompanyById(company_id: string): Promise<CompanyItem> {
 }
 
 /**
+ * Resolve effective customer ID: JWT app_metadata.customer_id (context switcher) first,
+ * then current_customer_id() RPC. Used to determine whether user has a customer selected.
+ */
+async function resolveEffectiveCustomerId(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ effectiveCustomerId: string | null; isSystemAdmin: boolean }> {
+  const [
+    { data: session },
+    { data: isSystemAdmin },
+    { data: currentCustomerId, error: customerIdError },
+  ] = await Promise.all([
+    supabase.auth.getSession(),
+    supabase.rpc('is_system_admin'),
+    supabase.rpc('current_customer_id'),
+  ]);
+  const sessionData = session?.session ?? null;
+  const jwtCustomerId = (sessionData?.user?.app_metadata as Record<string, unknown> | undefined)
+    ?.customer_id;
+  const fromJwt =
+    typeof jwtCustomerId === 'string' && jwtCustomerId.trim() ? jwtCustomerId.trim() : null;
+  const fromRpc =
+    !customerIdError && currentCustomerId != null && currentCustomerId !== ''
+      ? Array.isArray(currentCustomerId)
+        ? currentCustomerId[0]
+        : (currentCustomerId as string)
+      : null;
+  const effectiveCustomerId = fromJwt ?? fromRpc;
+  return { effectiveCustomerId, isSystemAdmin: !!isSystemAdmin };
+}
+
+/**
  * Resolve current customer id for customer-scoped updates (same pattern as getCompanyWithScoring).
  */
 async function resolveCurrentCustomerId(
@@ -835,11 +866,11 @@ async function resolveCurrentCustomerId(
 
 /**
  * Update company by company_id.
- * Two writes by design:
- * 1) customer_companies (upsert) – customer-scoped overrides (revenue, employees, categories, country, region)
- *    so non-admin users can persist edits; UI reads these via getCompanyWithScoring.
- * 2) companies (patch) – global fields (name, email, address, etc.); RLS often allows only system_admin.
- * We then return getCompanyById() which merges both; no .select() on the PATCH to avoid 406 when RLS blocks SELECT.
+ * Routing:
+ * - System admin + no customer selected: update companies table only (global/master data).
+ * - System admin + customer selected: update customer_companies only (customer-specific overrides).
+ * - Customer success / non-admin with customer: update customer_companies only (RLS allows).
+ * - Non-admin without customer: error – cannot update without customer context.
  */
 export async function updateCompany(
   company_id: string,
@@ -857,9 +888,15 @@ export async function updateCompany(
   }
 
   const now = new Date().toISOString();
+  const { effectiveCustomerId, isSystemAdmin } = await resolveEffectiveCustomerId(supabase);
 
-  // Customer-scoped fields: update customer_companies so non-admin users can persist overrides.
+  // Non-admin without customer: cannot update (customer success always has a customer).
+  if (!isSystemAdmin && !effectiveCustomerId) {
+    throw new Error('Select a customer to update company.');
+  }
+
   const hasCustomerScopedFields =
+    payload.name !== undefined ||
     payload.revenue !== undefined ||
     payload.employees !== undefined ||
     payload.categories !== undefined ||
@@ -867,69 +904,67 @@ export async function updateCompany(
     payload.region !== undefined ||
     'email' in payload;
 
-  if (hasCustomerScopedFields) {
-    const customerId = await resolveCurrentCustomerId(supabase);
-    if (customerId) {
-      const customerUpdate: Record<string, unknown> = {
-        customer_id: customerId,
-        company_id,
-        updated_at: now,
-      };
-      if (payload.revenue !== undefined) customerUpdate.revenue = payload.revenue;
-      if (payload.employees !== undefined) customerUpdate.employees = payload.employees;
-      if (payload.categories !== undefined) customerUpdate.categories = payload.categories;
-      if (payload.country !== undefined) customerUpdate.country = payload.country;
-      if (payload.region !== undefined) customerUpdate.region = payload.region;
-      if ('email' in payload) customerUpdate.email = payload.email ?? null;
+  const updateCompanies = isSystemAdmin && !effectiveCustomerId;
+  const updateCustomerCompanies = effectiveCustomerId && hasCustomerScopedFields;
 
-      const { error: ccError } = await supabase.from('customer_companies').upsert(customerUpdate, {
-        onConflict: 'customer_id,company_id',
-        ignoreDuplicates: false,
-      });
+  if (updateCustomerCompanies) {
+    const customerUpdate: Record<string, unknown> = {
+      customer_id: effectiveCustomerId,
+      company_id,
+      updated_at: now,
+    };
+    if (payload.name !== undefined) customerUpdate.name = payload.name;
+    if (payload.revenue !== undefined) customerUpdate.revenue = payload.revenue;
+    if (payload.employees !== undefined) customerUpdate.employees = payload.employees;
+    if (payload.categories !== undefined) customerUpdate.categories = payload.categories;
+    if (payload.country !== undefined) customerUpdate.country = payload.country;
+    if (payload.region !== undefined) customerUpdate.region = payload.region;
+    if ('email' in payload) customerUpdate.email = payload.email ?? null;
 
-      if (ccError) {
-        throw new Error(`Failed to update company details: ${ccError.message}`);
-      }
+    const { error: ccError } = await supabase.from('customer_companies').upsert(customerUpdate, {
+      onConflict: 'customer_id,company_id',
+      ignoreDuplicates: false,
+    });
+
+    if (ccError) {
+      throw new Error(`Failed to update company details: ${ccError.message}`);
     }
   }
 
-  // Global fields: update companies (RLS allows only system_admin; for others this may affect 0 rows)
-  const updateData: Record<string, unknown> = {};
-  if (payload.name !== undefined) updateData.display_name = payload.name;
-  if (payload.description !== undefined) updateData.description = payload.description;
-  if (payload.website !== undefined) updateData.website_url = payload.website;
-  if (payload.logo !== undefined) updateData.logo = payload.logo;
-  if (payload.country !== undefined) updateData.country = payload.country;
-  if (payload.region !== undefined) updateData.region = payload.region;
-  if (payload.address !== undefined) updateData.address = payload.address;
-  if (payload.postal_code !== undefined) updateData.postal_code = payload.postal_code;
-  if (payload.latitude !== undefined) updateData.latitude = payload.latitude;
-  if (payload.longitude !== undefined) updateData.longitude = payload.longitude;
-  if (payload.revenue !== undefined) updateData.revenue = payload.revenue;
-  if (payload.capitalization !== undefined) updateData.capitalization = payload.capitalization;
-  if (payload.currency_code !== undefined) updateData.currency_code = payload.currency_code;
-  if (payload.employees !== undefined) updateData.employees = payload.employees;
-  if (payload.siccodes !== undefined) updateData.siccodes = payload.siccodes;
-  if (payload.categories !== undefined) updateData.categories = payload.categories;
-  if (payload.technologies !== undefined) updateData.technologies = payload.technologies;
-  if (payload.phone !== undefined) updateData.phone = payload.phone;
-  // Always apply email when present (string or empty string to clear)
-  if ('email' in payload) updateData.email = payload.email ?? null;
-  if (payload.social_links !== undefined) updateData.social_links = payload.social_links;
+  if (updateCompanies) {
+    const updateData: Record<string, unknown> = {};
+    if (payload.name !== undefined) updateData.display_name = payload.name;
+    if (payload.description !== undefined) updateData.description = payload.description;
+    if (payload.website !== undefined) updateData.website_url = payload.website;
+    if (payload.logo !== undefined) updateData.logo = payload.logo;
+    if (payload.country !== undefined) updateData.country = payload.country;
+    if (payload.region !== undefined) updateData.region = payload.region;
+    if (payload.address !== undefined) updateData.address = payload.address;
+    if (payload.postal_code !== undefined) updateData.postal_code = payload.postal_code;
+    if (payload.latitude !== undefined) updateData.latitude = payload.latitude;
+    if (payload.longitude !== undefined) updateData.longitude = payload.longitude;
+    if (payload.revenue !== undefined) updateData.revenue = payload.revenue;
+    if (payload.capitalization !== undefined) updateData.capitalization = payload.capitalization;
+    if (payload.currency_code !== undefined) updateData.currency_code = payload.currency_code;
+    if (payload.employees !== undefined) updateData.employees = payload.employees;
+    if (payload.siccodes !== undefined) updateData.siccodes = payload.siccodes;
+    if (payload.categories !== undefined) updateData.categories = payload.categories;
+    if (payload.technologies !== undefined) updateData.technologies = payload.technologies;
+    if (payload.phone !== undefined) updateData.phone = payload.phone;
+    if ('email' in payload) updateData.email = payload.email ?? null;
+    if (payload.social_links !== undefined) updateData.social_links = payload.social_links;
+    updateData.updated_at = now;
 
-  updateData.updated_at = now;
+    const { error } = await supabase
+      .from('companies')
+      .update(updateData)
+      .eq('company_id', company_id);
 
-  // Update without .select() to avoid 406 when RLS allows UPDATE but not SELECT (or 0 rows updated).
-  const { error } = await supabase
-    .from('companies')
-    .update(updateData)
-    .eq('company_id', company_id);
-
-  if (error) {
-    throw new Error(`Failed to update company: ${error.message}`);
+    if (error) {
+      throw new Error(`Failed to update company: ${error.message}`);
+    }
   }
 
-  // Return merged company (companies + customer_companies); customer overrides already saved above.
   return getCompanyById(company_id);
 }
 
