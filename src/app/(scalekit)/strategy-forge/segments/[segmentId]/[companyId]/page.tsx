@@ -579,7 +579,6 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         open={addToListModalOpen}
         onClose={() => setAddToListModalOpen(false)}
         companyIds={companyId ? [companyId] : []}
-        companyCountLabel={companyDetails?.name}
       />
     </Box>
   );

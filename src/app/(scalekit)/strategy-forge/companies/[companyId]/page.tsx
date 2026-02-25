@@ -25,6 +25,7 @@ import CircularProgress from '@mui/joy/CircularProgress';
 import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import AddCompanyToListModal from '@/components/dashboard/modals/AddCompanyToListModal';
 import { Pagination } from '@/components/core/pagination';
+import { AddToListModal } from '../../lib/components';
 import { useUserInfo } from '@/hooks/use-user-info';
 import {
   CompanyDetailsHeader,
@@ -689,10 +690,10 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
         company={company}
       />
 
-      <AddCompanyToListModal
+      <AddToListModal
         open={isAddToListModalOpen}
         onClose={() => setIsAddToListModalOpen(false)}
-        companyIds={company ? [company.id] : []}
+        companyIds={companyId ? [companyId] : []}
       />
 
       <DebugJsonModal

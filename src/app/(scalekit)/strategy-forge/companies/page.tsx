@@ -61,7 +61,6 @@ export default function Page(): React.JSX.Element {
   const [editingCompany, setEditingCompany] = useState<CompanyItem | null>(null);
   const [addToListModalOpen, setAddToListModalOpen] = useState(false);
   const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
-  const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
   const { isImpersonating } = useImpersonation();
 
   const updatePageQueryParam = useCallback(
@@ -169,8 +168,13 @@ export default function Page(): React.JSX.Element {
           target.closest("[role='tab']") ||
           target.closest("[role='tablist']") ||
           target.closest("[role='tabpanel']");
+        const isClickOnModalOrListbox =
+          target.closest('.MuiModal-root') ||
+          target.closest('[role="dialog"]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="option"]');
 
-        if (!isClickOnMenu) {
+        if (!isClickOnMenu && !isClickOnModalOrListbox) {
           handleCloseCompanyPopover();
         }
       } else if (menuRowIndex !== null && anchorEl) {
@@ -292,7 +296,6 @@ export default function Page(): React.JSX.Element {
   const handleAddToList = (company: CompanyItem) => {
     if (!company.company_id) return;
     setAddToListCompanyIds([company.company_id]);
-    setAddToListLabel(company.name || undefined);
     setAddToListModalOpen(true);
     handleMenuClose();
   };
@@ -306,11 +309,6 @@ export default function Page(): React.JSX.Element {
       .filter(Boolean);
     if (ids.length === 0) return;
     setAddToListCompanyIds(ids);
-    setAddToListLabel(
-      ids.length === 1
-        ? companiesOnPage.find((c) => selectedRows.includes(c.id?.toString() ?? ''))?.name
-        : `${ids.length} companies`
-    );
     setAddToListModalOpen(true);
   }, [selectedRows, data?.data]);
 
@@ -1085,11 +1083,9 @@ export default function Page(): React.JSX.Element {
           onClose={() => {
             setAddToListModalOpen(false);
             setAddToListCompanyIds([]);
-            setAddToListLabel(undefined);
             setSelectedRows([]);
           }}
           companyIds={addToListCompanyIds}
-          companyCountLabel={addToListLabel}
         />
       </Stack>
     </Box>

@@ -227,9 +227,11 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
         target.closest("[role='tab']") ||
         target.closest("[role='tablist']") ||
         target.closest("[role='tabpanel']");
-      // Don't close popover when user is interacting with a modal (e.g. Edit Company)
+      // Don't close popover when user is interacting with a modal or Autocomplete listbox (portaled)
       const isClickOnModal = target.closest('[role="dialog"]') || target.closest('.MuiModal-root');
-      if (!isClickOnPopover && !isClickOnModal) {
+      const isClickOnListbox =
+        target.closest('[role="listbox"]') || target.closest('[role="option"]');
+      if (!isClickOnPopover && !isClickOnModal && !isClickOnListbox) {
         handleCloseCompanyPopover();
       }
     };
@@ -846,7 +848,6 @@ export default function SegmentDetailsPage({ params }: PageProps): React.JSX.Ele
             setSelectedRows([]);
           }}
           companyIds={addToListCompanyIds}
-          companyCountLabel={addToListLabel}
         />
       </Stack>
     </Box>

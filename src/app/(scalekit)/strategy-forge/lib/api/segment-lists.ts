@@ -455,6 +455,35 @@ export async function updateList(
     if (trimmed.length < 3 || trimmed.length > 100) {
       throw new Error('List name must be between 3 and 100 characters');
     }
+    // Resolve customer_id for uniqueness check (use list's customer when system admin with no customer selected)
+    let customerIdForCheck = effectiveCustomerId;
+    if (!customerIdForCheck) {
+      const { data: currentList } = await supabase
+        .from('lists')
+        .select('customer_id')
+        .eq('list_id', listId)
+        .is('deleted_at', null)
+        .maybeSingle();
+      customerIdForCheck = currentList?.customer_id ?? undefined;
+    }
+    if (customerIdForCheck) {
+      const { data: existingList, error: checkError } = await supabase
+        .from('lists')
+        .select('list_id')
+        .eq('customer_id', customerIdForCheck)
+        .eq('list_type', ListType.LIST)
+        .ilike('name', trimmed)
+        .neq('list_id', listId)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (checkError) {
+        throw new Error(`Failed to check list name: ${checkError.message}`);
+      }
+      if (existingList) {
+        throw new Error('A list with this name already exists. Please choose a different name.');
+      }
+    }
     updatePayload.name = trimmed;
   }
   if (payload.filters !== undefined) {

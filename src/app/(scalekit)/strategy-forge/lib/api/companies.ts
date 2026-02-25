@@ -680,7 +680,8 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
       )
     `
     )
-    .eq('company_id', company_id);
+    .eq('company_id', company_id)
+    .is('lists.deleted_at', null);
 
   if (!listsError && listCompanies) {
     for (const lc of listCompanies) {
