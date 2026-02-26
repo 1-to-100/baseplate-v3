@@ -104,8 +104,8 @@ export class DiffbotArticleClient {
       })
       .join(' OR ');
 
-    // Build simpler query matching customer's example format
-    let queryString = `type:Article ${tagsClause} lastCrawlTime<${daysBack}d`;
+    // Build query with explicit grouping for correct precedence
+    let queryString = `type:Article (${tagsClause}) lastCrawlTime<${daysBack}d`;
 
     // Add language filter if specified
     if (options?.language) {
