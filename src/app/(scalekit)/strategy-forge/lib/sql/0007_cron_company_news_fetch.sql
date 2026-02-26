@@ -33,7 +33,7 @@ begin
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || service_key
     ),
-    body := '{}'::jsonb,
+    body := '{"limit": 10}'::jsonb,  -- TODO: revert to '{}' after testing
     timeout_milliseconds := 600000  -- 10 minutes (longer timeout for processing all companies)
   ) into request_id;
 
