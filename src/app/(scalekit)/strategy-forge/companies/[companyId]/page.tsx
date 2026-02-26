@@ -609,6 +609,9 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                                     lineHeight: 1.4,
                                     whiteSpace: 'normal',
                                     wordBreak: 'break-word',
+                                    '&:hover': {
+                                      color: 'var(--joy-palette-primary-600)',
+                                    },
                                   }}
                                 >
                                   {item.title}
