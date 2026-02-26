@@ -578,10 +578,9 @@ export default function CompanyDetailsPage({ params }: PageProps): React.JSX.Ele
                           sx={{
                             fontSize: '14px',
                             color: 'var(--joy-palette-text-tertiary)',
-                            fontStyle: 'italic',
                           }}
                         >
-                          No news yet
+                          No recent news found for this company in the last 30 days.
                         </Typography>
                       ) : (
                         <>
