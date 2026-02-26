@@ -94,11 +94,11 @@ export class DiffbotArticleClient {
       })
       .join(' OR ');
 
-    // Build query with explicit grouping for correct precedence
-    let queryString = `type:Article (${tagsClause}) lastCrawlTime<${daysBack}d`;
+    // Build query with explicit AND operators for unambiguous precedence
+    let queryString = `type:Article AND (${tagsClause}) AND lastCrawlTime<${daysBack}d`;
 
     if (options?.language) {
-      queryString += ` language:"${options.language}"`;
+      queryString += ` AND language:"${options.language}"`;
     }
 
     // Log the raw query for debugging
