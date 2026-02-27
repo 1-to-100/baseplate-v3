@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import 'jsr:@supabase/functions-js@2.93.3/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
@@ -236,8 +237,10 @@ Deno.serve(async (req) => {
 
     // Log web search calls
     const output = openaiResponse.output || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const webSearchCalls = output.filter((item: any) => item.type === 'web_search_call');
     console.log(`✅ Web search performed: ${webSearchCalls.length} searches`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     webSearchCalls.forEach((call: any, idx: number) => {
       console.log(`  Search ${idx + 1}: ${call.action?.query || 'unknown'}`);
     });
