@@ -4,6 +4,7 @@ export interface CustomerInfo {
   company_name: string;
   problem_overview: string;
   solution_overview: string;
+  competitive_overview: string;
   one_sentence_summary: string;
   tagline: string;
   content_authoring_prompt?: string;
@@ -15,6 +16,7 @@ export interface CreateCustomerInfoPayload {
   company_name: string;
   problem_overview: string;
   solution_overview: string;
+  competitive_overview: string;
   one_sentence_summary: string;
   tagline: string;
   content_authoring_prompt: string;

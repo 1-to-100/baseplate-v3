@@ -852,7 +852,12 @@ function ValuesSection(): React.ReactElement {
   );
 }
 
-type GtmFieldKey = 'tagline' | 'one_sentence_summary' | 'problem_overview' | 'solution_overview';
+type GtmFieldKey =
+  | 'tagline'
+  | 'one_sentence_summary'
+  | 'problem_overview'
+  | 'solution_overview'
+  | 'competitive_overview';
 
 const gtmFields: Array<{
   key: GtmFieldKey;
@@ -881,6 +886,12 @@ const gtmFields: Array<{
     label: 'Solution Overview',
     multiline: true,
     placeholder: 'Explain how your solution addresses the problem.',
+  },
+  {
+    key: 'competitive_overview',
+    label: 'Competitive Overview',
+    multiline: true,
+    placeholder: 'Describe the competitive landscape and how you differentiate.',
   },
 ];
 
@@ -945,6 +956,8 @@ function GtmSettingsPanel(): React.ReactElement {
             field === 'problem_overview' ? value : customerInfo.problem_overview || '',
           solution_overview:
             field === 'solution_overview' ? value : customerInfo.solution_overview || '',
+          competitive_overview:
+            field === 'competitive_overview' ? value : customerInfo.competitive_overview || '',
           content_authoring_prompt: customerInfo.content_authoring_prompt || '',
         };
         return createCustomerInfo(createPayload);
