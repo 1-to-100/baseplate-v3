@@ -352,34 +352,42 @@ export function ColorEditItem({
     setLocalHex(serverHex);
   }, [serverHex]);
 
-  const applyIfValid = React.useCallback(
-    (hexValue: string, allowShorthand = false) => {
-      const trimmed = hexValue.trim();
-      if (!trimmed) return;
-      if (!isValidHexCode(trimmed)) return;
+  // Use refs to keep the latest color and callback without recreating debounced functions
+  const colorRef = React.useRef(color);
+  const onUpdateColorRef = React.useRef(onUpdateColor);
 
-      // During typing (debounced), only save complete 6-char hex codes
-      // 3-char shorthand expansion only happens on blur (final submission)
-      if (!allowShorthand && trimmed.length === 3) return;
+  React.useEffect(() => {
+    colorRef.current = color;
+    onUpdateColorRef.current = onUpdateColor;
+  });
 
-      const normalized = normalizeHex(trimmed);
-      if (normalized !== color.hex) {
-        onUpdateColor(color, 'hex', normalized);
-      }
-    },
-    [color, onUpdateColor]
-  );
+  const applyIfValid = React.useCallback((hexValue: string, allowShorthand = false) => {
+    const trimmed = hexValue.trim();
+    if (!trimmed) return;
+    if (!isValidHexCode(trimmed)) return;
 
+    // During typing (debounced), only save complete 6-char hex codes
+    // 3-char shorthand expansion only happens on blur (final submission)
+    if (!allowShorthand && trimmed.length === 3) return;
+
+    const normalized = normalizeHex(trimmed);
+    if (normalized !== colorRef.current.hex) {
+      onUpdateColorRef.current(colorRef.current, 'hex', normalized);
+    }
+  }, []);
+
+  // Stable debounced functions that won't be recreated on refetch
   const debouncedApply = React.useMemo(() => debounce(applyIfValid, 500), [applyIfValid]);
 
   const debouncedColorPickerUpdate = React.useMemo(
     () =>
       debounce((hexValue: string) => {
-        onUpdateColor(color, 'hex', hexValue);
+        onUpdateColorRef.current(colorRef.current, 'hex', hexValue);
       }, 300),
-    [color, onUpdateColor]
+    []
   );
 
+  // Cleanup only on unmount, not on every refetch
   React.useEffect(() => {
     return () => {
       debouncedApply.cancel();
