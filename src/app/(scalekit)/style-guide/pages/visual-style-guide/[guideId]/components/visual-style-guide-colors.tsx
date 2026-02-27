@@ -12,12 +12,14 @@ import {
   USAGE_OPTIONS,
 } from '@/app/(scalekit)/style-guide/lib/constants/palette-colors';
 import type { PaletteColor } from '@/app/(scalekit)/style-guide/lib/types';
+import { debounce } from '@/lib/helpers/function-utils';
 import { toast } from '@/components/core/toaster';
 import { Card, Grid } from '@mui/joy';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import CircularProgress from '@mui/joy/CircularProgress';
 import FormControl from '@mui/joy/FormControl';
+import FormHelperText from '@mui/joy/FormHelperText';
 import FormLabel from '@mui/joy/FormLabel';
 import Input from '@mui/joy/Input';
 import List from '@mui/joy/List';
@@ -66,6 +68,21 @@ const COLOR_PALETTE_PRESETS = [
     colors: ['#183B1D', '#F0A04B', '#F6C453', '#FEFBEA', '#E1EEDD'],
   },
 ] as const;
+
+/** Validates hex without #: 3 or 6 hex digits */
+function isValidHexCode(value: string): boolean {
+  const trimmed = value.replace(/^#/, '').trim();
+  return /^[A-Fa-f0-9]{3}$|^[A-Fa-f0-9]{6}$/.test(trimmed);
+}
+
+/** Normalize to 6-char hex with # (expand 3-char to 6-char) */
+function normalizeHex(value: string): string {
+  const trimmed = value.replace(/^#/, '').trim();
+  if (trimmed.length === 3) {
+    return `#${trimmed[0]}${trimmed[0]}${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}`;
+  }
+  return `#${trimmed}`;
+}
 
 type AddColorModalProps = {
   open: boolean;
@@ -327,6 +344,49 @@ export function ColorEditItem({
   colorDescription,
   onUpdateColor,
 }: ColorEditItemProps) {
+  const serverHex = String(color.hex || '').replace(/^#/, '');
+  const [localHex, setLocalHex] = React.useState(serverHex);
+
+  // Sync local value when server color changes (e.g. after save or color picker)
+  React.useEffect(() => {
+    setLocalHex(serverHex);
+  }, [serverHex]);
+
+  const applyIfValid = React.useCallback(
+    (hexValue: string) => {
+      const trimmed = hexValue.trim();
+      if (!trimmed) return;
+      if (!isValidHexCode(trimmed)) return;
+      const normalized = normalizeHex(trimmed);
+      if (normalized !== color.hex) {
+        onUpdateColor(color, 'hex', normalized);
+      }
+    },
+    [color, onUpdateColor]
+  );
+
+  const debouncedApply = React.useMemo(() => debounce(applyIfValid, 500), [applyIfValid]);
+
+  React.useEffect(() => {
+    return () => debouncedApply.cancel();
+  }, [debouncedApply]);
+
+  const handleBlur = () => {
+    debouncedApply.cancel();
+    applyIfValid(localHex);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+      .replace(/^#/, '')
+      .replace(/[^A-Fa-f0-9]/g, '')
+      .slice(0, 6);
+    setLocalHex(raw);
+    debouncedApply(raw);
+  };
+
+  const showError = localHex.length > 0 && !isValidHexCode(localHex);
+
   return (
     <ListItem
       sx={{
@@ -350,15 +410,25 @@ export function ColorEditItem({
               )}
             </Stack>
 
-            <Input
-              value={String(color.hex || '').replace(/^#/, '')}
-              onChange={(e) => {
-                const rawValue = e.target.value.trim();
-                const nextValue = rawValue.startsWith('#') ? rawValue : `#${rawValue}`;
-                onUpdateColor(color, 'hex', nextValue);
-              }}
-              startDecorator='#'
-            />
+            <FormControl error={showError}>
+              <Input
+                value={localHex}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                startDecorator='#'
+                slotProps={{
+                  input: {
+                    maxLength: 6,
+                  },
+                }}
+                aria-invalid={showError}
+              />
+              {showError && (
+                <FormHelperText>
+                  Enter a valid hex code (3 or 6 characters, e.g. FFF or FFFFFF)
+                </FormHelperText>
+              )}
+            </FormControl>
           </Stack>
         </Grid>
         <Grid xs={12} sm={3}>
