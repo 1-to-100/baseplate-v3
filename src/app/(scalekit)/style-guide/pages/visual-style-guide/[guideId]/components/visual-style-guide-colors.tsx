@@ -367,9 +367,20 @@ export function ColorEditItem({
 
   const debouncedApply = React.useMemo(() => debounce(applyIfValid, 500), [applyIfValid]);
 
+  const debouncedColorPickerUpdate = React.useMemo(
+    () =>
+      debounce((hexValue: string) => {
+        onUpdateColor(color, 'hex', hexValue);
+      }, 300),
+    [color, onUpdateColor]
+  );
+
   React.useEffect(() => {
-    return () => debouncedApply.cancel();
-  }, [debouncedApply]);
+    return () => {
+      debouncedApply.cancel();
+      debouncedColorPickerUpdate.cancel();
+    };
+  }, [debouncedApply, debouncedColorPickerUpdate]);
 
   const handleBlur = () => {
     debouncedApply.cancel();
@@ -383,6 +394,10 @@ export function ColorEditItem({
       .slice(0, 6);
     setLocalHex(raw);
     debouncedApply(raw);
+  };
+
+  const handleColorPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedColorPickerUpdate(e.target.value);
   };
 
   const showError = localHex.length > 0 && !isValidHexCode(localHex);
@@ -436,7 +451,7 @@ export function ColorEditItem({
           <Input
             type='color'
             value={String(color.hex || '#3f51ff')}
-            onChange={(e) => onUpdateColor(color, 'hex', e.target.value)}
+            onChange={handleColorPickerChange}
             aria-label={`Pick color for ${colorLabel}`}
             slotProps={{
               root: {
