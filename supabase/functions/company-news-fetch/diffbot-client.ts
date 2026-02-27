@@ -94,11 +94,11 @@ export class DiffbotArticleClient {
       })
       .join(' OR ');
 
-    // Build query with explicit AND operators for unambiguous precedence
-    let queryString = `type:Article AND (${tagsClause}) AND lastCrawlTime<${daysBack}d`;
+    // Build query: parentheses for OR precedence; Diffbot DQL rejects explicit "AND"
+    let queryString = `type:Article (${tagsClause}) lastCrawlTime<${daysBack}d`;
 
     if (options?.language) {
-      queryString += ` AND language:"${options.language}"`;
+      queryString += ` language:"${options.language}"`;
     }
 
     // Log the raw query for debugging
