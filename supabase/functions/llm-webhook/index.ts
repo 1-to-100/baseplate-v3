@@ -13,10 +13,15 @@
  */
 
 import { createServiceClient } from '../_shared/supabase.ts'
+import { providers } from '../_shared/llm/index.ts'
 import {
   notifyJobCompleted,
+  notifyJobFailed,
   notifyJobExhausted,
 } from '../_shared/llm-notifications.ts'
+import { getResponseProcessor as getResponseProcessorDefault } from '../_shared/response-processors/index.ts'
+import type { ResponseProcessor } from '../_shared/response-processors/index.ts'
+import { secureCompare } from '../_shared/crypto.ts'
 
 // =============================================================================
 // Types
@@ -60,8 +65,16 @@ interface DiagnosticLogInput {
   response_payload?: unknown
 }
 
-// deno-lint-ignore no-explicit-any
-type SupabaseClient = any
+import type { SupabaseClient } from '../_shared/supabase.ts'
+
+/**
+ * LLM provider clients interface for dependency injection.
+ */
+export interface LLMProviders {
+  openai: () => ReturnType<typeof providers.openai>
+  anthropic: () => ReturnType<typeof providers.anthropic>
+  gemini: () => ReturnType<typeof providers.gemini>
+}
 
 /**
  * Dependencies that can be injected for testing
@@ -69,6 +82,8 @@ type SupabaseClient = any
 export interface HandlerDeps {
   createServiceClient: () => SupabaseClient
   getEnv: (key: string) => string | undefined
+  llmProviders?: LLMProviders
+  getResponseProcessor?: (slug: string | null | undefined) => ResponseProcessor | null
 }
 
 /**
@@ -77,11 +92,32 @@ export interface HandlerDeps {
 const defaultDeps: HandlerDeps = {
   createServiceClient,
   getEnv: (key: string) => Deno.env.get(key),
+  llmProviders: providers,
 }
 
 // =============================================================================
 // Diagnostic Logging Helper
 // =============================================================================
+
+/**
+ * Strip sensitive content (LLM output text) from webhook payloads before
+ * writing to the diagnostic log table. Keeps IDs, types, status, errors,
+ * and usage metadata that are useful for debugging without storing
+ * potentially sensitive response content.
+ */
+function sanitizePayloadForDiagnostics(payload: WebhookPayload): Record<string, unknown> {
+  return {
+    id: payload.id,
+    type: payload.type,
+    object: payload.object,
+    status: payload.status,
+    model: payload.model,
+    usage: payload.usage,
+    error: payload.error,
+    metadata: payload.metadata,
+    // Deliberately omit: output, content (may contain sensitive LLM response text)
+  }
+}
 
 async function logDiagnostic(
   supabase: SupabaseClient,
@@ -114,6 +150,9 @@ async function logDiagnostic(
  * Create a handler with injectable dependencies (for testing)
  */
 export function createHandler(deps: HandlerDeps = defaultDeps) {
+  const llmProviders = deps.llmProviders || providers
+  const resolveProcessor = deps.getResponseProcessor || getResponseProcessorDefault
+
   return async function handler(req: Request): Promise<Response> {
     // Always return 200 to acknowledge webhook receipt
     const ack = () => new Response('OK', { status: 200 })
@@ -121,19 +160,29 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
     try {
       const supabase = deps.createServiceClient()
 
-      // Determine provider from headers or path
+      // Provider must be specified via ?provider= query parameter
       const url = new URL(req.url)
-      const providerSlug = url.searchParams.get('provider') || detectProvider(req)
+      const providerSlug = url.searchParams.get('provider')?.trim() ?? null
+
+      // H2: DLQ replay — re-process stored webhook payload with service role auth
+      if (url.searchParams.get('source') === 'dlq') {
+        return await handleDLQReplay(req, supabase, deps, llmProviders, resolveProcessor)
+      }
 
       if (!providerSlug) {
-        console.error('Unable to determine webhook provider')
+        console.error('Missing required ?provider= query parameter')
         return ack()
       }
 
       // Get raw body for signature verification
       const rawBody = await req.text()
 
-      // Validate webhook signature
+      // OpenAI uses Standard Webhooks — handle separately with SDK verification
+      if (providerSlug === 'openai') {
+        return await handleOpenAIWebhook(req, rawBody, supabase, deps, llmProviders, resolveProcessor)
+      }
+
+      // Validate webhook signature (Anthropic, Gemini)
       const isValid = await validateWebhookSignature(req, rawBody, providerSlug, deps)
       if (!isValid) {
         console.error(`Invalid webhook signature for provider: ${providerSlug}`)
@@ -178,7 +227,7 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
           job_id: jobId,
           provider_slug: providerSlug,
           error_message: 'Webhook received for non-existent job',
-          response_payload: payload,
+          response_payload: sanitizePayloadForDiagnostics(payload),
         })
         return ack()
       }
@@ -192,13 +241,13 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
           provider_slug: providerSlug,
           customer_id: jobCheck.customer_id,
           job_status_at_receipt: jobCheck.status,
-          response_payload: payload,
+          response_payload: sanitizePayloadForDiagnostics(payload),
         })
         return ack()
       }
 
       // Guard 3: Job already in terminal state
-      const terminalStates = ['completed', 'error', 'exhausted']
+      const terminalStates = ['completed', 'error', 'exhausted', 'post_processing_failed']
       if (terminalStates.includes(jobCheck.status)) {
         const isErrorResponse = payload.error !== undefined || payload.status === 'failed'
         const eventType = isErrorResponse ? 'late_failure_response' : 'late_success_ignored'
@@ -211,7 +260,7 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
           job_status_at_receipt: jobCheck.status,
           error_code: payload.error?.code,
           error_message: payload.error?.message,
-          response_payload: payload,
+          response_payload: sanitizePayloadForDiagnostics(payload),
         })
         return ack()
       }
@@ -227,7 +276,7 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
           job_status_at_receipt: jobCheck.status,
           expected_response_id: jobCheck.llm_response_id,
           received_response_id: payload.id,
-          response_payload: payload,
+          response_payload: sanitizePayloadForDiagnostics(payload),
         })
         return ack()
       }
@@ -281,7 +330,7 @@ export function createHandler(deps: HandlerDeps = defaultDeps) {
           error_code: 'PROCESSING_FAILED',
           error_message: errorMessage,
           job_status_at_receipt: jobCheck.status,
-          response_payload: payload,
+          response_payload: sanitizePayloadForDiagnostics(payload),
         })
 
         await supabase.rpc('llm_add_to_dlq', {
@@ -310,54 +359,11 @@ export const handler = createHandler()
 Deno.serve(handler)
 
 // =============================================================================
-// Provider Detection
-// =============================================================================
-
-export function detectProvider(req: Request): string | null {
-  const userAgent = req.headers.get('user-agent') || ''
-
-  // OpenAI webhooks
-  if (req.headers.has('openai-signature')) {
-    return 'openai'
-  }
-
-  // Anthropic webhooks
-  if (req.headers.has('anthropic-signature')) {
-    return 'anthropic'
-  }
-
-  // Google/Gemini webhooks
-  if (userAgent.includes('Google') || req.headers.has('x-goog-signature')) {
-    return 'gemini'
-  }
-
-  return null
-}
-
-// =============================================================================
 // Signature Validation
 // =============================================================================
 
-/**
- * Constant-time string comparison to prevent timing attacks
- */
-function secureCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false
-  }
 
-  const encoder = new TextEncoder()
-  const aBytes = encoder.encode(a)
-  const bBytes = encoder.encode(b)
-
-  let result = 0
-  for (let i = 0; i < aBytes.length; i++) {
-    result |= aBytes[i] ^ bBytes[i]
-  }
-
-  return result === 0
-}
-
+// OpenAI uses Standard Webhooks SDK (handleOpenAIWebhook) — no case here.
 async function validateWebhookSignature(
   req: Request,
   rawBody: string,
@@ -365,8 +371,6 @@ async function validateWebhookSignature(
   deps: HandlerDeps
 ): Promise<boolean> {
   switch (provider) {
-    case 'openai':
-      return validateOpenAISignature(req, rawBody, deps)
     case 'anthropic':
       return validateAnthropicSignature(req, rawBody, deps)
     case 'gemini':
@@ -374,38 +378,6 @@ async function validateWebhookSignature(
     default:
       return false
   }
-}
-
-async function validateOpenAISignature(req: Request, rawBody: string, deps: HandlerDeps): Promise<boolean> {
-  const signature = req.headers.get('openai-signature')
-  const webhookSecret = deps.getEnv('OPENAI_WEBHOOK_SECRET')
-
-  if (!webhookSecret) {
-    console.error('OPENAI_WEBHOOK_SECRET not configured - rejecting webhook')
-    return false
-  }
-
-  if (!signature) {
-    return false
-  }
-
-  // OpenAI uses HMAC-SHA256
-  const encoder = new TextEncoder()
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(webhookSecret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-
-  const signatureBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody))
-  const expectedSignature = Array.from(new Uint8Array(signatureBytes))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-
-  // Use constant-time comparison to prevent timing attacks
-  return secureCompare(signature, expectedSignature)
 }
 
 async function validateAnthropicSignature(req: Request, rawBody: string, deps: HandlerDeps): Promise<boolean> {
@@ -437,7 +409,7 @@ async function validateAnthropicSignature(req: Request, rawBody: string, deps: H
     .join('')
 
   // Use constant-time comparison to prevent timing attacks
-  return secureCompare(signature, expectedSignature)
+  return await secureCompare(signature, expectedSignature)
 }
 
 async function validateGeminiSignature(req: Request, rawBody: string, deps: HandlerDeps): Promise<boolean> {
@@ -469,7 +441,7 @@ async function validateGeminiSignature(req: Request, rawBody: string, deps: Hand
     .join('')
 
   // Use constant-time comparison to prevent timing attacks
-  return secureCompare(signature, expectedSignature)
+  return await secureCompare(signature, expectedSignature)
 }
 
 // =============================================================================
@@ -482,17 +454,10 @@ export function extractJobId(payload: WebhookPayload, provider: string): string 
     return payload.metadata.job_id
   }
 
-  // Provider-specific fallbacks
+  // Provider-specific fallbacks (OpenAI uses handleOpenAIWebhook with response ID lookup)
   switch (provider) {
-    case 'openai':
-      // OpenAI Responses API includes metadata in response
-      return (payload as unknown as { metadata?: { job_id?: string } })?.metadata?.job_id || null
     case 'anthropic':
-      // Anthropic may use different field names
       return (payload as unknown as { custom_id?: string })?.custom_id || null
-    case 'gemini':
-      // Gemini may include in different location
-      return null
     default:
       return null
   }
@@ -639,7 +604,7 @@ async function handleErrorResponse(
   const maxRetries = provider?.max_retries || 1
 
   if (job.retry_count < maxRetries) {
-    // Schedule for retry
+    // Schedule for retry — update status and re-enqueue to pgmq for worker pickup
     const { error } = await supabase
       .from('llm_jobs')
       .update({
@@ -653,6 +618,13 @@ async function handleErrorResponse(
     if (error) {
       console.error(`Failed to update job ${jobId} for retry:`, error)
     } else {
+      // Re-enqueue to pgmq so the worker picks it up again
+      const { error: enqueueError } = await supabase.rpc('llm_enqueue_job', {
+        p_job_id: jobId,
+      })
+      if (enqueueError) {
+        console.error(`Failed to re-enqueue job ${jobId} for retry:`, enqueueError)
+      }
       console.log(`Job ${jobId} scheduled for retry (${job.retry_count + 1}/${maxRetries})`)
     }
   } else {
@@ -684,4 +656,523 @@ async function handleErrorResponse(
       }
     }
   }
+}
+
+// =============================================================================
+// OpenAI Webhook Handling (Standard Webhooks + Response Retrieval)
+// =============================================================================
+
+/**
+ * Handles OpenAI webhooks using Standard Webhooks format.
+ * OpenAI webhook payloads only contain the response ID — the full output
+ * must be retrieved via responses.retrieve().
+ */
+async function handleOpenAIWebhook(
+  req: Request,
+  rawBody: string,
+  supabase: SupabaseClient,
+  deps: HandlerDeps,
+  llmProviders: LLMProviders,
+  resolveProcessor: (slug: string | null | undefined) => ResponseProcessor | null
+): Promise<Response> {
+  const ack = () => new Response('OK', { status: 200 })
+
+  // 1. Validate signature using OpenAI SDK (Standard Webhooks)
+  const webhookSecret = deps.getEnv('OPENAI_WEBHOOK_SECRET')
+  if (!webhookSecret) {
+    console.error('OPENAI_WEBHOOK_SECRET not configured — rejecting webhook')
+    return ack()
+  }
+
+  const openai = llmProviders.openai()
+
+  // deno-lint-ignore no-explicit-any
+  let event: { type: string; data: { id: string; [key: string]: unknown } }
+  try {
+    const headers = Object.fromEntries(req.headers.entries())
+    // deno-lint-ignore no-explicit-any
+    event = await (openai as any).webhooks.unwrap(rawBody, headers, webhookSecret)
+  } catch (err) {
+    console.error('OpenAI webhook signature verification failed:', err)
+    await logDiagnostic(supabase, {
+      event_type: 'signature_invalid',
+      provider_slug: 'openai',
+      error_message: err instanceof Error ? err.message : 'Signature verification failed',
+    })
+    return ack()
+  }
+
+  console.log(`Received OpenAI webhook: ${event.type}`)
+
+  // 2. Extract response ID and look up job by llm_response_id
+  const responseId = event.data?.id
+  if (!responseId) {
+    console.error('No response ID in OpenAI webhook payload')
+    return ack()
+  }
+
+  const { data: job } = await supabase
+    .from('llm_jobs')
+    .select('id, status, customer_id, user_id, feature_slug, context, llm_response_id, retry_count, provider_id')
+    .eq('llm_response_id', responseId)
+    .maybeSingle()
+
+  if (!job) {
+    console.log(`No job found for OpenAI response: ${responseId}`)
+    await logDiagnostic(supabase, {
+      event_type: 'unknown_job',
+      provider_slug: 'openai',
+      error_message: `No job found for response ID: ${responseId}`,
+      received_response_id: responseId,
+    })
+    return ack()
+  }
+
+  const jobId = job.id
+
+  // Guard: cancelled
+  if (job.status === 'cancelled') {
+    console.log(`Ignoring webhook for cancelled job: ${jobId}`)
+    return ack()
+  }
+
+  // Guard: terminal state
+  const terminalStates = ['completed', 'error', 'exhausted', 'post_processing_failed']
+  if (terminalStates.includes(job.status)) {
+    console.log(`Ignoring webhook for terminal job ${jobId} (status: ${job.status})`)
+    return ack()
+  }
+
+  // Guard: not in waiting_llm (unexpected state)
+  if (job.status !== 'waiting_llm') {
+    console.log(`Unexpected job status ${job.status} for webhook, job: ${jobId}`)
+    await logDiagnostic(supabase, {
+      event_type: 'unexpected_status',
+      job_id: jobId,
+      provider_slug: 'openai',
+      customer_id: job.customer_id,
+      job_status_at_receipt: job.status,
+    })
+    return ack()
+  }
+
+  // 3. Idempotency check using webhook-id header
+  const webhookId = req.headers.get('webhook-id')
+  if (webhookId) {
+    const { data: isNewWebhook } = await supabase.rpc('llm_record_webhook', {
+      p_webhook_id: webhookId,
+      p_job_id: jobId,
+      p_provider_slug: 'openai',
+      p_event_type: event.type,
+    })
+
+    if (!isNewWebhook) {
+      console.log(`Duplicate webhook ${webhookId} — already processed`)
+      return ack()
+    }
+  }
+
+  // 4. Process based on event type
+  try {
+    if (event.type === 'response.completed') {
+      await handleOpenAICompleted(supabase, job, responseId, llmProviders, resolveProcessor)
+    } else if (event.type === 'response.failed' || event.type === 'response.incomplete') {
+      await handleOpenAIFailed(supabase, job, responseId, llmProviders)
+    } else {
+      console.log(`Unhandled OpenAI webhook event: ${event.type}`)
+    }
+  } catch (processingError) {
+    const errorMessage = processingError instanceof Error ? processingError.message : 'Unknown processing error'
+    console.error(`OpenAI webhook processing failed for job ${jobId}:`, errorMessage)
+
+    await logDiagnostic(supabase, {
+      event_type: 'processing_error',
+      job_id: jobId,
+      provider_slug: 'openai',
+      customer_id: job.customer_id,
+      error_code: 'PROCESSING_FAILED',
+      error_message: errorMessage,
+      job_status_at_receipt: job.status,
+    })
+
+    await supabase.rpc('llm_add_to_dlq', {
+      p_job_id: jobId,
+      p_webhook_payload: event,
+      p_error_message: errorMessage,
+      p_provider_slug: 'openai',
+      p_error_code: 'PROCESSING_FAILED',
+    })
+  }
+
+  return ack()
+}
+
+/**
+ * Handles a successful OpenAI response.
+ * Retrieves the full response, runs the response processor, and marks the job completed.
+ */
+async function handleOpenAICompleted(
+  supabase: SupabaseClient,
+  // deno-lint-ignore no-explicit-any
+  job: any,
+  responseId: string,
+  llmProviders: LLMProviders,
+  resolveProcessor: (slug: string | null | undefined) => ResponseProcessor | null
+): Promise<void> {
+  const openai = llmProviders.openai()
+
+  // Retrieve the full response from OpenAI
+  // deno-lint-ignore no-explicit-any
+  const fullResponse: any = await openai.responses.retrieve(responseId)
+
+  const outputText = fullResponse.output_text
+  if (!outputText) {
+    throw new Error(`No output_text in retrieved OpenAI response ${responseId}`)
+  }
+
+  // Build result for storage
+  const usage = fullResponse.usage
+  const result = {
+    output: outputText,
+    usage: usage
+      ? {
+          prompt_tokens: usage.input_tokens,
+          completion_tokens: usage.output_tokens,
+          total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
+        }
+      : undefined,
+    model: fullResponse.model,
+    response_id: responseId,
+  }
+
+  // Run response processor if registered for this feature
+  const processor = resolveProcessor(job.feature_slug)
+  if (processor) {
+    // C3: Re-check job status before running processor (prevent domain writes on cancelled jobs)
+    const { data: currentJob } = await supabase
+      .from('llm_jobs')
+      .select('status')
+      .eq('id', job.id)
+      .single()
+
+    if (!currentJob || currentJob.status !== 'waiting_llm') {
+      console.warn(`Job ${job.id} status changed to '${currentJob?.status}' before processor — skipping`)
+      return
+    }
+
+    try {
+      const safeContext = { ...job.context, customer_id: job.customer_id }
+      await processor(supabase, outputText, safeContext)
+    } catch (ppError) {
+      const ppMessage = ppError instanceof Error ? ppError.message : 'Post-processing failed'
+      console.error(`Post-processing failed for job ${job.id}:`, ppMessage)
+
+      await supabase
+        .from('llm_jobs')
+        .update({
+          status: 'post_processing_failed',
+          result_ref: JSON.stringify(result),
+          error_message: ppMessage,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', job.id)
+        .eq('status', 'waiting_llm')
+
+      if (job.user_id) {
+        notifyJobFailed(supabase, {
+          jobId: job.id,
+          userId: job.user_id,
+          customerId: job.customer_id,
+          featureSlug: job.feature_slug,
+          errorMessage: ppMessage,
+        }).catch((err: unknown) => console.error('Failed to send post-processing failure notification:', err))
+      }
+
+      return
+    }
+  }
+
+  // Mark job as completed
+  const { error } = await supabase
+    .from('llm_jobs')
+    .update({
+      status: 'completed',
+      result_ref: JSON.stringify(result),
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', job.id)
+    .eq('status', 'waiting_llm')
+
+  if (error) {
+    console.error(`Failed to update job ${job.id} as completed:`, error)
+  } else {
+    console.log(`Job ${job.id} completed successfully`)
+
+    if (job.user_id) {
+      notifyJobCompleted(supabase, {
+        jobId: job.id,
+        userId: job.user_id,
+        customerId: job.customer_id,
+        featureSlug: job.feature_slug,
+      }).catch((err: unknown) => console.error('Failed to send job completed notification:', err))
+    }
+  }
+}
+
+/**
+ * Handles a failed OpenAI response.
+ * Retrieves error details and follows retry/exhausted logic.
+ */
+async function handleOpenAIFailed(
+  supabase: SupabaseClient,
+  // deno-lint-ignore no-explicit-any
+  job: any,
+  responseId: string,
+  llmProviders: LLMProviders
+): Promise<void> {
+  const openai = llmProviders.openai()
+
+  // Retrieve the response to get error details
+  let errorMessage = 'Unknown error from OpenAI'
+  try {
+    // deno-lint-ignore no-explicit-any
+    const fullResponse: any = await openai.responses.retrieve(responseId)
+    if (fullResponse.error?.message) {
+      errorMessage = fullResponse.error.message
+    }
+  } catch (retrieveError) {
+    console.error(`Failed to retrieve error details for response ${responseId}:`, retrieveError)
+  }
+
+  // Get provider config for max retries
+  const { data: provider } = await supabase
+    .from('llm_providers')
+    .select('max_retries')
+    .eq('id', job.provider_id)
+    .single()
+
+  const maxRetries = provider?.max_retries || 1
+
+  if (job.retry_count < maxRetries) {
+    // Schedule for retry — update status and re-enqueue to pgmq for worker pickup
+    const { error } = await supabase
+      .from('llm_jobs')
+      .update({
+        status: 'retrying',
+        retry_count: job.retry_count + 1,
+        error_message: errorMessage,
+      })
+      .eq('id', job.id)
+      .eq('status', 'waiting_llm')
+
+    if (error) {
+      console.error(`Failed to update job ${job.id} for retry:`, error)
+    } else {
+      // Re-enqueue to pgmq so the worker picks it up again
+      const { error: enqueueError } = await supabase.rpc('llm_enqueue_job', {
+        p_job_id: job.id,
+      })
+      if (enqueueError) {
+        console.error(`Failed to re-enqueue job ${job.id} for retry:`, enqueueError)
+      }
+      console.log(`Job ${job.id} scheduled for retry (${job.retry_count + 1}/${maxRetries})`)
+    }
+  } else {
+    const { error } = await supabase
+      .from('llm_jobs')
+      .update({
+        status: 'exhausted',
+        error_message: errorMessage,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', job.id)
+      .eq('status', 'waiting_llm')
+
+    if (error) {
+      console.error(`Failed to update job ${job.id} as exhausted:`, error)
+    } else {
+      console.log(`Job ${job.id} failed — max retries exhausted`)
+
+      if (job.user_id) {
+        notifyJobExhausted(supabase, {
+          jobId: job.id,
+          userId: job.user_id,
+          customerId: job.customer_id,
+          featureSlug: job.feature_slug,
+          errorMessage,
+        }).catch((err: unknown) => console.error('Failed to send job exhausted notification:', err))
+      }
+    }
+  }
+}
+
+// =============================================================================
+// DLQ Replay (H2)
+// =============================================================================
+
+/**
+ * DLQ replay request body (sent by llm_process_dlq via pg_net).
+ */
+interface DLQReplayRequest {
+  dlq_id: string
+  webhook_payload: unknown
+  provider_slug: string
+}
+
+/**
+ * Handles DLQ replay requests.
+ *
+ * When webhook processing fails (e.g., responses.retrieve() timeout), the
+ * original webhook payload is stored in the DLQ. On retry, this function
+ * re-processes that stored payload instead of submitting a new LLM request,
+ * preserving the already-completed response.
+ *
+ * Authentication: requires x-queue-secret header (called from pg_cron via pg_net).
+ * Skips signature validation and idempotency check (deliberate retry).
+ */
+async function handleDLQReplay(
+  req: Request,
+  supabase: SupabaseClient,
+  deps: HandlerDeps,
+  llmProviders: LLMProviders,
+  resolveProcessor: (slug: string | null | undefined) => ResponseProcessor | null
+): Promise<Response> {
+  const ack = () => new Response('OK', { status: 200 })
+
+  // Verify internal queue authentication
+  const queueSecret = deps.getEnv('QUEUE_SECRET')?.trim()
+  if (!queueSecret) {
+    console.error('QUEUE_SECRET not configured for DLQ replay')
+    return ack()
+  }
+
+  const provided = req.headers.get('x-queue-secret')?.trim() ?? ''
+  if (!provided || !(await secureCompare(provided, queueSecret))) {
+    console.error('Unauthorized DLQ replay request')
+    return ack()
+  }
+
+  // Parse DLQ replay body
+  let body: DLQReplayRequest
+  try {
+    body = await req.json()
+  } catch {
+    console.error('Invalid JSON in DLQ replay request')
+    return ack()
+  }
+
+  const { dlq_id, webhook_payload, provider_slug } = body
+  if (!dlq_id || !webhook_payload || !provider_slug) {
+    console.error('Missing required fields in DLQ replay request')
+    return ack()
+  }
+
+  console.log(`DLQ replay: processing entry ${dlq_id} for provider ${provider_slug}`)
+
+  try {
+    if (provider_slug === 'openai') {
+      await replayOpenAIWebhook(supabase, webhook_payload, llmProviders, resolveProcessor)
+    } else {
+      await replayGenericWebhook(supabase, webhook_payload as WebhookPayload, provider_slug)
+    }
+
+    // Success — resolve the DLQ entry
+    await supabase.rpc('llm_resolve_dlq', { p_dlq_id: dlq_id })
+    console.log(`DLQ entry ${dlq_id} resolved successfully`)
+  } catch (replayError) {
+    // Failed again — DLQ entry stays pending for next retry attempt
+    const errorMessage = replayError instanceof Error ? replayError.message : 'Unknown replay error'
+    console.error(`DLQ replay failed for entry ${dlq_id}:`, errorMessage)
+
+    await logDiagnostic(supabase, {
+      event_type: 'dlq_replay_failed',
+      provider_slug,
+      error_code: 'DLQ_REPLAY_FAILED',
+      error_message: errorMessage,
+    })
+  }
+
+  return ack()
+}
+
+/**
+ * Replays an OpenAI webhook from DLQ.
+ * The stored payload is the unwrapped event { type, data: { id, ... } }.
+ */
+async function replayOpenAIWebhook(
+  supabase: SupabaseClient,
+  webhookPayload: unknown,
+  llmProviders: LLMProviders,
+  resolveProcessor: (slug: string | null | undefined) => ResponseProcessor | null
+): Promise<void> {
+  // deno-lint-ignore no-explicit-any
+  const event = webhookPayload as { type: string; data: { id: string; [key: string]: unknown } }
+  const responseId = event?.data?.id
+  if (!responseId) {
+    throw new Error('No response ID in stored OpenAI webhook payload')
+  }
+
+  // Look up job by llm_response_id
+  const { data: job } = await supabase
+    .from('llm_jobs')
+    .select('id, status, customer_id, user_id, feature_slug, context, llm_response_id, retry_count, provider_id')
+    .eq('llm_response_id', responseId)
+    .maybeSingle()
+
+  if (!job) {
+    throw new Error(`No job found for response ID: ${responseId}`)
+  }
+
+  // Guard: only process if job is still in waiting_llm
+  if (job.status !== 'waiting_llm') {
+    console.log(`DLQ replay: job ${job.id} no longer in waiting_llm (status: ${job.status}) — skipping`)
+    return
+  }
+
+  // Process based on event type
+  if (event.type === 'response.completed') {
+    await handleOpenAICompleted(supabase, job, responseId, llmProviders, resolveProcessor)
+  } else if (event.type === 'response.failed' || event.type === 'response.incomplete') {
+    await handleOpenAIFailed(supabase, job, responseId, llmProviders)
+  } else {
+    console.log(`DLQ replay: unhandled OpenAI event type: ${event.type}`)
+  }
+}
+
+/**
+ * Replays a non-OpenAI webhook from DLQ.
+ * The stored payload is the original parsed webhook payload.
+ */
+async function replayGenericWebhook(
+  supabase: SupabaseClient,
+  payload: WebhookPayload,
+  providerSlug: string
+): Promise<void> {
+  const jobId = extractJobId(payload, providerSlug)
+  if (!jobId) {
+    throw new Error('No job_id in stored webhook payload')
+  }
+
+  // Look up job
+  const { data: jobCheck } = await supabase
+    .from('llm_jobs')
+    .select('status, customer_id, user_id, feature_slug')
+    .eq('id', jobId)
+    .single()
+
+  if (!jobCheck) {
+    throw new Error(`Job not found: ${jobId}`)
+  }
+
+  // Guard: only process if job is in a processable state
+  if (jobCheck.status === 'cancelled' || ['completed', 'error', 'exhausted', 'post_processing_failed'].includes(jobCheck.status)) {
+    console.log(`DLQ replay: job ${jobId} in terminal state (status: ${jobCheck.status}) — skipping`)
+    return
+  }
+
+  await processWebhook(supabase, payload, providerSlug, jobId, {
+    customerId: jobCheck.customer_id,
+    userId: jobCheck.user_id,
+    featureSlug: jobCheck.feature_slug,
+  })
 }

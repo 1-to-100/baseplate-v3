@@ -9,19 +9,28 @@
  * Only this type definition and the registry are shared infrastructure.
  */
 
-// deno-lint-ignore no-explicit-any
-type SupabaseClient = any;
+import type { SupabaseClient } from '../supabase.ts';
+
+/**
+ * Base context that every response processor receives.
+ * The worker enforces customer_id from the job row (cross-tenant protection).
+ * Features can extend this with additional keys via the index signature.
+ */
+export interface ProcessorContext {
+  customer_id: string;
+  [key: string]: unknown;
+}
 
 /**
  * Response processor function signature.
  *
  * @param supabase - Service client (bypasses RLS)
  * @param rawOutput - Raw text output from the LLM
- * @param context - Domain data from job.context JSONB (e.g., { customer_id, visual_style_guide_id })
+ * @param context - Domain data from job.context JSONB, with customer_id enforced by the worker
  * @throws Error if validation or DB write fails (worker will set post_processing_failed status)
  */
 export type ResponseProcessor = (
   supabase: SupabaseClient,
   rawOutput: string,
-  context: Record<string, unknown>
+  context: ProcessorContext
 ) => Promise<void>;
