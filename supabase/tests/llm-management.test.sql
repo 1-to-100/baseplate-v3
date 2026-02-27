@@ -71,6 +71,12 @@ BEGIN
   END IF;
 END $$;
 
+-- Seed vault secrets for DLQ processor tests
+-- llm_process_dlq() early-returns if queue_secret is missing from vault.
+-- The HTTP call is fire-and-forget; we only verify SQL state changes.
+SELECT vault.create_secret('test-queue-secret', 'queue_secret');
+SELECT vault.create_secret('http://localhost:54321', 'project_url');
+
 -- =============================================================================
 -- SECTION 1: llm_increment_rate_limit Tests
 -- =============================================================================
