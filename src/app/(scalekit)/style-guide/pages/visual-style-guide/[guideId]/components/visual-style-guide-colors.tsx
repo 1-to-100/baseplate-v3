@@ -444,11 +444,6 @@ export function ColorEditItem({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 startDecorator='#'
-                slotProps={{
-                  input: {
-                    maxLength: 6,
-                  },
-                }}
                 aria-invalid={showError}
               />
               {showError && (
