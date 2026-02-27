@@ -246,6 +246,7 @@ export default function CustomerInfoPage(): React.JSX.Element {
       !customerInfo.one_sentence_summary || customerInfo.one_sentence_summary.trim() === '',
       !customerInfo.problem_overview || customerInfo.problem_overview.trim() === '',
       !customerInfo.solution_overview || customerInfo.solution_overview.trim() === '',
+      !customerInfo.competitive_overview || customerInfo.competitive_overview.trim() === '',
     ];
 
     // Consider empty if 3 or more core fields are empty
@@ -463,6 +464,14 @@ export default function CustomerInfoPage(): React.JSX.Element {
                 multiline
                 placeholder='Describe your solution in audience-appropriate terms (1 paragraph)'
                 onSave={(value) => handleFieldUpdate('solution_overview', value)}
+              />
+
+              <EditableField
+                label='Competitive Overview'
+                value={customerInfo.competitive_overview}
+                multiline
+                placeholder='Describe the competitive landscape and how you differentiate (1 paragraph)'
+                onSave={(value) => handleFieldUpdate('competitive_overview', value)}
               />
             </Stack>
           </CardContent>
