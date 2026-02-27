@@ -83,19 +83,18 @@ export class DiffbotArticleClient {
 
     const tagsClause = diffbotIds
       .map((id) => {
-        // Normalize: extract only the entity ID part
         let cleanId = id;
         if (id.includes('diffbot.com/entity/')) {
           cleanId = id.split('diffbot.com/entity/').pop()?.trim() ?? id;
         } else if (id.includes('/entity/')) {
           cleanId = id.split('/entity/').pop()?.trim() ?? id;
         }
-        return `tags.uri:"http://diffbot.com/entity/${cleanId}"`;
+        return `"http://diffbot.com/entity/${cleanId}"`;
       })
-      .join(' OR ');
+      .join(', ');
 
-    // Build query: parentheses for OR precedence; Diffbot DQL rejects explicit "AND"
-    let queryString = `type:Article (${tagsClause}) lastCrawlTime<${daysBack}d`;
+    // Diffbot DQL: tags.uri:or("uri1", "uri2") per docs.diffbot.com
+    let queryString = `type:Article tags.uri:or(${tagsClause}) lastCrawlTime<${daysBack}d`;
 
     if (options?.language) {
       queryString += ` language:"${options.language}"`;
