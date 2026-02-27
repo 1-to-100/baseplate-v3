@@ -353,10 +353,15 @@ export function ColorEditItem({
   }, [serverHex]);
 
   const applyIfValid = React.useCallback(
-    (hexValue: string) => {
+    (hexValue: string, allowShorthand = false) => {
       const trimmed = hexValue.trim();
       if (!trimmed) return;
       if (!isValidHexCode(trimmed)) return;
+
+      // During typing (debounced), only save complete 6-char hex codes
+      // 3-char shorthand expansion only happens on blur (final submission)
+      if (!allowShorthand && trimmed.length === 3) return;
+
       const normalized = normalizeHex(trimmed);
       if (normalized !== color.hex) {
         onUpdateColor(color, 'hex', normalized);
@@ -384,7 +389,7 @@ export function ColorEditItem({
 
   const handleBlur = () => {
     debouncedApply.cancel();
-    applyIfValid(localHex);
+    applyIfValid(localHex, true); // Allow 3-char shorthand expansion on blur
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
