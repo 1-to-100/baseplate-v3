@@ -14,6 +14,7 @@ import {
 import { createHandler, type HandlerDeps, type LLMProviders } from "../llm-query/index.ts";
 import { ApiError } from "../_shared/errors.ts";
 import type { AuthResult } from "../_shared/auth.ts";
+import type { SupabaseClient } from "../_shared/supabase.ts";
 import type { AuthenticatedUser } from "../_shared/types.ts";
 
 // ============================================================================
@@ -237,7 +238,7 @@ function createMockDeps(options: {
       if (!user) throw new ApiError("No user", 401);
       return {
         user,
-        userClient: createMockSupabaseClient(supabaseOptions),
+        userClient: createMockSupabaseClient(supabaseOptions) as unknown as SupabaseClient,
       };
     },
     llmProviders: createMockLLMProviders(),

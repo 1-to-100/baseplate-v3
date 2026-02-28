@@ -45,12 +45,36 @@ export { LLMError } from './errors.ts';
 export type { LLMProvider, LLMErrorCode } from './types.ts';
 export type { ProviderCredentials } from './credentials.ts';
 
+// Shared call utilities (types, sanitization, timeout, provider calls)
+export {
+  DEFAULT_TIMEOUT_SECONDS,
+  PROTECTED_INPUT_KEYS,
+  sanitizeInputParams,
+  isValidProvider,
+  withTimeout,
+  callOpenAIChat,
+  callAnthropic,
+  callGemini,
+} from './execution.ts';
+export type {
+  LLMResult,
+  ProviderConfig,
+  LLMCallParams,
+  LLMProviders,
+} from './execution.ts';
+
 // Logging utilities
 export { logLLMOperation, createTimer, withLogging } from './logging.ts';
 export type { LLMLogEntry } from './logging.ts';
 
 // Credentials utilities (for advanced use cases)
 export { getCredentials, hasCredentials, isValidKeyFormat } from './credentials.ts';
+
+// Provider profile utilities (database-backed provider lookups)
+export { fetchActiveProviderBySlug, fetchOpenAIProvider } from './provider-profiles.ts';
+
+// Customer quota utilities for LLM-backed features
+export { consumeRateLimit } from './rate-limit.ts';
 
 // Note: Test utilities (resetAllAdapters, etc.) are in ./testing.ts
 // Import from there for test code: import { resetAllAdapters } from './testing.ts';

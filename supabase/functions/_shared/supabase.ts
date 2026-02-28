@@ -1,9 +1,12 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4'
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.49.4'
+
+export type { SupabaseClient }
 
 export const createServiceClient = () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  
+
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error('Missing Supabase environment variables')
   }
@@ -19,7 +22,7 @@ export const createServiceClient = () => {
 export const createAnonClient = (authToken: string) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  
+
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables')
   }
@@ -32,4 +35,3 @@ export const createAnonClient = (authToken: string) => {
     }
   })
 }
-

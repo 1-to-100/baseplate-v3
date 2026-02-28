@@ -4,13 +4,11 @@
  * Provides user authentication and RLS-enforced Supabase client creation.
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
 import { createServiceClient } from './supabase.ts';
+import type { SupabaseClient } from './supabase.ts';
 import { ApiError } from './errors.ts';
 import type { AuthenticatedUser } from './types.ts';
-
-// deno-lint-ignore no-explicit-any
-type SupabaseClient = any;
 
 /**
  * Result of authenticating a request.

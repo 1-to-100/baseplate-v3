@@ -13,6 +13,7 @@ import {
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { createHandler, type HandlerDeps } from "../llm-cancel/index.ts";
 import type { AuthResult } from "../_shared/auth.ts";
+import type { SupabaseClient } from "../_shared/supabase.ts";
 import type { AuthenticatedUser } from "../_shared/types.ts";
 
 // ============================================================================
@@ -111,7 +112,7 @@ function createMockDeps(options: {
       if (!user) throw new Error("No user");
       return {
         user,
-        userClient: createMockSupabaseClient(supabaseOptions),
+        userClient: createMockSupabaseClient(supabaseOptions) as unknown as SupabaseClient,
       };
     },
   };
