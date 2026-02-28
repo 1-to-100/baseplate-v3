@@ -201,20 +201,23 @@ export default function VocabularyPage(): React.JSX.Element {
     }
   };
 
-  const handleOpenEdit = (entryId: string) => {
-    const entry = entriesData?.data.find((e) => e.vocabulary_entry_id === entryId);
-    if (entry) {
-      setEditingEntry(entryId);
-      reset({
-        style_guide_id: entry.style_guide_id || entry.written_style_guide_id,
-        name: entry.name,
-        vocabulary_type: entry.vocabulary_type,
-        suggested_replacement: entry.suggested_replacement || '',
-        example_usage: entry.example_usage || '',
-      });
-      setOpenModal(true);
-    }
-  };
+  const handleOpenEdit = React.useCallback(
+    (entryId: string) => {
+      const entry = entriesData?.data.find((e) => e.vocabulary_entry_id === entryId);
+      if (entry) {
+        setEditingEntry(entryId);
+        reset({
+          style_guide_id: entry.style_guide_id || entry.written_style_guide_id,
+          name: entry.name,
+          vocabulary_type: entry.vocabulary_type,
+          suggested_replacement: entry.suggested_replacement || '',
+          example_usage: entry.example_usage || '',
+        });
+        setOpenModal(true);
+      }
+    },
+    [entriesData?.data, reset]
+  );
 
   const handleCloseModal = () => {
     setOpenModal(false);
@@ -238,23 +241,29 @@ export default function VocabularyPage(): React.JSX.Element {
     }
   };
 
-  const handleDelete = async (entryId: string) => {
-    if (window.confirm('Are you sure you want to delete this vocabulary entry?')) {
-      await deleteMutation.mutateAsync(entryId);
-    }
-  };
+  const handleDelete = React.useCallback(
+    async (entryId: string) => {
+      if (window.confirm('Are you sure you want to delete this vocabulary entry?')) {
+        await deleteMutation.mutateAsync(entryId);
+      }
+    },
+    [deleteMutation]
+  );
 
   const handleImportCSV = () => {
     // TODO: Implement CSV import
     alert('CSV import functionality coming soon');
   };
 
-  const filteredEntries =
-    entriesData?.data.filter(
-      (entry) =>
-        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.suggested_replacement?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+  const filteredEntries = React.useMemo(
+    () =>
+      entriesData?.data.filter(
+        (entry) =>
+          entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          entry.suggested_replacement?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) || [],
+    [entriesData?.data, searchQuery]
+  );
 
   // Sort entries
   const sortedEntries = React.useMemo(() => {
@@ -413,7 +422,7 @@ export default function VocabularyPage(): React.JSX.Element {
         ),
       },
     ],
-    []
+    [handleDelete, handleOpenEdit]
   );
 
   if (!isLoading && (!customerId || !styleGuideId)) {

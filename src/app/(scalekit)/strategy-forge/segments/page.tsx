@@ -1,51 +1,578 @@
 'use client';
 
 import * as React from 'react';
-import type { Metadata } from 'next';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/joy/Box';
 import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
-import Card from '@mui/joy/Card';
-import CardContent from '@mui/joy/CardContent';
 import Button from '@mui/joy/Button';
 import IconButton from '@mui/joy/IconButton';
-import Grid from '@mui/joy/Grid';
 import Chip from '@mui/joy/Chip';
-import Alert from '@mui/joy/Alert';
+import Table from '@mui/joy/Table';
+import Tabs from '@mui/joy/Tabs';
+import TabList from '@mui/joy/TabList';
+import Tab from '@mui/joy/Tab';
+import Tooltip from '@mui/joy/Tooltip';
 import CircularProgress from '@mui/joy/CircularProgress';
+import Alert from '@mui/joy/Alert';
+import { PopperMenu, MenuItem } from '@/components/core/popper-menu';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
-import { Lightbulb as LightbulbIcon } from '@phosphor-icons/react/dist/ssr/Lightbulb';
-import { PencilSimple as EditIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
-import { Trash as DeleteIcon } from '@phosphor-icons/react/dist/ssr/Trash';
-import { ChartPieSlice as SegmentIcon } from '@phosphor-icons/react/dist/ssr/ChartPieSlice';
-
-import { config } from '@/config';
-import { getSegmentsList, deleteSegment } from '../lib/api';
-import type { Segment } from '../lib/types';
-import { createClient } from '@/lib/supabase/client';
+import { X as XIcon } from '@phosphor-icons/react/dist/ssr/X';
+import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { Check as CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
+import { ArrowsCounterClockwise as ArrowsCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsCounterClockwise';
+import { Cards as CardsIcon } from '@phosphor-icons/react/dist/ssr/Cards';
+import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
 import { toast } from '@/components/core/toaster';
+import { useGlobalSearch } from '@/hooks/use-global-search';
+import { getSegments, deleteSegment } from '../lib/api/segment-lists';
+import { useCanEditSegments } from '../lib/hooks/useCanEditSegments';
+import type { ListForDisplay } from '../lib/types/list';
+import { ListStatus } from '../lib/types/list';
+import { paths } from '@/paths';
+import Pagination from '@/components/dashboard/layout/pagination';
+import DeleteItemModal from '@/components/dashboard/modals/DeleteItemModal';
 
-//export const metadata: Metadata = {
-//  title: `Segments | Content Strategy | Dashboard | ${config.site.name}`
-//};
+const ITEMS_PER_PAGE = 12;
+const VIEW_MODE_STORAGE_KEY = 'segments-view-mode';
+const SEGMENT_NAME_DISPLAY_MAX_LENGTH = 50;
 
-export default function Page(): React.JSX.Element {
+function truncateSegmentName(name: string, maxLength: number): string {
+  if (!name || name.length <= maxLength) return name;
+  return `${name.slice(0, maxLength)}…`;
+}
+
+// Status indicator component with tooltip
+function StatusIndicator({ status }: { status?: ListStatus }) {
+  const getStatusConfig = (status?: ListStatus) => {
+    switch (status) {
+      case ListStatus.COMPLETED:
+        return {
+          icon: <CheckIcon size={16} weight='bold' />,
+          text: 'Segment successfully created and ready to use',
+          color: '#10B981', // green
+        };
+      case ListStatus.FAILED:
+        return {
+          icon: <XIcon size={16} weight='bold' />,
+          text: 'Segment creation failed, try again or check settings',
+          color: '#EF4444', // red
+        };
+      case ListStatus.PROCESSING:
+        return {
+          icon: <ArrowsCounterClockwiseIcon size={16} weight='bold' />,
+          text: 'Segment is being created, please wait',
+          color: '#F59E0B', // amber
+        };
+      default:
+        return {
+          icon: null,
+          text: '',
+          color: '#6B7280',
+        };
+    }
+  };
+
+  const config = getStatusConfig(status);
+
+  if (!config.icon) return null;
+
+  return (
+    <Tooltip
+      title={config.text}
+      placement='top'
+      sx={{
+        background: '#DAD8FD',
+        color: '#3D37DD',
+        textTransform: 'capitalize',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 12,
+          right: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+          cursor: 'pointer',
+          backgroundColor: 'var(--joy-palette-background-body)',
+          border: `1px solid ${config.color}`,
+          borderRadius: '20px',
+          padding: '4px',
+          width: '25px',
+          height: '25px',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: config.color,
+            width: '16px',
+            height: '16px',
+          }}
+        >
+          {config.icon}
+        </Box>
+      </Box>
+    </Tooltip>
+  );
+}
+
+// Segment Card Component for grid view
+function SegmentCard({
+  segment,
+  onDelete,
+  showActions,
+}: {
+  segment: ListForDisplay;
+  onDelete: (segmentId: string) => void;
+  showActions: boolean;
+}) {
+  const router = useRouter();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
+
+  const filters = (segment.filters || {}) as {
+    country?: string;
+    location?: string;
+    employees?: string | string[];
+    categories?: string[];
+    technographics?: string[];
+  };
+
+  const handleCardClick = () => {
+    if (segment.status === ListStatus.PROCESSING) {
+      return; // Don't allow click for processing status
+    }
+    router.push(paths.strategyForge.segments.details(segment.list_id));
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setOpenPopover(true);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setOpenPopover(false);
+  };
+
+  const handleDelete = () => {
+    if (segment.status === ListStatus.PROCESSING) {
+      toast.error('Cannot delete a segment that is currently being processed');
+      handleMenuClose();
+      return;
+    }
+    onDelete(segment.list_id);
+    handleMenuClose();
+  };
+
+  const isProcessing = segment.status === ListStatus.PROCESSING;
+  const employeesDisplay = Array.isArray(filters.employees)
+    ? filters.employees[0]
+    : filters.employees;
+
+  return (
+    <Box
+      onClick={handleCardClick}
+      sx={{
+        p: '16px',
+        borderRadius: '8px',
+        border: '1px solid var(--joy-palette-divider)',
+        boxShadow: 'none',
+        backgroundColor: isProcessing
+          ? 'var(--joy-palette-background-level1)'
+          : 'var(--joy-palette-background-body)',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '210px',
+        overflow: 'hidden',
+        cursor: isProcessing ? 'default' : 'pointer',
+        maxWidth: { xs: '100%', sm: '336px' },
+        minWidth: { xs: '100%', sm: '236px' },
+        position: 'relative',
+        opacity: isProcessing ? 0.7 : 1,
+        '&:hover': {
+          borderColor: isProcessing
+            ? 'var(--joy-palette-divider)'
+            : 'var(--joy-palette-text-secondary)',
+        },
+      }}
+    >
+      {showActions && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+          }}
+        >
+          <IconButton
+            size='sm'
+            sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+            onClick={handleMenuOpen}
+          >
+            <DotsThreeIcon weight='bold' size={22} color='var(--joy-palette-text-secondary)' />
+          </IconButton>
+          <PopperMenu
+            open={openPopover && Boolean(anchorEl)}
+            anchorEl={anchorEl}
+            onClose={handleMenuClose}
+            placement='bottom-start'
+            minWidth='120px'
+            style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+          >
+            <MenuItem
+              icon={<TrashIcon size={20} />}
+              danger
+              disabled={isProcessing}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                handleDelete();
+              }}
+            >
+              Delete
+            </MenuItem>
+          </PopperMenu>
+        </Box>
+      )}
+
+      {/* Status indicator */}
+      {segment.status && <StatusIndicator status={segment.status} />}
+
+      <Typography
+        level='title-md'
+        sx={{
+          fontWeight: '500',
+          fontSize: '14px',
+          color: isProcessing
+            ? 'var(--joy-palette-text-tertiary)'
+            : 'var(--joy-palette-text-primary)',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          whiteSpace: 'normal',
+          width: '100%',
+          maxWidth: '100%',
+          display: 'block',
+          overflow: 'hidden',
+          paddingRight: '60px',
+          mb: 0.5,
+        }}
+      >
+        {segment.name}
+      </Typography>
+      {typeof segment.company_count === 'number' && (
+        <Typography
+          level='body-xs'
+          sx={{
+            color: 'var(--joy-palette-text-secondary)',
+            fontWeight: '400',
+            fontSize: '12px',
+          }}
+        >
+          {segment.company_count.toLocaleString()}{' '}
+          {segment.company_count === 1 ? 'company' : 'companies'}
+        </Typography>
+      )}
+      {filters.country && (
+        <Typography
+          level='body-xs'
+          sx={{
+            mt: 1.5,
+            color: 'var(--joy-palette-text-secondary)',
+            fontWeight: '400',
+            fontSize: '12px',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: '500',
+              color: 'var(--joy-palette-text-primary)',
+            }}
+          >
+            Country:{' '}
+          </span>{' '}
+          {filters.country}
+        </Typography>
+      )}
+      {employeesDisplay && (
+        <Typography
+          level='body-xs'
+          sx={{
+            mt: 0.5,
+            color: 'var(--joy-palette-text-secondary)',
+            fontWeight: '400',
+            fontSize: '12px',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: '500',
+              color: 'var(--joy-palette-text-primary)',
+            }}
+          >
+            Employees:{' '}
+          </span>{' '}
+          {employeesDisplay}
+        </Typography>
+      )}
+      <Box sx={{ mt: 'auto' }}>
+        <Typography
+          level='body-xs'
+          sx={{
+            mt: 0.5,
+            color: 'var(--joy-palette-text-secondary)',
+            fontWeight: '400',
+            fontSize: '12px',
+          }}
+        >
+          <span
+            style={{
+              fontWeight: '500',
+              color: 'var(--joy-palette-text-primary)',
+            }}
+          >
+            Last Update:{' '}
+          </span>{' '}
+          {new Date(segment.updated_at).toLocaleDateString()}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// Segment Table Row Component for table view
+function SegmentTableRow({
+  segment,
+  onDelete,
+  showActions,
+}: {
+  segment: ListForDisplay;
+  onDelete: (segmentId: string) => void;
+  showActions: boolean;
+}) {
+  const router = useRouter();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openPopover, setOpenPopover] = useState(false);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setOpenPopover(true);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setOpenPopover(false);
+  };
+
+  const handleDelete = () => {
+    if (segment.status === ListStatus.PROCESSING) {
+      toast.error('Cannot delete a segment that is currently being processed');
+      handleMenuClose();
+      return;
+    }
+    onDelete(segment.list_id);
+    handleMenuClose();
+  };
+
+  const getStatusDisplay = (status?: ListStatus) => {
+    switch (status) {
+      case ListStatus.COMPLETED:
+        return { label: 'Completed', color: 'success' as const };
+      case ListStatus.FAILED:
+        return { label: 'Failed', color: 'danger' as const };
+      case ListStatus.PROCESSING:
+        return { label: 'Processing', color: 'warning' as const };
+      default:
+        return { label: 'New', color: 'neutral' as const };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay(segment.status);
+  const isProcessing = segment.status === ListStatus.PROCESSING;
+
+  const handleRowClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
+    if (isProcessing) {
+      return;
+    }
+    router.push(paths.strategyForge.segments.details(segment.list_id));
+  };
+
+  return (
+    <tr
+      onClick={handleRowClick}
+      style={{
+        cursor: isProcessing ? 'default' : 'pointer',
+      }}
+    >
+      <td style={{ maxWidth: 0, overflow: 'hidden' }}>
+        <Typography
+          level='body-sm'
+          component='span'
+          sx={{
+            fontWeight: 300,
+            color: 'var(--joy-palette-text-secondary)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            wordBreak: 'break-word',
+          }}
+        >
+          {segment.name}
+        </Typography>
+      </td>
+      <td>
+        <Typography level='body-sm'>
+          {typeof segment.company_count === 'number' ? segment.company_count.toLocaleString() : '0'}
+        </Typography>
+      </td>
+      <td>
+        <Chip size='sm' variant='soft' color={statusDisplay.color}>
+          {statusDisplay.label}
+        </Chip>
+      </td>
+      <td>
+        <Typography level='body-sm'>{new Date(segment.updated_at).toLocaleDateString()}</Typography>
+      </td>
+      {showActions ? (
+        <td style={{ textAlign: 'right' }}>
+          <IconButton
+            size='sm'
+            sx={{ minWidth: 0, p: 0.5, borderRadius: '50%' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMenuOpen(e);
+            }}
+          >
+            <DotsThreeIcon weight='bold' size={20} color='var(--joy-palette-text-secondary)' />
+          </IconButton>
+          <PopperMenu
+            open={openPopover && Boolean(anchorEl)}
+            anchorEl={anchorEl}
+            onClose={handleMenuClose}
+            placement='bottom-start'
+            minWidth='120px'
+            style={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)' }}
+          >
+            <MenuItem
+              icon={<TrashIcon size={20} />}
+              danger
+              disabled={isProcessing}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleDelete();
+              }}
+            >
+              Delete
+            </MenuItem>
+          </PopperMenu>
+        </td>
+      ) : (
+        <td style={{ width: '80px', textAlign: 'right' }} />
+      )}
+    </tr>
+  );
+}
+
+// Empty State Component
+function EmptySegments({ canCreateSegment }: { canCreateSegment: boolean }) {
+  const router = useRouter();
+
+  return (
+    <Box sx={{ textAlign: 'center', mt: 20 }}>
+      <Typography
+        sx={{
+          fontSize: '24px',
+          fontWeight: '600',
+          color: 'var(--joy-palette-text-primary)',
+        }}
+      >
+        You don&apos;t have any segments yet
+      </Typography>
+      <Typography
+        sx={{
+          fontSize: '14px',
+          fontWeight: '300',
+          color: 'var(--joy-palette-text-secondary)',
+          mt: 1,
+        }}
+      >
+        Create your first segment to start working with audiences.
+        <br />
+        Once created, you can manage them here.
+      </Typography>
+      {canCreateSegment && (
+        <Button
+          onClick={() => router.push(paths.strategyForge.segments.create)}
+          variant='outlined'
+          startDecorator={<PlusIcon size={20} weight='bold' />}
+          sx={{ mt: 2, color: 'var(--joy-palette-text-secondary)' }}
+        >
+          Create segment
+        </Button>
+      )}
+    </Box>
+  );
+}
+
+export default function SegmentsPage(): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [isSuggestingSegments, setIsSuggestingSegments] = React.useState(false);
-  const supabase = createClient();
+  const { canEditSegments } = useCanEditSegments();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [segmentToDelete, setSegmentToDelete] = useState<ListForDisplay | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { debouncedSearchValue } = useGlobalSearch();
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+      return saved === 'grid' || saved === 'table' ? saved : 'table';
+    }
+    return 'table';
+  });
+
+  // Save view mode to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+    }
+  }, [viewMode]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchValue]);
 
   // Fetch segments
   const {
-    data: segmentsData,
+    data: segmentsResponse,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['segments'],
-    queryFn: () => getSegmentsList(),
+    queryKey: ['segments', currentPage, debouncedSearchValue],
+    queryFn: () =>
+      getSegments({
+        page: currentPage,
+        perPage: ITEMS_PER_PAGE,
+        search: debouncedSearchValue || undefined,
+      }),
+    refetchOnWindowFocus: true,
   });
 
   // Delete mutation
@@ -53,145 +580,35 @@ export default function Page(): React.JSX.Element {
     mutationFn: deleteSegment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['segments'] });
-      setDeleteError(null);
+      setDeleteModalOpen(false);
+      setSegmentToDelete(null);
+      toast.success('Segment deleted successfully!');
     },
     onError: (error: Error) => {
-      setDeleteError(error.message);
+      toast.error(error.message || 'Failed to delete segment');
     },
   });
 
-  const handleDelete = async (segmentId: string, segmentName: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete "${segmentName}"? This action cannot be undone.`
-      )
-    ) {
-      try {
-        await deleteMutation.mutateAsync(segmentId);
-      } catch (error) {
-        // Error is handled by the mutation
-      }
+  const segments = segmentsResponse?.data || [];
+  const totalPages = segmentsResponse?.meta?.lastPage || 1;
+
+  const handleDeleteClick = (segmentId: string) => {
+    const segment = segments.find((s) => s.list_id === segmentId);
+    if (segment) {
+      setSegmentToDelete(segment);
+      setDeleteModalOpen(true);
     }
   };
 
-  const handleEdit = (segmentId: string) => {
-    router.push(`/strategy-forge/segments/${segmentId}/edit`);
-  };
-
-  const handleCreate = () => {
-    router.push('/strategy-forge/segments/create');
-  };
-
-  const handleSuggestSegments = React.useCallback(async () => {
-    setIsSuggestingSegments(true);
-
-    try {
-      // Get current customer ID
-      const { data: resolvedCustomerId, error: customerIdError } =
-        await supabase.rpc('current_customer_id');
-
-      if (customerIdError) {
-        throw new Error(customerIdError.message);
-      }
-
-      if (!resolvedCustomerId || typeof resolvedCustomerId !== 'string') {
-        throw new Error('Unable to resolve current customer id.');
-      }
-
-      // Verify session exists and refresh if needed
-      let { data: sessionData } = await supabase.auth.getSession();
-
-      if (!sessionData?.session?.access_token) {
-        throw new Error('Not authenticated. Please sign in and try again.');
-      }
-
-      // Refresh session if it's close to expiring (within 5 minutes)
-      if (sessionData.session.expires_at) {
-        const expiresIn = sessionData.session.expires_at * 1000 - Date.now();
-        if (expiresIn < 5 * 60 * 1000) {
-          const { data: refreshedSession, error: refreshError } =
-            await supabase.auth.refreshSession();
-          if (!refreshError && refreshedSession?.session) {
-            sessionData = refreshedSession;
-          }
-        }
-      }
-
-      if (!sessionData?.session?.access_token) {
-        throw new Error('Not authenticated. Please sign in and try again.');
-      }
-
-      const supabaseUrl = config.supabase.url;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL is not configured');
-      }
-
-      toast.success('Analyzing your website to suggest segments. This may take 30-60 seconds...');
-
-      // Use direct fetch instead of supabase.functions.invoke() to have more control
-      const functionUrl = `${supabaseUrl}/functions/v1/suggest-segments-for-customer-id`;
-      const requestBody = {
-        customer_id: resolvedCustomerId,
-      };
-
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      let data;
-      try {
-        const responseText = await response.text();
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (parseError) {
-        console.error('Failed to parse function response:', parseError);
-        throw new Error(`Function returned invalid JSON (status: ${response.status})`);
-      }
-
-      if (!response.ok) {
-        const errorMessage =
-          data?.error || data?.message || `Function returned status ${response.status}`;
-        throw new Error(errorMessage);
-      }
-
-      if (!data || !data.success) {
-        throw new Error('Invalid response from suggest-segments-for-customer-id function');
-      }
-
-      toast.success(`Successfully created ${data.segments_created} market segments!`);
-
-      // Reload segments
-      queryClient.invalidateQueries({ queryKey: ['segments'] });
-    } catch (err) {
-      console.error('Failed to suggest segments:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to suggest segments');
-    } finally {
-      setIsSuggestingSegments(false);
+  const confirmDelete = async () => {
+    if (segmentToDelete) {
+      await deleteMutation.mutateAsync(segmentToDelete.list_id);
     }
-  }, [supabase, queryClient]);
-
-  const segments = segmentsData?.data || [];
-
-  if (isLoading) {
-    return (
-      <Box sx={{ p: 'var(--Content-padding)' }}>
-        <Stack spacing={3} alignItems='center' sx={{ py: 4 }}>
-          <CircularProgress />
-          <Typography level='body-md' color='neutral'>
-            Loading segments...
-          </Typography>
-        </Stack>
-      </Box>
-    );
-  }
+  };
 
   if (error) {
     return (
-      <Box sx={{ p: 'var(--Content-padding)' }}>
+      <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
         <Stack spacing={3}>
           <Alert color='danger'>
             <Typography level='body-md'>
@@ -204,168 +621,233 @@ export default function Page(): React.JSX.Element {
   }
 
   return (
-    <Box sx={{ p: 'var(--Content-padding)' }}>
-      <Stack spacing={3}>
+    <Box sx={{ p: { xs: 2, sm: 'var(--Content-padding)' } }}>
+      <Stack spacing={{ xs: 2, sm: 3 }} sx={{ mt: { xs: 0, sm: 0 } }}>
         {/* Header */}
         <Stack
-          direction='row'
-          spacing={2}
-          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          direction={{ xs: 'row', sm: 'row' }}
+          spacing={{ xs: 2, sm: 3 }}
+          sx={{
+            alignItems: 'center',
+            justifyContent: { xs: 'space-between', sm: 'space-between' },
+          }}
         >
-          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
-            <SegmentIcon size={24} />
-            <Typography fontSize={{ xs: 'xl3', lg: 'xl4' }} level='h1'>
-              Segments
+          <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
+            <Typography
+              fontSize={{ xs: 'xl2', sm: 'xl3' }}
+              level='h1'
+              sx={{ wordBreak: 'break-word' }}
+            >
+              Segments{' '}
+              <Typography
+                level='body-sm'
+                sx={{ fontSize: { xs: 'xl2', sm: 'xl3' }, color: '#3D37DD' }}
+              >
+                {segmentsResponse?.meta?.total || 0}
+              </Typography>
             </Typography>
           </Stack>
-          <Stack direction='row' spacing={2}>
-            <Button
-              variant='outlined'
-              color='primary'
-              startDecorator={
-                isSuggestingSegments ? <CircularProgress size='sm' /> : <LightbulbIcon size={16} />
-              }
-              onClick={handleSuggestSegments}
-              disabled={isSuggestingSegments}
-              loading={isSuggestingSegments}
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
+            {/* View Mode Toggle */}
+            <Tabs
+              value={viewMode}
+              onChange={(event, newValue) => setViewMode(newValue as 'table' | 'grid')}
+              variant='custom'
             >
-              {isSuggestingSegments ? 'Analyzing...' : 'Suggest Segments'}
-            </Button>
-            <Button
-              variant='solid'
-              color='primary'
-              startDecorator={<PlusIcon size={16} />}
-              onClick={handleCreate}
-            >
-              Create Segment
-            </Button>
+              <TabList
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  p: 0,
+                  '& .MuiTab-root': {
+                    borderRadius: '20px',
+                    minWidth: '36px',
+                    paddingLeft: '8px',
+                    paddingRight: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    color: 'var(--joy-palette-text-secondary)',
+                    '&[aria-selected="true"]': {
+                      border: '1px solid var(--joy-palette-divider)',
+                      color: 'var(--joy-palette-background-primaryColor)',
+                    },
+                  },
+                }}
+              >
+                <Tab value='table'>
+                  <ListIcon size={20} weight='bold' />
+                </Tab>
+                <Tab value='grid'>
+                  <CardsIcon size={20} weight='bold' />
+                </Tab>
+              </TabList>
+            </Tabs>
+            {/* Create Button - hidden for system admin and customer success */}
+            {canEditSegments && (
+              <Button
+                variant='solid'
+                color='primary'
+                onClick={() => router.push(paths.strategyForge.segments.create)}
+                startDecorator={<PlusIcon fontSize='var(--Icon-fontSize)' />}
+                sx={{
+                  width: { xs: 38, sm: 'auto' },
+                  height: { xs: 38, sm: 'auto' },
+                  minWidth: { xs: 38, sm: 'auto' },
+                  py: { xs: 0, sm: 0.75 },
+                  px: { xs: 0, sm: 1 },
+                  '& .MuiButton-startDecorator': {
+                    margin: { xs: 0, sm: '0 8px 0 0' },
+                  },
+                }}
+              >
+                <Box
+                  component='span'
+                  sx={{
+                    display: { xs: 'none', sm: 'inline' },
+                  }}
+                >
+                  Create segment
+                </Box>
+              </Button>
+            )}
           </Stack>
         </Stack>
 
-        {/* Error Alert */}
-        {deleteError && (
-          <Alert color='danger'>
-            <Typography level='body-md'>Failed to delete segment: {deleteError}</Typography>
-          </Alert>
-        )}
-
         {/* Content */}
-        {isSuggestingSegments ? (
-          <Card variant='outlined' sx={{ p: 4 }}>
-            <Stack spacing={2} alignItems='center' textAlign='center'>
-              <CircularProgress size='lg' />
-              <Typography level='title-md'>Analyzing Your Website</Typography>
-              <Typography level='body-md' color='neutral'>
-                Generating market segment suggestions based on your company&apos;s positioning and
-                target markets. This typically takes 30-60 seconds.
-              </Typography>
-            </Stack>
-          </Card>
-        ) : segments.length === 0 ? (
-          <Card variant='outlined' sx={{ p: 4 }}>
-            <Stack spacing={2} alignItems='center' textAlign='center'>
-              <SegmentIcon size={48} color='var(--joy-palette-neutral-400)' />
-              <Typography level='title-md' color='neutral'>
-                No segments found
-              </Typography>
-              <Typography level='body-md' color='neutral'>
-                Get started by creating your first market segment.
-              </Typography>
-              <Button
-                variant='outlined'
-                color='primary'
-                startDecorator={<PlusIcon size={16} />}
-                onClick={handleCreate}
-                sx={{ mt: 1 }}
-              >
-                Create Segment
-              </Button>
-            </Stack>
-          </Card>
-        ) : (
-          <Grid container spacing={2}>
-            {segments.map((segment) => (
-              <Grid xs={12} sm={6} md={4} key={segment.segment_id}>
-                <Card variant='outlined' sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      {/* Header */}
-                      <Stack
-                        direction='row'
-                        spacing={2}
-                        sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}
-                      >
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography level='title-md' sx={{ mb: 0.5 }}>
-                            {segment.name}
-                          </Typography>
-                          {segment.code && (
-                            <Chip size='sm' variant='soft' color='primary'>
-                              {segment.code}
-                            </Chip>
-                          )}
-                        </Box>
-                        <Stack direction='row' spacing={1}>
-                          <IconButton
-                            size='sm'
-                            variant='outlined'
-                            color='neutral'
-                            onClick={() => handleEdit(segment.segment_id)}
-                          >
-                            <EditIcon size={16} />
-                          </IconButton>
-                          <IconButton
-                            size='sm'
-                            variant='outlined'
-                            color='danger'
-                            onClick={() => handleDelete(segment.segment_id, segment.name)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <DeleteIcon size={16} />
-                          </IconButton>
-                        </Stack>
-                      </Stack>
-
-                      {/* Description */}
-                      <Typography level='body-sm' color='neutral' sx={{ flex: 1 }}>
-                        {segment.description}
-                      </Typography>
-
-                      {/* External ID */}
-                      {segment.external_id && (
-                        <Typography level='body-xs' color='neutral'>
-                          External ID: {segment.external_id}
-                        </Typography>
-                      )}
-
-                      {/* Metadata */}
-                      <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
-                        <Typography level='body-xs' color='neutral'>
-                          Created: {new Date(segment.created_at).toLocaleDateString()}
-                        </Typography>
-                        {segment.updated_at !== segment.created_at && (
-                          <Typography level='body-xs' color='neutral'>
-                            Updated: {new Date(segment.updated_at).toLocaleDateString()}
-                          </Typography>
-                        )}
-                      </Stack>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-
-        {/* Pagination Info */}
-        {segmentsData?.meta && segmentsData.meta.total > segmentsData.meta.perPage && (
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <Typography level='body-sm' color='neutral'>
-              Showing {segments.length} of {segmentsData.meta.total} segments
-            </Typography>
+        {isLoading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: { xs: '40vh', sm: '50vh' },
+            }}
+          >
+            <CircularProgress size='md' />
           </Box>
+        ) : segments && segments.length > 0 ? (
+          <>
+            {viewMode === 'grid' ? (
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                  },
+                  gap: 2,
+                  mt: 2,
+                  maxWidth: '1150px',
+                  mr: 'auto',
+                }}
+              >
+                {segments.map((segment) => (
+                  <SegmentCard
+                    key={segment.list_id}
+                    segment={segment}
+                    onDelete={handleDeleteClick}
+                    showActions={canEditSegments}
+                  />
+                ))}
+              </Box>
+            ) : (
+              <Box sx={{ mt: 2 }}>
+                <Box
+                  sx={{
+                    overflowX: 'auto',
+                    width: '100%',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: { xs: 'thin', sm: 'auto' },
+                    '&::-webkit-scrollbar': {
+                      height: { xs: '8px', sm: '12px' },
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'var(--joy-palette-divider)',
+                      borderRadius: '4px',
+                    },
+                    minWidth: 0,
+                  }}
+                >
+                  <Table
+                    aria-label='segments table'
+                    sx={{
+                      width: '100%',
+                      tableLayout: 'fixed',
+                      '& thead th': {
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        color: 'var(--joy-palette-text-primary)',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.level1',
+                        px: { xs: 1, sm: 2 },
+                      },
+                      '& tbody tr': {
+                        '&:hover': {
+                          backgroundColor: 'background.level1',
+                        },
+                        '&:not(:last-child)': {
+                          borderBottom: '1px solid #E5E7EB',
+                        },
+                      },
+                      '& tbody td': {
+                        fontSize: '14px',
+                        px: { xs: 1, sm: 2 },
+                        verticalAlign: 'middle',
+                        color: 'var(--joy-palette-text-secondary)',
+                        fontWeight: 300,
+                      },
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th style={{ width: '45%' }}>Segment Name</th>
+                        <th style={{ width: '15%' }}>Companies Count</th>
+                        <th style={{ width: '12%' }}>Status</th>
+                        <th style={{ width: '18%' }}>Last Updated</th>
+                        <th style={{ width: '80px', textAlign: 'right' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {segments.map((segment) => (
+                        <SegmentTableRow
+                          key={segment.list_id}
+                          segment={segment}
+                          onDelete={handleDeleteClick}
+                          showActions={canEditSegments}
+                        />
+                      ))}
+                    </tbody>
+                  </Table>
+                </Box>
+              </Box>
+            )}
+            {totalPages > 1 && (
+              <Pagination
+                totalPages={totalPages}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                disabled={isLoading}
+              />
+            )}
+          </>
+        ) : (
+          <EmptySegments canCreateSegment={canEditSegments} />
         )}
       </Stack>
+      <DeleteItemModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSegmentToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title='Delete segment'
+        description={`Are you sure you want to delete "${truncateSegmentName(segmentToDelete?.name ?? '', SEGMENT_NAME_DISPLAY_MAX_LENGTH)}"?`}
+      />
     </Box>
   );
 }

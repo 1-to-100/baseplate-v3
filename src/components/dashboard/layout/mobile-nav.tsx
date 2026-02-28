@@ -193,13 +193,6 @@ function renderNavGroups({
         }}
       >
         <ListItemContent>
-          {curr.title ? (
-            <Box sx={{ py: '12px' }}>
-              <Typography fontWeight='lg' textColor='neutral.500'>
-                {curr.title}
-              </Typography>
-            </Box>
-          ) : null}
           {renderNavItems({ depth: 0, items: curr.items, pathname, onClose })}
         </ListItemContent>
       </ListItem>,

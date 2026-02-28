@@ -10,10 +10,9 @@ import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner
 
 interface LayoutProps {
   children: React.ReactNode;
-  modal: React.ReactNode;
 }
 
-export default function Layout({ children, modal }: LayoutProps): React.JSX.Element {
+export default function Layout({ children }: LayoutProps): React.JSX.Element {
   return (
     <AuthGuard>
       <GlobalStyles
@@ -32,9 +31,7 @@ export default function Layout({ children, modal }: LayoutProps): React.JSX.Elem
             '--SideNav-zIndex': 1100,
             '--MobileNav-width': '320px',
             '--MobileNav-zIndex': 1100,
-            // When RTL is used, for some reason, Global styles are applied before default styles.
-            // The !important is needed to override this behavior.
-            background: 'var(--joy-palette-background-body) !important',
+            background: 'var(--joy-palette-background-mainBg) !important',
           },
         }}
       />
@@ -71,7 +68,6 @@ export default function Layout({ children, modal }: LayoutProps): React.JSX.Elem
           </Box>
         </Box>
       </Box>
-      {modal}
     </AuthGuard>
   );
 }

@@ -86,9 +86,32 @@ src/app/(scalekit)/strategy-forge/
     │   ├── suggest-personas-for-customer-id/
     │   │   ├── index.ts                  # Suggest personas
     │   │   └── deno.json                 # Deno configuration
-    │   └── suggest-segments-for-customer-id/
-    │       ├── index.ts                  # Suggest segments
-    │       └── deno.json                 # Deno configuration
+    │   ├── suggest-segments-for-customer-id/
+    │   │   ├── index.ts                  # Suggest segments
+    │   │   └── deno.json                 # Deno configuration
+    │   ├── segments-create/              # Create segment (lists), trigger processing
+    │   │   ├── index.ts
+    │   │   └── types.ts
+    │   ├── segments-update/              # Update segment name/filters, optional reprocess
+    │   │   ├── index.ts
+    │   │   └── types.ts
+    │   ├── segments-process/             # Background: Diffbot search, companies upsert
+    │   │   ├── index.ts
+    │   │   ├── company-upsert.ts
+    │   │   ├── diffbot-client.ts
+    │   │   ├── dql-adapter.ts
+    │   │   ├── notifications.ts
+    │   │   └── types.ts
+    │   ├── segments-ai/                  # AI-generated segment filters (OpenAI)
+    │   │   ├── index.ts
+    │   │   ├── prompt.ts
+    │   │   └── types.ts
+    │   └── segments-search/              # Search companies by filters (Diffbot)
+    │       ├── index.ts
+    │       ├── diffbot-client.ts
+    │       ├── dql-adapter.ts
+    │       ├── types.ts
+    │       └── README.md
     ├── components/                      # Feature components
     │   ├── index.ts                     # Barrel export
     │   ├── persona-creation-dialog.tsx  # Persona creation dialog
@@ -364,6 +387,120 @@ deleteCustomerJourneyStage(id); // Delete stage
 - Analyzes customer website and company information
 - Creates segment records automatically
 
+---
+
+## 🔧 Segments & Companies Edge Functions
+
+The segments/companies flow is implemented by five Edge Functions that create segments (lists), search companies via Diffbot, process results into `companies`, `list_companies`, and `customer_companies`, and optionally use AI to suggest filters.
+
+### **segments-create**
+
+- **Purpose:** Create a new segment (inserts into `lists` with `list_type = 'segment'`, `subtype = 'company'`).
+- **Auth:** Requires authenticated user with `customer_id` (JWT).
+- **Request:** `POST` with body `{ name: string, filters: object }`. Name 3–100 chars; filters required.
+- **Behavior:** Checks name uniqueness per customer, inserts segment with `status: 'new'`, creates an in-app notification, then triggers **segments-process** in the background (fire-and-forget) using `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+- **Response:** `201` with created list row.
+
+### **segments-update**
+
+- **Purpose:** Update an existing segment’s name and/or filters; if filters change, reprocesses the segment.
+- **Auth:** Authenticated user; segment must belong to user’s `customer_id`.
+- **Request:** `POST` with body `{ segment_id: string, name: string, filters: object }`.
+- **Behavior:** Validates ownership and name uniqueness. If filters changed: deletes existing `list_companies`, sets segment `status` to `'new'`, creates notification, invokes **segments-process** (fire-and-forget). Returns updated list row.
+
+### **segments-process**
+
+- **Purpose:** Background worker: run Diffbot DQL search for a segment, upsert companies, link to list, populate `customer_companies`, send notifications, enqueue company scoring.
+- **Auth:** Intended to be called with **service role** (from segments-create, segments-update, or pg_cron via `process_pending_segments()`).
+- **Request:** `POST` with body `{ segment_id: string, customer_id?: string }`. Segment must exist and have `status = 'new'`.
+- **Behavior:**
+  1. Sets segment `status` to `'processing'`, sends “processing started” notification.
+  2. Converts segment `filters` to DQL via `DqlAdapter`, calls Diffbot search (max 100 companies).
+  3. Bulk upserts into `companies` (by `diffbot_id`), then `company_metadata`, then `list_companies`, then `customer_companies`.
+  4. Sets segment `status` to `'completed'` (or `'failed'` on error), sends completion/failure notification.
+  5. Enqueues rows into `company_scoring_queue` and triggers **company-scoring-worker** (no pg_cron required for immediate processing).
+- **Env:** `DIFFBOT_API_TOKEN` (required), optional `DIFFBOT_API_URL`.
+
+### **segments-ai**
+
+- **Purpose:** Generate segment name and filters from a natural language description using OpenAI.
+- **Auth:** Authenticated user with `customer_id`.
+- **Request:** `POST` with body `{ description: string }` (3–1000 chars).
+- **Behavior:** Loads `option_industries` and `option_company_sizes`, builds system prompt, calls OpenAI (default `gpt-4o-mini`), validates and maps response to segment filters (country, location, employees, categories, technographics). Does **not** create a segment; returns suggestion for the UI to use with segments-create.
+- **Response:** `200` with `{ name: string, filters: object }`.
+- **Env:** `OPENAI_API_KEY` (required), optional `OPENAI_MODEL_SEGMENT`.
+
+### **segments-search**
+
+- **Purpose:** Search companies by segment-style filters (Diffbot DQL) and return a preview list; used for “preview results” before creating a segment.
+- **Auth:** Authenticated user.
+- **Request:** `POST` with body `{ filters: object, page?: number, perPage?: number }`.
+- **Behavior:** Converts filters to DQL, calls Diffbot search with pagination, returns company previews and total count.
+- **Env:** `DIFFBOT_API_TOKEN` (required), optional `DIFFBOT_API_URL`.
+- **Details:** See `lib/edge/segments-search/README.md`.
+
+### Flow summary
+
+1. **Create segment:** UI → **segments-create** (JWT) → DB insert → fire-and-forget **segments-process** (service role).
+2. **Update segment:** UI → **segments-update** (JWT) → if filters changed → **segments-process** (service role).
+3. **Optional cron:** `process_pending_segments()` (uses Vault config) can POST to **segments-process** for segments still in `status = 'new'` (e.g. if trigger from create/update failed).
+4. **AI suggestion:** UI → **segments-ai** (JWT) → use returned name/filters in create form.
+5. **Preview:** UI → **segments-search** (JWT) → show company list before saving segment.
+
+---
+
+## 🔐 Supabase Vault (Database secrets for cron)
+
+**Vault** is Supabase’s store for secrets that the **database** can read (e.g. for pg_cron calling Edge Functions). It is separate from Edge Function environment variables.
+
+### When it’s needed
+
+- **Company scoring cron:** `process_company_scoring_queue()` runs on a schedule and calls the **company-scoring-worker** Edge Function.
+- **Segment processing cron (optional):** `process_pending_segments()` can be scheduled to pick up segments with `status = 'new'` and call **segments-process**.
+
+Both use `get_supabase_cron_config()`, which reads from Vault so the database has the Edge Function URL and service role key.
+
+### Required Vault secrets
+
+| Secret name                 | Description                                                                 |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `supabase_functions_url`    | Base URL of Edge Functions (e.g. `https://<ref>.supabase.co/functions/v1`)  |
+| `supabase_service_role_key` | Service role key (used as `Authorization: Bearer …` when calling functions) |
+
+### How to set Vault secrets
+
+1. Open the [Supabase Dashboard](https://supabase.com/dashboard) and select your project.
+2. Go to **Project Settings** → **Vault** (under “Database” or “Security”).
+3. Add two secrets:
+   - **Name:** `supabase_functions_url`  
+     **Value:** Your project’s functions URL, e.g. `https://YOUR_PROJECT_REF.supabase.co/functions/v1`  
+     (Find it under **Project Settings** → **API** or in the URL when invoking a function.)
+   - **Name:** `supabase_service_role_key`  
+     **Value:** Your project’s **service_role** key from **Project Settings** → **API** → **Project API keys** (use “service_role”, not “anon”).
+4. Save. The next time pg_cron runs `process_company_scoring_queue()` or `process_pending_segments()`, `get_supabase_cron_config()` will return these values. If they are missing, the functions log a warning and exit without calling the Edge Function.
+
+### Edge Function secrets (separate from Vault)
+
+Secrets for **Edge Functions** (e.g. Diffbot, OpenAI) are configured via **Project Settings** → **Edge Functions** → **Secrets** in the Dashboard, or via CLI:
+
+```bash
+# Required for segments-process and segments-search
+supabase secrets set DIFFBOT_API_TOKEN=your_diffbot_token
+
+# Optional; default https://kg.diffbot.com/kg/v3/dql
+supabase secrets set DIFFBOT_API_URL=https://kg.diffbot.com/kg/v3/dql
+
+# Required for segments-ai
+supabase secrets set OPENAI_API_KEY=your_openai_key
+
+# Optional; defaults to gpt-4o-mini
+supabase secrets set OPENAI_MODEL_SEGMENT=gpt-4o-mini
+```
+
+For **segments-create** to trigger **segments-process** in the background, the Edge Function runtime must have `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (often set automatically by Supabase for deployed functions; for local dev, use an `.env` or `--env-file`).
+
+---
+
 ## 📊 Type Definitions
 
 All database tables have corresponding TypeScript interfaces:
@@ -544,6 +681,7 @@ const updated = await updateCustomerInfo({
 4. Verify RLS policies are enabled
 5. Test customer isolation
 6. Deploy Edge Functions using `supabase functions deploy`
+7. **Segments/companies:** Set Edge Function secrets (`DIFFBOT_API_TOKEN`, `OPENAI_API_KEY`; see [Edge Function secrets](#edge-function-secrets-separate-from-vault) above). If using pg_cron for company scoring or segment processing, add [Vault secrets](#-supabase-vault-database-secrets-for-cron) in Project Settings → Vault.
 
 ### Feature Registry
 
@@ -597,6 +735,7 @@ import type { Persona } from '@/app/(scalekit)/strategy-forge/lib/types';
 - Customer info has one-to-one relationship with customers
 - Edge Functions require proper JWT authentication and customer_id in request body
 - RLS policies enforce customer isolation using `can_access_customer()` function
+- Segments/companies flow: segments-create and segments-update trigger segments-process (Diffbot); optional pg_cron uses Vault secrets to call Edge Functions (see [Supabase Vault](#-supabase-vault-database-secrets-for-cron))
 
 ## 🤝 Contributing
 

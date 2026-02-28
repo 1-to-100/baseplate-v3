@@ -43,6 +43,27 @@ export const layoutConfig: LayoutConfig = {
           icon: 'documentation',
         },
         {
+          key: 'segments',
+          title: 'Segments',
+          href: paths.strategyForge.segments.list,
+          icon: 'grid-four',
+          matcher: { type: 'startsWith', href: paths.strategyForge.segments.list },
+        },
+        {
+          key: 'companies',
+          title: 'Companies',
+          href: paths.strategyForge.companies.list,
+          icon: 'buildings',
+          matcher: { type: 'startsWith', href: paths.strategyForge.companies.list },
+        },
+        {
+          key: 'lists',
+          title: 'Lists',
+          href: paths.strategyForge.lists.list,
+          icon: 'list',
+          matcher: { type: 'startsWith', href: paths.strategyForge.lists.list },
+        },
+        {
           key: 'divider1',
           type: 'divider',
           permissions: [SYSTEM_ROLES.SYSTEM_ADMINISTRATOR, SYSTEM_ROLES.CUSTOMER_SUCCESS],
