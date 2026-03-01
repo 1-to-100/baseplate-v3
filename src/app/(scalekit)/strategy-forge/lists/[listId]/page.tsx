@@ -680,7 +680,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                                     : '—'}
                                 </Typography>
                               </td>
-                              <td>
+                              <td style={{ maxWidth: 200, overflow: 'hidden' }}>
                                 {company.website_url ? (
                                   <Typography
                                     component='span'
@@ -698,6 +698,10 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
                                       color: 'var(--joy-palette-primary-500)',
                                       textDecoration: 'underline',
                                       cursor: 'pointer',
+                                      display: 'block',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     {company.website_url}
