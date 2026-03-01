@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Box from '@mui/joy/Box';
@@ -26,9 +26,8 @@ import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { SelectionAll as SelectionAllIcon } from '@phosphor-icons/react/dist/ssr/SelectionAll';
 import { getListById, getListCompanies } from '../../lib/api/segment-lists';
-import { getCompanies } from '../../lib/api/companies';
-import type { GetCompaniesParams } from '../../lib/types/company';
-import type { CompanyItem } from '../../lib/types/company';
+import { getCompanies, getCompanyById } from '../../lib/api/companies';
+import type { GetCompaniesParams, CompanyItem } from '../../lib/types/company';
 import { ListSubtype } from '../../lib/types/list';
 import { hasListFilters, listFiltersToCompanyFilterFields } from '../../lib/utils/list-filters';
 import { useGlobalSearch } from '@/hooks/use-global-search';
@@ -39,6 +38,7 @@ import Pagination from '@/components/dashboard/layout/pagination';
 import { toast } from '@/components/core/toaster';
 import { TypeListChip } from '../type-list-chip';
 import CompanyDetailsPopover from '../../ui/components/company-details-popover';
+import EditCompanyModal from '@/components/dashboard/modals/EditCompanyModal';
 import { AddToListModal } from '../../lib/components';
 
 const ITEMS_PER_PAGE = 10;
@@ -108,6 +108,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
   const [addToListModalOpen, setAddToListModalOpen] = useState(false);
   const [addToListCompanyIds, setAddToListCompanyIds] = useState<string[]>([]);
   const [addToListLabel, setAddToListLabel] = useState<string | undefined>(undefined);
+  const [editCompanyId, setEditCompanyId] = useState<string | null>(null);
   const { debouncedSearchValue } = useGlobalSearch();
 
   useEffect(() => {
@@ -204,6 +205,12 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
       );
     },
     enabled: !!listId && list != null && list.subtype === ListSubtype.COMPANY,
+  });
+
+  const { data: editCompany } = useQuery({
+    queryKey: ['company-for-edit', editCompanyId],
+    queryFn: () => getCompanyById(editCompanyId!),
+    enabled: !!editCompanyId,
   });
 
   const companies = companiesData?.data ?? [];
@@ -311,7 +318,7 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
   };
 
   const handleEditCompany = (company: TableCompany) => {
-    toast.info(`Edit action for company ${company.company_id} is not implemented here.`);
+    setEditCompanyId(company.company_id);
     handleMenuClose();
   };
 
@@ -321,6 +328,20 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
     setAddToListModalOpen(true);
     handleMenuClose();
   };
+
+  const handleEditCompanyModalClose = useCallback(() => {
+    setEditCompanyId(null);
+  }, []);
+
+  const handleEditCompanySuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['list-companies', listId] });
+  }, [queryClient, listId]);
+
+  const handleAddToListModalClose = useCallback(() => {
+    setAddToListModalOpen(false);
+    setAddToListCompanyIds([]);
+    setAddToListLabel(undefined);
+  }, []);
 
   if (listLoading && !list) {
     return (
@@ -813,13 +834,16 @@ export default function ListDetailsPage({ params }: PageProps): React.JSX.Elemen
           />
         )}
 
+        <EditCompanyModal
+          open={!!editCompanyId}
+          onClose={handleEditCompanyModalClose}
+          company={editCompany ?? null}
+          onSuccess={handleEditCompanySuccess}
+        />
+
         <AddToListModal
           open={addToListModalOpen}
-          onClose={() => {
-            setAddToListModalOpen(false);
-            setAddToListCompanyIds([]);
-            setAddToListLabel(undefined);
-          }}
+          onClose={handleAddToListModalClose}
           companyIds={addToListCompanyIds}
           excludeListId={listId ?? undefined}
         />
