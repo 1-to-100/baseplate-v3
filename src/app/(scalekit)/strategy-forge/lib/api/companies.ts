@@ -667,6 +667,14 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
       : null;
   const effectiveCustomerId = fromJwt ?? fromRpc;
 
+  const { data: companyRow } = await supabase
+    .from('companies')
+    .select(
+      'display_name, legal_name, domain, country, region, employees, categories, technologies'
+    )
+    .eq('company_id', company_id)
+    .single();
+
   const staticLists: CompanyItemList[] = [];
   const { data: listCompanies, error: listsError } = await supabase
     .from('list_companies')
@@ -676,7 +684,8 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
       lists:list_id (
         list_id,
         name,
-        description
+        description,
+        filters
       )
     `
     )
@@ -687,6 +696,13 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
     for (const lc of listCompanies) {
       const list = Array.isArray(lc.lists) ? lc.lists[0] : lc.lists;
       if (!list) continue;
+      if (
+        hasListFilters(list.filters ?? undefined) &&
+        companyRow &&
+        !companyMatchesListFilters(companyRow as Record<string, unknown>, list.filters ?? undefined)
+      ) {
+        continue;
+      }
       staticLists.push({
         id: parseInt(lc.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
         name: list.name || 'Unknown',
@@ -709,32 +725,20 @@ export async function getCompanyLists(company_id: string): Promise<CompanyItemLi
     dynamicQuery = dynamicQuery.eq('customer_id', effectiveCustomerId);
   }
   const { data: dynamicListRows, error: dynamicError } = await dynamicQuery;
-  if (!dynamicError && dynamicListRows && dynamicListRows.length > 0) {
-    const { data: companyRow } = await supabase
-      .from('companies')
-      .select(
-        'display_name, legal_name, domain, country, region, employees, categories, technologies'
+  if (!dynamicError && dynamicListRows && dynamicListRows.length > 0 && companyRow) {
+    for (const list of dynamicListRows) {
+      if (!hasListFilters(list.filters ?? undefined)) continue;
+      if (
+        !companyMatchesListFilters(companyRow as Record<string, unknown>, list.filters ?? undefined)
       )
-      .eq('company_id', company_id)
-      .single();
-    if (companyRow) {
-      for (const list of dynamicListRows) {
-        if (!hasListFilters(list.filters ?? undefined)) continue;
-        if (
-          !companyMatchesListFilters(
-            companyRow as Record<string, unknown>,
-            list.filters ?? undefined
-          )
-        )
-          continue;
-        dynamicLists.push({
-          id: parseInt(list.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
-          name: list.name || 'Unknown',
-          description: list.description ?? undefined,
-          isAttached: true,
-          list_id: list.list_id ?? undefined,
-        });
-      }
+        continue;
+      dynamicLists.push({
+        id: parseInt(list.list_id?.replace(/-/g, '').substring(0, 10) || '0', 16) || 0,
+        name: list.name || 'Unknown',
+        description: list.description ?? undefined,
+        isAttached: true,
+        list_id: list.list_id ?? undefined,
+      });
     }
   }
 

@@ -59,6 +59,7 @@ export default function AddCompaniesToListModal({
       queryClient.invalidateQueries({ queryKey: ['list', listId] });
       queryClient.invalidateQueries({ queryKey: ['list-companies', listId] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
+      variables.ids.forEach((id) => queryClient.invalidateQueries({ queryKey: ['company', id] }));
       toast.success(
         variables.ids.length === 1
           ? '1 company added to list.'

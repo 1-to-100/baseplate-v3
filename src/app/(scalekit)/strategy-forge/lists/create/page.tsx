@@ -147,6 +147,7 @@ export default function CreateListPage(): React.JSX.Element {
       queryClient.invalidateQueries({ queryKey: ['list', listId] });
       queryClient.invalidateQueries({ queryKey: ['list-companies', listId] });
       queryClient.invalidateQueries({ queryKey: ['lists'] });
+      queryClient.invalidateQueries({ queryKey: ['company'] });
       toast.success('List saved successfully');
       setHasUnsavedChanges(false);
       router.push(paths.strategyForge.lists.details(listId!));
