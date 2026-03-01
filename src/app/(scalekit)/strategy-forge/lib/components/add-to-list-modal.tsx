@@ -17,8 +17,14 @@ import TabList from '@mui/joy/TabList';
 import Tab from '@mui/joy/Tab';
 import TabPanel from '@mui/joy/TabPanel';
 import CircularProgress from '@mui/joy/CircularProgress';
+import Alert from '@mui/joy/Alert';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getLists, createList, addCompaniesToList } from '../api/segment-lists';
+import {
+  getLists,
+  createList,
+  addCompaniesToList,
+  getExistingCompanyIdsInList,
+} from '../api/segment-lists';
 import type { ListForDisplay } from '../types/list';
 import { ListSubtype, DEFAULT_LIST_SUBTYPE } from '../constants/lists';
 import { toast } from '@/components/core/toaster';
@@ -60,6 +66,17 @@ export function AddToListModal({
     queryFn: () => getLists({ page: 1, perPage: 100 }),
     enabled: open,
   });
+
+  const { data: existingCompanyIds } = useQuery({
+    queryKey: ['list-existing-companies', selectedList?.list_id, companyIds],
+    queryFn: () => getExistingCompanyIdsInList(selectedList!.list_id, companyIds),
+    enabled: open && activeTab === 'select' && !!selectedList?.list_id && companyIds.length > 0,
+  });
+
+  const allAlreadyInList =
+    existingCompanyIds != null && existingCompanyIds.length === companyIds.length;
+  const someAlreadyInList =
+    existingCompanyIds != null && existingCompanyIds.length > 0 && !allAlreadyInList;
 
   // Only static lists can receive added companies (dynamic lists are filter-based, no list_company assignments).
   const companyLists: ListForDisplay[] = React.useMemo(() => {
@@ -155,7 +172,7 @@ export function AddToListModal({
     companyIds.length > 0 &&
     !addMutation.isPending &&
     !createListMutation.isPending &&
-    (activeTab === 'select' ? selectedList != null : isCreateValid);
+    (activeTab === 'select' ? selectedList != null && !allAlreadyInList : isCreateValid);
 
   return (
     <Modal open={open} onClose={handleModalClose}>
@@ -239,6 +256,20 @@ export function AddToListModal({
                   ) : null
                 }
               />
+              {allAlreadyInList && (
+                <Alert color='warning' variant='soft' sx={{ mt: 1.5 }}>
+                  {companyIds.length === 1
+                    ? 'This company is already in the selected list.'
+                    : 'All selected companies are already in this list.'}
+                </Alert>
+              )}
+              {someAlreadyInList && (
+                <Alert color='neutral' variant='soft' sx={{ mt: 1.5 }}>
+                  {existingCompanyIds.length === 1
+                    ? `1 of ${companyIds.length} companies is already in this list and will be skipped.`
+                    : `${existingCompanyIds.length} of ${companyIds.length} companies are already in this list and will be skipped.`}
+                </Alert>
+              )}
             </Box>
           </TabPanel>
           <TabPanel value='create' sx={{ p: 0, mt: 2 }}>

@@ -661,6 +661,31 @@ export async function getListCompanies(
   };
 }
 
+/**
+ * Check which of the given company IDs already exist in a list.
+ * Returns the subset of companyIds that are already assigned to the list.
+ */
+export async function getExistingCompanyIdsInList(
+  listId: string,
+  companyIds: string[]
+): Promise<string[]> {
+  if (!listId || companyIds.length === 0) return [];
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('list_companies')
+    .select('company_id')
+    .eq('list_id', listId)
+    .in('company_id', companyIds);
+
+  if (error) {
+    throw new Error(`Failed to check existing companies: ${error.message}`);
+  }
+
+  return (data ?? []).map((r) => r.company_id);
+}
+
 export interface AddCompaniesToListPayload {
   companyIds: string[];
 }

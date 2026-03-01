@@ -866,10 +866,10 @@ async function resolveCurrentCustomerId(
 
 /**
  * Update company by company_id.
- * Routing:
- * - System admin + no customer selected: update companies table only (global/master data).
- * - System admin + customer selected: update customer_companies only (customer-specific overrides).
- * - Customer success / non-admin with customer: update customer_companies only (RLS allows).
+ * Routing (companies and customer_companies are mutually exclusive – never both):
+ * - Non-system admin: update ONLY customer_companies; never touch companies.
+ * - System admin + customer selected: update ONLY customer_companies; never touch companies.
+ * - System admin + no customer selected: update ONLY companies; never touch customer_companies.
  * - Non-admin without customer: error – cannot update without customer context.
  */
 export async function updateCompany(
